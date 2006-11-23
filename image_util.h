@@ -73,7 +73,7 @@ void write_img(Image * img,char * filename,int output_precision);
 
 /*! Create an image using the values from the TIFF file
 */
-Image * read_tiff(char * filename);
+Image * read_tiff(const char * filename);
 /*! Write a TIFF using the values from the image file
 */
 void write_tiff(Image * img, char * filename);
@@ -82,6 +82,9 @@ void write_tiff(Image * img, char * filename);
   the specified color map
 */
 int write_png(Image * img, char * filename, int color);
+
+/* Read png file and convert to image */
+Image*  read_png(char * filename);
 
 /*! Write the norm of the image to a file in VTK ASCII format as a 2D Structured grid
  */
@@ -218,7 +221,7 @@ Image * gaussian_filter(Image * in, real radius, int in_place);
  *  the real and complex parts of the Image will be set to 0.
  *  The resulting mask will be the same as the one from image a.
  */
-Image * convolute_img(Image * a, Image * b);
+Image * convolute_img(Image * a, Image * b, int * size);
 
 /*! Low pass filter using a centered square window of side edge_size 
  *
@@ -239,18 +242,19 @@ Image * low_pass_gaussian_filter(Image * in, int edge_size);
  *  the real and complex parts of the Image will be set to 0.
  *  The resulting mask will be the same as the one from image a.
  */
-Image * cross_correlate_img(Image * a, Image * b);
+Image * cross_correlate_img(Image * a, Image * b, int * size);
 
-/*! Returns a rectangular window centered on the image center
- * with the given width and height 
+/*! Returns a rectangular window centered on the middle of the image
+ * with the given width and height. If shifted, the center is in the upper left corner
+ * and the window wraps around the image
  */
-Image * rectangular_window(Image * a, int width, int height);
+Image * rectangular_window(int image_x, int image_y, int width, int height, int shifted);
 
 
 /*! Returns a circular window centered on the image center
  * with the given radius
  */
-Image * circular_window(Image * a, int radius);
+Image * circular_window(int x, int y, int radius, int shifted);
 
 /*! Convolutes Image a with Image b at point i
  *
@@ -295,4 +299,6 @@ Image * bilinear_rescale(Image * img, int new_x, int new_y);
 void resize_empty_image(Image * a,int newx, int newy);
 Image * get_mask_from_image(Image * a);
 int quadrant_shift_index(Image * a, int index);
+
+Image * normalize_image(Image * in);
 #endif

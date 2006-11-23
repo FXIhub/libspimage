@@ -40,7 +40,7 @@ Image * patterson_function(Image * a){
 Image * centrosym_convolve(Image * in){
 /*  Image *csym = reflect_xy(in,OUT_OF_PLACE);*/
   Image * res;
-  res = convolute_img(in,in);/*csym);*/
+  res = convolute_img(in,in,NULL);/*csym);*/
 /*  freeimg(csym);*/
   return res;
 }
@@ -1301,7 +1301,7 @@ Image * read_imagefile(const char * filename){
 }
 
 
-Image * read_tiff(char * filename){
+Image * read_tiff(const char * filename){
   Image * res = malloc(sizeof(Image));
   float * img;
   int nstrips;
@@ -1313,6 +1313,10 @@ Image * read_tiff(char * filename){
   res->detector = malloc(sizeof(Detector));
 
   tif = TIFFOpen(filename, "r");  
+  if(!tif){
+    return NULL;
+  }
+  
   nstrips = TIFFNumberOfStrips(tif);
   stripsize = TIFFStripSize(tif);
   img = malloc(nstrips*stripsize);
@@ -1337,9 +1341,10 @@ Image * read_tiff(char * filename){
   for(i = 0;i<TSIZE(res);i++){
     res->mask[i] = 1;
   }
-  res->detector->image_center[0] =   (res->detector->size[0]-1)/2.0;
+  res->detector->image_center[0] =  (res->detector->size[0]-1)/2.0;
   res->detector->image_center[1] = (res->detector->size[1]-1)/2.0;
   res->phased = 0;
+  res->image = res->intensities;
   return res;  
 }
 
@@ -1396,10 +1401,17 @@ void write_tiff(Image * img, char * filename){
 
 /* b must fit inside a or the other way around */
 
-/* Convolute only acts on the amplitudes 
-   real and complex part will be set to 0 
+/* If wrap arond is on, a is taken to be periodic and the outout size will
+   be as big as the input 
+   
+   Otherwise the output size is equal to a+b-1
+
+   If size is not a NULL pointer it will be the size of transform used.
+   A size smaller than the size of a+b will results in wrap around effects.
+   If size is NULL the size of a will be used (resulting in wrap around effects).
+
 */
-Image * cross_correlate_img(Image * a, Image * b){
+Image * cross_correlate_img(Image * a, Image * b, int * size){
   int x;
   int y;  
   int i;
@@ -1414,20 +1426,24 @@ Image * cross_correlate_img(Image * a, Image * b){
     a = b;
     b = res;
   }
-  x = a->detector->size[0]/*+(b->detector->size[0]-1)/2*/;
-  y = a->detector->size[1]/*+(b->detector->size[1]-1)/2*/;
+
+  if(size){
+    x = size[0];
+    y = size[1];
+  }else{
+    x = a->detector->size[0];
+    y = a->detector->size[1];
+  }
 
   tmp = zero_pad_image(a,x,y,1);
-  dephase(tmp);
   a_ft = image_fft(tmp);
   freeimg(tmp);
 
   tmp = zero_pad_image(b,x,y,1);
-  dephase(tmp);
   b_ft = image_fft(tmp);
   freeimg(tmp);
 
-  tmp = create_empty_img(a);
+  tmp = create_empty_img(a_ft);
   tmp->shifted = 1;
   rephase(tmp);
   /* Now do the multiplication in fourier space */
@@ -1443,21 +1459,26 @@ Image * cross_correlate_img(Image * a, Image * b){
   res = image_rev_fft(tmp);
   freeimg(tmp);
 
-  dephase(res);
   /* should be all real */
-  for(i = 0;i<TSIZE(a);i++){
-    res->image[i] /= TSIZE(a);
+  for(i = 0;i<TSIZE(res);i++){
+    res->r[i] /= TSIZE(res);
+    res->c[i] /= TSIZE(res);
+    res->image[i] /= TSIZE(res);
   }
 
   return res;  
 }
 
-/* b must fit inside a or the other way around */
+/* if wrap around is on b must fit inside a or the other way around */
 
 /* Convolute only acts on the amplitudes 
    real and complex part will be set to 0 
 */
-Image * convolute_img(Image * a, Image * b){
+/* If size is not a NULL pointer it will be the size of transform used.
+   A size smaller than the size of a+b will results in wrap around effects.
+   If size is NULL the size of a will be used (resulting in wrap around effects).
+*/
+Image * convolute_img(Image * a, Image * b, int * size){
   int x;
   int y;  
   int i;
@@ -1472,8 +1493,14 @@ Image * convolute_img(Image * a, Image * b){
     a = b;
     b = res;
   }
-  x = a->detector->size[0]/*+(b->detector->size[0]-1)/2*/;
-  y = a->detector->size[1]/*+(b->detector->size[1]-1)/2*/;
+  
+  if(!size){
+    x = a->detector->size[0]/*+(b->detector->size[0]-1)/2*/;
+    y = a->detector->size[1]/*+(b->detector->size[1]-1)/2*/;
+  }else{
+    x = size[0];
+    y = size[1];
+  }
 
   tmp = zero_pad_image(a,x,y,1);
   dephase(tmp);
@@ -1485,7 +1512,7 @@ Image * convolute_img(Image * a, Image * b){
   b_ft = image_fft(tmp);
   freeimg(tmp);
 
-  tmp = create_empty_img(a);
+  tmp = create_empty_img(a_ft);
   tmp->shifted = 1;
   rephase(tmp);
   /* Now do the multiplication in fourier space */
@@ -1503,8 +1530,8 @@ Image * convolute_img(Image * a, Image * b){
 
   dephase(res);
   /* should be all real */
-  for(i = 0;i<TSIZE(a);i++){
-    res->image[i] /= TSIZE(a);
+  for(i = 0;i<TSIZE(res);i++){
+    res->image[i] /= TSIZE(res);
   }
 
   return res;  
@@ -1553,7 +1580,7 @@ Image * gaussian_blur(Image * in, real radius){
   centered_filter = shift_center_to_top_left(filter_img);
   centered_filter->shifted = 1;
   freeimg(filter_img);
-  res = convolute_img(in, centered_filter);
+  res = convolute_img(in, centered_filter,NULL);
   freeimg(centered_filter);
   return res;
 }
@@ -1600,7 +1627,7 @@ Image * square_blur(Image * in, real radius){
   }
   centered_filter = shift_center_to_top_left(filter_img);
   freeimg(filter_img);
-  res = convolute_img(in, centered_filter);
+  res = convolute_img(in, centered_filter,NULL);
   freeimg(centered_filter);
   return res;
 }
@@ -1615,8 +1642,48 @@ int write_mask_to_png(Image * img, char * filename, int color){
   return ret;
 }
 
+Image * read_png(char * filename){
+ FILE *fp = fopen(filename, "rb");
+ int i,j,index;
+ png_structp png_ptr = png_create_read_struct
+   (PNG_LIBPNG_VER_STRING, (png_voidp)NULL,
+    NULL,NULL);
+ png_infop info_ptr = png_create_info_struct(png_ptr);
+ png_infop end_info = png_create_info_struct(png_ptr);
+ png_byte ** row_pointers;
+ Image * res;
+ png_init_io(png_ptr, fp);
+ png_uint_32 width,height;
+ int bit_depth,color_type,interlace_type,compression_type,filter_method;
+ png_read_info(png_ptr, info_ptr);
+ png_get_IHDR(png_ptr, info_ptr, &width, &height,
+	      &bit_depth, &color_type, &interlace_type,
+	      &compression_type, &filter_method);
+
+ if(color_type == 6){
+   bit_depth *= 4;
+ }else if(color_type == 4){
+   bit_depth *= 2;
+ }else if(color_type == 2){
+   bit_depth *= 3;
+ }
+ row_pointers = malloc(sizeof(png_byte *)*height);
+ for(i = 0;i<height;i++){
+   row_pointers[i] = malloc(sizeof(png_byte)*width*bit_depth/8);
+ }
+ png_read_image(png_ptr, row_pointers);
+ res = create_new_img(width,height);
+ for(i = 0;i<height;i++){
+   for(j = 0;j<width;j++){
+     res->image[j*height+i] = row_pointers[i][(int)(j*bit_depth/8)];
+   }
+ }
+ return res;
+}
+
 int write_png(Image * img, char * filename, int color){
   FILE *fp = fopen(filename, "wb");
+  
   png_structp png_ptr; 
   png_infop info_ptr;
   int bit_depth = 8;
@@ -2179,7 +2246,11 @@ Image * rectangle_crop(Image * in, int x1, int y1, int x2, int y2){
     cropped->intensities = cropped->image;
   }
   for(i = x1;i<= x2;i++){
-    memcpy(&cropped->image[(i-x1)*cropped->detector->size[0]],&in->image[(i-x1)*in->detector->size[0]],cropped->detector->size[1]*sizeof(real));
+    memcpy(&cropped->image[(i-x1)*cropped->detector->size[0]],&in->image[(i)*in->detector->size[0]+y1],cropped->detector->size[1]*sizeof(real));
+    if(in->phased){
+      memcpy(&cropped->r[(i-x1)*cropped->detector->size[0]],&in->r[(i)*in->detector->size[0]+y1],cropped->detector->size[1]*sizeof(real));
+      memcpy(&cropped->c[(i-x1)*cropped->detector->size[0]],&in->c[(i)*in->detector->size[0]+y1],cropped->detector->size[1]*sizeof(real));
+    }
   }
   return cropped;
 }
@@ -2370,16 +2441,17 @@ void resize_empty_image(Image * img, int new_x, int new_y){
   }
 }
 
-Image * rectangular_window(Image * a, int width, int height){
-  Image * res = imgcpy(a);
+Image * rectangular_window(int image_x, int image_y, int width, int height, int shifted){
+  Image * res = create_new_img(image_x,image_y);
   int x,y,i;
+  int center[2];
   i = 0;
   
-  if(a->shifted){
-    for(x = 0;x<a->detector->size[0];x++){
-      for(y = 0;y<a->detector->size[1];y++){
-	if((fabs(x-a->detector->image_center[0]) < width/2 || fabs(a->detector->size[0]-(x-a->detector->image_center[0])) < width/2 )&&
-	   (fabs(y-a->detector->image_center[1]) < height/2 || fabs(a->detector->size[1]-(y-a->detector->image_center[1])) < height/2 )){
+  if(shifted){
+    for(x = 0;x<image_x;x++){
+      for(y = 0;y<image_y;y++){
+	if((fabs(x) < width/2 || fabs(image_x-x) < width/2 )&&
+	   (fabs(y) < height/2 || fabs(image_y-y) < height/2 )){
 	  res->image[i] = 1;
 	}else{
 	  res->image[i] = 0;
@@ -2388,10 +2460,12 @@ Image * rectangular_window(Image * a, int width, int height){
       }
     }
   }else{
-    for(x = 0;x<a->detector->size[0];x++){
-      for(y = 0;y<a->detector->size[1];y++){
-	if(fabs(x-a->detector->image_center[0]) < width/2 &&
-	   fabs(y-a->detector->image_center[1]) < height/2){
+    center[0] = image_x/2;
+    center[1] = image_y/2;
+    for(x = 0;x<image_x;x++){
+      for(y = 0;y<image_y;y++){
+	if(fabs(x-center[0]) < width/2 &&
+	   fabs(y-center[1]) < height/2){
 	  res->image[i] = 1;
 	}else{
 	  res->image[i] = 0;
@@ -2405,12 +2479,18 @@ Image * rectangular_window(Image * a, int width, int height){
 }
 
 
-Image * circular_window(Image * a, int radius){
-  Image * res = imgcpy(a);
+Image * circular_window(int x, int y, int radius, int shifted){
+  Image * res = create_new_img(x,y);
   int i;
-  
-  for(i = 0;i<TSIZE(a);i++){
-    if(dist_to_center(i,a) < radius){
+  if(shifted){
+    res->detector->image_center[0] = 0;
+    res->detector->image_center[1] = 0;
+  }else{
+    res->detector->image_center[0] = x/2;
+    res->detector->image_center[1] = y/2;
+  }
+  for(i = 0;i<x*y;i++){
+    if(dist_to_center(i,res) < radius){
       res->image[i] = 1;
     }else{
       res->image[i] = 0;
@@ -2419,6 +2499,25 @@ Image * circular_window(Image * a, int radius){
   rephase(res);
   return res;
 }
+
+
+Image * normalize_image(Image * in){
+  Image * res = imgcpy(in);
+  double integral = 0;
+  int i;
+  for(i = 0;i<TSIZE(in);i++){
+    integral += in->image[i];
+  }
+  for(i = 0;i<TSIZE(in);i++){
+    res->image[i] /= integral;
+  }
+  if(res->phased){
+    res->r[i] /= integral;
+    res->c[i] /= integral;
+  }
+  return res;
+}
+
 
 Image * get_mask_from_image(Image * a){
   Image * res = imgcpy(a);
