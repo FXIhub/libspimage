@@ -1049,6 +1049,8 @@ void write_img(Image * img,char * filename, int output_precision){
   int i;
   hid_t out_type_id = 0;
   hid_t mem_type_id = 0;
+  hid_t plist;
+  hsize_t chunk_size[2] = {img->detector->size[0],img->detector->size[1]};
   if(output_precision == sizeof(double)){
     out_type_id = H5T_NATIVE_DOUBLE;
   }else if(output_precision == sizeof(float)){
@@ -1068,15 +1070,20 @@ void write_img(Image * img,char * filename, int output_precision){
   dims[1] = img->detector->size[1];
   file_id = H5Fcreate(filename,  H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
   dataspace_id = H5Screate_simple( 2, dims, NULL );
+
+  plist = H5Pcreate (H5P_DATASET_CREATE);
+  H5Pset_chunk(plist,2,chunk_size);
+  H5Pset_deflate(plist,6);
+
   if(img->scaled){
     dataset_id = H5Dcreate(file_id, "/amplitudes", out_type_id,
-			   dataspace_id, H5P_DEFAULT);
+			   dataspace_id, plist);
     status = H5Dwrite(dataset_id,mem_type_id , H5S_ALL, H5S_ALL,
 		      H5P_DEFAULT, img->amplitudes);
     status = H5Dclose(dataset_id);
   }else{
     dataset_id = H5Dcreate(file_id, "/intensities", out_type_id,
-			   dataspace_id, H5P_DEFAULT);
+			   dataspace_id, plist);
     status = H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		      H5P_DEFAULT, img->intensities);
     status = H5Dclose(dataset_id);
@@ -1084,7 +1091,7 @@ void write_img(Image * img,char * filename, int output_precision){
 
 
   dataset_id = H5Dcreate(file_id, "/mask", out_type_id,
-			 dataspace_id, H5P_DEFAULT);
+			 dataspace_id, plist);
   status = H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		    H5P_DEFAULT, img->mask);
   status = H5Dclose(dataset_id);
@@ -1108,18 +1115,18 @@ void write_img(Image * img,char * filename, int output_precision){
     }
 
     dataset_id = H5Dcreate(file_id, "/phases", out_type_id,
-			   dataspace_id, H5P_DEFAULT);
+			   dataspace_id, plist);
     status = H5Dwrite(dataset_id,mem_type_id, H5S_ALL, H5S_ALL,
 		      H5P_DEFAULT, phases);
     free(phases);
     status = H5Dclose(dataset_id);	
     dataset_id = H5Dcreate(file_id, "/real", out_type_id,
-			   dataspace_id, H5P_DEFAULT);
+			   dataspace_id, plist);
     status = H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		      H5P_DEFAULT, img->r);
     status = H5Dclose(dataset_id);
     dataset_id = H5Dcreate(file_id, "/complex",out_type_id,
-			   dataspace_id, H5P_DEFAULT);
+			   dataspace_id, plist);
     status = H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		    H5P_DEFAULT, img->c);
     status = H5Dclose(dataset_id);
@@ -2580,3 +2587,5 @@ int quadrant_shift_index(Image * a, int index){
   }
   return x*a->detector->size[1]+y;
 }
+
+

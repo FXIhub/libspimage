@@ -23,6 +23,8 @@
   #define fftwr_plan_dft_2d(a,b,c,d,e,f) fftw_plan_dft_2d(a,b,c,d,e,f)
   #define fftwr_plan_dft_r2c_2d(a,b,c,d,e) fftw_plan_dft_r2c_2d(a,b,c,d,e)
   #define fftwr_plan_guru_split_dft(a,b,c,d,e,f,g,h,i) fftw_plan_guru_split_dft(a,b,c,d,e,f,g,h,i)
+  #define fftwr_init_threads() fftw_init_threads()
+  #define fftwr_plan_with_nthreads(a) fftw_plan_with_nthreads(a)
 #else
   typedef fftwf_complex fftwr_complex;
   typedef fftwf_plan fftwr_plan;
@@ -33,6 +35,8 @@
   #define fftwr_plan_dft_2d(a,b,c,d,e,f) fftwf_plan_dft_2d(a,b,c,d,e,f) 
   #define fftwr_plan_dft_r2c_2d(a,b,c,d,e) fftwf_plan_dft_r2c_2d(a,b,c,d,e) 
   #define fftwr_plan_guru_split_dft(a,b,c,d,e,f,g,h,i) fftwf_plan_guru_split_dft(a,b,c,d,e,f,g,h,i)
+  #define fftwr_init_threads() fftwf_init_threads()
+  #define fftwr_plan_with_nthreads(a) fftwf_plan_with_nthreads(a)
 #endif
 
 #endif
@@ -53,7 +57,6 @@ Image * image_rev_fft(Image * img);
 Image * real_image_fft(Image * img);
 Image * image_guru_fft(Image * img);
 Image * image_guru_rev_fft(Image * img);
-
-void create_fft_bench_table(int iter, FILE * f);
+int init_fft(int nthreads);
 
 #endif

@@ -18,6 +18,24 @@ real * fft_shift(real * fftout, Detector *det){
   return img_d;
 }
 
+
+int init_fft(int nthreads){
+  int ret = 0; 
+  if(nthreads == 1){
+    /* No need to do anything*/
+    return 0;
+  }
+#ifdef FFTW3
+  ret = fftwr_init_threads();  
+  if(!ret){
+    perror("Error initializing parallel fftw!\n");
+  }else{
+    fftwr_plan_with_nthreads(nthreads);
+  }  
+#endif
+  return ret;
+}
+
 #ifdef FFTW3
 
 Image * image_rev_fftw3(Image * img){
@@ -286,6 +304,8 @@ Image * image_guru_fftw3(Image * img){
   return res;
 }
 
+
+
 #endif
 
 #ifdef FFTW3
@@ -331,67 +351,3 @@ Image * real_image_fft(Image * img){
 #endif
 
 
-int max_prime_factor(int a){
-  int i;
-  for(i = 2;i*i<=a;i++){
-    while(a % i == 0 && i*i<=a){
-      a /= i;
-    }
-  }
-  return a;
-}
-
-void create_fft_bench_table(int iter, FILE * file){
-  /* Check all sizes from 10^2 to 2000^2 with prime factors smaller than 8 */
-  Image * test = malloc(sizeof(Image));
-  int i,j;
-  int opt_size = 2000;
-  int time_i,time_e;
-  struct timeval tv_i;
-  struct timeval tv_e;
-  struct timezone tz;
-  int min_time = 1000000000;
-  test->detector = malloc(sizeof(Detector));
-  test->mask = NULL;
-  test->image = NULL;
-  test->c = NULL;
-  test->r = NULL;
-  for(i = 2000;i>10;i--){
-    if(max_prime_factor(i) >= 8){
-      fprintf(file,"%d\t%d\t%d\n",i,-1,opt_size);
-      continue;
-    }
-    test->detector->size[0] = i;
-    test->detector->size[1] = i;
-    test->mask = realloc(test->mask,TSIZE(test)*sizeof(real));
-    test->r = realloc(test->r,TSIZE(test)*sizeof(real));
-    test->c = realloc(test->c,TSIZE(test)*sizeof(real));
-    test->image = realloc(test->image,TSIZE(test)*sizeof(real));
-    test->scaled = 1; 
-    test->phased = 1;
-    test->shifted = 1;
-
-
-    for(j = 0;j<TSIZE(test);j++){
-      test->r[i] = box_muller(0,200);
-      test->c[i] = box_muller(0,200);      
-    }
-    gettimeofday(&tv_i,&tz);
-    time_i = tv_i.tv_sec*1000000+tv_i.tv_usec;
-    for(j = 0;j<iter;j++){
-      freeimg(image_fft(test));
-      freeimg(image_rev_fft(test));
-    }    
-    gettimeofday(&tv_e,&tz);
-    time_e = tv_e.tv_sec*1000000+tv_e.tv_usec;
-    if(time_e-time_i < min_time){
-      min_time = time_e-time_i;
-      opt_size = i;
-      fprintf(file,"%d\t%d\t%d\n",i,time_e-time_i,opt_size);    
-    }else{
-      fprintf(file,"%d\t%d\t%d\n",i,-1,opt_size);    
-    }
-
-    fflush(file);
-  }
-}
