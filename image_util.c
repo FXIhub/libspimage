@@ -1,3 +1,9 @@
+#ifdef __MINGW32__
+/* resolve conflict with ssize_t*/
+#define _NO_OLDNAMES
+typedef long off_t;
+#endif
+
 #include <stdlib.h>
 #include <math.h>
 #include <hdf5.h>
