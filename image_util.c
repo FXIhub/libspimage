@@ -1903,9 +1903,6 @@ int write_png(Image * img, char * filename, int color){
 	value = ((img->image[i]-offset)*scale);
       }
       value *= 255;
-	  if(value < 0 || value > 255){
-		  abort("Wrong value while writing png file!\n");
-	  }
       row_pointers[y][x*3] =  color_table[0][(int)value];
       row_pointers[y][x*3+1] = color_table[1][(int)value];
       row_pointers[y][x*3+2] = color_table[2][(int)value];
