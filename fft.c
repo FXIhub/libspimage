@@ -1,5 +1,5 @@
 #include <stdlib.h>
-#include <sys/time.h>
+/* #include <sys/time.h>*/
 #include <time.h>
 #include <limits.h>
 #include "image.h"
@@ -42,6 +42,7 @@ Image * image_rev_fftw3(Image * img){
   fftwr_complex *out; 
   fftwr_complex *in; 
   fftwr_plan plan;
+  Image * res;
   int i,j;
   if(!img->phased){
     fprintf(stderr,"Error: Trying reverse fft an unphased image!\n");
@@ -52,7 +53,7 @@ Image * image_rev_fftw3(Image * img){
     abort();
   }
 
-  Image * res = create_empty_img(img);
+  res = create_empty_img(img);
   in = (fftwr_complex*) fftwr_malloc(sizeof(fftwr_complex) * (img->detector->size[1])*(img->detector->size[0]));  
   out = (fftwr_complex*) fftwr_malloc(sizeof(fftwr_complex) * (img->detector->size[1])*(img->detector->size[0]));
   plan = fftwr_plan_dft_2d(img->detector->size[0],img->detector->size[1],in,out, FFTW_BACKWARD,FFTW_ESTIMATE);
@@ -263,6 +264,8 @@ Image * image_fftw2(Image * img){
 Image * image_guru_fftw3(Image * img){
   fftwr_plan plan;
   fftw_iodim dims[2];
+  Image * res;
+  real * zero;
   int i;
 
   dims[0].n = img->detector->size[0];
@@ -271,8 +274,8 @@ Image * image_guru_fftw3(Image * img){
   dims[1].n = img->detector->size[1];
   dims[1].is = 1;
   dims[1].os = 1;
-  Image * res = create_empty_img(img);
-  real * zero = NULL;
+  res = create_empty_img(img);
+  zero = NULL;
 
   if(!res->phased){
     res->c = malloc(sizeof(real)*TSIZE(res));

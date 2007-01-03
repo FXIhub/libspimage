@@ -4,10 +4,23 @@
 
 #ifdef DOUBLE
 typedef double real;
+#define REAL_MAX DBL_MAX
 #else
 typedef float real;
+#define REAL_MAX FLT_MAX
 #endif
 
+
+#if defined(_WIN32) || defined(WIN32) /* Win32 version */
+#ifdef spimage_EXPORTS
+#  define spimage_EXPORT __declspec(dllexport)
+#else
+#  define spimage_EXPORT __declspec(dllimport)
+#endif
+#else
+/* unix needs nothing */
+#define spimage_EXPORT
+#endif
 
 /*! Structure that keeps all the information about the Detector type.
 

@@ -4,6 +4,10 @@
 typedef long off_t;
 #endif
 
+#ifndef PNG_DEBUG
+#  define PNG_DEBUG 3
+#endif
+
 #include <stdlib.h>
 #include <math.h>
 #include <hdf5.h>
@@ -13,8 +17,14 @@ typedef long off_t;
 #include "image_util.h"
 #include "fft.h"
 
+
 static Image * zero_pad_shifted_image(Image * a, int newx, int newy, int pad_mask);
 static Image * zero_pad_unshifted_image(Image * a, int newx, int newy, int pad_mask);
+
+real p_drand48(){
+	real ret = ((double)rand())/(double)RAND_MAX;
+  return (ret);
+}
 
 /* Returns the patterson from diffraction image a */
 Image * patterson_function(Image * a){
@@ -363,7 +373,7 @@ Image * old_make_unshifted_image_square(Image * in){
 Image * shift_quadrants(Image * img){
   Image * out;
   int i;
-  int index1,index2;;
+  int index1,index2;
   int x,y;
   int newx,newy;
   int max_x,max_y;
@@ -710,7 +720,7 @@ void random_rephase(Image *  img){
     img->c = calloc(TSIZE(img),sizeof(real));
   }
   for(i = 0;i<TSIZE(img);i++){
-    phase = drand48()*M_PI*2;
+    phase = p_drand48()*M_PI*2;
     img->r[i] = cos(phase)*img->amplitudes[i];
     img->c[i] = sin(phase)*img->amplitudes[i];
   }
@@ -834,8 +844,8 @@ float box_muller(float m, float s){
     use_last = 0;
   }  else {
     do {
-      x1 = 2.0 * drand48() - 1.0;
-      x2 = 2.0 * drand48() - 1.0;
+      x1 = 2.0 * p_drand48() - 1.0;
+      x2 = 2.0 * p_drand48() - 1.0;
       w = x1 * x1 + x2 * x2;
     } while ( w >= 1.0 );
     
@@ -1655,9 +1665,50 @@ int write_mask_to_png(Image * img, char * filename, int color){
   return ret;
 }
 
+
+#ifdef _WIN32
+  /* png_init_io seems to crash in windows using GnuWin32 libpng-1.2.8*/
+
+#  define READFILE(file, data, length, check) \
+     check=(png_size_t)fread(data,(png_size_t)1,length,file)
+#  define WRITEFILE(file, data, length, check) \
+     check=(png_size_t)fwrite(data,(png_size_t)1, length, file)
+#define NEAR_BUF_SIZE 1024
+
+static void
+pngtest_write_data(png_structp png_ptr, png_bytep data, png_size_t length)
+{
+   png_uint_32 check;
+
+   WRITEFILE((FILE *)png_ptr->io_ptr,  data, length, check);
+   if (check != length)
+   {
+      png_error(png_ptr, "Write Error");
+   }
+}
+
+static void
+pngtest_read_data(png_structp png_ptr, png_bytep data, png_size_t length)
+{
+   png_size_t check;
+
+   /* fread() returns 0 on error, so it is OK to store this in a png_size_t
+    * instead of an int, which is what fread() actually returns.
+    */
+   READFILE((png_FILE_p)png_ptr->io_ptr, data, length, check);
+
+   if (check != length)
+   {
+      png_error(png_ptr, "Read Error!");
+   }
+}
+#endif 
+
 Image * read_png(char * filename){
  FILE *fp = fopen(filename, "rb");
  int i,j,index;
+ png_uint_32 width,height;
+ int bit_depth,color_type,interlace_type,compression_type,filter_method;
  png_structp png_ptr = png_create_read_struct
    (PNG_LIBPNG_VER_STRING, (png_voidp)NULL,
     NULL,NULL);
@@ -1665,9 +1716,11 @@ Image * read_png(char * filename){
  png_infop end_info = png_create_info_struct(png_ptr);
  png_byte ** row_pointers;
  Image * res;
+#ifdef _WIN32
+ png_set_read_fn(png_ptr, (png_voidp)fp, pngtest_read_data);
+#else
  png_init_io(png_ptr, fp);
- png_uint_32 width,height;
- int bit_depth,color_type,interlace_type,compression_type,filter_method;
+#endif
  png_read_info(png_ptr, info_ptr);
  png_get_IHDR(png_ptr, info_ptr, &width, &height,
 	      &bit_depth, &color_type, &interlace_type,
@@ -1694,7 +1747,11 @@ Image * read_png(char * filename){
  return res;
 }
 
+
+
+
 int write_png(Image * img, char * filename, int color){
+
   FILE *fp = fopen(filename, "wb");
   
   png_structp png_ptr; 
@@ -1704,16 +1761,18 @@ int write_png(Image * img, char * filename, int color){
   int interlace_type = PNG_INTERLACE_NONE;
   int compression_type = PNG_COMPRESSION_TYPE_DEFAULT;
   int filter_method = PNG_FILTER_TYPE_DEFAULT;
-  /* ATTENTION PNG_TRANSFORM_SWAP_ENDIAN problably needs to be turned off in big endian machines */
-  int png_transforms = PNG_TRANSFORM_IDENTITY|PNG_TRANSFORM_INVERT_MONO;
+  int png_transforms = PNG_TRANSFORM_IDENTITY/*|PNG_TRANSFORM_INVERT_MONO*/;
   int pixel_size = 0;
   int i,x,y;
   real log_of_2;
   real color_table[3][256];
   real scale,offset,max_v,min_v,value;
-  max_v = 0;
-  min_v = DBL_MAX;
   png_byte ** row_pointers;
+
+  /*fclose(fp);
+  return 0;*/
+  max_v = 0;
+  min_v = REAL_MAX;
 
 /* Fill color tables */
 
@@ -1793,21 +1852,26 @@ int write_png(Image * img, char * filename, int color){
     abort();
     return (-1);
   }
-  png_init_io(png_ptr, fp);
+  #ifdef _WIN32
+    png_set_write_fn(png_ptr, (png_voidp)fp,  pngtest_write_data,NULL);
+  #else
+   png_init_io(png_ptr, fp);
+  #endif
+
   
   color_type = PNG_COLOR_TYPE_RGB;
   /* 8 bits 3 channels */
   pixel_size = 3*1;
-  
+   /* png_set_compression_level(png_ptr,Z_BEST_COMPRESSION); */
   png_set_IHDR(png_ptr, info_ptr, img->detector->size[0], img->detector->size[1],
 	       bit_depth, color_type, interlace_type,
 	       compression_type, filter_method);
   
   
-  png_set_compression_level(png_ptr,Z_BEST_COMPRESSION);
+
   row_pointers = png_malloc(png_ptr,img->detector->size[1]*sizeof(png_byte *));
   for (i=0; i<img->detector->size[1]; i++){
-    row_pointers[i] = png_malloc(png_ptr,img->detector->size[0]*pixel_size);
+    row_pointers[i] = png_malloc(png_ptr,img->detector->size[0]*pixel_size*sizeof(png_byte));
   }
   
   /* We're gonna scale the image so that it fits on the 8 bits */
@@ -1839,6 +1903,9 @@ int write_png(Image * img, char * filename, int color){
 	value = ((img->image[i]-offset)*scale);
       }
       value *= 255;
+	  if(value < 0 || value > 255){
+		  abort("Wrong value while writing png file!\n");
+	  }
       row_pointers[y][x*3] =  color_table[0][(int)value];
       row_pointers[y][x*3+1] = color_table[1][(int)value];
       row_pointers[y][x*3+2] = color_table[2][(int)value];
@@ -1955,6 +2022,7 @@ Image * low_pass_gaussian_filter(Image * in, int edge_size){
 /* Filter using a centered gaussian window of side edge_size */
 Image * gaussian_filter(Image * in, real radius,int in_place){
   Image * res;
+  const real scaling_factor = 7;
   int i;
   real scaling;
   if(in_place){
@@ -1963,7 +2031,7 @@ Image * gaussian_filter(Image * in, real radius,int in_place){
     res = imgcpy(in);
   }
   /* the scaling of 7 makes sure the pattern is scaled by 0.0009 at the edge */
-  const real scaling_factor = 7;
+
   for(i = 0;i<TSIZE(in);i++){
     scaling = (dist_to_center(i,in)/(radius))*(dist_to_center(i,in)/(radius));
     res->image[i] *= exp(-scaling*scaling_factor);
@@ -2241,12 +2309,13 @@ int write_vtk(Image * img, char * filename){
 
 
 Image * rectangle_crop(Image * in, int x1, int y1, int x2, int y2){
+  Image * cropped;
+  int i;
   /* x1,y1 should be upper left, x2,y2 lower right */
   if(x1 > x2 || y1 > y2){
     return NULL;
   }
-  Image * cropped = create_empty_img(in);
-  int i;
+  cropped = create_empty_img(in);
   cropped->detector->image_center[0] -= x1;
   cropped->detector->image_center[1] -= y1;
   cropped->detector->size[0] = x2-x1+1;

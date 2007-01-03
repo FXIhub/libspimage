@@ -1,6 +1,9 @@
 #ifndef _FFT_H_
 #define _FFT_H_
 
+#ifndef M_PI
+#define M_PI 3.1415926535897932846
+#endif
 
 #define FFTW3
 /* #define FFTW2 */
@@ -52,11 +55,11 @@
 #define image_guru_fft(a) image_fftw2(a) 
 #endif
 
-Image * image_fft(Image * img);
-Image * image_rev_fft(Image * img);
-Image * real_image_fft(Image * img);
-Image * image_guru_fft(Image * img);
-Image * image_guru_rev_fft(Image * img);
-int init_fft(int nthreads);
+spimage_EXPORT Image * image_fft(Image * img);
+spimage_EXPORT Image * image_rev_fft(Image * img);
+spimage_EXPORT Image * real_image_fft(Image * img);
+spimage_EXPORT Image * image_guru_fft(Image * img);
+spimage_EXPORT Image * image_guru_rev_fft(Image * img);
+spimage_EXPORT int init_fft(int nthreads);
 
 #endif
