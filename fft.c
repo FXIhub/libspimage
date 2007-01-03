@@ -2,9 +2,8 @@
 /* #include <sys/time.h>*/
 #include <time.h>
 #include <limits.h>
-#include "image.h"
-#include "image_util.h"
-#include "fft.h"
+#include "spimage.h"
+
 
 
 real * fft_shift(real * fftout, Detector *det){

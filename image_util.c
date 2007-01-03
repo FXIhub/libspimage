@@ -14,8 +14,7 @@ typedef long off_t;
 #include <tiffio.h>
 #include <png.h>
 #include <float.h>
-#include "image_util.h"
-#include "fft.h"
+#include "spimage.h"
 
 
 static Image * zero_pad_shifted_image(Image * a, int newx, int newy, int pad_mask);
