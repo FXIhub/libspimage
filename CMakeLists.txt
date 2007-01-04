@@ -44,8 +44,8 @@ IF(CMAKE_MAJOR_VERSION GREATER 1)
 	            RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
 	            LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib${LIBRARY_SUFFIX}
 	            ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib${LIBRARY_SUFFIX}/static)
-		INSTALL(FILES spimage/fft.h spimage/image_util.h spimage/image.h DESTINATION /usr/include/spimage)
-		INSTALL(FILES spimage.h DESTINATION /usr/include/)
+		INSTALL(FILES spimage/fft.h spimage/image_util.h spimage/image.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/spimage)
+		INSTALL(FILES spimage.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/)
 	ELSE(CMAKE_MINOR_VERSION GREATER 0)
 		INSTALL_FILES(/include/ .h spimage)
 		INSTALL_FILES(/include/spimage .h spimage/fft spimage/image_util spimage/image)
