@@ -20,12 +20,11 @@ ENDIF(UNIX AND CMAKE_SIZEOF_VOID_P EQUAL 8)
 
 FIND_LIBRARY (TIFF_LIBRARY tiff /usr/lib /sw/lib)
 FIND_LIBRARY (PNG_LIBRARY png /usr/lib /sw/lib)
-FIND_LIBRARY (FFTW3_LIBRARY fftw3 /usr/lib /sw/lib)
 FIND_LIBRARY (HDF5_LIBRARY hdf5 /usr/lib /sw/lib)
 
 IF(WIN32)
+FIND_LIBRARY (FFTW3_LIBRARY fftw3 /usr/lib /sw/lib)
 ELSE(WIN32)
-
 FIND_LIBRARY (FFTW3F_LIBRARY fftw3f /usr/lib /sw/lib)
 FIND_LIBRARY (FFTW3F_THREADS_LIBRARY fftw3f_threads /usr/lib /sw/lib)	
 FIND_LIBRARY (PTHREAD_LIBRARY pthread /usr/lib /sw/lib)	
