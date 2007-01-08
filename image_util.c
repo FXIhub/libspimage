@@ -2659,4 +2659,103 @@ int quadrant_shift_index(Image * a, int index){
   return x*a->detector->size[1]+y;
 }
 
+/*
+  Returns the value of the distance between
+  "point" (Or the img center in case "point" is NULL)
+  and the border of the image in a certain direction
+  specified by an angle (in radians)
+  The point of intersection is returned
+  in "intersection".
+*/
 
+real get_image_radial_distance_to_border(Image * img, real * point, real direction, real * intersection){x
+  real d1,d2;
+  real x1,y1,x2,y2;
+  real * center;
+  int * dim;
+  if(point){
+    center = point;
+  }else{
+    center = img->detector->image_center;
+  }
+  dim = img->detector->size;
+  if(cos(direction)>0){
+    /* d1 assumes that the intersection is with the right border */
+    y1 = dim[1]-1-(center[1]+tan(direction)*(dim[0]-center[0]));
+    x1 = dim[0]-1; 
+  }else{
+    /* d1 assumes that the intersection is with the left border */
+    y1 = dim[1]-1-(center[1]-(tan(direction))*(center[0]));
+    x1 = 0; 
+  }
+  d1 = sqrt((x1-center[0])*(x1-center[0])+(y1-center[1])*(y1-center[1]));
+  if(sin(direction) > 0){
+    /* d2 assumes that the intersection is with the upper border */
+    x2 = center[0]+(1.0/tan(direction))*(dim[1]-center[1]);
+    y2 = 0;
+  }else{
+    /* d2 assumes that the intersection is with the lower border */
+    x2 = center[0]-(1.0/tan(direction))*(dim[1]-center[1]);
+    y2 = dim[1]-1;
+  }
+  d2 = sqrt((x2-center[0])*(x2-center[0])+(y2-center[1])*(y2-center[1]));
+  if(d1 < d2){
+    intersection[0] = x1;
+    intersection[1] = y1;
+    return d1;
+  }else{
+    intersection[0] = x2;
+    intersection[1] = y2;
+    return d2;
+  }              
+}
+
+/* 
+   returns the values of the image along a radial
+   sector in a certain direction(in radians)
+   samples defines how many values we return
+   
+   The origin of the vector is given by point,
+   or by the image center if point is NULL.
+
+   intersection old the position of the image where the 
+   sector vector intersect the image border.
+
+   The values are obtained by linear interpolation
+ */
+Image * get_image_radial_sector(Image * img, real * point, real direction, int samples, real * intersection){
+  int i;
+  Image  *ret = create_new_img(samples,1);
+  real fpixel[2];
+  real d_to_border;
+  int px0,py0;
+  real t,u;
+  real * center;
+  int * dim;
+  if(point){
+    center = point;
+  }else{
+    center = img->detector->image_center;
+  }
+  dim = img->detector->size;
+  d_to_border = radial_distance_to_border(img,center,direction, intersection);
+  for(i = 0;i<samples;i++){
+    fpixel[0] = center[0]+cos(direction)*d_to_border*((real)i/samples);
+    /* The dim[1]- happens because the pixel 0,0 on an image is the upper left not the lower left */
+    fpixel[1] = dim[1]-(center[1]+sin(direction)*d_to_border*((real)i/samples));
+    /* bilinear interpolation around fpixel */
+    px0 = (int)fpixel[0];
+    py0 = (int)fpixel[1];
+    t = (fpixel[0]-px0);
+    u = (fpixel[1]-py0);
+    ret->image[i] =  (1.0-t) * (1.0-u) * img->image[py0*dim[0]+px0]+
+	  t * (1.0-u) * img->image[(py0+1)*dim[0]+px0]+
+	  t * u * img->image[(py0+1)*dim[0]+px0+1]+
+	  (1.0-t)* u * img->image[(py0)*dim[0]+px0+1];
+    ret->mask[i] =  (1.0-t) * (1.0-u) * img->mask[py0*dim[0]+px0]+
+	  t * (1.0-u) * img->mask[(py0+1)*dim[0]+px0]+
+	  t * u * img->mask[(py0+1)*dim[0]+px0+1]+
+	  (1.0-t)* u * img->mask[(py0)*dim[0]+px0+1];
+  }
+  return ret;  
+}

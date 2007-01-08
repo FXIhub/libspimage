@@ -121,6 +121,8 @@ spimage_EXPORT Image * create_empty_img(Image * a);
 spimage_EXPORT Image * create_new_img(int x, int y);
 /*@}*/
 
+
+
 /** @defgroup ImageCrop Image Cropping
  *  Crops parts of the image
  *  @{
@@ -138,6 +140,30 @@ spimage_EXPORT Image * limit_resolution(Image * img, int resolution);
   and lower right corner (x2,y2).
  */
 spimage_EXPORT Image * rectangle_crop(Image * in, int x1, int y1, int x2, int y2); 
+/*! 
+   Returns the values of the image along a radial
+   sector in a certain direction(in radians)
+   samples defines how many values we return
+   
+   The origin of the vector is given by point,
+   or by the image center if point is NULL.
+
+   intersection old the position of the image where the 
+   sector vector intersect the image border.
+
+   The values are obtained by linear interpolation
+ */
+spimage_EXPORT Image * get_image_radial_sector(Image * img, real * point, real direction, int samples, real * intersection);
+
+/*! Returns the value of the distance between
+  "point" (Or the img center in case "point" is NULL)
+  and the border of the image in a certain direction
+  specified by an angle (in radians)
+  The point of intersection is returned
+  in "intersection".
+*/
+spimage_EXPORT real get_image_radial_distance_to_border(Image * img, real * point, real direction, real * intersection);
+
 /*@}*/
 
 
@@ -303,4 +329,5 @@ spimage_EXPORT int quadrant_shift_index(Image * a, int index);
 spimage_EXPORT Image * normalize_image(Image * in);
 
 spimage_EXPORT real p_drand48();
+
 #endif
