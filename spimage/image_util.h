@@ -164,6 +164,13 @@ spimage_EXPORT Image * get_image_radial_sector(Image * img, real * point, real d
 */
 spimage_EXPORT real get_image_radial_distance_to_border(Image * img, real * point, real direction, real * intersection);
 
+/*! Takes a sector and rotates it around the center to create an image.
+  It assumes the sector is pixel scaled (each bin 1 pixel ).
+  That is it does not try to stretch the sector to cover the image.
+*/
+spimage_EXPORT Image * circular_image_from_sector(Image * sector, int * size, real * center);
+
+
 /*@}*/
 
 

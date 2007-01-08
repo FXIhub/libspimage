@@ -2668,7 +2668,7 @@ int quadrant_shift_index(Image * a, int index){
   in "intersection".
 */
 
-real get_image_radial_distance_to_border(Image * img, real * point, real direction, real * intersection){x
+real get_image_radial_distance_to_border(Image * img, real * point, real direction, real * intersection){
   real d1,d2;
   real x1,y1,x2,y2;
   real * center;
@@ -2758,4 +2758,36 @@ Image * get_image_radial_sector(Image * img, real * point, real direction, int s
 	  (1.0-t)* u * img->mask[(py0)*dim[0]+px0+1];
   }
   return ret;  
+}
+
+
+/*
+  Takes a sector and rotates it around the center to create an image.
+  It assumes the sector is pixel scaled (each bin 1 pixel ).
+  That is it does not try to stretch the sector to cover the image.
+*/
+
+Image * circular_image_from_sector(Image * sector, int * img_size, real * center){
+  int x,y;
+  Image * ret = create_new_img(img_size[0],img_size[1]);
+  int bin;
+  real d;
+  real u;
+  for(x = 0;x<img_size[0];x++){
+    for(y = 0;y<img_size[1];y++){
+      /* calculate distance to the center and sample from sector accordingly */
+      d = sqrt((x-center[0])*(x-center[0])+(y-center[1])*(y-center[1]));
+      bin = d;
+      u = d-bin;
+      if(d+1 < sector->detector->size[0]-1){
+	ret->image[y*img_size[0]+x] = (1.0-u)*sector->image[bin];
+	ret->image[y*img_size[0]+x] += (u)*sector->image[bin+1];
+	ret->mask[y*img_size[0]+x] = 1;
+      }else{
+	ret->image[y*img_size[0]+x] = 0;
+	ret->mask[y*img_size[0]+x] = 0;
+      }
+    }
+  }
+  return ret;
 }
