@@ -2700,12 +2700,16 @@ real get_image_radial_distance_to_border(Image * img, real * point, real directi
   }
   d2 = sqrt((x2-center[0])*(x2-center[0])+(y2-center[1])*(y2-center[1]));
   if(d1 < d2){
-    intersection[0] = x1;
-    intersection[1] = y1;
+    if(intersection){
+      intersection[0] = x1;
+      intersection[1] = y1;
+    }
     return d1;
   }else{
-    intersection[0] = x2;
-    intersection[1] = y2;
+    if(intersection){
+      intersection[0] = x2;
+      intersection[1] = y2;
+    }
     return d2;
   }              
 }
@@ -2738,7 +2742,7 @@ Image * get_image_radial_sector(Image * img, real * point, real direction, int s
     center = img->detector->image_center;
   }
   dim = img->detector->size;
-  d_to_border = radial_distance_to_border(img,center,direction, intersection);
+  d_to_border = get_image_radial_distance_to_border(img,center,direction, intersection);
   for(i = 0;i<samples;i++){
     fpixel[0] = center[0]+cos(direction)*d_to_border*((real)i/samples);
     /* The dim[1]- happens because the pixel 0,0 on an image is the upper left not the lower left */
