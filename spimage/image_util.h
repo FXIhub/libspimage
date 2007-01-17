@@ -140,7 +140,9 @@ spimage_EXPORT Image * limit_resolution(Image * img, int resolution);
   and lower right corner (x2,y2).
  */
 spimage_EXPORT Image * rectangle_crop(Image * in, int x1, int y1, int x2, int y2); 
-/*! 
+
+/*! Returns a ray from the image along a given direction
+
    Returns the values of the image along a radial
    sector in a certain direction(in radians)
    samples defines how many values we return
@@ -155,7 +157,9 @@ spimage_EXPORT Image * rectangle_crop(Image * in, int x1, int y1, int x2, int y2
  */
 spimage_EXPORT Image * get_image_radial_sector(Image * img, real * point, real direction, int samples, real * intersection);
 
-/*! Returns the value of the distance between
+/*! Gives the distance to the border on a given direction
+
+  Returns the value of the distance between
   "point" (Or the img center in case "point" is NULL)
   and the border of the image in a certain direction
   specified by an angle (in radians)
@@ -164,7 +168,9 @@ spimage_EXPORT Image * get_image_radial_sector(Image * img, real * point, real d
 */
 spimage_EXPORT real get_image_radial_distance_to_border(Image * img, real * point, real direction, real * intersection);
 
-/*! Takes a sector and rotates it around the center to create an image.
+/*! Creates a circular symmetric window by rotating a sector around center
+
+  Takes a sector and rotates it around the center to create an image.
   It assumes the sector is pixel scaled (each bin 1 pixel ).
   That is it does not try to stretch the sector to cover the image.
 */
@@ -298,6 +304,14 @@ spimage_EXPORT Image * circular_window(int x, int y, int radius, int shifted);
  */
 spimage_EXPORT real point_convolute_img(Image * a, Image * b, int i);
 
+
+/*! Returns the variance of the image in respect to the vicinity defined by window
+ *
+ * This function convolutes img with the window (making sure there's no aliasing)
+ * and then returns the difference between this averaged image and the input img
+ */
+
+spimage_EXPORT Image * image_local_variance(Image * img, Image * window);
 /*@}*/
 
 spimage_EXPORT void add_gaussian_noise(Image * in, real level);
