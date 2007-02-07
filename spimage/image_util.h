@@ -190,6 +190,14 @@ spimage_EXPORT void add_image(Image * a, Image * b);
 /*! Subtract Image b from Image a
  */
 spimage_EXPORT void sub_image(Image * a, Image * b);
+
+
+/*! Calculates the dot product of a and b
+ *
+ * 
+ */
+spimage_EXPORT Image * sp_dot_product(Image * a, Image * b);
+
 /*! Returns the phase of a complexed value pixel.
  */
 spimage_EXPORT real get_phase_angle(Image * img, int i);

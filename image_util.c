@@ -202,14 +202,12 @@ Image * make_shifted_image_square(Image * in){
   if(in->detector->size[0] > in->detector->size[1]){
     /* remove a column */
     out->detector->size[0] = in->detector->size[1];
+    free(out->image);
+    out->image = malloc(sizeof(real)*TSIZE(out));
     if(out->scaled){
-      free(out->amplitudes);
-      out->amplitudes = malloc(sizeof(real)*TSIZE(out));
-      out->image = out->amplitudes;
+      out->amplitudes = out->image;
     }else{
-      free(out->intensities);
-      out->intensities = malloc(sizeof(real)*TSIZE(out));
-      out->image = out->intensities;
+      out->intensities = out->image;
     }
     free(out->mask);
     out->mask = malloc(sizeof(real)*TSIZE(out));
@@ -231,14 +229,12 @@ Image * make_shifted_image_square(Image * in){
   }else if(in->detector->size[0] < in->detector->size[1]){
     /* remove a line */
     out->detector->size[1] = in->detector->size[0];
+    free(out->image);
+    out->image = malloc(sizeof(real)*TSIZE(out));      
     if(out->scaled){
-      free(out->amplitudes);
-      out->amplitudes = malloc(sizeof(real)*TSIZE(out));
-      out->image = out->amplitudes;
+      out->amplitudes = out->image;
     }else{
-      free(out->intensities);
-      out->intensities = malloc(sizeof(real)*TSIZE(out));
-      out->image = out->intensities;
+      out->intensities = out->image;
     }
     free(out->mask);
     out->mask = malloc(sizeof(real)*TSIZE(out));
@@ -291,14 +287,12 @@ Image * old_make_unshifted_image_square(Image * in){
     out->detector->image_center[0] /= out->detector->size[0];
     /* remove columns */
     out->detector->size[0] = in->detector->size[1];
+    free(out->image);
+    out->image = malloc(sizeof(real)*TSIZE(out));
     if(out->scaled){
-      free(out->amplitudes);
-      out->amplitudes = malloc(sizeof(real)*TSIZE(out));
-      out->image = out->amplitudes;
+      out->amplitudes = out->image;
     }else{
-      free(out->intensities);
-      out->intensities = malloc(sizeof(real)*TSIZE(out));
-      out->image = out->intensities;
+      out->intensities = out->image;
     }
     
     free(out->mask);
@@ -326,14 +320,12 @@ Image * old_make_unshifted_image_square(Image * in){
     out->detector->image_center[1] /= out->detector->size[1];
     /* remove lines */
     out->detector->size[1] = in->detector->size[0];
+    free(out->image);
+      out->image = malloc(sizeof(real)*TSIZE(out));
     if(out->scaled){
-      free(out->amplitudes);
-      out->amplitudes = malloc(sizeof(real)*TSIZE(out));
-      out->image = out->amplitudes;
+      out->amplitudes = out->image;
     }else{
-      free(out->intensities);
-      out->intensities = malloc(sizeof(real)*TSIZE(out));
-      out->image = out->intensities;
+      out->intensities = out->image;
     }
     free(out->mask);
     out->mask = malloc(sizeof(real)*TSIZE(out));
@@ -481,12 +473,11 @@ Image * limit_resolution(Image * img, int resolution){
   res->detector->size[1] = resolution*2;
   free(res->image);
   free(res->mask);
+  res->image = malloc(sizeof(real)*TSIZE(res));
   if(res->scaled){
-    res->amplitudes = malloc(sizeof(real)*TSIZE(res));
-    res->image = res->amplitudes;    
+    res->amplitudes = res->image;
   }else{
-    res->intensities = malloc(sizeof(real)*TSIZE(res));
-     res->image = res->intensities;    
+    res->intensities = res->image;
   }
   if(res->phased){
     free(res->c);
@@ -720,8 +711,8 @@ void random_rephase(Image *  img){
   }
   for(i = 0;i<TSIZE(img);i++){
     phase = p_drand48()*M_PI*2;
-    img->r[i] = cos(phase)*img->amplitudes[i];
-    img->c[i] = sin(phase)*img->amplitudes[i];
+    img->r[i] = cos(phase)*img->image[i];
+    img->c[i] = sin(phase)*img->image[i];
   }
   img->phased = 1;    
 }
@@ -779,16 +770,16 @@ real get_phase_angle(Image * img, int i){
 
 
 real real_factor(Image * img, int i){
-  if(img->amplitudes[i]){
-    return img->r[i]/img->amplitudes[i];
+  if(img->image[i]){
+    return img->r[i]/img->image[i];
   }else{
     return 1;
   }
 }
 
 real complex_factor(Image * img, int i){
-  if(img->amplitudes[i]){
-    return img->c[i]/img->amplitudes[i];
+  if(img->image[i]){
+    return img->c[i]/img->image[i];
   }else{
     return 0;
   }
@@ -871,7 +862,7 @@ void add_gaussian_noise(Image * in, real level){
     if(in->phased){
       in->r[i] *= (1.0+box_muller(0,level));
       in->c[i] *= (1.0+box_muller(0,level));
-      in->amplitudes[i] = norm(in,i);      
+      in->image[i] = norm(in,i);      
     }else{
       in->image[i] *= (1.0+box_muller(0,level));
     }
@@ -903,11 +894,7 @@ void remove_lowres(Image * in, real radius){
 	  in->r[x*in->detector->size[1]+y] = 0;
 	  in->c[x*in->detector->size[1]+y] = 0;
 	}
-	if(in->scaled){
-	  in->amplitudes[x*in->detector->size[1]+y] = 0;
-	}else{
-	  in->intensities[x*in->detector->size[1]+y] = 0;
-	}
+	in->image[x*in->detector->size[1]+y] = 0;
       }
     }
   }
@@ -915,11 +902,7 @@ void remove_lowres(Image * in, real radius){
 
 void freeimg(Image * in){
   free(in->detector);
-  if(in->scaled){
-    free(in->amplitudes);
-  }else{
-    free(in->intensities);
-  }
+  free(in->image);
   if(in->phased){
     free(in->c);
     free(in->r);
@@ -942,23 +925,16 @@ Image * imgcpy(Image * in){
   }
 
   memcpy(res->detector,in->detector,sizeof(Detector));
+  res->image = malloc(sizeof(real)*TSIZE(res));
+  if(!res->image){
+    perror("Out of memory!\n");
+    abort();
+  }
+  memcpy(res->image,in->image,sizeof(real)*TSIZE(res)); 
   if(in->scaled){
-    res->amplitudes = malloc(sizeof(real)*TSIZE(res));
-    if(!res->amplitudes){
-      perror("Out of memory!\n");
-      abort();
-    }
-    memcpy(res->amplitudes,in->amplitudes,sizeof(real)*TSIZE(res));
-    res->image = res->amplitudes;
+    res->amplitudes = res->image;
   }else{
-    res->intensities = malloc(sizeof(real)*TSIZE(res));
-    if(!res->intensities){
-      perror("Out of memory!\n");
-      abort();
-    }
-
-    memcpy(res->intensities,in->intensities,sizeof(real)*TSIZE(res));
-    res->image = res->intensities;
+    res->intensities = res->image;
   }
   res->mask = malloc(sizeof(real)*TSIZE(res));
   memcpy(res->mask,in->mask,sizeof(real)*TSIZE(res));
@@ -994,20 +970,15 @@ Image * create_empty_img(Image * in){
   }
   memcpy(res->detector,in->detector,sizeof(Detector));
   res->mask = calloc(TSIZE(res),sizeof(real));
+  res->image = calloc(TSIZE(res),sizeof(real));
+  if(!res->image){
+    perror("Out of memory!\n");
+    abort();
+  }  
   if(in->scaled){
-    res->amplitudes = calloc(TSIZE(res),sizeof(real));
-    if(!res->amplitudes){
-      perror("Out of memory!\n");
-      abort();
-    }
-    res->image = res->amplitudes;
+    res->amplitudes = res->image;
   }else{
-    res->intensities = calloc(TSIZE(res),sizeof(real));
-    if(!res->intensities){
-      perror("Out of memory!\n");
-      abort();
-    }
-    res->image = res->intensities;
+    res->intensities = res->image;
   }
   if(in->phased){
     res->c = calloc(TSIZE(res),sizeof(real));
@@ -1394,20 +1365,11 @@ void write_tiff(Image * img, char * filename){
   data = malloc(nstrips*stripsize);
 
   /* Transpose image */
-  if(img->scaled){
-    for(x = 0;(unsigned int)x<(stripsize/sizeof(float));x++){
-      for(y = 0;y<nstrips;y++){
-	data[x+(stripsize/sizeof(float))*y] = img->amplitudes[x*img->detector->size[1]+y];
-      }
-      
+  for(x = 0;(unsigned int)x<(stripsize/sizeof(float));x++){
+    for(y = 0;y<nstrips;y++){
+      data[x+(stripsize/sizeof(float))*y] = img->image[x*img->detector->size[1]+y];
     }
-  }else{
-    for(x = 0;(unsigned int)x<(stripsize/sizeof(float));x++){
-      for(y = 0;y<nstrips;y++){
-	data[x+(stripsize/sizeof(float))*y] = img->intensities[x*img->detector->size[1]+y];
-      }
-      
-    }
+    
   }
 
   TIFFWriteEncodedStrip(tif, 0, data, nstrips*stripsize);
@@ -1578,14 +1540,13 @@ Image * gaussian_blur(Image * in, real radius){
   filter_img->detector->size[1] = filter_side;
   filter_img->detector->image_center[0] = (filter_side-1)/2.0;
   filter_img->detector->image_center[1] = (filter_side-1)/2.0;
+  free(filter_img->image);
+  filter_img->image = filter;
+  
   if(filter_img->scaled){
-    free(filter_img->amplitudes);
-    filter_img->amplitudes = filter;
-    filter_img->image = filter;
+    filter_img->amplitudes = filter_img->image;
   }else{
-    free(filter_img->intensities);
-    filter_img->intensities = filter;
-    filter_img->image = filter;
+    filter_img->intensities = filter_img->image;
   }
   dephase(filter_img);
   for(x = -ceil(radius)*3;x<=ceil(radius)*3;x++){
@@ -1626,14 +1587,12 @@ Image * square_blur(Image * in, real radius){
   filter_img->detector->size[1] = filter_side;
   filter_img->detector->image_center[0] = (filter_side-1)/2.0;
   filter_img->detector->image_center[1] = (filter_side-1)/2.0;
+  free(filter_img->image);
+  filter_img->image = filter;
   if(filter_img->scaled){
-    free(filter_img->amplitudes);
-    filter_img->amplitudes = filter;
-    filter_img->image = filter;
+    filter_img->amplitudes = filter_img->image;
   }else{
-    free(filter_img->intensities);
-    filter_img->intensities = filter;
-    filter_img->image = filter;
+    filter_img->intensities = filter_img->image;
   }
   dephase(filter_img);
   for(x = -ceil(radius)*3;x<=ceil(radius)*3;x++){
@@ -2835,4 +2794,42 @@ Image * image_local_variance(Image * img, Image * window){
   freeimg(norm_window);
 
   return res;
+}
+
+
+
+Image * sp_dot_product(Image * a, Image * b){
+  Image * ret = NULL;
+  int i;
+  if(TSIZE(a) != TSIZE(b)){
+    return ret;
+  }
+  if(a->phased && b->phased){
+    ret = create_empty_img(a);
+    for(i = 0;i<TSIZE(a);i++){
+      ret->r[i] = a->r[i]*b->r[i] - a->c[i]*b->c[i];
+      ret->c[i] = a->c[i]*b->r[i] + a->r[i]*b->c[i];
+    }
+  }else if(a->phased && !b->phased){
+    ret = create_empty_img(a);
+    for(i = 0;i<TSIZE(a);i++){
+      ret->r[i] = a->r[i]*b->image[i];
+      ret->c[i] = a->c[i]*b->image[i];
+    }
+  }else if(!a->phased && b->phased){
+    ret = create_empty_img(b);
+    for(i = 0;i<TSIZE(a);i++){
+      ret->r[i] = b->r[i]*a->image[i];
+      ret->c[i] = b->c[i]*a->image[i];
+    }
+  }else if(!a->phased && !b->phased){
+    ret = create_empty_img(a);
+    for(i = 0;i<TSIZE(a);i++){
+      ret->image[i] = b->image[i]*a->image[i];
+    }
+  }else{
+    fprintf(stderr,"Cannot get here!\n");
+    return NULL;
+  }
+  return ret;
 }
