@@ -119,6 +119,13 @@ spimage_EXPORT Image * create_empty_img(Image * a);
  *  Image in unscaled and unphased.
  */
 spimage_EXPORT Image * create_new_img(int x, int y);
+
+/*! Copies the contents of src to dst.
+ *
+ * Both images must have the same dimensions!
+ */
+spimage_EXPORT void sp_image_memcpy(Image * dst,Image *src);
+
 /*@}*/
 
 
@@ -189,14 +196,27 @@ spimage_EXPORT Image * circular_image_from_sector(Image * sector, int * size, re
 spimage_EXPORT void add_image(Image * a, Image * b);
 /*! Subtract Image b from Image a
  */
-spimage_EXPORT void sub_image(Image * a, Image * b);
+spimage_EXPORT void sp_image_sub(Image * a, Image * b);
+
+/*! Mutiplies Image a with Image b element by element
+ */
+spimage_EXPORT Image * sp_image_mul_elements(Image * a, Image * b);
+
+/*! Transforms an image in its complex conjugate
+ */
+spimage_EXPORT void sp_image_complex_conj(Image * a);
+
+/*! Sets a to 1/a. 
+ */
+spimage_EXPORT int sp_image_invert(Image * a);
 
 
 /*! Calculates the dot product of a and b
  *
- * 
+ * The real part of the result is return in *r and the imaginary part in *j
+ * A return value of 0 means success, otherwise it indicates an error.
  */
-spimage_EXPORT Image * sp_dot_product(Image * a, Image * b);
+spimage_EXPORT int sp_image_dot_prod(Image * a, Image * b, real * r, real * j);
 
 /*! Returns the phase of a complexed value pixel.
  */
@@ -239,6 +259,12 @@ spimage_EXPORT void multiply_scalar_by_image(Image * img, real value);
   value of that pixel
  */
 spimage_EXPORT int get_image_maximum(Image * img, int * x, int * y, real * max);
+
+/*! Returns the phase of the image on each pixel, in radians
+ *
+ * Returns the phase of a in radians, from [0, 2*M_PI[ or NULL if there's an error
+ */
+spimage_EXPORT Image * sp_image_get_phases(Image * a);
 
 /*@}*/
 
@@ -322,6 +348,30 @@ spimage_EXPORT real point_convolute_img(Image * a, Image * b, int i);
 spimage_EXPORT Image * image_local_variance(Image * img, Image * window);
 /*@}*/
 
+
+/** @defgroup Projectors Projector Operators
+ *  Projector Operators for fixed point iterative algorithms
+ *  @{
+ */
+
+/*! Module projector
+ *
+ *  Returns an image that combines the phases of a with the amplitudes of b
+ *  Both images are assumed to be in reciprocal space
+ */
+spimage_EXPORT Image * sp_proj_module(Image * a, Image * b);
+
+/*! Support projector
+ *
+ *  Sets to zero all regions of the image a for which image b is 0
+ *  and keeps the image for regions for which image b is 1
+ *  Both images are assumed to be in real space
+ *
+ *  Warning: Image b must only take values 0 and 1
+ */
+spimage_EXPORT Image * sp_proj_support(Image * a, Image * b);
+
+/*@}*/
 spimage_EXPORT void add_gaussian_noise(Image * in, real level);
 spimage_EXPORT float box_muller(float m, float s);
 spimage_EXPORT real lin_image_interpol(Image * img, real x, real y);
@@ -338,7 +388,6 @@ spimage_EXPORT Image * reflect_x(Image * in, int in_place);
 spimage_EXPORT Image * reflect_y(Image * in, int in_place);
 spimage_EXPORT Image * make_real(Image * in, int in_place);
 spimage_EXPORT Image * centrosym_convolve(Image * in);
-spimage_EXPORT Image * get_phase_image(Image * img);
 spimage_EXPORT Image * get_phase_angle_image(Image * img);
 spimage_EXPORT Image * zero_pad_image(Image * a, int newx, int newy, int pad_mask);
 spimage_EXPORT Image * shift_center_to_top_left(Image * a);

@@ -718,14 +718,14 @@ void random_rephase(Image *  img){
 }
 
 
-/* returns the phase of index i from [0, 2*M_PI[ or -1 if there's an error */
-Image * get_phase_angle_image(Image * img){
+/* returns the phase of the image from [0, 2*M_PI[ or -1 if there's an error */
+Image * sp_image_get_phases(Image * img){
   Image * res;
   int i;
   if(!img->phased){
     return NULL;
   }
-  res = imgcpy(img);
+  res = create_empty_img(img);
   dephase(res);
   for(i = 0;i<TSIZE(res);i++){
     res->image[i] = get_phase_angle(img,i);
@@ -787,7 +787,7 @@ real complex_factor(Image * img, int i){
 
 
 
-real norm(Image * img, int i){
+inline real norm(Image * img, int i){
   return sqrt(img->r[i]*img->r[i]+img->c[i]*img->c[i]);
 }
 
@@ -807,7 +807,7 @@ void add_image(Image * a, Image * b){
   }
 }
 
-void sub_image(Image * a, Image * b){
+void sp_image_sub(Image * a, Image * b){
   int i;
   if(a->phased && b->phased){
     for(i = 0;i<TSIZE(a);i++){
@@ -2798,32 +2798,106 @@ Image * image_local_variance(Image * img, Image * window){
 
 
 
-Image * sp_dot_product(Image * a, Image * b){
-  Image * ret = NULL;
+int sp_image_dot_prod(Image * a, Image * b, real * r, real * j){
   int i;
+  *r = 0;
+  *j = 0;
   if(TSIZE(a) != TSIZE(b)){
-    return ret;
+    return -1;
   }
   if(a->phased && b->phased){
-    ret = create_empty_img(a);
+    for(i = 0;i<TSIZE(a);i++){
+      *r += a->r[i]*b->r[i] - a->c[i]*b->c[i];
+      *j += a->c[i]*b->r[i] + a->r[i]*b->c[i];
+    }
+  }else if(a->phased && !b->phased){
+    for(i = 0;i<TSIZE(a);i++){
+      *r += a->r[i]*b->image[i];
+      *j += a->c[i]*b->image[i];
+    }
+  }else if(!a->phased && b->phased){
+    for(i = 0;i<TSIZE(a);i++){
+      *r += b->r[i]*a->image[i];
+      *j += b->c[i]*a->image[i];
+    }
+  }else if(!a->phased && !b->phased){
+    for(i = 0;i<TSIZE(a);i++){
+      *r += b->image[i]*a->image[i];
+    }
+  }else{
+    fprintf(stderr,"Cannot get here!\n");
+    return -1;
+  }
+  return 0;
+}
+
+Image * sp_proj_module(Image * a, Image * b){
+  Image * ret = imgcpy(a);
+  int i;
+  for(i = 0;i<TSIZE(a);i++){
+    ret->r[i] = b->image[i]*ret->r[i]/ret->image[i];
+    ret->c[i] = b->image[i]*ret->c[i]/ret->image[i];
+    ret->image[i] = b->image[i];
+  }
+  return ret;
+}
+
+
+Image * sp_proj_support(Image * a, Image * b){
+  Image * ret = imgcpy(a);
+  int i;
+  for(i = 0;i<TSIZE(a);i++){
+    ret->r[i] *= b->image[i];
+    ret->c[i] *= b->image[i];
+    ret->image[i] *= b->image[i];
+  }
+  return ret;
+}
+
+
+int sp_image_invert(Image * a){
+  int i;
+  if(a->phased){
+    for(i = 0;i<TSIZE(a);i++){
+      a->r[i] = 1/a->r[i];
+      a->c[i] = 1/a->c[i];
+      a->image[i] = norm(a,i);
+    }
+  }else{
+    for(i = 0;i<TSIZE(a);i++){
+      a->image[i] = 1/a->image[i];
+    }
+  }
+  return 0;
+}
+
+
+Image * sp_image_mul_elements(Image * a, Image * b){
+  Image * ret = NULL;
+  int i;
+  if(a->phased && b->phased){
+    ret = imgcpy(a);
     for(i = 0;i<TSIZE(a);i++){
       ret->r[i] = a->r[i]*b->r[i] - a->c[i]*b->c[i];
       ret->c[i] = a->c[i]*b->r[i] + a->r[i]*b->c[i];
+      ret->image[i] = norm(ret,i);
     }
   }else if(a->phased && !b->phased){
-    ret = create_empty_img(a);
+    ret = imgcpy(a);
     for(i = 0;i<TSIZE(a);i++){
       ret->r[i] = a->r[i]*b->image[i];
       ret->c[i] = a->c[i]*b->image[i];
+      ret->image[i] *= b->image[i];
     }
   }else if(!a->phased && b->phased){
-    ret = create_empty_img(b);
+    ret = imgcpy(b);
     for(i = 0;i<TSIZE(a);i++){
       ret->r[i] = b->r[i]*a->image[i];
       ret->c[i] = b->c[i]*a->image[i];
+      ret->image[i] *= a->image[i];
     }
   }else if(!a->phased && !b->phased){
-    ret = create_empty_img(a);
+    ret = imgcpy(a);
     for(i = 0;i<TSIZE(a);i++){
       ret->image[i] = b->image[i]*a->image[i];
     }
@@ -2832,4 +2906,24 @@ Image * sp_dot_product(Image * a, Image * b){
     return NULL;
   }
   return ret;
+}
+
+void sp_image_complex_conj(Image * a){  
+  int i;
+  if(a->phased){
+    for(i = 0;i<TSIZE(a);i++){
+      a->c[i] -= a->c[i];
+    }
+  }
+}
+
+
+void sp_image_memcpy(Image * dst,Image * src){  
+  if(src->phased && dst->phased){
+    memcpy(dst->c,src->c,sizeof(real)*TSIZE(src));
+    memcpy(dst->r,src->r,sizeof(real)*TSIZE(src));
+  }
+  memcpy(dst->mask,src->mask,sizeof(real)*TSIZE(src));
+  memcpy(dst->image,src->image,sizeof(real)*TSIZE(src));
+  memcpy(dst->detector,src->detector,sizeof(Detector));
 }

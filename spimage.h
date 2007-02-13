@@ -7,4 +7,5 @@
 #include "spimage/image.h"
 #include "spimage/fft.h"
 #include "spimage/image_util.h"
+#include "spimage/linear_alg.h"
 #endif

@@ -37,7 +37,8 @@ SET(FFTW_LIBRARY ${FFTW3_LIBRARY} ${FFTW3F_LIBRARY} ${FFTW3F_THREADS_LIBRARY} ${
 
 INCLUDE_DIRECTORIES(${FFTW_INCLUDE_DIR} ${PNG_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${HDF5_INCLUDE_DIR})
 
-ADD_LIBRARY(spimage SHARED image_util.c fft.c)
+ADD_LIBRARY(spimage SHARED image_util.c fft.c linear_alg.c)
+ADD_EXECUTABLE(tests image_util.c fft.c linear_alg.c CuTest.c AllTests.c)
 
 IF(CMAKE_MAJOR_VERSION GREATER 1)
 	IF(CMAKE_MINOR_VERSION GREATER 0)
@@ -45,13 +46,14 @@ IF(CMAKE_MAJOR_VERSION GREATER 1)
 	            RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
 	            LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib${LIBRARY_SUFFIX}
 	            ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib${LIBRARY_SUFFIX}/static)
-		INSTALL(FILES spimage/fft.h spimage/image_util.h spimage/image.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/spimage)
+		INSTALL(FILES spimage/fft.h spimage/image_util.h spimage/image.h spimage/linear_alg.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/spimage)
 		INSTALL(FILES spimage.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/)
 	ELSE(CMAKE_MINOR_VERSION GREATER 0)
 		INSTALL_FILES(/include/ .h spimage)
-		INSTALL_FILES(/include/spimage .h spimage/fft spimage/image_util spimage/image)
+		INSTALL_FILES(/include/spimage .h spimage/fft spimage/image_util spimage/linear_alg spimage/image)
 		INSTALL_TARGETS(/lib${LIBRARY_SUFFIX} RUNTIME_DIRECTORY/bin spimage)
 	ENDIF(CMAKE_MINOR_VERSION GREATER 0)
 ENDIF(CMAKE_MAJOR_VERSION GREATER 1)
 
+TARGET_LINK_LIBRARIES(tests ${TIFF_LIBRARY} ${FFTW_LIBRARY} ${PNG_LIBRARY} ${HDF5_LIBRARY})
 TARGET_LINK_LIBRARIES(spimage ${TIFF_LIBRARY} ${FFTW_LIBRARY} ${PNG_LIBRARY} ${HDF5_LIBRARY})

@@ -1,13 +1,18 @@
 #ifndef _CIMAGE_H_
 #define _CIMAGE_H_
 
+#include <float.h>
 
 #ifdef DOUBLE
 typedef double real;
+typedef _Complex double complex;
 #define REAL_MAX DBL_MAX
+#define REAL_EPSILON DBL_EPSILON
 #else
 typedef float real;
+typedef _Complex float complex;
 #define REAL_MAX FLT_MAX
+#define REAL_EPSILON FLT_EPSILON
 #endif
 
 
