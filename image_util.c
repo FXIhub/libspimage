@@ -2807,8 +2807,7 @@ int sp_image_dot_prod(Image * a, Image * b, real * r, real * j){
   }
   if(a->phased && b->phased){
     for(i = 0;i<TSIZE(a);i++){
-      *r += a->r[i]*b->r[i] - a->c[i]*b->c[i];
-      *j += a->c[i]*b->r[i] + a->r[i]*b->c[i];
+      *r += a->r[i]*b->r[i] + a->c[i]*b->c[i];
     }
   }else if(a->phased && !b->phased){
     for(i = 0;i<TSIZE(a);i++){
@@ -2818,7 +2817,7 @@ int sp_image_dot_prod(Image * a, Image * b, real * r, real * j){
   }else if(!a->phased && b->phased){
     for(i = 0;i<TSIZE(a);i++){
       *r += b->r[i]*a->image[i];
-      *j += b->c[i]*a->image[i];
+      *j += -b->c[i]*a->image[i];
     }
   }else if(!a->phased && !b->phased){
     for(i = 0;i<TSIZE(a);i++){
@@ -2847,9 +2846,11 @@ Image * sp_proj_support(Image * a, Image * b){
   Image * ret = imgcpy(a);
   int i;
   for(i = 0;i<TSIZE(a);i++){
-    ret->r[i] *= b->image[i];
-    ret->c[i] *= b->image[i];
-    ret->image[i] *= b->image[i];
+    if(!b->image[i]){
+      ret->r[i] = 0;
+      ret->c[i] = 0;
+      ret->image[i] = 0;
+    }
   }
   return ret;
 }
@@ -2912,7 +2913,7 @@ void sp_image_complex_conj(Image * a){
   int i;
   if(a->phased){
     for(i = 0;i<TSIZE(a);i++){
-      a->c[i] -= a->c[i];
+      a->c[i] = -a->c[i];
     }
   }
 }
@@ -2926,4 +2927,33 @@ void sp_image_memcpy(Image * dst,Image * src){
   memcpy(dst->mask,src->mask,sizeof(real)*TSIZE(src));
   memcpy(dst->image,src->image,sizeof(real)*TSIZE(src));
   memcpy(dst->detector,src->detector,sizeof(Detector));
+}
+
+void sp_image_transpose(Image * a){
+  int i,j;
+  real tmp;
+  int n;
+  /* exchange dimensions */
+  
+  n = a->detector->size[0];
+  a->detector->size[0] = a->detector->size[1];
+  a->detector->size[1] = n;
+  for(i = 0;i<a->detector->size[1];i++){
+    for(j = i;j<a->detector->size[0];j++){
+      if(a->phased){
+	tmp = a->r[j*a->detector->size[0]+i];
+	a->r[j*a->detector->size[0]+i] = a->r[i*a->detector->size[1]+j];
+	a->r[i*a->detector->size[1]+j] = tmp;
+	tmp = a->c[j*a->detector->size[0]+i];
+	a->c[j*a->detector->size[0]+i] = a->c[i*a->detector->size[1]+j];
+	a->c[i*a->detector->size[1]+j] = tmp;
+      }
+      tmp = a->image[j*a->detector->size[0]+i];
+      a->image[j*a->detector->size[0]+i] = a->image[i*a->detector->size[1]+j];
+      a->image[i*a->detector->size[1]+j] = tmp;
+      tmp = a->mask[j*a->detector->size[0]+i];
+      a->mask[j*a->detector->size[0]+i] = a->mask[i*a->detector->size[1]+j];
+      a->mask[i*a->detector->size[1]+j] = tmp;
+    }
+  }
 }

@@ -6,6 +6,7 @@ sp_vector * sp_vector_alloc(const int size){
   sp_vector * ret = malloc(sizeof(sp_vector));
   ret->size = size;
   ret->data = calloc(size,sizeof(real));
+  return ret;
 }
 
 
@@ -13,6 +14,7 @@ sp_cvector * sp_cvector_alloc(const int size){
   sp_cvector * ret = malloc(sizeof(sp_cvector));
   ret->size = size;
   ret->data = calloc(size,sizeof(complex));
+  return ret;
 }
 
 void sp_vector_free(sp_vector * v){
@@ -44,32 +46,60 @@ void sp_matrix_free(sp_matrix * a){
 
 
 
-void sp_matrix_invert(sp_matrix * a){
-  /* Try to invert a matrix by gaussian elimination */
-  int n = a->cols;
-  double t,ten;
-  int i,j,k,kb,kp1,l,nm1;
-  real * ipvt = calloc(n,sizeof(real));
-  real * work = calloc(n,sizeof(real));
+
+
+void sp_matrix_invert(sp_matrix * m){
+  int n,i,j;
+  real x;
+  sp_matrix * inv = sp_matrix_alloc(m->rows,m->cols);
+  sp_matrix_set_identity(inv);
+  /* triangularize the matrix */
+  /* For every row */
+  for(i = 0;i<m->rows;i++){
+    /* set leading element to 1 */
+    x = 1.0/sp_matrix_get(m,i,i);
+    sp_matrix_scale_row(m,i,x);
+    sp_matrix_scale_row(inv,i,x);
+    /* For every row below us*/
+    for(j = i+1;j<m->rows;j++){
+      /* set leading element to 0 */
+      x = -sp_matrix_get(m,j,i);
+      sp_matrix_row_add_row(m,i,j,x);
+      sp_matrix_row_add_row(inv,i,j,x);
+    }    
+  }
+
   
-  
-  for (k = 0; k < n; k++) {
-    sp_matrix_set(a,k,k,1.0 /sp_matrix_get(a,k,k) );
-    t = -sp_matrix_get(a,k,k);
-    /* dscal(k-1,t,a(1,k),1) */
-    for (i = 0; i < k; i++){
-      sp_matrix_set(a,i,k,sp_matrix_get(a,i,k)*t);
+  /* Now from the bottom up */
+  /* triangularize the matrix */
+  /* For every row */
+  for(i = m->rows-1;i>=0;i--){
+    /* set leading element to 1 */
+    x = 1.0/sp_matrix_get(m,i,i);
+    sp_matrix_scale_row(m,i,x);
+    sp_matrix_scale_row(inv,i,x);
+    /* For every row above us*/
+    for(j = i-1;j>=0;j--){
+      /* set leading element to 0 */
+      x = -sp_matrix_get(m,j,i);
+      sp_matrix_row_add_row(m,i,j,x);
+      sp_matrix_row_add_row(inv,i,j,x);
+    }    
+  }
+  sp_matrix_memcpy(m,inv);
+  sp_matrix_free(inv);
+}
+
+void sp_matrix_print(sp_matrix * a,FILE * fp){
+  int i,j;
+  if(!fp){
+    fp = stdout;
+  }
+  for(i = 0;i<a->cols;i++){
+    fprintf(fp,"|");
+    for(j = 0;j<a->rows;j++){
+      fprintf(fp,"\t%e",sp_matrix_get(a,i,j));
     }
-    kp1 = k + 1;
-    if ( n > kp1) {
-      for (j = kp1; j < n; j++) {
-	t = sp_matrix_get(a,k,j);
-	sp_matrix_set(a,k,j,0);
-	/* daxpy(k,t,a(1,k),1,a(1,j),1) */
-	for (i = 0; i < k+1; i++){
-	  sp_matrix_set(a,i,j,sp_matrix_get(a,i,j) + t * sp_matrix_get(a,i,k));
-	}
-      }
-    }
+    fprintf(fp,",\t|\n");
   }
 }

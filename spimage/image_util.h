@@ -266,6 +266,10 @@ spimage_EXPORT int get_image_maximum(Image * img, int * x, int * y, real * max);
  */
 spimage_EXPORT Image * sp_image_get_phases(Image * a);
 
+/*! Transposes the images
+*/
+spimage_EXPORT void sp_image_tranpose(Image * in);
+
 /*@}*/
 
 

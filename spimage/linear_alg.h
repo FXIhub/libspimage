@@ -23,14 +23,14 @@ typedef struct{
 } sp_matrix;
 
 
-static inline int sp_min(real a,real b){
+static inline real sp_min(real a,real b){
   if(a< b){
     return a;
   }
   return b;
 }
 
-static inline int sp_max(real a,real b){
+static inline real sp_max(real a,real b){
   if(a > b){
     return a;
   }
@@ -316,7 +316,7 @@ static inline real sp_cvector_dot_prod(sp_cvector * a, const sp_cvector * b){
 }
 
 
-/*! This function calculates the outer product of a and b.
+/*! This function calculates the outer product of vector a and b.
   *
   */
 static inline sp_matrix * sp_vector_outer_prod(sp_vector * a, const sp_vector * b){
@@ -329,6 +329,7 @@ static inline sp_matrix * sp_vector_outer_prod(sp_vector * a, const sp_vector * 
   }
   return ret;
 }
+
 
 /*! This function calculates the norm of the vector a.
   *
@@ -525,7 +526,7 @@ static inline sp_vector * sp_matrix_vector_prod(const sp_matrix * m, const sp_ve
   int i,j;
   sp_vector * ret = sp_vector_alloc(m->rows);
   for(i = 0;i<m->rows;i++){
-    for(j = 0;j<m->cols;i++){
+    for(j = 0;j<m->cols;j++){
       ret->data[i] += sp_matrix_get(m,i,j)*v->data[j];
     }
   }
@@ -537,16 +538,15 @@ static inline sp_vector * sp_matrix_vector_prod(const sp_matrix * m, const sp_ve
  *
  *  The size of a must be the same as the size of the transpose of b.
  */
-#warning code needs to be tested 
 static inline sp_matrix * sp_matrix_mul(const sp_matrix * a, const sp_matrix * b){
   int i,j,k;
   real tmp;
   sp_matrix * ret = sp_matrix_alloc(a->rows,b->cols);
   for(i = 0;i<a->rows;i++){
-    for(j = 0;j<b->cols;i++){
+    for(j = 0;j<b->cols;j++){
       tmp = 0;
       for(k = 0;k<a->cols;k++){
-	tmp += sp_matrix_get(a,i,k)*sp_matrix_get(a,k,j);
+	tmp += sp_matrix_get(a,i,k)*sp_matrix_get(b,k,j);
       }
       sp_matrix_set(ret,i,j,tmp);
     }
@@ -554,11 +554,34 @@ static inline sp_matrix * sp_matrix_mul(const sp_matrix * a, const sp_matrix * b
   return ret;
 }
 
+/*! This function scales all elements of row n of matrix m by x.
+ *
+ */
+static inline void sp_matrix_scale_row(sp_matrix * m, int n, real x){
+  int i;
+  for(i = 0;i<sp_matrix_cols(m);i++){
+    sp_matrix_set(m,n,i,sp_matrix_get(m,n,i)*x);
+  }
+}
+
+/*! This function add the elements of row from, multiplied by factor, to the elements of row to, of matrix m.
+ *
+ */
+static inline void sp_matrix_row_add_row(sp_matrix * m, int from, int to, real factor){
+  int i;
+  for(i = 0;i<sp_matrix_cols(m);i++){
+    sp_matrix_set(m,to,i,sp_matrix_get(m,from,i)*factor+sp_matrix_get(m,to,i));
+  }
+}
+
 /*! This functions returns the inverse of matrix a.
  *
- *  Code shamelessly copied from Linpack 
  */
 spimage_EXPORT void sp_matrix_invert(sp_matrix * a);
+
+/*! This functions tries to print the matrix in a human readable way
+ */
+spimage_EXPORT void sp_matrix_print(sp_matrix * a, FILE * fp);
 
 
 
