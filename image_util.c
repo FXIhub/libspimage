@@ -33,9 +33,7 @@ Image * patterson_function(Image * a){
   int i;
 
   if(b->scaled){
-    for(i = 0;i<TSIZE(a);i++){
-      b->image[i] *= b->image[i];
-    }
+    sp_cmatrix_mul_elements(b,b);
   }
   c = image_fft(b);
 

@@ -12,7 +12,7 @@ typedef struct{
 
 typedef struct{
   unsigned int size;
-  complex * data;
+  Complex * data;
 } sp_cvector;
 
 
@@ -21,6 +21,19 @@ typedef struct{
   unsigned int cols;
   real * data;
 } sp_matrix;
+
+typedef struct{
+  unsigned int rows;
+  unsigned int cols;
+  int * data;
+} sp_imatrix;
+
+
+typedef struct{
+  unsigned int rows;
+  unsigned int cols;
+  Complex * data;
+} sp_cmatrix;
 
 
 static inline real sp_min(real a,real b){
@@ -43,10 +56,30 @@ static inline real sp_max(real a,real b){
  */
 spimage_EXPORT sp_matrix * sp_matrix_alloc(unsigned int nrows, unsigned int ncols);
 
+/*! This function allocates memory for a Complex matrix of size nrows rows by ncols columns and initializes all the elements of the matrix to zero.
+ *
+ */
+spimage_EXPORT sp_cmatrix * sp_cmatrix_alloc(unsigned int nrows, unsigned int ncols);
+
+/*! This function allocates memory for an Integer matrix of size nrows rows by ncols columns and initializes all the elements of the matrix to zero.
+ *
+ */
+spimage_EXPORT sp_imatrix * sp_imatrix_alloc(unsigned int nrows, unsigned int ncols);
+
 /*! This function frees a previously allocated matrix m
  *
  */
 spimage_EXPORT void sp_matrix_free(sp_matrix * m);
+
+/*! This function frees a previously allocated Complex matrix m
+ *
+ */
+spimage_EXPORT void sp_cmatrix_free(sp_cmatrix * m);
+
+/*! This function frees a previously allocated Complex matrix m
+ *
+ */
+spimage_EXPORT void sp_imatrix_free(sp_cmatrix * m);
 
 
 /*! Creates an empty zero initialized vector of the desired size.
@@ -57,7 +90,7 @@ spimage_EXPORT void sp_matrix_free(sp_matrix * m);
  */
 spimage_EXPORT sp_vector * sp_vector_alloc(const int size);
 
-/*! Creates an empty zero initialized complex vector of the desired size.
+/*! Creates an empty zero initialized Complex vector of the desired size.
  *
  * This function creates a vector of length n, returning a pointer
  * to a newly initialized vector struct. All vector elements are set
@@ -70,7 +103,7 @@ spimage_EXPORT sp_cvector * sp_cvector_alloc(const int size);
  */
 spimage_EXPORT void sp_vector_free(sp_vector * v);
 
-/*! Frees a previously allocated complex vector.
+/*! Frees a previously allocated Complex vector.
  *
  */
 spimage_EXPORT void sp_cvector_free(sp_cvector * v);
@@ -83,7 +116,7 @@ static inline unsigned int sp_vector_size(const sp_vector * v){
   return v->size;   
 }
 
-/*! This function returns the size of the complex vector v
+/*! This function returns the size of the Complex vector v
  *
  */
 static inline unsigned int sp_cvector_size(const sp_cvector * v){
@@ -98,11 +131,44 @@ static inline real sp_matrix_get (const sp_matrix * m, unsigned int row, unsigne
   return m->data[row*m->cols+col];
 }
 
+/*! This function returns the (row,col)-th element of an Integer matrix m.
+ *
+ * row and col must lie in the range of 0 to nrows-1 and 0 to ncols-1.
+ */
+static inline int sp_imatrix_get (const sp_imatrix * m, unsigned int row, unsigned int col){
+  return m->data[row*m->cols+col];
+}
+
+
+/*! This function returns the (row,col)-th element of a Complex matrix m.
+ *
+ * row and col must lie in the range of 0 to nrows-1 and 0 to ncols-1.
+ */
+static inline Complex sp_cmatrix_get (const sp_cmatrix * m, unsigned int row, unsigned int col){
+  return m->data[row*m->cols+col];
+}
+
 /*! This function sets the (row,col)-th element of a matrix m to x.
  *
  * row and col must lie in the range of 0 to nrows-1 and 0 to ncols-1.
  */
 static inline void sp_matrix_set (sp_matrix * m, unsigned int row, unsigned int col, real x){
+  m->data[row*m->cols+col] = x;
+}
+
+/*! This function sets the (row,col)-th element of an Integer matrix m to x.
+ *
+ * row and col must lie in the range of 0 to nrows-1 and 0 to ncols-1.
+ */
+static inline void sp_imatrix_set (sp_imatrix * m, unsigned int row, unsigned int col, int n){
+  m->data[row*m->cols+col] = n;
+}
+
+/*! This function sets the (row,col)-th element of a Complex matrix m to x.
+ *
+ * row and col must lie in the range of 0 to nrows-1 and 0 to ncols-1.
+ */
+static inline void sp_cmatrix_set (sp_cmatrix * m, unsigned int row, unsigned int col, Complex x){
   m->data[row*m->cols+col] = x;
 }
 
@@ -115,11 +181,11 @@ static inline real sp_vector_get (const sp_vector * v, unsigned int n){
   return v->data[n];
 }
 
-/*! This function returns the the nth element of a complex vector v.
+/*! This function returns the the nth element of a Complex vector v.
  *
  * n must be in the range of 0 to size-1.
  */
-static inline complex sp_cvector_get(const sp_cvector * v, unsigned int n){
+static inline Complex sp_cvector_get(const sp_cvector * v, unsigned int n){
   return v->data[n];
 }
 
@@ -131,11 +197,11 @@ static inline void sp_vector_set (const sp_vector * v, unsigned int n, real x){
   v->data[n] = x;
 }
 
-/*! This function sets the nth element of a complex vector v to x.
+/*! This function sets the nth element of a Complex vector v to x.
  *
  * n must be in the range of 0 to size-1.
  */
-static inline void sp_cvector_set (const sp_cvector * v, unsigned int n, complex x){
+static inline void sp_cvector_set (const sp_cvector * v, unsigned int n, Complex x){
   v->data[n] = x;
 }
 
@@ -156,6 +222,40 @@ static inline void sp_matrix_memcpy(sp_matrix * dest, const sp_matrix * src){
 }
 
 
+/*! This function copies the elements of the integer matrix b into the integer matrix a. 
+  *
+  * The two matrices must have the same dimensions.
+  */
+static inline void sp_imatrix_memcpy(sp_imatrix * dest, const sp_imatrix * src){
+  int i;
+  if(src->rows*src->cols < 1024){
+    /* avoid function call and make inline possibly useful */
+    for(i = 0;i<src->rows*src->cols;i++){
+      dest->data[i] = src->data[i];
+    }
+  }else{
+    memcpy(dest->data,src->data,sizeof(int)*src->rows*src->cols);
+  }
+}
+
+
+/*! This function copies the elements of the Complex matrix b into the Complex matrix a. 
+  *
+  * The two matrices must have the same dimensions.
+  */
+static inline void sp_cmatrix_memcpy(sp_cmatrix * dest, const sp_cmatrix * src){
+  int i;
+  if(src->rows*src->cols < 1024){
+    /* avoid function call and make inline possibly useful */
+    for(i = 0;i<src->rows*src->cols;i++){
+      dest->data[i] = src->data[i];
+    }
+  }else{
+    memcpy(dest->data,src->data,sizeof(Complex)*src->rows*src->cols);
+  }
+}
+
+
 /*! This function adds the elements of vector b to the elements of vector a, a'_i = a_i + b_i. 
  *
  * The two vectors must have the same length.
@@ -168,7 +268,7 @@ static inline void sp_vector_add(sp_vector * a, const sp_vector * b){
 }
 
 
-/*! This function adds the elements of a complex vector b to the elements of a complex vector a, a'_i = a_i + b_i. 
+/*! This function adds the elements of a Complex vector b to the elements of a Complex vector a, a'_i = a_i + b_i. 
  *
  * The two vectors must have the same length.
  */
@@ -191,7 +291,7 @@ static inline void sp_vector_sub(sp_vector * a, const sp_vector * b){
 }
 
 
-/*! This function subtracts the elements of complex vector b to the elements of complex vector a, a'_i = a_i - b_i. 
+/*! This function subtracts the elements of Complex vector b to the elements of Complex vector a, a'_i = a_i - b_i. 
  *
  * The two vectors must have the same length.
  */
@@ -213,7 +313,7 @@ static inline void sp_vector_mul(sp_vector * a, const sp_vector * b){
   }
 }
 
-/*! This function mutiplies the elements of complex vector a with the elements of complex vector b, a'_i = a_i * b_i. 
+/*! This function mutiplies the elements of Complex vector a with the elements of Complex vector b, a'_i = a_i * b_i. 
  *
  * The two vectors must have the same length.
  */
@@ -235,7 +335,7 @@ static inline void sp_vector_div(sp_vector * a, const sp_vector * b){
   }
 }
 
-/*! This function divides the elements of the complex vector a with the elements of the complex vector b, a'_i = a_i / b_i. 
+/*! This function divides the elements of the Complex vector a with the elements of the Complex vector b, a'_i = a_i / b_i. 
  *
  * The two vectors must have the same length.
  */
@@ -257,10 +357,10 @@ static inline void sp_vector_scale(sp_vector * a, const real x){
   }
 }
 
-/*! This function multiplies the elements of a complex vector a by the constant factor x, a'_i = x a_i.
+/*! This function multiplies the elements of a Complex vector a by the constant factor x, a'_i = x a_i.
  *
  */
-static inline void sp_cvector_scale(sp_cvector * a, const complex x){
+static inline void sp_cvector_scale(sp_cvector * a, const Complex x){
   int i;
   for(i = 0;i<a->size;i++){
     a->data[i] *= x;
@@ -278,10 +378,10 @@ static inline void sp_vector_add_constant(sp_vector * a, const real x){
   }
 }
 
-/*! This function adds the constant value x to the elements of the complex vector a, a'_i = a_i + x.
+/*! This function adds the constant value x to the elements of the Complex vector a, a'_i = a_i + x.
  *
  */
-static inline void sp_cvector_add_constant(sp_cvector * a, const complex x){
+static inline void sp_cvector_add_constant(sp_cvector * a, const Complex x){
   int i;
   for(i = 0;i<a->size;i++){
     a->data[i] += x;
@@ -372,7 +472,7 @@ static inline void sp_vector_memcpy(sp_vector * dest, const sp_vector * src){
 
 }
 
-/*! This function copies the elements of the complex vector src into the complex vector dest. 
+/*! This function copies the elements of the Complex vector src into the Complex vector dest. 
   *
   * The two vectors must have the same length.
   */
@@ -400,10 +500,39 @@ static inline unsigned int sp_matrix_size (const sp_matrix * m){
 }
 
 
+/*! This function returns the number of cells in m, that is, rows*cols 
+ *
+ */
+static inline unsigned int sp_imatrix_size (const sp_imatrix * m){
+  return m->rows*m->cols;
+}
+
+/*! This function returns the number of cells in m, that is, rows*cols 
+ *
+ */
+static inline unsigned int sp_cmatrix_size (const sp_cmatrix * m){
+  return m->rows*m->cols;
+}
+
+
 /*! This function returns the number of rows in m
  *
  */
 static inline unsigned int sp_matrix_rows (const sp_matrix * m){
+  return m->rows;
+}
+
+/*! This function returns the number of rows in m
+ *
+ */
+static inline unsigned int sp_imatrix_rows (const sp_imatrix * m){
+  return m->rows;
+}
+
+/*! This function returns the number of rows in m
+ *
+ */
+static inline unsigned int sp_cmatrix_rows (const sp_cmatrix * m){
   return m->rows;
 }
 
@@ -412,6 +541,20 @@ static inline unsigned int sp_matrix_rows (const sp_matrix * m){
  *
  */
 static inline unsigned int sp_matrix_cols (const sp_matrix * m){
+  return m->cols;
+}
+
+/*! This function returns the number of colums in m
+ *
+ */
+static inline unsigned int sp_imatrix_cols (const sp_imatrix * m){
+  return m->cols;
+}
+
+/*! This function returns the number of colums in m
+ *
+ */
+static inline unsigned int sp_cmatrix_cols (const sp_cmatrix * m){
   return m->cols;
 }
 
@@ -424,6 +567,28 @@ static inline void sp_matrix_set_identity(sp_matrix * m){
   memset(m->data,0,sizeof(real)*m->rows*m->cols);
   for(i = 0;i<m->rows && i<m->cols;i++){
     sp_matrix_set(m,i,i,1);
+  }
+}
+
+/*! This function sets the diagonal elements of m to 1 and the rest to 0
+ *
+ */
+static inline void sp_imatrix_set_identity(sp_imatrix * m){
+  int i;
+  memset(m->data,0,sizeof(int)*m->rows*m->cols);
+  for(i = 0;i<m->rows && i<m->cols;i++){
+    sp_imatrix_set(m,i,i,1);
+  }
+}
+
+/*! This function sets the diagonal elements of m to 1 and the rest to 0
+ *
+ */
+static inline void sp_cmatrix_set_identity(sp_cmatrix * m){
+  int i;
+  memset(m->data,0,sizeof(Complex)*m->rows*m->cols);
+  for(i = 0;i<m->rows && i<m->cols;i++){
+    sp_cmatrix_set(m,i,i,1);
   }
 }
 
@@ -441,6 +606,28 @@ static inline void sp_matrix_add(sp_matrix * a, const sp_matrix * b){
   }
 }
 
+/*! This function adds the elements of integer matrix b to the elements of integer matrix a, a'_ij = a_ij + b_ij. 
+ *
+ * The two matrices must have the same dimensions.
+ */
+static inline void sp_imatrix_add(sp_imatrix * a, const sp_imatrix * b){
+  int i;
+  for(i = 0;i<sp_imatrix_size(b);i++){
+    a->data[i] += b->data[i];
+  }
+}
+
+/*! This function adds the elements of Complex matrix b to the elements of Complex matrix a, a'_ij = a_ij + b_ij. 
+ *
+ * The two matrices must have the same dimensions.
+ */
+static inline void sp_cmatrix_add(sp_cmatrix * a, const sp_cmatrix * b){
+  int i;
+  for(i = 0;i<sp_cmatrix_size(b);i++){
+    a->data[i] += b->data[i];
+  }
+}
+
 /*! This function subtracts the elements of matrix b to the elements of matrix a, a'_ij = a_ij - b_ij. 
  *
  * The two matrices must have the same dimensions.
@@ -452,6 +639,29 @@ static inline void sp_matrix_sub(sp_matrix * a, const sp_matrix * b){
   }
 }
 
+
+/*! This function subtracts the elements of integer matrix b to the elements of integer matrix a, a'_ij = a_ij - b_ij. 
+ *
+ * The two matrices must have the same dimensions.
+ */
+static inline void sp_imatrix_sub(sp_imatrix * a, const sp_imatrix * b){
+  int i;
+  for(i = 0;i<sp_imatrix_size(b);i++){
+    a->data[i] -= b->data[i];
+  }
+}
+
+/*! This function subtracts the elements of Complex matrix b to the elements of Complex matrix a, a'_ij = a_ij - b_ij. 
+ *
+ * The two matrices must have the same dimensions.
+ */
+static inline void sp_cmatrix_sub(sp_cmatrix * a, const sp_cmatrix * b){
+  int i;
+  for(i = 0;i<sp_cmatrix_size(b);i++){
+    a->data[i] -= b->data[i];
+  }
+}
+
 /*! This function mutiplies the elements of matrix a with the elements of matrix b, a'_ij = a_ij * b_ij. 
  *
  * The two matrices must have the same dimensions.
@@ -459,6 +669,28 @@ static inline void sp_matrix_sub(sp_matrix * a, const sp_matrix * b){
 static inline void sp_matrix_mul_elements(sp_matrix * a, const sp_matrix * b){
   int i;
   for(i = 0;i<sp_matrix_size(b);i++){
+    a->data[i] *= b->data[i];
+  }
+}
+
+/*! This function mutiplies the elements of integer matrix a with the elements of integer matrix b, a'_ij = a_ij * b_ij. 
+ *
+ * The two matrices must have the same dimensions.
+ */
+static inline void sp_imatrix_mul_elements(sp_imatrix * a, const sp_imatrix * b){
+  int i;
+  for(i = 0;i<sp_imatrix_size(b);i++){
+    a->data[i] *= b->data[i];
+  }
+}
+
+/*! This function mutiplies the elements of Complex matrix a with the elements of Complex matrix b, a'_ij = a_ij * b_ij. 
+ *
+ * The two matrices must have the same dimensions.
+ */
+static inline void sp_cmatrix_mul_elements(sp_cmatrix * a, const sp_cmatrix * b){
+  int i;
+  for(i = 0;i<sp_cmatrix_size(b);i++){
     a->data[i] *= b->data[i];
   }
 }
@@ -475,6 +707,28 @@ static inline void sp_matrix_div_elements(sp_matrix * a, const sp_matrix * b){
   }
 }
 
+/*! This function divides the elements of integer matrix a with the elements of integer matrix b, a'_ij = a_ij / b_ij. 
+ *
+ * The two matrices must have the same dimensions.
+ */
+static inline void sp_imatrix_div_elements(sp_imatrix * a, const sp_imatrix * b){
+  int i;
+  for(i = 0;i<sp_imatrix_size(b);i++){
+    a->data[i] /= b->data[i];
+  }
+}
+
+/*! This function divides the elements of Complex matrix a with the elements of Complex matrix b, a'_ij = a_ij / b_ij. 
+ *
+ * The two matrices must have the same dimensions.
+ */
+static inline void sp_cmatrix_div_elements(sp_cmatrix * a, const sp_cmatrix * b){
+  int i;
+  for(i = 0;i<sp_cmatrix_size(b);i++){
+    a->data[i] /= b->data[i];
+  }
+}
+
 
 /*! This function multiplies the elements of the matrix a by the constant factor x, a'_ij = x a_ij.
  *
@@ -482,6 +736,27 @@ static inline void sp_matrix_div_elements(sp_matrix * a, const sp_matrix * b){
 static inline void sp_matrix_scale(sp_matrix * a, const real x){
   int i;
   for(i = 0;i<sp_matrix_size(a);i++){
+    a->data[i] *= x;
+  }
+}
+
+/*! This function multiplies the elements of the integer matrix a by the constant factor x, a'_ij = x a_ij.
+ *
+ */
+static inline void sp_imatrix_scale(sp_imatrix * a, const real x){
+  int i;
+  for(i = 0;i<sp_imatrix_size(a);i++){
+    a->data[i] *= x;
+  }
+}
+
+
+/*! This function multiplies the elements of the Complex matrix a by the constant factor x, a'_ij = x a_ij.
+ *
+ */
+static inline void sp_cmatrix_scale(sp_cmatrix * a, const Complex x){
+  int i;
+  for(i = 0;i<sp_cmatrix_size(a);i++){
     a->data[i] *= x;
   }
 }
@@ -497,6 +772,27 @@ static inline void sp_matrix_add_constant(sp_matrix * a, const real x){
   }
 }
 
+/*! This function adds the constant value x to the elements of the integer matrix a, a'_ij = a_ij + x.
+ *
+ */
+static inline void sp_imatrix_add_constant(sp_imatrix * a, const int x){
+  int i;
+  for(i = 0;i<sp_imatrix_size(a);i++){
+    a->data[i] += x;
+  }
+}
+
+
+/*! This function adds the constant value x to the elements of the Complex matrix a, a'_ij = a_ij + x.
+ *
+ */
+static inline void sp_cmatrix_add_constant(sp_cmatrix * a, const Complex x){
+  int i;
+  for(i = 0;i<sp_cmatrix_size(a);i++){
+    a->data[i] += x;
+  }
+}
+
 /*! This function transposes matrix a.
  *
  */
@@ -507,6 +803,49 @@ static inline void sp_matrix_transpose(sp_matrix * a){
   for(i = 0;i<a->rows;i++){
     for(j = 0;j<a->cols;j++){
       sp_matrix_set(tmp,j,i,sp_matrix_get(a,i,j));
+    }
+  }
+  /* copy from tmp the useful things and discard original array */
+  a->cols = tmp->cols;
+  a->rows = tmp->rows;
+  free(a->data);
+  a->data = tmp->data;
+  free(tmp);
+}
+
+
+/*! This function transposes matrix a.
+ *
+ */
+static inline void sp_imatrix_transpose(sp_imatrix * a){
+  int i,j;
+  /* exchange dimensions */
+  sp_imatrix * tmp = sp_imatrix_alloc(a->cols,a->rows);
+  for(i = 0;i<a->rows;i++){
+    for(j = 0;j<a->cols;j++){
+      sp_imatrix_set(tmp,j,i,sp_imatrix_get(a,i,j));
+    }
+  }
+  /* copy from tmp the useful things and discard original array */
+  a->cols = tmp->cols;
+  a->rows = tmp->rows;
+  free(a->data);
+  a->data = tmp->data;
+  free(tmp);
+}
+
+
+/*! This function transposes Complex matrix a.
+ *
+ * The Complex conjugate of the cells is not calculated
+ */
+static inline void sp_cmatrix_transpose(sp_cmatrix * a){
+  int i,j;
+  /* exchange dimensions */
+  sp_cmatrix * tmp = sp_cmatrix_alloc(a->cols,a->rows);
+  for(i = 0;i<a->rows;i++){
+    for(j = 0;j<a->cols;j++){
+      sp_cmatrix_set(tmp,j,i,sp_cmatrix_get(a,i,j));
     }
   }
   /* copy from tmp the useful things and discard original array */
@@ -533,6 +872,21 @@ static inline sp_vector * sp_matrix_vector_prod(const sp_matrix * m, const sp_ve
   return ret;
 }
 
+/*! This function returns the product of Complex matrix m with Complex vector v.
+ *
+ *  The size of v must be the same as the number of cols in m.
+ */
+static inline sp_cvector * sp_cmatrix_cvector_prod(const sp_cmatrix * m, const sp_cvector * v){
+  int i,j;
+  sp_cvector * ret = sp_cvector_alloc(m->rows);
+  for(i = 0;i<m->rows;i++){
+    for(j = 0;j<m->cols;j++){
+      ret->data[i] += sp_cmatrix_get(m,i,j)*v->data[j];
+    }
+  }
+  return ret;
+}
+
 
 /*! This function returns the product of matrix a with matrix b.
  *
@@ -554,6 +908,26 @@ static inline sp_matrix * sp_matrix_mul(const sp_matrix * a, const sp_matrix * b
   return ret;
 }
 
+/*! This function returns the product of Complex matrix a with Complex matrix b.
+ *
+ *  The size of a must be the same as the size of the transpose of b.
+ */
+static inline sp_cmatrix * sp_cmatrix_mul(const sp_cmatrix * a, const sp_cmatrix * b){
+  int i,j,k;
+  real tmp;
+  sp_cmatrix * ret = sp_cmatrix_alloc(a->rows,b->cols);
+  for(i = 0;i<a->rows;i++){
+    for(j = 0;j<b->cols;j++){
+      tmp = 0;
+      for(k = 0;k<a->cols;k++){
+	tmp += sp_cmatrix_get(a,i,k)*sp_cmatrix_get(b,k,j);
+      }
+      sp_cmatrix_set(ret,i,j,tmp);
+    }
+  }
+  return ret;
+}
+
 /*! This function scales all elements of row n of matrix m by x.
  *
  */
@@ -561,6 +935,16 @@ static inline void sp_matrix_scale_row(sp_matrix * m, int n, real x){
   int i;
   for(i = 0;i<sp_matrix_cols(m);i++){
     sp_matrix_set(m,n,i,sp_matrix_get(m,n,i)*x);
+  }
+}
+
+/*! This function scales all elements of row n of Complex matrix m by x.
+ *
+ */
+static inline void sp_cmatrix_scale_row(sp_cmatrix * m, int n, Complex x){
+  int i;
+  for(i = 0;i<sp_cmatrix_cols(m);i++){
+    sp_cmatrix_set(m,n,i,sp_cmatrix_get(m,n,i)*x);
   }
 }
 
@@ -574,6 +958,16 @@ static inline void sp_matrix_row_add_row(sp_matrix * m, int from, int to, real f
   }
 }
 
+/*! This function add the elements of row from, multiplied by factor, to the elements of row to, of Complex matrix m.
+ *
+ */
+static inline void sp_cmatrix_row_add_row(sp_cmatrix * m, int from, int to, Complex factor){
+  int i;
+  for(i = 0;i<sp_cmatrix_cols(m);i++){
+    sp_cmatrix_set(m,to,i,sp_cmatrix_get(m,from,i)*factor+sp_cmatrix_get(m,to,i));
+  }
+}
+
 /*! This functions returns the inverse of matrix a.
  *
  */
@@ -583,6 +977,47 @@ spimage_EXPORT void sp_matrix_invert(sp_matrix * a);
  */
 spimage_EXPORT void sp_matrix_print(sp_matrix * a, FILE * fp);
 
+
+/*! This functions returns the inverse of Complex matrix a.
+ *
+ */
+spimage_EXPORT void sp_cmatrix_invert(sp_cmatrix * a);
+
+/*! This functions tries to print the Complex matrix in a human readable way
+ */
+spimage_EXPORT void sp_cmatrix_print(sp_cmatrix * a, FILE * fp);
+
+
+/*! This function returns a cvector numerically similar to v
+ *
+ * The elements of v are copied to the real part of the result
+ */
+static inline sp_cvector * sp_vector_to_cvector(const sp_vector * v){
+  int i;
+  int size = sp_vector_size(v);
+  sp_cvector * ret = sp_cvector_alloc(size);
+  for(i = 0;i<size;i++){
+    ret->data[i] = v->data[i];
+  }
+  return ret;
+}
+
+/*! This function returns a cmatrix numerically similar to m
+ *
+ * The elements of m are copied to the real part of the result
+ */
+static inline sp_cmatrix * sp_matrix_to_cmatrix(const sp_matrix * m){
+  int i,j;
+  int rows = sp_matrix_rows(m);
+  int cols = sp_matrix_cols(m);
+  sp_cmatrix * ret = sp_cmatrix_alloc(rows,cols);
+  for(i = 0;i<rows;i++){
+    for(j = 0;j<cols;j++){
+      sp_cmatrix_set(ret,i,j,sp_matrix_get(m,i,j));
+    }
+  }
+  return ret;
+}
 
 
 #endif

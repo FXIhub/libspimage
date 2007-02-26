@@ -73,6 +73,21 @@ void test_sp_matrix_alloc(CuTest* tc)
   sp_matrix_free(m);
 }
 
+void test_sp_cmatrix_alloc(CuTest* tc)
+{
+  int i,j;
+  sp_cmatrix * m = sp_cmatrix_alloc(4,3);
+  CuAssertTrue(tc,sp_cmatrix_size(m) == 4*3);
+  CuAssertTrue(tc,sp_cmatrix_rows(m) == 4);
+  CuAssertTrue(tc,sp_cmatrix_cols(m) == 3);
+  for(i = 0;i<sp_cmatrix_rows(m);i++){
+    for(j = 0;j<sp_cmatrix_cols(m);j++){
+      CuAssertComplexEquals(tc,sp_cmatrix_get(m,i,j),0,REAL_EPSILON);
+    }
+  }
+  sp_cmatrix_free(m);
+}
+
 void test_sp_vector_set_get(CuTest* tc){
   sp_vector * v = sp_vector_alloc(4);
   sp_vector_set(v,1,5);
@@ -99,6 +114,15 @@ void test_sp_matrix_set_get(CuTest* tc){
   sp_matrix_set(m,3,1,-1);
   CuAssertDblEquals(tc,sp_matrix_get(m,3,1),-1,REAL_EPSILON);
   sp_matrix_free(m);  
+}
+
+void test_sp_cmatrix_set_get(CuTest* tc){
+  sp_cmatrix * m = sp_cmatrix_alloc(4,3);
+  sp_cmatrix_set(m,1,2,5);
+  CuAssertComplexEquals(tc,sp_cmatrix_get(m,1,2),5,REAL_EPSILON);
+  sp_cmatrix_set(m,3,1,-1);
+  CuAssertComplexEquals(tc,sp_cmatrix_get(m,3,1),-1,REAL_EPSILON);
+  sp_cmatrix_free(m);  
 }
 
 void test_sp_vector_memcpy(CuTest * tc){
@@ -149,6 +173,26 @@ void test_sp_matrix_memcpy(CuTest* tc)
   }
   sp_matrix_free(m);
   sp_matrix_free(n);
+}
+
+void test_sp_cmatrix_memcpy(CuTest* tc)
+{
+  int i,j;
+  sp_cmatrix * m = sp_cmatrix_alloc(4,3);
+  sp_cmatrix * n = sp_cmatrix_alloc(4,3);
+  for(i = 0;i<sp_cmatrix_rows(m);i++){
+    for(j = 0;j<sp_cmatrix_cols(m);j++){
+      sp_cmatrix_set(m,i,j,rand()+rand()*I);
+    }
+  }
+  sp_cmatrix_memcpy(n,m);
+  for(i = 0;i<sp_cmatrix_rows(m);i++){
+    for(j = 0;j<sp_cmatrix_cols(m);j++){
+      CuAssertComplexEquals(tc,sp_cmatrix_get(m,i,j),sp_cmatrix_get(n,i,j),cabs(REAL_EPSILON*sp_cmatrix_get(n,i,j)));
+    }
+  }
+  sp_cmatrix_free(m);
+  sp_cmatrix_free(n);
 }
 
 
@@ -214,6 +258,30 @@ void test_sp_matrix_add(CuTest* tc)
   sp_matrix_free(p);
 }
 
+void test_sp_cmatrix_add(CuTest* tc)
+{
+  int i,j;
+  sp_cmatrix * m = sp_cmatrix_alloc(4,3);
+  sp_cmatrix * n = sp_cmatrix_alloc(4,3);
+  sp_cmatrix * p = sp_cmatrix_alloc(4,3);
+  for(i = 0;i<sp_cmatrix_rows(m);i++){
+    for(j = 0;j<sp_cmatrix_cols(m);j++){
+      sp_cmatrix_set(m,i,j,rand()+rand()*I);
+      sp_cmatrix_set(n,i,j,rand()+rand()*I);
+    }
+  }
+  sp_cmatrix_memcpy(p,m);
+  sp_cmatrix_add(p,n);
+  for(i = 0;i<sp_cmatrix_rows(m);i++){
+    for(j = 0;j<sp_cmatrix_cols(m);j++){
+      CuAssertComplexEquals(tc,sp_cmatrix_get(p,i,j),sp_cmatrix_get(m,i,j) + sp_cmatrix_get(n,i,j),cabs(REAL_EPSILON*sp_cmatrix_get(p,i,j)));
+    }
+  }
+  sp_cmatrix_free(m);
+  sp_cmatrix_free(n);
+  sp_cmatrix_free(p);
+}
+
 
 void test_sp_vector_sub(CuTest * tc){
   sp_vector * v = sp_vector_alloc(4);
@@ -275,6 +343,30 @@ void test_sp_matrix_sub(CuTest* tc)
   sp_matrix_free(m);
   sp_matrix_free(n);
   sp_matrix_free(p);
+}
+
+void test_sp_cmatrix_sub(CuTest* tc)
+{
+  int i,j;
+  sp_cmatrix * m = sp_cmatrix_alloc(4,3);
+  sp_cmatrix * n = sp_cmatrix_alloc(4,3);
+  sp_cmatrix * p = sp_cmatrix_alloc(4,3);
+  for(i = 0;i<sp_cmatrix_rows(m);i++){
+    for(j = 0;j<sp_cmatrix_cols(m);j++){
+      sp_cmatrix_set(m,i,j,rand()+rand()*I);
+      sp_cmatrix_set(n,i,j,rand()+rand()*I);
+    }
+  }
+  sp_cmatrix_memcpy(p,m);
+  sp_cmatrix_sub(p,n);
+  for(i = 0;i<sp_cmatrix_rows(m);i++){
+    for(j = 0;j<sp_cmatrix_cols(m);j++){
+      CuAssertComplexEquals(tc,sp_cmatrix_get(p,i,j),sp_cmatrix_get(m,i,j) - sp_cmatrix_get(n,i,j),cabs(REAL_EPSILON*sp_cmatrix_get(p,i,j)));
+    }
+  }
+  sp_cmatrix_free(m);
+  sp_cmatrix_free(n);
+  sp_cmatrix_free(p);
 }
 
 
@@ -340,6 +432,30 @@ void test_sp_matrix_mul_elements(CuTest* tc)
   sp_matrix_free(p);
 }
 
+void test_sp_cmatrix_mul_elements(CuTest* tc)
+{
+  int i,j;
+  sp_cmatrix * m = sp_cmatrix_alloc(4,3);
+  sp_cmatrix * n = sp_cmatrix_alloc(4,3);
+  sp_cmatrix * p = sp_cmatrix_alloc(4,3);
+  for(i = 0;i<sp_cmatrix_rows(m);i++){
+    for(j = 0;j<sp_cmatrix_cols(m);j++){
+      sp_cmatrix_set(m,i,j,rand()+rand()*I);
+      sp_cmatrix_set(n,i,j,rand()+rand()*I);
+    }
+  }
+  sp_cmatrix_memcpy(p,m);
+  sp_cmatrix_mul_elements(p,n);
+  for(i = 0;i<sp_cmatrix_rows(m);i++){
+    for(j = 0;j<sp_cmatrix_cols(m);j++){
+      CuAssertComplexEquals(tc,sp_cmatrix_get(p,i,j),sp_cmatrix_get(m,i,j) * sp_cmatrix_get(n,i,j),cabs(REAL_EPSILON*sp_cmatrix_get(p,i,j)));
+    }
+  }
+  sp_cmatrix_free(m);
+  sp_cmatrix_free(n);
+  sp_cmatrix_free(p);
+}
+
 void test_sp_vector_div(CuTest * tc){
   sp_vector * v = sp_vector_alloc(4);
   sp_vector * u = sp_vector_alloc(4);
@@ -378,8 +494,7 @@ void test_sp_cvector_div(CuTest * tc){
   sp_cvector_free(t);  
 }
 
-void test_sp_matrix_div_elements(CuTest* tc)
-{
+void test_sp_matrix_div_elements(CuTest* tc){
   int i,j;
   sp_matrix * m = sp_matrix_alloc(4,3);
   sp_matrix * n = sp_matrix_alloc(4,3);
@@ -400,6 +515,29 @@ void test_sp_matrix_div_elements(CuTest* tc)
   sp_matrix_free(m);
   sp_matrix_free(n);
   sp_matrix_free(p);
+}
+
+void test_sp_cmatrix_div_elements(CuTest* tc){
+  int i,j;
+  sp_cmatrix * m = sp_cmatrix_alloc(4,3);
+  sp_cmatrix * n = sp_cmatrix_alloc(4,3);
+  sp_cmatrix * p = sp_cmatrix_alloc(4,3);
+  for(i = 0;i<sp_cmatrix_rows(m);i++){
+    for(j = 0;j<sp_cmatrix_cols(m);j++){
+      sp_cmatrix_set(m,i,j,rand()+rand()*I);
+      sp_cmatrix_set(n,i,j,rand()+rand()*I);
+    }
+  }
+  sp_cmatrix_memcpy(p,m);
+  sp_cmatrix_div_elements(p,n);
+  for(i = 0;i<sp_cmatrix_rows(m);i++){
+    for(j = 0;j<sp_cmatrix_cols(m);j++){
+      CuAssertComplexEquals(tc,sp_cmatrix_get(p,i,j),sp_cmatrix_get(m,i,j) / sp_cmatrix_get(n,i,j),cabs(REAL_EPSILON*sp_cmatrix_get(p,i,j)));
+    }
+  }
+  sp_cmatrix_free(m);
+  sp_cmatrix_free(n);
+  sp_cmatrix_free(p);
 }
 
 
@@ -458,6 +596,27 @@ void test_sp_matrix_scale(CuTest * tc){
   sp_matrix_free(v);  
 }
 
+void test_sp_cmatrix_scale(CuTest * tc){
+  sp_cmatrix * v = sp_cmatrix_alloc(4,4);
+  sp_cmatrix * u = sp_cmatrix_alloc(4,4);
+  int i,j;
+  real x = rand()%100+(rand()%100)*I;
+  for(i = 0;i<sp_cmatrix_rows(v);i++){
+    for(j = 0;j<sp_cmatrix_cols(v);j++){
+      sp_cmatrix_set(v,i,j,rand()+rand()*I);
+    }
+  }
+  sp_cmatrix_memcpy(u,v);
+  sp_cmatrix_scale(u,x);
+  for(i = 0;i<sp_cmatrix_rows(v);i++){
+    for(j = 0;j<sp_cmatrix_cols(v);j++){
+      CuAssertComplexEquals(tc,sp_cmatrix_get(u,i,j),sp_cmatrix_get(v,i,j)*x,cabs(REAL_EPSILON*sp_cmatrix_get(u,i,j)));
+    }
+  }
+  sp_cmatrix_free(u);
+  sp_cmatrix_free(v);  
+}
+
 
 void test_sp_vector_add_constant(CuTest * tc){
   sp_vector * v = sp_vector_alloc(4);
@@ -514,6 +673,27 @@ void test_sp_matrix_add_constant(CuTest * tc){
   sp_matrix_free(v);  
 }
 
+void test_sp_cmatrix_add_constant(CuTest * tc){
+  sp_cmatrix * v = sp_cmatrix_alloc(4,4);
+  sp_cmatrix * u = sp_cmatrix_alloc(4,4);
+  int i,j;
+  complex x = rand()%100+ (rand()%100)*I;
+  for(i = 0;i<sp_cmatrix_rows(v);i++){
+    for(j = 0;j<sp_cmatrix_cols(v);j++){
+      sp_cmatrix_set(v,i,j,rand()+rand()*I);
+    }
+  }
+  sp_cmatrix_memcpy(u,v);
+  sp_cmatrix_add_constant(u,x);
+  for(i = 0;i<sp_cmatrix_rows(v);i++){
+    for(j = 0;j<sp_cmatrix_cols(v);j++){
+      CuAssertComplexEquals(tc,sp_cmatrix_get(u,i,j),sp_cmatrix_get(v,i,j)+x,cabs(REAL_EPSILON*sp_cmatrix_get(u,i,j)));
+    }
+  }
+  sp_cmatrix_free(u);
+  sp_cmatrix_free(v);  
+}
+
 void test_sp_matrix_transpose(CuTest * tc){
   sp_matrix * v = sp_matrix_alloc(4,3);
   sp_matrix * u = sp_matrix_alloc(3,4);
@@ -533,6 +713,27 @@ void test_sp_matrix_transpose(CuTest * tc){
   }
   sp_matrix_free(u);
   sp_matrix_free(v);  
+}
+
+void test_sp_cmatrix_transpose(CuTest * tc){
+  sp_cmatrix * v = sp_cmatrix_alloc(4,3);
+  sp_cmatrix * u = sp_cmatrix_alloc(3,4);
+  int i,j;
+  real x = rand()%100+(rand()%100)*I;
+  for(i = 0;i<sp_cmatrix_rows(v);i++){
+    for(j = 0;j<sp_cmatrix_cols(v);j++){
+      sp_cmatrix_set(v,i,j,rand()+rand()*I);
+      sp_cmatrix_set(u,j,i,sp_cmatrix_get(v,i,j));
+    }
+  }
+  sp_cmatrix_transpose(v);
+  for(i = 0;i<sp_cmatrix_rows(v);i++){
+    for(j = 0;j<sp_cmatrix_cols(v);j++){
+      CuAssertComplexEquals(tc,sp_cmatrix_get(u,i,j),sp_cmatrix_get(v,i,j),cabs(REAL_EPSILON*sp_cmatrix_get(u,i,j)));
+    }
+  }
+  sp_cmatrix_free(u);
+  sp_cmatrix_free(v);  
 }
 
 void test_sp_vector_dot_prod(CuTest * tc){
@@ -662,6 +863,40 @@ void test_sp_matrix_vector_prod(CuTest * tc){
   sp_matrix_free(m);  
 }
 
+void test_sp_cmatrix_cvector_prod(CuTest * tc){
+  sp_cvector * v = sp_cvector_alloc(2);
+  sp_cvector * u;
+  sp_cmatrix * m = sp_cmatrix_alloc(3,2);
+  int i;
+  sp_cvector_set(v,0,1);
+  sp_cvector_set(v,1,3);
+  sp_cmatrix_set(m,0,0,2);
+  sp_cmatrix_set(m,0,1,6);
+  sp_cmatrix_set(m,1,0,4);
+  sp_cmatrix_set(m,1,1,12);
+  sp_cmatrix_set(m,2,0,-1);
+  sp_cmatrix_set(m,2,1,-3);
+/*  v = [ 1  3 ];
+
+    m = [  2  6 ]
+        [  4 12 ]
+        [ -1 -3	]
+	
+    mv = [ 20 40 -10 ]
+
+*/
+  u = sp_cmatrix_cvector_prod(m,v);
+  
+  CuAssertTrue(tc,sp_cvector_size(u)==3);
+  CuAssertComplexEquals(tc,sp_cvector_get(u,0),20,cabs(REAL_EPSILON*20));
+  CuAssertComplexEquals(tc,sp_cvector_get(u,1),40,cabs(REAL_EPSILON*40));
+  CuAssertComplexEquals(tc,sp_cvector_get(u,2),-10,cabs(REAL_EPSILON*-10));
+
+  sp_cvector_free(u);
+  sp_cvector_free(v);  
+  sp_cmatrix_free(m);  
+}
+
 
 void test_sp_matrix_mul(CuTest * tc){
 
@@ -727,6 +962,70 @@ void test_sp_matrix_mul(CuTest * tc){
   sp_matrix_free(nm);
 }
 
+void test_sp_cmatrix_mul(CuTest * tc){
+
+  sp_cmatrix * m = sp_cmatrix_alloc(3,2);
+  sp_cmatrix * n = sp_cmatrix_alloc(2,3);
+  sp_cmatrix * mn;
+  sp_cmatrix * nm;
+  int i;
+  sp_cmatrix_set(m,0,0,2);
+  sp_cmatrix_set(m,0,1,6);
+  sp_cmatrix_set(m,1,0,4);
+  sp_cmatrix_set(m,1,1,12);
+  sp_cmatrix_set(m,2,0,-1);
+  sp_cmatrix_set(m,2,1,-3);
+
+  sp_cmatrix_set(n,0,0,-2);
+  sp_cmatrix_set(n,0,1,0);
+  sp_cmatrix_set(n,0,2,1);
+  sp_cmatrix_set(n,1,0,3);
+  sp_cmatrix_set(n,1,1,4);
+  sp_cmatrix_set(n,1,2,1);
+
+/*  
+    m = [  2  6 ]
+        [  4 12 ]
+        [ -1 -3	]
+	
+    n = [ -2 0 1 ]
+        [  3 4 1 ]
+	
+    m*n = 14    24     8
+          28    48    16
+          -7   -12    -4
+
+    n*m = -5   -15
+          21    63
+        
+
+*/
+  mn = sp_cmatrix_mul(m,n);
+  nm = sp_cmatrix_mul(n,m);
+  
+
+  CuAssertComplexEquals(tc,sp_cmatrix_get(mn,0,0),14,cabs(REAL_EPSILON*14));
+  CuAssertComplexEquals(tc,sp_cmatrix_get(mn,0,1),24,cabs(REAL_EPSILON*24));
+  CuAssertComplexEquals(tc,sp_cmatrix_get(mn,0,2),8,cabs(REAL_EPSILON*8));
+  CuAssertComplexEquals(tc,sp_cmatrix_get(mn,1,0),28,cabs(REAL_EPSILON*28));
+  CuAssertComplexEquals(tc,sp_cmatrix_get(mn,1,1),48,cabs(REAL_EPSILON*48));
+  CuAssertComplexEquals(tc,sp_cmatrix_get(mn,1,2),16,cabs(REAL_EPSILON*16));
+  CuAssertComplexEquals(tc,sp_cmatrix_get(mn,2,0),-7,cabs(REAL_EPSILON*-7));
+  CuAssertComplexEquals(tc,sp_cmatrix_get(mn,2,1),-12,cabs(REAL_EPSILON*-12));
+  CuAssertComplexEquals(tc,sp_cmatrix_get(mn,2,2),-4,cabs(REAL_EPSILON*-4));
+
+
+  CuAssertComplexEquals(tc,sp_cmatrix_get(nm,0,0),-5,cabs(REAL_EPSILON*-5));
+  CuAssertComplexEquals(tc,sp_cmatrix_get(nm,0,1),-15,cabs(REAL_EPSILON*-15));
+  CuAssertComplexEquals(tc,sp_cmatrix_get(nm,1,0),21,cabs(REAL_EPSILON*21));
+  CuAssertComplexEquals(tc,sp_cmatrix_get(nm,1,1),63,cabs(REAL_EPSILON*63));
+
+  sp_cmatrix_free(m);  
+  sp_cmatrix_free(n);  
+  sp_cmatrix_free(mn);
+  sp_cmatrix_free(nm);
+}
+
 
 void test_sp_matrix_invert(CuTest * tc){
   int i,j;
@@ -753,6 +1052,31 @@ void test_sp_matrix_invert(CuTest * tc){
   sp_matrix_free(id);
 }
 
+void test_sp_cmatrix_invert(CuTest * tc){
+  int i,j;
+  sp_cmatrix * m = sp_cmatrix_alloc(2,2);
+  sp_cmatrix * n = sp_cmatrix_alloc(2,2);
+  sp_cmatrix * id;
+  for(i = 0;i<sp_cmatrix_rows(m);i++){
+    for(j = 0;j<sp_cmatrix_cols(m);j++){
+      sp_cmatrix_set(m,i,j,rand()%20+(rand()%20)*I);
+    }
+  }
+  sp_cmatrix_memcpy(n,m);
+  sp_cmatrix_invert(n);
+  id = sp_cmatrix_mul(m,n);
+  sp_cmatrix_set_identity(m);
+  
+  for(i = 0;i<sp_cmatrix_rows(m);i++){
+    for(j = 0;j<sp_cmatrix_cols(m);j++){
+      CuAssertComplexEquals(tc,sp_cmatrix_get(m,i,j),sp_cmatrix_get(id,i,j),cabs(REAL_EPSILON*(sp_cmatrix_get(m,i,j))+REAL_EPSILON));
+    }
+  }
+  sp_cmatrix_free(m);
+  sp_cmatrix_free(n);
+  sp_cmatrix_free(id);
+}
+
 CuSuite* linear_alg_get_suite(void)
 {
   CuSuite* suite = CuSuiteNew();
@@ -763,39 +1087,48 @@ CuSuite* linear_alg_get_suite(void)
   SUITE_ADD_TEST(suite, test_sp_vector_alloc);
   SUITE_ADD_TEST(suite, test_sp_cvector_alloc);
   SUITE_ADD_TEST(suite, test_sp_matrix_alloc);
+  SUITE_ADD_TEST(suite, test_sp_cmatrix_alloc);
   
   SUITE_ADD_TEST(suite, test_sp_vector_set_get);
   SUITE_ADD_TEST(suite, test_sp_cvector_set_get);
   SUITE_ADD_TEST(suite, test_sp_matrix_set_get);
+  SUITE_ADD_TEST(suite, test_sp_cmatrix_set_get);
   
   SUITE_ADD_TEST(suite, test_sp_vector_memcpy);
   SUITE_ADD_TEST(suite, test_sp_cvector_memcpy);
   SUITE_ADD_TEST(suite, test_sp_matrix_memcpy);
+  SUITE_ADD_TEST(suite, test_sp_cmatrix_memcpy);
   
   SUITE_ADD_TEST(suite, test_sp_vector_add);
   SUITE_ADD_TEST(suite, test_sp_cvector_add);
   SUITE_ADD_TEST(suite, test_sp_matrix_add);
+  SUITE_ADD_TEST(suite, test_sp_cmatrix_add);
   
   SUITE_ADD_TEST(suite, test_sp_vector_sub);
   SUITE_ADD_TEST(suite, test_sp_cvector_sub);
   SUITE_ADD_TEST(suite, test_sp_matrix_sub);
+  SUITE_ADD_TEST(suite, test_sp_cmatrix_sub);
   
   SUITE_ADD_TEST(suite, test_sp_vector_mul);
   SUITE_ADD_TEST(suite, test_sp_cvector_mul);
   SUITE_ADD_TEST(suite, test_sp_matrix_mul_elements);
+  SUITE_ADD_TEST(suite, test_sp_cmatrix_mul_elements);
   
   
   SUITE_ADD_TEST(suite, test_sp_vector_div);
   SUITE_ADD_TEST(suite, test_sp_cvector_div);
   SUITE_ADD_TEST(suite, test_sp_matrix_div_elements);
+  SUITE_ADD_TEST(suite, test_sp_cmatrix_div_elements);
   
   SUITE_ADD_TEST(suite, test_sp_vector_scale);
   SUITE_ADD_TEST(suite, test_sp_cvector_scale);
   SUITE_ADD_TEST(suite, test_sp_matrix_scale);
+  SUITE_ADD_TEST(suite, test_sp_cmatrix_scale);
   
   SUITE_ADD_TEST(suite, test_sp_vector_add_constant);
   SUITE_ADD_TEST(suite, test_sp_cvector_add_constant);
   SUITE_ADD_TEST(suite, test_sp_matrix_add_constant);
+  SUITE_ADD_TEST(suite, test_sp_cmatrix_add_constant);
 
   SUITE_ADD_TEST(suite, test_sp_vector_dot_prod);
   SUITE_ADD_TEST(suite, test_sp_cvector_dot_prod);
@@ -806,12 +1139,16 @@ CuSuite* linear_alg_get_suite(void)
   SUITE_ADD_TEST(suite, test_sp_cvector_norm);
 
   SUITE_ADD_TEST(suite, test_sp_matrix_vector_prod);
+  SUITE_ADD_TEST(suite, test_sp_cmatrix_cvector_prod);
 
   SUITE_ADD_TEST(suite, test_sp_matrix_transpose);
+  SUITE_ADD_TEST(suite, test_sp_cmatrix_transpose);
 
   SUITE_ADD_TEST(suite, test_sp_matrix_mul);
+  SUITE_ADD_TEST(suite, test_sp_cmatrix_mul);
 
   SUITE_ADD_TEST(suite, test_sp_matrix_invert);
+  SUITE_ADD_TEST(suite, test_sp_cmatrix_invert);
   return suite;
 }
 

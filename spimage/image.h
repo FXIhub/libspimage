@@ -3,14 +3,16 @@
 
 #include <float.h>
 
+
+
 #ifdef DOUBLE
 typedef double real;
-typedef _Complex double complex;
+typedef _Complex double Complex;
 #define REAL_MAX DBL_MAX
 #define REAL_EPSILON DBL_EPSILON
 #else
 typedef float real;
-typedef _Complex float complex;
+typedef _Complex float Complex;
 #define REAL_MAX FLT_MAX
 #define REAL_EPSILON FLT_EPSILON
 #endif
@@ -26,6 +28,8 @@ typedef _Complex float complex;
 /* unix needs nothing */
 #define spimage_EXPORT
 #endif
+
+#include "linear_alg.h"
 
 /*! Structure that keeps all the information about the Detector type.
 
@@ -54,19 +58,10 @@ typedef struct{
    the amplitudes (when scaled) or the intensities
   (when unscalled) */
   int scaled;
-  /* Intensity of the image */
-  real * intensities;
-  /* amplitude of the image */
-  real * amplitudes;
-  /* This always point to the correct
-   array depending on scaled (meaning it points
-  to intensities when scaled is on and vice versa)*/
-  real * image;
-  /* real part of the image */
-  real * r;
-  /* complex part */
-  real * c;
-  real * mask;
+  /* The actual image */
+  sp_cmatrix * image;
+  /* The integer mask */
+  sp_imatrix * mask;
   Detector * detector;
   /* this flag tells wether the image is shifted 
      (in FFTW format, center on the corners) or not*/
