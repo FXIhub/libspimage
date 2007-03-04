@@ -11,10 +11,11 @@
 
 #ifdef FFTW3
 #include <fftw3.h>
-#define image_guru_rev_fft(a) image_rev_fftw3(a)
-#define image_rev_fft(a) image_rev_fftw3(a)
-#define image_fft(a) image_fftw3(a) 
-#define image_guru_fft(a) image_fftw3(a)
+#define sp_image_ifft(a) sp_image_ifftw3(a)
+#define sp_image_fft(a) sp_image_fftw3(a) 
+#define sp_cmatrix_ifft(a) sp_cmatrix_ifftw3(a)
+#define sp_cmatrix_fft(a) sp_cmatrix_fftw3(a) 
+
 
 #ifdef DOUBLE
   typedef fftw_complex fftwr_complex;
@@ -55,11 +56,26 @@
 #define image_guru_fft(a) image_fftw2(a) 
 #endif
 
-spimage_EXPORT Image * image_fft(Image * img);
-spimage_EXPORT Image * image_rev_fft(Image * img);
-spimage_EXPORT Image * real_image_fft(Image * img);
-spimage_EXPORT Image * image_guru_fft(Image * img);
-spimage_EXPORT Image * image_guru_rev_fft(Image * img);
-spimage_EXPORT int init_fft(int nthreads);
+/*! Returns the forward FFT of img.
+ *
+ * The mask is copied unchanged
+ * The center of the image is set to the middle of the image
+ */
+spimage_EXPORT Image * sp_image_fft(Image * img);
+/*! Returns the forward FFT of m.
+ */
+spimage_EXPORT sp_cmatrix * sp_cmatrix_fft(sp_cmatrix * m);
+/*! Returns the backward FFT of img.
+ *
+ * The mask is copied unchanged
+ */
+spimage_EXPORT Image * sp_image_ifft(Image * img);
+/*! Returns the backward FFT of m.
+ */
+spimage_EXPORT sp_cmatrix * sp_cmatrix_ifft(sp_cmatrix * img);
+/*! Initializes the fft routine and tells it to use 
+ *   nthreads threads
+ */
+spimage_EXPORT int sp_init_fft(int nthreads);
 
 #endif

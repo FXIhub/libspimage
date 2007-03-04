@@ -38,7 +38,7 @@ sp_matrix * sp_matrix_alloc(unsigned int nrows, unsigned int ncols){
   return res;
 }
 
-sp_matrix * sp_imatrix_alloc(unsigned int nrows, unsigned int ncols){
+sp_imatrix * sp_imatrix_alloc(unsigned int nrows, unsigned int ncols){
   sp_imatrix * res = malloc(sizeof(sp_imatrix));
   res->rows = nrows;
   res->cols = ncols;
@@ -52,6 +52,13 @@ sp_cmatrix * sp_cmatrix_alloc(unsigned int nrows, unsigned int ncols){
   res->rows = nrows;
   res->cols = ncols;
   res->data = calloc(nrows*ncols,sizeof(Complex));
+  return res;
+}
+
+
+sp_cmatrix * sp_cmatrix_duplicate(sp_cmatrix * m){
+  sp_cmatrix * res = sp_cmatrix_alloc(sp_cmatrix_rows(m),sp_cmatrix_cols(m));
+  sp_cmatrix_memcpy(res,m);
   return res;
 }
 
@@ -78,7 +85,7 @@ void sp_cmatrix_free(sp_cmatrix * a){
 
 
 void sp_matrix_invert(sp_matrix * m){
-  int n,i,j;
+  int i,j;
   real x;
   sp_matrix * inv = sp_matrix_alloc(m->rows,m->cols);
   sp_matrix_set_identity(inv);
@@ -121,7 +128,7 @@ void sp_matrix_invert(sp_matrix * m){
 
 
 void sp_cmatrix_invert(sp_cmatrix * m){
-  int n,i,j;
+  int i,j;
   Complex x;
   sp_cmatrix * inv = sp_cmatrix_alloc(m->rows,m->cols);
   sp_cmatrix_set_identity(inv);
@@ -167,9 +174,9 @@ void sp_matrix_print(sp_matrix * a,FILE * fp){
   if(!fp){
     fp = stdout;
   }
-  for(i = 0;i<a->cols;i++){
+  for(i = 0;i<a->rows;i++){
     fprintf(fp,"|");
-    for(j = 0;j<a->rows;j++){
+    for(j = 0;j<a->cols;j++){
       fprintf(fp,"\t%e",sp_matrix_get(a,i,j));
     }
     fprintf(fp,",\t|\n");
@@ -177,15 +184,15 @@ void sp_matrix_print(sp_matrix * a,FILE * fp){
 }
 
 
-void sp_matrix_print(sp_imatrix * a,FILE * fp){
+void sp_imatrix_print(sp_imatrix * a,FILE * fp){
   int i,j;
   if(!fp){
     fp = stdout;
   }
-  for(i = 0;i<a->cols;i++){
+  for(i = 0;i<a->rows;i++){
     fprintf(fp,"|");
-    for(j = 0;j<a->rows;j++){
-      fprintf(fp,"\d%e",sp_imatrix_get(a,i,j));
+    for(j = 0;j<a->cols;j++){
+      fprintf(fp,"\t%d",sp_imatrix_get(a,i,j));
     }
     fprintf(fp,",\t|\n");
   }
@@ -196,9 +203,9 @@ void sp_cmatrix_print(sp_cmatrix * a,FILE * fp){
   if(!fp){
     fp = stdout;
   }
-  for(i = 0;i<a->cols;i++){
+  for(i = 0;i<a->rows;i++){
     fprintf(fp,"|");
-    for(j = 0;j<a->rows;j++){
+    for(j = 0;j<a->cols;j++){
       fprintf(fp,"\t%e %ei",creal(sp_cmatrix_get(a,i,j)),cimag(sp_cmatrix_get(a,i,j)));
     }
     fprintf(fp,",\t|\n");

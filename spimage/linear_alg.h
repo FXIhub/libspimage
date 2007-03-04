@@ -1,6 +1,7 @@
 #ifndef _LINEAR_ALG_H_
 #define _LINEAR_ALG_H_ 1
 
+#include <stdio.h>
 #include <complex.h>
 #include <string.h>
 #include <math.h>
@@ -50,6 +51,9 @@ static inline real sp_max(real a,real b){
   return b;
 }
 
+#define sp_swap(a,b,t){ t _temp = a; a = b;b = _temp}
+
+
 
 /*! This function allocates memory for a matrix of size nrows rows by ncols columns and initializes all the elements of the matrix to zero.
  *
@@ -60,6 +64,12 @@ spimage_EXPORT sp_matrix * sp_matrix_alloc(unsigned int nrows, unsigned int ncol
  *
  */
 spimage_EXPORT sp_cmatrix * sp_cmatrix_alloc(unsigned int nrows, unsigned int ncols);
+
+
+/*! This function creates a duplicate of it's argument and returns a pointer to it
+ *
+ */
+spimage_EXPORT sp_cmatrix * sp_cmatrix_duplicate(sp_cmatrix * m);
 
 /*! This function allocates memory for an Integer matrix of size nrows rows by ncols columns and initializes all the elements of the matrix to zero.
  *
@@ -79,7 +89,7 @@ spimage_EXPORT void sp_cmatrix_free(sp_cmatrix * m);
 /*! This function frees a previously allocated Complex matrix m
  *
  */
-spimage_EXPORT void sp_imatrix_free(sp_cmatrix * m);
+spimage_EXPORT void sp_imatrix_free(sp_imatrix * m);
 
 
 /*! Creates an empty zero initialized vector of the desired size.
@@ -125,10 +135,10 @@ static inline unsigned int sp_cvector_size(const sp_cvector * v){
 
 /*! This function returns the (row,col)-th element of a matrix m.
  *
- * row and col must lie in the range of 0 to nrows-1 and 0 to ncols-1.
+ * Row and col must lie in the range of 0 to nrows-1 and 0 to ncols-1.
  */
 static inline real sp_matrix_get (const sp_matrix * m, unsigned int row, unsigned int col){
-  return m->data[row*m->cols+col];
+  return m->data[col*m->rows+row];
 }
 
 /*! This function returns the (row,col)-th element of an Integer matrix m.
@@ -136,7 +146,7 @@ static inline real sp_matrix_get (const sp_matrix * m, unsigned int row, unsigne
  * row and col must lie in the range of 0 to nrows-1 and 0 to ncols-1.
  */
 static inline int sp_imatrix_get (const sp_imatrix * m, unsigned int row, unsigned int col){
-  return m->data[row*m->cols+col];
+  return m->data[col*m->rows+row];
 }
 
 
@@ -145,7 +155,7 @@ static inline int sp_imatrix_get (const sp_imatrix * m, unsigned int row, unsign
  * row and col must lie in the range of 0 to nrows-1 and 0 to ncols-1.
  */
 static inline Complex sp_cmatrix_get (const sp_cmatrix * m, unsigned int row, unsigned int col){
-  return m->data[row*m->cols+col];
+  return m->data[col*m->rows+row];
 }
 
 /*! This function sets the (row,col)-th element of a matrix m to x.
@@ -153,7 +163,7 @@ static inline Complex sp_cmatrix_get (const sp_cmatrix * m, unsigned int row, un
  * row and col must lie in the range of 0 to nrows-1 and 0 to ncols-1.
  */
 static inline void sp_matrix_set (sp_matrix * m, unsigned int row, unsigned int col, real x){
-  m->data[row*m->cols+col] = x;
+  m->data[col*m->rows+row] = x;
 }
 
 /*! This function sets the (row,col)-th element of an Integer matrix m to x.
@@ -161,7 +171,7 @@ static inline void sp_matrix_set (sp_matrix * m, unsigned int row, unsigned int 
  * row and col must lie in the range of 0 to nrows-1 and 0 to ncols-1.
  */
 static inline void sp_imatrix_set (sp_imatrix * m, unsigned int row, unsigned int col, int n){
-  m->data[row*m->cols+col] = n;
+  m->data[col*m->rows+row] = n;
 }
 
 /*! This function sets the (row,col)-th element of a Complex matrix m to x.
@@ -169,7 +179,7 @@ static inline void sp_imatrix_set (sp_imatrix * m, unsigned int row, unsigned in
  * row and col must lie in the range of 0 to nrows-1 and 0 to ncols-1.
  */
 static inline void sp_cmatrix_set (sp_cmatrix * m, unsigned int row, unsigned int col, Complex x){
-  m->data[row*m->cols+col] = x;
+  m->data[col*m->rows+row] = x;
 }
 
 
@@ -495,7 +505,7 @@ static inline void sp_cvector_memcpy(sp_cvector * dest, const sp_cvector * src){
 /*! This function returns the number of cells in m, that is, rows*cols 
  *
  */
-static inline unsigned int sp_matrix_size (const sp_matrix * m){
+static inline int sp_matrix_size (const sp_matrix * m){
   return m->rows*m->cols;
 }
 
@@ -503,14 +513,14 @@ static inline unsigned int sp_matrix_size (const sp_matrix * m){
 /*! This function returns the number of cells in m, that is, rows*cols 
  *
  */
-static inline unsigned int sp_imatrix_size (const sp_imatrix * m){
+static inline int sp_imatrix_size (const sp_imatrix * m){
   return m->rows*m->cols;
 }
 
 /*! This function returns the number of cells in m, that is, rows*cols 
  *
  */
-static inline unsigned int sp_cmatrix_size (const sp_cmatrix * m){
+static inline int sp_cmatrix_size (const sp_cmatrix * m){
   return m->rows*m->cols;
 }
 
@@ -518,21 +528,21 @@ static inline unsigned int sp_cmatrix_size (const sp_cmatrix * m){
 /*! This function returns the number of rows in m
  *
  */
-static inline unsigned int sp_matrix_rows (const sp_matrix * m){
+static inline int sp_matrix_rows (const sp_matrix * m){
   return m->rows;
 }
 
 /*! This function returns the number of rows in m
  *
  */
-static inline unsigned int sp_imatrix_rows (const sp_imatrix * m){
+static inline int sp_imatrix_rows (const sp_imatrix * m){
   return m->rows;
 }
 
 /*! This function returns the number of rows in m
  *
  */
-static inline unsigned int sp_cmatrix_rows (const sp_cmatrix * m){
+static inline int sp_cmatrix_rows (const sp_cmatrix * m){
   return m->rows;
 }
 
@@ -540,21 +550,21 @@ static inline unsigned int sp_cmatrix_rows (const sp_cmatrix * m){
 /*! This function returns the number of colums in m
  *
  */
-static inline unsigned int sp_matrix_cols (const sp_matrix * m){
+static inline int sp_matrix_cols (const sp_matrix * m){
   return m->cols;
 }
 
 /*! This function returns the number of colums in m
  *
  */
-static inline unsigned int sp_imatrix_cols (const sp_imatrix * m){
+static inline int sp_imatrix_cols (const sp_imatrix * m){
   return m->cols;
 }
 
 /*! This function returns the number of colums in m
  *
  */
-static inline unsigned int sp_cmatrix_cols (const sp_cmatrix * m){
+static inline int sp_cmatrix_cols (const sp_cmatrix * m){
   return m->cols;
 }
 
@@ -617,14 +627,21 @@ static inline void sp_imatrix_add(sp_imatrix * a, const sp_imatrix * b){
   }
 }
 
-/*! This function adds the elements of Complex matrix b to the elements of Complex matrix a, a'_ij = a_ij + b_ij. 
+/*! This function adds the elements of Complex matrix b scaled by x to the elements of Complex matrix a
+ *  a'_ij = a_ij + b_ij * x. 
  *
  * The two matrices must have the same dimensions.
  */
-static inline void sp_cmatrix_add(sp_cmatrix * a, const sp_cmatrix * b){
+static inline void sp_cmatrix_add(sp_cmatrix * a, const sp_cmatrix * b, Complex * x){
   int i;
-  for(i = 0;i<sp_cmatrix_size(b);i++){
-    a->data[i] += b->data[i];
+  if(x && *x != 1){
+    for(i = 0;i<sp_cmatrix_size(b);i++){
+      a->data[i] += b->data[i]*(*x);
+    }
+  }else{
+    for(i = 0;i<sp_cmatrix_size(b);i++){
+      a->data[i] += b->data[i];
+    }
   }
 }
 
@@ -1019,5 +1036,217 @@ static inline sp_cmatrix * sp_matrix_to_cmatrix(const sp_matrix * m){
   return ret;
 }
 
+
+
+/*! This function returns the index of a given row and column combination
+ *
+ */
+static inline int sp_matrix_get_index(const sp_matrix * m, const int row, const int col){
+  return col*m->rows+row;
+}
+
+
+/*! This function returns the index of a given row and column combination
+ *
+ */
+static inline int sp_imatrix_get_index(const sp_imatrix * m, const int row, const int col){
+  return col*m->rows+row;
+}
+
+/*! This function returns the index of a given row and column combination
+ *
+ */
+static inline int sp_cmatrix_get_index(const sp_cmatrix * m, const int row, const int col){
+  return col*m->rows+row;
+}
+
+
+/*! This function changes m to it's complex conjugate
+ *
+ */
+static inline void sp_cmatrix_conj(sp_cmatrix * m){
+  int i;
+  for(i = 0;i<sp_cmatrix_size(m);i++){
+    m->data[i] = conjr(m->data[i]);
+  }
+}
+
+/*! Returns the cabs value of the element with the smallest cabs
+ *
+ */
+static inline real sp_cmatrix_min(const sp_cmatrix * m, int * index){
+  real min = cabsr(m->data[0]);
+  int i,ii;
+  for(i = 1;i<sp_cmatrix_size(m);i++){
+    if(cabsr(m->data[i]) < min){
+      min = cabsr(m->data[i]);
+      ii = i;
+    }
+  }
+  if(index){
+    *index = ii;
+  }
+  return min;
+}
+
+/*! Returns the cabs value of the element with the biggest cabs
+ *
+ */
+static inline real sp_cmatrix_max(const sp_cmatrix * m, int * index){
+  real max = cabsr(m->data[0]);
+  int i;
+  int i_max = 0;
+  for(i = 1;i<sp_cmatrix_size(m);i++){
+    if(cabsr(m->data[i]) > max){
+      max = cabsr(m->data[i]);
+      i_max = i;
+    }
+  }
+  if(index){
+    *index = i_max;
+  }
+  return max;
+}
+
+
+/*! Returns the interpolated value of m at the floating point row frow and column fcol
+ *
+ */
+static inline Complex sp_cmatrix_interp(const sp_cmatrix * m, real frow, real fcol){
+  int x = fcol;
+  int y = frow;
+  real u = fcol-x;
+  real v = frow-y;
+  Complex res = 0;
+  if(x >= sp_cmatrix_cols(m)-1){
+    x = sp_cmatrix_cols(m)-2;
+    u = 1;
+  }
+  if(y >= sp_cmatrix_rows(m)-1){
+    y = sp_cmatrix_rows(m)-2;
+    v = 1;
+  }
+  res = sp_cmatrix_get(m,y,x)*(1-u)*(1-v)+
+    sp_cmatrix_get(m,y,x+1)*(u)*(1-v)+
+    sp_cmatrix_get(m,y+1,x)*(1-u)*(v)+
+    sp_cmatrix_get(m,y+1,x+1)*(u)*(v);
+  return res;
+}
+
+/*! Returns the interpolated value of m at the floating point row frow and column fcol
+ *
+ */
+static inline real sp_matrix_interp(const sp_matrix * m, real frow, real fcol){
+  int x = fcol;
+  int y = frow;
+  real u = fcol-x;
+  real v = frow-y;
+  real res = 0;
+  if(x >= sp_matrix_cols(m)-1){
+    x = sp_matrix_cols(m)-2;
+    u = 1;
+  }
+  if(y >= sp_matrix_rows(m)-1){
+    y = sp_matrix_rows(m)-2;
+    v = 1;
+  }
+  res = sp_matrix_get(m,y,x)*(1-u)*(1-v)+
+    sp_matrix_get(m,y,x+1)*(u)*(1-v)+
+    sp_matrix_get(m,y+1,x)*(1-u)*(v)+
+    sp_matrix_get(m,y+1,x+1)*(u)*(v);
+  return res;
+}
+
+
+/*! Returns the interpolated value of m at the floating point row frow and column fcol
+ *
+ */
+static inline int sp_imatrix_interp(const sp_imatrix * m, real frow, real fcol){
+  int x = fcol;
+  int y = frow;
+  real u = fcol-x;
+  real v = frow-y;
+  int res = 0;
+  if(x >= sp_imatrix_cols(m)-1){
+    x = sp_imatrix_cols(m)-2;
+    u = 1;
+  }
+  if(y >= sp_imatrix_rows(m)-1){
+    y = sp_imatrix_rows(m)-2;
+    v = 1;
+  }
+  res = sp_imatrix_get(m,y,x)*(1-u)*(1-v)+
+    sp_imatrix_get(m,y,x+1)*(u)*(1-v)+
+    sp_imatrix_get(m,y+1,x)*(1-u)*(v)+
+    sp_imatrix_get(m,y+1,x+1)*(u)*(v);
+  return res;
+}
+
+/*! Resizes complex matrix m to the desired size. 
+ *
+ *  The content of the matrix will be destroyed.
+ */
+static inline void sp_cmatrix_realloc(sp_cmatrix * m, int row, int col){
+  m->rows = row;
+  m->cols = col;
+  m->data = realloc(m->data,sizeof(Complex)*sp_cmatrix_size(m));
+}
+
+/*! Resizes integer matrix m to the desired size. 
+ *
+ *  The content of the matrix will be destroyed.
+ */
+static inline void sp_imatrix_realloc(sp_imatrix * m, int row, int col){
+  m->rows = row;
+  m->cols = col;
+  m->data = realloc(m->data,sizeof(int)*sp_imatrix_size(m));
+}
+
+/*! Resizes matrix m to the desired size. 
+ *
+ *  The content of the matrix will be destroyed.
+ */
+static inline void sp_matrix_realloc(sp_matrix * m, int row, int col){
+  m->rows = row;
+  m->cols = col;
+  m->data = realloc(m->data,sizeof(real)*sp_matrix_size(m));
+}
+
+
+/*! This function returns the index of a given row and column combination
+ *
+ */
+static inline void sp_cmatrix_get_row_col(const sp_cmatrix * m, int index, int * row, int * col){
+  *row = index%m->rows;
+  *col = index/m->rows;
+}
+
+
+/*! This function sets the real part to the cabs of each element and the complex part to 0
+ *
+ */
+static inline void sp_cmatrix_to_real(const sp_cmatrix * m){
+  int i;
+  for(i = 0;i<sp_cmatrix_size(m);i++){
+    m->data[i] = cabsr(m->data[i]);
+  }
+}
+
+
+/*! This function returns the Froebius inner product of complex matrix a and b
+ *
+ * The Froebius inner product is defined as the sum of a element by element multiplication
+ * of the matrix elements. It's the basis for the Froebius norm.
+ * Both matrices must obviously have the same dimensions.
+ */
+
+static inline Complex sp_cmatrix_froebius_prod(const sp_cmatrix * a, const sp_cmatrix * b){
+  Complex ret = 0; 
+  int i;
+  for(i = 0;i<sp_cmatrix_size(a);i++){
+    ret += a->data[i]*conjr(b->data[i]);
+  }
+  return ret;
+}
 
 #endif

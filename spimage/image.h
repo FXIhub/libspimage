@@ -2,19 +2,24 @@
 #define _CIMAGE_H_
 
 #include <float.h>
-
-
+#include <complex.h>
 
 #ifdef DOUBLE
 typedef double real;
 typedef _Complex double Complex;
 #define REAL_MAX DBL_MAX
 #define REAL_EPSILON DBL_EPSILON
+#define conjr(a) conj(a)
+#define cabsr(a) cabs(a)
+#define cargr(a) carg(a)
 #else
 typedef float real;
 typedef _Complex float Complex;
 #define REAL_MAX FLT_MAX
 #define REAL_EPSILON FLT_EPSILON
+#define cabsr(a) cabsf(a)
+#define conjr(a) conjf(a)
+#define cargr(a) cargf(a)
 #endif
 
 
@@ -36,7 +41,6 @@ typedef _Complex float Complex;
 */
 
 typedef struct{
-  int size[2];
   real image_center[2];
   real pixel_size;
   real detector_distance;
