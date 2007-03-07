@@ -11,6 +11,7 @@
 #define COLOR_RAINBOW 8
 #define COLOR_JET 16
 #define LOG_SCALE 32
+#define COLOR_PHASE 64
 
 #define OUT_OF_PLACE 0
 #define IN_PLACE 1
@@ -310,7 +311,7 @@ spimage_EXPORT void sp_image_scale(Image * img, real value);
 /*! Returns the index of the image maximum, and set *max to the
   value of that pixel
  */
-spimage_EXPORT int get_image_maximum(Image * img, int * x, int * y, real * max);
+spimage_EXPORT real sp_image_max(Image * img, int * index, int * x, int * y);
 
 /*! Returns the phase of the image on each pixel, in radians
  *

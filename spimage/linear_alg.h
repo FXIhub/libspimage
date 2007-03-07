@@ -2,6 +2,7 @@
 #define _LINEAR_ALG_H_ 1
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <complex.h>
 #include <string.h>
 #include <math.h>

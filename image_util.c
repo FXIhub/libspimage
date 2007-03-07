@@ -719,7 +719,9 @@ void sp_image_write(Image * img, char * filename, int flags){
     /* we have an h5 file */
     write_h5_img(img,filename,sizeof(real));
   }else if(strstr(filename,".png") && strstr(filename,".png") == &(filename[strlen(filename)-4])){
-    
+    write_png(img,filename,flags);
+  }else if(strstr(filename,".vtk") && strstr(filename,".vtk") == &(filename[strlen(filename)-4])){
+    write_vtk(img,filename);
   }else if(strstr(filename,".tiff") && strstr(filename,".tiff") == &(filename[strlen(filename)-5])){
   }else if(strstr(filename,".tif") && strstr(filename,".tif") == &(filename[strlen(filename)-4])){
   }
@@ -1507,6 +1509,7 @@ int write_png(Image * img, char * filename, int color){
   real log_of_2;
   real color_table[3][256];
   real scale,offset,max_v,min_v,value;
+  real phase;
   png_byte ** row_pointers;
 
   /*fclose(fp);
@@ -1625,21 +1628,26 @@ int write_png(Image * img, char * filename, int color){
   offset = min_v;
   i = 0;
   log_of_2 = log(2.0);
+  /* this is a special kind of color */
   for(x = 0;x<sp_cmatrix_cols(img->image);x++){
     for(y = 0;y<sp_cmatrix_rows(img->image);y++){
-
-
-
       /* traditional color scale taken from gnuplot manual */
       if(color & LOG_SCALE){
 	value = log((cabs(img->image->data[i])-offset)*scale+1)/log_of_2;
       }else{
 	value = ((cabs(img->image->data[i])-offset)*scale);
       }
-      value *= 255;
-      row_pointers[y][x*3] =  color_table[0][(int)value];
-      row_pointers[y][x*3+1] = color_table[1][(int)value];
-      row_pointers[y][x*3+2] = color_table[2][(int)value];
+      if(color & COLOR_PHASE){
+	phase = (256*(cargr(img->image->data[i])+3.1416)/(2*3.1416));
+	row_pointers[y][x*3] =  sqrt(value)*color_table[0][(int)phase];
+	row_pointers[y][x*3+1] = sqrt(value)*color_table[1][(int)phase];
+	row_pointers[y][x*3+2] = sqrt(value)*color_table[2][(int)phase];
+      }else{
+	value *= 255;
+	row_pointers[y][x*3] =  color_table[0][(int)value];
+	row_pointers[y][x*3+1] = color_table[1][(int)value];
+	row_pointers[y][x*3+2] = color_table[2][(int)value];
+      }
       i++;
     }
   }
@@ -2112,7 +2120,17 @@ void sp_image_scale(Image * img, real value){
 
 
 real sp_image_max(Image * img, int * index,int * x, int * y){
-  return sp_cmatrix_max(img->image,index);
+  real ret;
+  ret = sp_cmatrix_max(img->image,index);
+  if(index){
+    if(x){
+      *x = *index/sp_image_height(img);
+    }
+    if(y){
+      *y = *index%sp_image_height(img);
+    }
+  }
+  return ret;
 }
 
 
