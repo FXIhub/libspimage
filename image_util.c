@@ -14,6 +14,8 @@ typedef long off_t;
 #include <tiffio.h>
 #include <png.h>
 #include <float.h>
+#include <ctype.h>
+#include <strings.h>
 #include "spimage.h"
 
 
@@ -27,7 +29,13 @@ static void random_rephase(Image *  img);
 static Image * reflect_xy(Image * in, int in_place);
 static Image * reflect_x(Image * in, int in_place);
 static Image * reflect_y(Image * in, int in_place);
-static void write_h5_img(Image * img,char * filename, int output_precision);
+static void write_h5_img(Image * img,const char * filename, int output_precision);
+static Image * read_imagefile(const char * filename);
+static Image * read_tiff(const char * filename);
+static  void write_tiff(Image * img,const char * filename);
+static Image * read_png(const char * filename);
+static int write_png(Image * img,const char * filename, int color);
+static int write_vtk(Image * img,const char * filename);
 
 real p_drand48(){
 	real ret = ((double)rand())/(double)RAND_MAX;
@@ -713,21 +721,52 @@ Image * sp_image_alloc(int x, int y){
 
 
 
-void sp_image_write(Image * img, char * filename, int flags){
-  /* select the correct function depending on the filename extension */
-  if(strstr(filename,".h5") && strstr(filename,".h5") == &(filename[strlen(filename)-3])){
+void sp_image_write(Image * img, const char * filename, int flags){
+  char buffer[1024];
+  strcpy(buffer,filename);
+  for(int i = 0;i<strlen(buffer);i++){
+    buffer[i] = tolower(buffer[i]);
+  }
+  /* select the correct function depending on the buffer extension */
+  if(rindex(buffer,'.') && strcmp(rindex(buffer,'.'),".h5") == 0){
     /* we have an h5 file */
     write_h5_img(img,filename,sizeof(real));
-  }else if(strstr(filename,".png") && strstr(filename,".png") == &(filename[strlen(filename)-4])){
+  }else if(rindex(buffer,'.') && strcmp(rindex(buffer,'.'),".png") == 0){
     write_png(img,filename,flags);
-  }else if(strstr(filename,".vtk") && strstr(filename,".vtk") == &(filename[strlen(filename)-4])){
+  }else if(rindex(buffer,'.') && strcmp(rindex(buffer,'.'),".vtk") == 0){
     write_vtk(img,filename);
-  }else if(strstr(filename,".tiff") && strstr(filename,".tiff") == &(filename[strlen(filename)-5])){
-  }else if(strstr(filename,".tif") && strstr(filename,".tif") == &(filename[strlen(filename)-4])){
+  }else if(rindex(buffer,'.') && (strcmp(rindex(buffer,'.'),".tif") == 0 ||strcmp(rindex(buffer,'.'),".tiff") == 0 )){
+    write_tiff(img,filename);
+  }else{
+    fprintf(stderr,"Unsupported file type: %s\n",filename);
   }
 }
 
-static void write_h5_img(Image * img,char * filename, int output_precision){
+Image * sp_image_read(const char * filename, int flags){
+  char buffer[1024];
+  strcpy(buffer,filename);
+  for(int i = 0;i<strlen(buffer);i++){
+    buffer[i] = tolower(buffer[i]);
+  }
+  /* select the correct function depending on the filename extension */
+  if(rindex(buffer,'.') && strcmp(rindex(buffer,'.'),".h5") == 0){
+    /* we have an h5 file */
+    return read_imagefile(filename);
+  }else if(rindex(buffer,'.') && strcmp(rindex(buffer,'.'),".png") == 0){
+    return read_png(filename);
+  }else if(rindex(buffer,'.') && strcmp(rindex(buffer,'.'),".vtk") == 0){
+    fprintf(stderr,"Cannot read VTK files!\n");
+    return NULL;
+  }else if(rindex(buffer,'.') && (strcmp(rindex(buffer,'.'),".tif") == 0 ||strcmp(rindex(buffer,'.'),".tiff") == 0 )){
+    return read_tiff(filename);
+  }else{
+    fprintf(stderr,"Unsupported file type: %s\n",filename);
+  }
+  return NULL;
+}
+
+
+static void write_h5_img(Image * img,const char * filename, int output_precision){
   hid_t dataspace_id;
   hid_t dataset_id;
   hid_t file_id;
@@ -1135,7 +1174,7 @@ Image * read_tiff(const char * filename){
 }
 
 
-void write_tiff(Image * img, char * filename){
+void write_tiff(Image * img,const char * filename){
   float * data;
   int nstrips;
   int stripsize;
@@ -1447,7 +1486,7 @@ pngtest_read_data(png_structp png_ptr, png_bytep data, png_size_t length)
 }
 #endif 
 
-Image * read_png(char * filename){
+Image * read_png(const char * filename){
  FILE *fp = fopen(filename, "rb");
  int i,j;
  png_uint_32 width,height;
@@ -1492,7 +1531,7 @@ Image * read_png(char * filename){
 
 
 
-int write_png(Image * img, char * filename, int color){
+int write_png(Image * img,const char * filename, int color){
 
   FILE *fp = fopen(filename, "wb");
   
@@ -1969,7 +2008,7 @@ real integrated_intensity(Image * a){
   return sum;
 }
 
-int write_vtk(Image * img, char * filename){
+int write_vtk(Image * img, const char * filename){
   FILE * f = fopen(filename,"w");
   int x,y;
   if(!f){

@@ -76,15 +76,6 @@ spimage_EXPORT real sp_image_dist(Image * in, int i, int type);
  *  @{
  */
 
-/*! Read image from a file in spimage file format.
- *
- * It alocates and returns an Image structre will all the information
- * read from the file filename. It returns a NULL pointer
- * if it cannot open the file, or the file is not an spimage file.
- */
-
-spimage_EXPORT Image * read_imagefile(const char * filename);
-
 /*! Write the given file to the specified filename
  * 
  * The file type is infered from the filename extension.
@@ -93,32 +84,27 @@ spimage_EXPORT Image * read_imagefile(const char * filename);
  * .h5 - Create an hdf5 file
  * .tiff or .tif - Create a TIFF file
  * .png - Create a png file
+ * .vtk - Create a VTK file
  *
  * It creates an spimage file with all the informations contained
  * in the Image structure with the specified precision.
  * output_precision must be 4 or 8 and specifies the number of bytes
  * used for storing each floating point number.
  */
-spimage_EXPORT void sp_image_write(Image * img,char * filename,int flags);
+spimage_EXPORT void sp_image_write(Image * img,const char * filename,int flags);
 
-/*! Create an image using the values from the TIFF file
-*/
-spimage_EXPORT Image * read_tiff(const char * filename);
-/*! Write a TIFF using the values from the image file
-*/
-spimage_EXPORT void write_tiff(Image * img, char * filename);
 
-/*! Write the norm of the image to a file in png format, using 
-  the specified color map
-*/
-spimage_EXPORT int write_png(Image * img, char * filename, int color);
-
-/* Read png file and convert to image */
-spimage_EXPORT Image*  read_png(char * filename);
-
-/*! Write the norm of the image to a file in VTK ASCII format as a 2D Structured grid
+/*! Reads an image from the specified filename
+ * 
+ * The file type is infered from the filename extension.
+ * Supported extensions are:
+ *
+ * .h5 - Reads a hdf5 file
+ * .tiff or .tif - Reads a TIFF file
+ * .png - Reads a png file
+ *
  */
-spimage_EXPORT int write_vtk(Image * img, char * filename);
+spimage_EXPORT Image * sp_image_read(const char * filename,int flags);
 
 /*! Write the mask of the image to a file in png format, using 
   the specified color map
