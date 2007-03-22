@@ -9,6 +9,7 @@ ELSE(WIN32)
 ENDIF(WIN32)
 	
 
+SET(BUILD_STATIC_LIB CACHE BOOL "If ON output static library. Otherwise output shared libraries.")
 
 FIND_PATH (FFTW_INCLUDE_DIR fftw3.h PATHS /usr/include /sw/include)
 FIND_PATH (PNG_INCLUDE_DIR png.h PATHS /usr/include /sw/include)
@@ -32,7 +33,6 @@ FIND_LIBRARY (JPEG_LIBRARY jpeg /usr/lib /sw/lib)
 IF(WIN32)
 FIND_LIBRARY (FFTW3_LIBRARY fftw3 /usr/lib /sw/lib)
 ELSE(WIN32)
-FIND_LIBRARY (FFTW3_LIBRARY fftw3 /usr/lib /sw/lib)
 
 IF(DOUBLE)
 	FIND_LIBRARY (FFTW3_THREADS_LIBRARY fftw3_threads /usr/lib /sw/lib)	
@@ -50,15 +50,19 @@ SET(FFTW_LIBRARY ${FFTW3_LIBRARY} ${FFTW3F_LIBRARY} ${FFTW3F_THREADS_LIBRARY} ${
 
 INCLUDE_DIRECTORIES(${FFTW_INCLUDE_DIR} ${PNG_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${HDF5_INCLUDE_DIR})
 
-#ADD_LIBRARY(spimage STATIC image_util.c fft.c linear_alg.c)
-ADD_LIBRARY(spimage SHARED image_util.c fft.c linear_alg.c)
+IF(BUILD_STATIC_LIB)
+	ADD_LIBRARY(spimage STATIC image_util.c fft.c linear_alg.c)
+ELSE(BUILD_STATIC_LIB)
+	ADD_LIBRARY(spimage SHARED image_util.c fft.c linear_alg.c)
+ENDIF(BUILD_STATIC_LIB)
+
 ADD_EXECUTABLE(tests image_util.c fft.c linear_alg.c CuTest.c AllTests.c)
 
 
 INSTALL(TARGETS spimage
   RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
   LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib${LIBRARY_SUFFIX}
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib${LIBRARY_SUFFIX}/static)
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib${LIBRARY_SUFFIX})
 INSTALL(FILES spimage/fft.h spimage/image_util.h spimage/image.h spimage/linear_alg.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/spimage)
 INSTALL(FILES spimage.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/)
 

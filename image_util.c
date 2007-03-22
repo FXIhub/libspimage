@@ -1131,46 +1131,96 @@ Image * read_imagefile(const char * filename){
 }
 
 
+
 Image * read_tiff(const char * filename){
-  Image * res = malloc(sizeof(Image));
-  float * img;
+  Image * out = malloc(sizeof(Image));
+  out->detector = malloc(sizeof(Detector));
+  int bpp = 4;  
+  int datatype = 0;
+  int width,height;
+  unsigned char * tmpuc;
   int nstrips;
   int stripsize;
-  TIFF * tif;
-  int i;
+  int i,x,y;
+  unsigned char * img;
+  float * tmpf;
+  unsigned short * tmpi;
+  unsigned short * tmpui;
+  TIFF * tif; 
 
-
-  res->detector = malloc(sizeof(Detector));
-
-  tif = TIFFOpen(filename, "r");  
-  if(!tif){
+  tif = TIFFOpen(filename, "r");
+  if(TIFFGetField(tif,TIFFTAG_BITSPERSAMPLE,&bpp)){
+    bpp /= 8;
+  }
+  if(!TIFFGetField(tif,TIFFTAG_SAMPLEFORMAT,&datatype)){
+    if(bpp == 1){
+      datatype = SAMPLEFORMAT_VOID;
+    }else if(bpp == 2){
+      datatype = SAMPLEFORMAT_UINT;
+    }
+  }
+  
+  if(!TIFFGetField(tif,TIFFTAG_IMAGELENGTH,&height)){
+    perror("Could not get image height!\n");
+    return NULL;
+  }
+  if(!TIFFGetField(tif,TIFFTAG_IMAGEWIDTH,&width)){
+    perror("Could not get image width!\n");
     return NULL;
   }
   
   nstrips = TIFFNumberOfStrips(tif);
   stripsize = TIFFStripSize(tif);
   img = malloc(nstrips*stripsize);
-  res->scaled = 0;
-  res->image = sp_cmatrix_alloc(nstrips,stripsize/sizeof(float));
-  img = malloc(sizeof(float)*sp_image_size(res));
   for(i = 0;i<nstrips;i++){
-    TIFFReadEncodedStrip(tif,i,&(img[i*stripsize/4]),stripsize);
+    TIFFReadEncodedStrip(tif,i,img+i*stripsize,stripsize);
   }
   TIFFClose(tif);
-  for(i = 0;i<sp_image_size(res);i++){
-    res->image->data[i] = img[i];
+  
+  /* Transpose image, because TIFF is saved row by row (which they call strips)
+     unlike Hawk that saves column by column */
+  out->image = sp_cmatrix_alloc(height,width);
+  out->mask = sp_imatrix_alloc(height,width);
+  if(datatype == SAMPLEFORMAT_UINT){
+    tmpui = (unsigned short *)img;
+    for(x = 0;x<width;x++){
+      for(y = 0;y<height;y++){
+	tmpui = (unsigned short *)(img+y*width*bpp+x*bpp);
+	out->image->data[x*height+y] = *tmpui;
+      }    
+    }
+  }else if(datatype == SAMPLEFORMAT_IEEEFP){
+    for(x = 0;x<width;x++){
+      for(y = 0;y<height;y++){
+	tmpf = (float *)(img+y*width*bpp+x*bpp);
+	out->image->data[x*height+y] = *tmpf;
+      }    
+    }
+  }else if(datatype == SAMPLEFORMAT_VOID){
+    for(x = 0;x<width;x++){
+      for(y = 0;y<height;y++){
+	tmpuc = img+y*width*bpp+x*bpp;
+	out->image->data[x*height+y] = *tmpuc;
+      }    
+    }
+  }else if(datatype == SAMPLEFORMAT_INT){
+    for(x = 0;x<width;x++){
+      for(y = 0;y<height;y++){
+	tmpi = (unsigned short *)(img+y*width*bpp+x*bpp);
+	out->image->data[x*height+y] = (*tmpi);
+      }    
+    }
+  }
+  for(i = 0;i<sp_cmatrix_size(out->image);i++){
+    out->mask->data[i] = 1;
   }
   free(img);
-  sp_cmatrix_transpose(res->image);
-  
-  res->mask = sp_imatrix_alloc(sp_cmatrix_rows(res->image),sp_cmatrix_cols(res->image));
-  for(i = 0;i<sp_image_size(res);i++){
-    res->mask->data[i] = 1;
-  }
-  res->detector->image_center[0] =  (sp_cmatrix_cols(res->image)-1)/2.0;
-  res->detector->image_center[1] = (sp_cmatrix_rows(res->image)-1)/2.0;
-  res->phased = 0;
-  return res;  
+  out->scaled = 0;
+  out->phased = 0;
+  out->shifted = 0;
+  out->detector->image_center[0] = width/2;
+  out->detector->image_center[1] = height/2;
+  return out;
 }
 
 
@@ -1179,32 +1229,31 @@ void write_tiff(Image * img,const char * filename){
   int nstrips;
   int stripsize;
   TIFF * tif;
-  int x,y;;
-
+  int x,y;
+  int width = sp_image_width(img);
+  int height = sp_image_height(img);
 
 
   tif = TIFFOpen(filename, "w");  
-  nstrips = sp_cmatrix_rows(img->image);
-  stripsize = sp_cmatrix_cols(img->image)*sizeof(float);
-  TIFFSetField(tif,TIFFTAG_IMAGEWIDTH,stripsize/sizeof(float));
-  TIFFSetField(tif,TIFFTAG_ROWSPERSTRIP,nstrips);
-  TIFFSetField(tif,TIFFTAG_IMAGELENGTH,nstrips);
+  nstrips = height;
+  stripsize = width*sizeof(float);
+
+  TIFFSetField(tif,TIFFTAG_IMAGEWIDTH,width);
+  TIFFSetField(tif,TIFFTAG_ROWSPERSTRIP,1);
+  TIFFSetField(tif,TIFFTAG_IMAGELENGTH,height);
   TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, 32);
   TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, 1);
   TIFFSetField(tif, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK);
   TIFFSetField(tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
   TIFFSetField(tif, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_IEEEFP);
   data = malloc(nstrips*stripsize);
-
-  /* Transpose image */
-  for(x = 0;(unsigned int)x<(stripsize/sizeof(float));x++){
-    for(y = 0;y<nstrips;y++){
-      data[x+(stripsize/sizeof(float))*y] = cabs(sp_cmatrix_get(img->image,y,x));
+  for(y = 0;y<sp_image_height(img);y++){
+    for(x = 0;x<sp_image_width(img);x++){
+      data[x] =cabsr(sp_image_get(img,x,y));      
     }
-    
+    TIFFWriteEncodedStrip(tif,y,data,stripsize);
   }
 
-  TIFFWriteEncodedStrip(tif, 0, data, nstrips*stripsize);
   /*  for(i = 0;i<nstrips;i++){
     TIFFWriteEncodedStrip(tif,i,&(data[i*stripsize/4]),stripsize);
     }*/
