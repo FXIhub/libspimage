@@ -2864,7 +2864,7 @@ void sp_image_adaptative_constrast_stretch(Image * a,int x_div, int y_div){
     }
   }
   for(x = 0;x<sp_image_width(a);x++){
-    for(y = 0;y<sp_image_width(a);y++){
+    for(y = 0;y<sp_image_height(a);y++){
       /* cap extreme values */
       if(creal(sp_image_get(a,x,y)) < -sp_matrix_get(offsets,x,y)-1/sp_matrix_get(factors,x,y)){
 	sp_image_set(a,x,y,-sp_matrix_get(offsets,x,y)-1/sp_matrix_get(factors,x,y));
