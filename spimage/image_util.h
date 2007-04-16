@@ -85,6 +85,7 @@ spimage_EXPORT real sp_image_dist(Image * in, int i, int type);
  * .tiff or .tif - Create a TIFF file
  * .png - Create a png file
  * .vtk - Create a VTK file
+ * .csv - Create a CSV file
  *
  * It creates an spimage file with all the informations contained
  * in the Image structure with the specified precision.
@@ -290,6 +291,36 @@ spimage_EXPORT void sp_image_rephase(Image *  img, int type);
   taking the norm of each pixel.
  */
 spimage_EXPORT void sp_image_dephase(Image *  img);
+
+
+/*! Transform image into intensities
+ *
+ * Multiplies the image by the complex conjugate of itself if the image is scaled.
+ * If the image is not scaled it does nothing.
+ */
+static inline void sp_image_to_intensities(Image *  img){
+  if(img->scaled){
+    for(int i = 0;i<sp_image_size(img);i++){
+      img->image->data[i] *= conjr(img->image->data[i]);
+    }
+    img->scaled = 0;
+  }
+}
+
+/*! Transform image into amplitudes
+ *
+ * Returns the square root of each pixel of the image if the image is not scaled.
+ * If the image is already scaled it does nothing.
+ */
+static inline  void sp_image_to_amplitudes(Image *  img){
+  if(!img->scaled){
+    for(int i = 0;i<sp_image_size(img);i++){
+      img->image->data[i] = sqrt(img->image->data[i]);
+    }
+    img->scaled = 1;
+  }
+}
+
 
 /*! Multiply Image img by a scalar value.
  */

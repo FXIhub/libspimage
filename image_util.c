@@ -33,6 +33,7 @@ static void write_h5_img(Image * img,const char * filename, int output_precision
 static Image * read_imagefile(const char * filename);
 static Image * read_tiff(const char * filename);
 static  void write_tiff(Image * img,const char * filename);
+static  void write_csv(Image * img,const char * filename);
 static Image * read_png(const char * filename);
 static int write_png(Image * img,const char * filename, int color);
 static int write_vtk(Image * img,const char * filename);
@@ -737,6 +738,8 @@ void sp_image_write(Image * img, const char * filename, int flags){
     write_vtk(img,filename);
   }else if(rindex(buffer,'.') && (strcmp(rindex(buffer,'.'),".tif") == 0 ||strcmp(rindex(buffer,'.'),".tiff") == 0 )){
     write_tiff(img,filename);
+  }else if(rindex(buffer,'.') && (strcmp(rindex(buffer,'.'),".csv") == 0)){
+    write_csv(img,filename);
   }else{
     fprintf(stderr,"Unsupported file type: %s\n",filename);
   }
@@ -1262,7 +1265,23 @@ void write_tiff(Image * img,const char * filename){
 }
 
 
-
+/*! Write an image to CSV format 
+ */
+void write_csv(Image * img,const char * filename){
+  FILE * f = fopen(filename,"w");
+  int x,y;
+  if(!f){
+    perror("Could not write CSV");
+    exit(0);
+  }
+  fprintf(f,"x,y,amplitude,phase,real,imaginary\n");
+  for(y = 0;y<sp_image_height(img);y++){
+    for(x = 0;x<sp_image_width(img);x++){
+      fprintf(f,"%d,%d,%f,%f,%f,%f\n",x,y,cabsr(sp_image_get(img,x,y)),carg(sp_image_get(img,x,y)),creal(sp_image_get(img,x,y)),cimag(sp_image_get(img,x,y)));
+    }
+  }
+  fclose(f);
+}
 
 /* b must fit inside a or the other way around */
 
