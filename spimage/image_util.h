@@ -325,8 +325,8 @@ static inline  void sp_image_to_amplitudes(Image *  img){
 /*! Multiply Image img by a scalar value.
  */
 spimage_EXPORT void sp_image_scale(Image * img, real value);
-/*! Returns the index of the image maximum, and set *max to the
-  value of that pixel
+/*! Returns the maximum value of the image and sets *index to the
+  index of that pixel along iwth *x and *y
  */
 spimage_EXPORT real sp_image_max(Image * img, int * index, int * x, int * y);
 

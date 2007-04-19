@@ -1179,7 +1179,7 @@ static inline int sp_imatrix_interp(const sp_imatrix * m, real frow, real fcol){
   res = sp_imatrix_get(m,y,x)*(1-u)*(1-v)+
     sp_imatrix_get(m,y,x+1)*(u)*(1-v)+
     sp_imatrix_get(m,y+1,x)*(1-u)*(v)+
-    sp_imatrix_get(m,y+1,x+1)*(u)*(v);
+    sp_imatrix_get(m,y+1,x+1)*(u)*(v) + 0.5;
   return res;
 }
 
