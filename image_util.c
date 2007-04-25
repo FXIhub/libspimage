@@ -1384,18 +1384,18 @@ Image * sp_image_convolute(Image * a, Image * b, int * size){
   }
 
   tmp = zero_pad_image(a,x,y,1);
-  sp_image_dephase(tmp);
+/*  sp_image_dephase(tmp);*/
   a_ft = sp_image_fft(tmp);
   sp_image_free(tmp);
 
   tmp = zero_pad_image(b,x,y,1);
-  sp_image_dephase(tmp);
+/*  sp_image_dephase(tmp);*/
   b_ft = sp_image_fft(tmp);
   sp_image_free(tmp);
 
   tmp = sp_image_duplicate(a_ft,SP_COPY_DETECTOR);
   tmp->shifted = 1;
-  sp_image_rephase(tmp,SP_ZERO_PHASE);
+/*  sp_image_rephase(tmp,SP_ZERO_PHASE);*/
   /* Now do the multiplication in fourier space */
   /* Using the Convolution Theorem */
   for(i = 0;i<x*y;i++){
@@ -1408,7 +1408,7 @@ Image * sp_image_convolute(Image * a, Image * b, int * size){
   res = sp_image_ifft(tmp);
   sp_image_free(tmp);
 
-  sp_image_dephase(res);
+/*  sp_image_dephase(res);*/
   /* should be all real */
   for(i = 0;i<sp_image_size(res);i++){
     res->image->data[i] /= sp_image_size(res);
@@ -1441,6 +1441,8 @@ Image * gaussian_blur(Image * in, real radius){
     for(y = -ceil(radius)*3;y<=ceil(radius)*3;y++){
       j = y+ceil(radius)*3;
       filter_img->image->data[i*filter_side+j] = 1/sqrt(2*M_PI*radius) * exp(-(x*x+y*y)/(2*radius*radius));
+      /* Make the filter symmetric in the imaginary part */
+/*      filter_img->image->data[i*filter_side+j] = filter_img->image->data[i*filter_side+j] + filter_img->image->data[i*filter_side+j]*I;*/
       total_filter += filter_img->image->data[i*filter_side+j];
     }
   }
