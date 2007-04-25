@@ -1034,7 +1034,7 @@ Image * read_imagefile(const char * filename){
     status = H5Dread(dataset_id,mem_type_id , H5S_ALL, H5S_ALL,
 		     H5P_DEFAULT, tmp->data);
     for(i = 0;i<sp_matrix_size(tmp);i++){
-      res->mask->data[i] = tmp->data[i]*I;
+      res->mask->data[i] = tmp->data[i];
     }
     sp_matrix_free(tmp);
     
