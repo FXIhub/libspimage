@@ -2923,3 +2923,56 @@ void sp_bubble_sort(real * a, int n){
   }
 }
 
+
+void sp_image_fourier_coords(Image * in, sp_matrix * k_x, sp_matrix * k_y, sp_matrix * k_z){
+  /* We need to get the wavelength and detector size */
+  /* Calculate the fourier coordinates of each pixel in the detector */
+  /* First we project the pixels on the ewald sphere and then we calculate it's coordinates */
+
+  /* number of pixels */
+  int nx, ny;
+  /* pixel index */
+  int x,y;
+  /* physical location of pixel*/
+  real px,py;
+  /* reciprocal coordinates */
+  real rx,ry;
+  real real_to_reciprocal = 1.0/(in->detector->detector_distance*in->detector->lambda);
+  real ewald_radius = 1.0/in->detector->lambda;
+  real distance_to_ewald_sphere_center;
+
+  real det_width = in->detector->pixel_size * sp_image_width(in);
+  real det_height = in->detector->pixel_size * sp_image_height(in);
+  
+  nx = sp_image_width(in);
+  ny = sp_image_height(in);
+
+  for(x = 0;x<nx;x++){
+    for(y = 0;y<ny;y++){
+      /* 
+	 Calculate the pixel coordinates in reciprocal space 	 
+	 by dividing the physical position by detector_distance*wavelength.
+	 
+	 CCD center at image_center(nx-1)/2,(ny-1)/2
+
+	 Upper left corner of the detector with negative x and positive y
+      */
+      px = ((x-in->detector->image_center[0])/nx)*det_width;
+      py = ((in->detector->image_center[1]-y)/ny)*det_height;
+
+      rx = px*real_to_reciprocal;
+      ry = py*real_to_reciprocal;
+      /* Project pixel into Ewald sphere. */
+      distance_to_ewald_sphere_center = sqrt(rx*rx+ry*ry+ewald_radius*ewald_radius);
+      if(k_x){      
+	sp_matrix_set(k_x,x,y,rx * ewald_radius/distance_to_ewald_sphere_center);
+      }
+      if(k_y){
+	sp_matrix_set(k_y,x,y,ry * ewald_radius/distance_to_ewald_sphere_center);
+      }
+      if(k_z){
+	sp_matrix_set(k_z,x,y,ewald_radius-(ewald_radius * ewald_radius/distance_to_ewald_sphere_center));
+      }
+    }
+  }
+}

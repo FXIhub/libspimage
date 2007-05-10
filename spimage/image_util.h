@@ -534,6 +534,20 @@ spimage_EXPORT void sp_bubble_sort(real * a, int n);
  * and each division is contrast stretched 
  * The scaling is linear interpolated from division to division
  */
-void sp_image_adaptative_constrast_stretch(Image * a,int x_div, int y_div);
+spimage_EXPORT void sp_image_adaptative_constrast_stretch(Image * a,int x_div, int y_div);
 
+
+/*! Calculates the fourier space coordinates of each pixel of the image 
+ *
+ * The matrices k_x k_y and k_z are filled with the coordinates.
+ * If any of these matrices is NULL then it's not filed in .
+ * These matrices should be prealocated.
+ *
+ * To access the x fourier coordinate at pixel_x = 1 pixel_y = 2
+ * the following should be used: sp_matrix_get(k_x,1,2) and not the other way around!
+ *
+ * The wavelength distance to detector and pixel size of the image must be correctly set for
+ * this function to work!
+ */
+spimage_EXPORT void sp_image_fourier_coords(Image * in, sp_matrix * k_x, sp_matrix * k_y, sp_matrix * k_z);
 #endif
