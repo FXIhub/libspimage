@@ -2540,14 +2540,18 @@ Image * sp_image_local_variance(Image * img, Image * window){
 
 
 Complex sp_image_dot_prod(Image * a, Image * b){
-  return sp_cmatrix_froebius_prod(a->image,b->image);
+  return sp_cmatrix_froenius_prod(a->image,b->image);
 }
 
 Image * sp_proj_module(Image * a, Image * b){
   Image * ret = sp_image_duplicate(a,SP_COPY_DATA|SP_COPY_MASK);
   int i;
   for(i = 0;i<sp_image_size(a);i++){
-    ret->image->data[i] *= cabs(b->image->data[i])/cabs(a->image->data[i]);
+    if(b->mask->data[i]){
+      ret->image->data[i] *= cabs(b->image->data[i])/cabs(a->image->data[i]);
+    }else{
+      ret->image->data[i] = a->image->data[i];
+    }
   }
   return ret;
 }

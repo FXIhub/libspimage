@@ -1234,14 +1234,14 @@ static inline void sp_cmatrix_to_real(const sp_cmatrix * m){
 }
 
 
-/*! This function returns the Froebius inner product of complex matrix a and b
+/*! This function returns the Froenius inner product of complex matrix a and b
  *
- * The Froebius inner product is defined as the sum of a element by element multiplication
- * of the matrix elements. It's the basis for the Froebius norm.
+ * The Froenius inner product is defined as the sum of a element by element multiplication
+ * of the matrix elements. It's the basis for the Froenius norm.
  * Both matrices must obviously have the same dimensions.
  */
 
-static inline Complex sp_cmatrix_froebius_prod(const sp_cmatrix * a, const sp_cmatrix * b){
+static inline Complex sp_cmatrix_froenius_prod(const sp_cmatrix * a, const sp_cmatrix * b){
   Complex ret = 0; 
   int i;
   for(i = 0;i<sp_cmatrix_size(a);i++){
