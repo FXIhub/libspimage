@@ -38,6 +38,11 @@ static Image * read_png(const char * filename);
 static int write_png(Image * img,const char * filename, int color);
 static int write_vtk(Image * img,const char * filename);
 
+
+void sp_srand(int i){
+  srand(i);
+}
+
 real p_drand48(){
 	real ret = ((double)rand())/(double)RAND_MAX;
   return (ret);
@@ -1593,6 +1598,7 @@ Image * read_png(const char * filename){
  for(i = 0;i<height;i++){
    for(j = 0;j<width;j++){
      res->image->data[j*height+i] = row_pointers[i][(int)(j*bit_depth/8)];
+     res->mask->data[j*height+i] = 1;
    }
  }
  return res;

@@ -550,4 +550,10 @@ spimage_EXPORT void sp_image_adaptative_constrast_stretch(Image * a,int x_div, i
  * this function to work!
  */
 spimage_EXPORT void sp_image_fourier_coords(Image * in, sp_matrix * k_x, sp_matrix * k_y, sp_matrix * k_z);
+
+/*! Initialize the random number generator with a given seed
+ *
+ */
+spimage_EXPORT void sp_srand(int i);
+
 #endif

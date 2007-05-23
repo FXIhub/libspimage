@@ -6,6 +6,7 @@
 #include <complex.h>
 #include <string.h>
 #include <math.h>
+#include <assert.h>
 
 typedef struct{
   unsigned int size;
@@ -743,6 +744,7 @@ static inline void sp_imatrix_div_elements(sp_imatrix * a, const sp_imatrix * b)
 static inline void sp_cmatrix_div_elements(sp_cmatrix * a, const sp_cmatrix * b){
   int i;
   for(i = 0;i<sp_cmatrix_size(b);i++){
+    assert(b->data[i] != 0);
     a->data[i] /= b->data[i];
   }
 }
