@@ -86,6 +86,42 @@ void test_sp_cmatrix_alloc(CuTest* tc)
   sp_cmatrix_free(m);
 }
 
+void test_sp_c3matrix_alloc(CuTest* tc)
+{
+  int i,j,k;
+  sp_c3matrix * m = sp_c3matrix_alloc(4,3,2);
+  CuAssertTrue(tc,sp_c3matrix_size(m) == 4*3*2);
+  CuAssertTrue(tc,sp_c3matrix_x(m) == 4);
+  CuAssertTrue(tc,sp_c3matrix_y(m) == 3);
+  CuAssertTrue(tc,sp_c3matrix_z(m) == 2);
+  for(i = 0;i<sp_c3matrix_x(m);i++){
+    for(j = 0;j<sp_c3matrix_y(m);j++){
+      for(k = 0;k<sp_c3matrix_z(m);k++){
+	CuAssertComplexEquals(tc,sp_c3matrix_get(m,i,j,k),0,REAL_EPSILON);
+      }
+    }
+  }
+  sp_c3matrix_free(m);
+}
+
+void test_sp_i3matrix_alloc(CuTest* tc)
+{
+  int i,j,k;
+  sp_i3matrix * m = sp_i3matrix_alloc(4,3,2);
+  CuAssertTrue(tc,sp_i3matrix_size(m) == 4*3*2);
+  CuAssertTrue(tc,sp_i3matrix_x(m) == 4);
+  CuAssertTrue(tc,sp_i3matrix_y(m) == 3);
+  CuAssertTrue(tc,sp_i3matrix_z(m) == 2);
+  for(i = 0;i<sp_i3matrix_x(m);i++){
+    for(j = 0;j<sp_i3matrix_y(m);j++){
+      for(k = 0;k<sp_i3matrix_z(m);k++){
+	CuAssertIntEquals(tc,sp_i3matrix_get(m,i,j,k),0);
+      }
+    }
+  }
+  sp_i3matrix_free(m);
+}
+
 void test_sp_vector_set_get(CuTest* tc){
   sp_vector * v = sp_vector_alloc(4);
   sp_vector_set(v,1,5);
@@ -114,6 +150,15 @@ void test_sp_matrix_set_get(CuTest* tc){
   sp_matrix_free(m);  
 }
 
+void test_sp_3matrix_set_get(CuTest* tc){
+  sp_3matrix * m = sp_3matrix_alloc(4,3,2);
+  sp_3matrix_set(m,1,2,1,5);
+  CuAssertDblEquals(tc,sp_3matrix_get(m,1,2,1),5,REAL_EPSILON);
+  sp_3matrix_set(m,3,1,0,-1);
+  CuAssertDblEquals(tc,sp_3matrix_get(m,3,1,0),-1,REAL_EPSILON);
+  sp_3matrix_free(m);  
+}
+
 void test_sp_cmatrix_set_get(CuTest* tc){
   sp_cmatrix * m = sp_cmatrix_alloc(4,3);
   sp_cmatrix_set(m,1,2,5);
@@ -121,6 +166,33 @@ void test_sp_cmatrix_set_get(CuTest* tc){
   sp_cmatrix_set(m,3,1,-1);
   CuAssertComplexEquals(tc,sp_cmatrix_get(m,3,1),-1,REAL_EPSILON);
   sp_cmatrix_free(m);  
+}
+
+void test_sp_c3matrix_set_get(CuTest* tc){
+  sp_c3matrix * m = sp_c3matrix_alloc(4,3,2);
+  sp_c3matrix_set(m,1,2,1,5);
+  CuAssertComplexEquals(tc,sp_c3matrix_get(m,1,2,1),5,REAL_EPSILON);
+  sp_c3matrix_set(m,3,1,0,-1);
+  CuAssertComplexEquals(tc,sp_c3matrix_get(m,3,1,0),-1,REAL_EPSILON);
+  sp_c3matrix_free(m);  
+}
+
+void test_sp_imatrix_set_get(CuTest* tc){
+  sp_imatrix * m = sp_imatrix_alloc(4,3);
+  sp_imatrix_set(m,1,2,5);
+  CuAssertIntEquals(tc,sp_imatrix_get(m,1,2),5);
+  sp_imatrix_set(m,3,1,-1);
+  CuAssertIntEquals(tc,sp_imatrix_get(m,3,1),-1);
+  sp_imatrix_free(m);
+}
+
+void test_sp_i3matrix_set_get(CuTest* tc){
+  sp_i3matrix * m = sp_i3matrix_alloc(4,3,2);
+  sp_i3matrix_set(m,1,2,1,5);
+  CuAssertIntEquals(tc,sp_i3matrix_get(m,1,2,1),5);
+  sp_i3matrix_set(m,3,1,0,-1);
+  CuAssertIntEquals(tc,sp_i3matrix_get(m,3,1,0),-1);
+  sp_i3matrix_free(m);  
 }
 
 void test_sp_vector_memcpy(CuTest * tc){
@@ -1143,30 +1215,30 @@ CuSuite* linear_alg_get_suite(void)
 
 
 void test_sp_image_edge_extend(CuTest * tc){
-  Image * a = sp_image_alloc(2,2);
-  sp_image_set(a,0,0,1);
-  sp_image_set(a,1,0,2);
-  sp_image_set(a,0,1,3);
-  sp_image_set(a,1,1,4);
-  Image * b = sp_image_edge_extend(a,1,SP_ZERO_PAD_EDGE);
-  for(int x = 0;x<sp_image_width(b);x++){
-    for(int y = 0;y<sp_image_height(b);y++){
+  Image * a = sp_image_alloc(2,2,1);
+  sp_image_set(a,0,0,0,1);
+  sp_image_set(a,1,0,0,2);
+  sp_image_set(a,0,1,0,3);
+  sp_image_set(a,1,1,0,4);
+  Image * b = sp_image_edge_extend(a,1,SP_ZERO_PAD_EDGE,SP_2D);
+  for(int x = 0;x<sp_image_x(b);x++){
+    for(int y = 0;y<sp_image_y(b);y++){
       if(!x || x == 3 || !y || y == 3){
-	CuAssertComplexEquals(tc,sp_image_get(b,x,y),0,cabs(REAL_EPSILON*(sp_image_get(b,x,y))+REAL_EPSILON));
+	CuAssertComplexEquals(tc,sp_image_get(b,x,y,0),0,cabs(REAL_EPSILON*(sp_image_get(b,x,y,0))+REAL_EPSILON));
       }
     }
   }
   sp_image_free(b);
-  b = sp_image_edge_extend(a,1,SP_SYMMETRIC_EDGE);
-  CuAssertComplexEquals(tc,sp_image_get(b,0,0),sp_image_get(a,0,0),cabs(REAL_EPSILON*(sp_image_get(b,0,0))+REAL_EPSILON));
-  CuAssertComplexEquals(tc,sp_image_get(b,2,0),sp_image_get(a,1,0),cabs(REAL_EPSILON*(sp_image_get(b,2,0))+REAL_EPSILON));
+  b = sp_image_edge_extend(a,1,SP_SYMMETRIC_EDGE,SP_2D);
+  CuAssertComplexEquals(tc,sp_image_get(b,0,0,0),sp_image_get(a,0,0,0),cabs(REAL_EPSILON*(sp_image_get(b,0,0,0))+REAL_EPSILON));
+  CuAssertComplexEquals(tc,sp_image_get(b,2,0,0),sp_image_get(a,1,0,0),cabs(REAL_EPSILON*(sp_image_get(b,2,0,0))+REAL_EPSILON));
   sp_image_free(b);
-  b = sp_image_edge_extend(a,1,SP_REPLICATE_EDGE);
-  CuAssertComplexEquals(tc,sp_image_get(b,0,0),sp_image_get(a,0,0),cabs(REAL_EPSILON*(sp_image_get(b,0,0))+REAL_EPSILON));
-  CuAssertComplexEquals(tc,sp_image_get(b,2,0),sp_image_get(a,1,0),cabs(REAL_EPSILON*(sp_image_get(b,2,0))+REAL_EPSILON));
-  b = sp_image_edge_extend(a,1,SP_CIRCULAR_EDGE);
-  CuAssertComplexEquals(tc,sp_image_get(b,0,0),sp_image_get(a,1,1),cabs(REAL_EPSILON*(sp_image_get(b,0,0))+REAL_EPSILON));
-  CuAssertComplexEquals(tc,sp_image_get(b,2,0),sp_image_get(a,1,1),cabs(REAL_EPSILON*(sp_image_get(b,2,0))+REAL_EPSILON));
+  b = sp_image_edge_extend(a,1,SP_REPLICATE_EDGE,SP_2D);
+  CuAssertComplexEquals(tc,sp_image_get(b,0,0,0),sp_image_get(a,0,0,0),cabs(REAL_EPSILON*(sp_image_get(b,0,0,0))+REAL_EPSILON));
+  CuAssertComplexEquals(tc,sp_image_get(b,2,0,0),sp_image_get(a,1,0,0),cabs(REAL_EPSILON*(sp_image_get(b,2,0,0))+REAL_EPSILON));
+  b = sp_image_edge_extend(a,1,SP_CIRCULAR_EDGE,SP_2D);
+  CuAssertComplexEquals(tc,sp_image_get(b,0,0,0),sp_image_get(a,1,1,0),cabs(REAL_EPSILON*(sp_image_get(b,0,0,0))+REAL_EPSILON));
+  CuAssertComplexEquals(tc,sp_image_get(b,2,0,0),sp_image_get(a,1,1,0),cabs(REAL_EPSILON*(sp_image_get(b,2,0,0))+REAL_EPSILON));
 }
 
 void test_sp_bubble_sort(CuTest * tc){
@@ -1180,16 +1252,16 @@ void test_sp_bubble_sort(CuTest * tc){
 
 
 void test_sp_image_median_filter(CuTest * tc){
-  Image * a = sp_image_alloc(2,2);
-  sp_image_set(a,0,0,1);
-  sp_image_set(a,1,0,2);
-  sp_image_set(a,0,1,3);
-  sp_image_set(a,1,1,4);
-  sp_imatrix * kernel = sp_imatrix_alloc(2,2);
-  sp_imatrix_add_constant(kernel,2);
-  sp_image_median_filter(a,kernel,SP_ZERO_PAD_EDGE);
-  CuAssertDblEquals(tc,sp_image_get(a,0,0),0,cabs(REAL_EPSILON*(0)+REAL_EPSILON));
-  CuAssertDblEquals(tc,sp_image_get(a,1,1),2.5,cabs(REAL_EPSILON*(2.5)+REAL_EPSILON));
+  Image * a = sp_image_alloc(2,2,0);
+  sp_image_set(a,0,0,0,1);
+  sp_image_set(a,1,0,0,2);
+  sp_image_set(a,0,1,0,3);
+  sp_image_set(a,1,1,0,4);
+  sp_i3matrix * kernel = sp_i3matrix_alloc(2,2,0);
+  sp_i3matrix_add_constant(kernel,2);
+  sp_image_median_filter(a,kernel,SP_ZERO_PAD_EDGE,SP_2D);
+  CuAssertDblEquals(tc,sp_image_get(a,0,0,0),0,cabs(REAL_EPSILON*(0)+REAL_EPSILON));
+  CuAssertDblEquals(tc,sp_image_get(a,1,1,0),2.5,cabs(REAL_EPSILON*(2.5)+REAL_EPSILON));
 }
 
 

@@ -19,8 +19,8 @@ typedef long off_t;
 #include "spimage.h"
 
 
-static Image * zero_pad_shifted_image(Image * a, int newx, int newy, int pad_mask);
-static Image * zero_pad_unshifted_image(Image * a, int newx, int newy, int pad_mask);
+static Image * zero_pad_shifted_image(Image * a, int newx, int newy, int newz, int pad_mask);
+static Image * zero_pad_unshifted_image(Image * a, int newx, int newy, int newz, int pad_mask);
 static real dist_to_axis(int i, Image * in);
 static real dist_to_center(int i, Image * in);
 static real square_dist_to_center(int i, Image * in);
@@ -30,6 +30,7 @@ static Image * reflect_xy(Image * in, int in_place);
 static Image * reflect_x(Image * in, int in_place);
 static Image * reflect_y(Image * in, int in_place);
 static void write_h5_img(Image * img,const char * filename, int output_precision);
+static void write_h5_img_3d(Image * img,const char * filename, int output_precision);
 static Image * read_imagefile(const char * filename);
 static Image * read_tiff(const char * filename);
 static  void write_tiff(Image * img,const char * filename);
@@ -37,7 +38,7 @@ static  void write_csv(Image * img,const char * filename);
 static Image * read_png(const char * filename);
 static int write_png(Image * img,const char * filename, int color);
 static int write_vtk(Image * img,const char * filename);
-
+static int write_vtk_3d(Image * img, const char * filename);
 
 void sp_srand(int i){
   srand(i);
@@ -55,7 +56,7 @@ Image * sp_image_patterson(Image * a){
   Image * d;
 
   if(b->scaled){
-    sp_cmatrix_mul_elements(b->image,b->image);
+    sp_c3matrix_mul_elements(b->image,b->image);
   }
   c = sp_image_fft(b);
 
@@ -94,12 +95,12 @@ static Image * reflect_x(Image * in, int in_place){
   }else{
     out = sp_image_duplicate(in,SP_COPY_DATA|SP_COPY_MASK);
   }
-  for(x = 0;x<sp_cmatrix_cols(in->image);x++){
-    for(y = 0;y<sp_cmatrix_rows(in->image)/2.0;y++){
-      y2 = sp_cmatrix_rows(in->image)-y-1;
-      tmp = sp_cmatrix_get(in->image,y,x);
-      sp_cmatrix_set(out->image,y,x,sp_cmatrix_get(in->image,y2,x));
-      sp_cmatrix_set(out->image,y2,x, tmp);
+  for(x = 0;x<sp_c3matrix_x(in->image);x++){
+    for(y = 0;y<sp_c3matrix_y(in->image)/2.0;y++){
+      y2 = sp_c3matrix_y(in->image)-y-1;
+      tmp = sp_c3matrix_get(in->image,x,y,0);
+      sp_c3matrix_set(out->image,x,y,0,sp_c3matrix_get(in->image,x,y2,0));
+      sp_c3matrix_set(out->image,x,y2,0, tmp);
     }
   }
   return out;
@@ -116,12 +117,12 @@ static Image * reflect_y(Image * in, int in_place){
   }else{
     out = sp_image_duplicate(in,SP_COPY_DATA|SP_COPY_DATA);
   }
-  for(x = 0;x<sp_cmatrix_cols(in->image)/2.0;x++){
-    x2 = sp_cmatrix_cols(in->image)-x-1;
-    for(y = 0;y<sp_cmatrix_rows(in->image);y++){
-      tmp = sp_cmatrix_get(in->image,y,x);
-      sp_cmatrix_set(out->image,y,x,sp_cmatrix_get(in->image,y,x2));
-      sp_cmatrix_set(out->image,y,x2,tmp);
+  for(x = 0;x<sp_c3matrix_x(in->image)/2.0;x++){
+    x2 = sp_c3matrix_x(in->image)-x-1;
+    for(y = 0;y<sp_c3matrix_y(in->image);y++){
+      tmp = sp_c3matrix_get(in->image,x,y,0);
+      sp_c3matrix_set(out->image,x,y,0,sp_c3matrix_get(in->image,x,y,0));
+      sp_c3matrix_set(out->image,x,y,0,tmp);
     }
   }
   return out;
@@ -139,16 +140,19 @@ Image * sp_average_centrosymetry(Image * in){
     fprintf(stderr,"Error: Using average_centrosymetry on unshifted image!\n");
     exit(1);
   }
-  if(sp_cmatrix_cols(in->image) != sp_cmatrix_rows(in->image)){
+  if(sp_c3matrix_x(in->image) != sp_c3matrix_y(in->image)){
     fprintf(stderr,"Error: Using average_centrosymetry with a non square image!\n");
     exit(1);
   }
+  if(sp_c3matrix_z(in->image) != 1){
+    fprintf(stderr,"Error: Using average_centrosymetry on 3D image");
+  }
 
-  for(x = 0;x<sp_cmatrix_cols(in->image);x++){
-    for(y = 0;y<sp_cmatrix_rows(in->image);y++){
-      ind1 = sp_cmatrix_get_index(in->image,sp_cmatrix_rows(in->image)-1-y,sp_cmatrix_cols(in->image)-1-x);
-      ind2= sp_cmatrix_get_index(in->image,y,x);
-      if(dist_to_corner(x*sp_cmatrix_rows(in->image)+y,in) < 1500){
+  for(x = 0;x<sp_c3matrix_x(in->image);x++){
+    for(y = 0;y<sp_c3matrix_y(in->image);y++){
+      ind1 = sp_c3matrix_get_index(in->image,sp_c3matrix_y(in->image)-1-y,sp_c3matrix_x(in->image)-1-x,0);
+      ind2= sp_c3matrix_get_index(in->image,x,y,0);
+      if(dist_to_corner(x*sp_c3matrix_y(in->image)+y,in) < 1500){
 	if((in->image->data[ind1] + in->image->data[ind2]) && in->mask->data[ind1] && in->mask->data[ind2]){
 	  noise += cabs(in->image->data[ind1] - in->image->data[ind2])/
  	  ((in->image->data[ind1] + in->image->data[ind2])/2);
@@ -179,42 +183,42 @@ Image * sp_make_shifted_image_square(Image * in){
   }
 
   /* make it a square by removing a line or a column from the center */
-  if(sp_cmatrix_cols(in->image) > sp_cmatrix_rows(in->image)){
+  if(sp_c3matrix_x(in->image) > sp_c3matrix_y(in->image)){
     /* remove a column */
-    sp_cmatrix_free(out->image);
-    out->image = sp_cmatrix_alloc(sp_cmatrix_rows(in->image),sp_cmatrix_rows(in->image));
-    sp_imatrix_free(out->mask);
-    out->mask = sp_imatrix_alloc(sp_cmatrix_rows(in->image),sp_cmatrix_rows(in->image));
+    sp_c3matrix_free(out->image);
+    out->image = sp_c3matrix_alloc(sp_c3matrix_y(in->image),sp_c3matrix_y(in->image),1);
+    sp_i3matrix_free(out->mask);
+    out->mask = sp_i3matrix_alloc(sp_c3matrix_y(in->image),sp_c3matrix_y(in->image),1);
     yout = 0;
     xout = 0;
-    for(x = 0;x<sp_cmatrix_cols(in->image);x++){
-      for(y = 0;y<sp_cmatrix_rows(in->image);y++){
-	if(fabs(x - (sp_cmatrix_cols(in->image)-1)/2.0) < (sp_cmatrix_cols(in->image)-sp_cmatrix_rows(out->image))/2.0){
+    for(x = 0;x<sp_c3matrix_y(in->image);x++){
+      for(y = 0;y<sp_c3matrix_y(in->image);y++){
+	if(fabs(x - (sp_c3matrix_x(in->image)-1)/2.0) < (sp_c3matrix_x(in->image)-sp_c3matrix_y(out->image))/2.0){
 	  continue;
 	}
-	sp_cmatrix_set(out->image,yout,xout,sp_cmatrix_get(in->image,y,x));
-	sp_imatrix_set(out->mask,yout,xout,sp_imatrix_get(in->mask,y,x));
-	yout = (yout+1)%sp_cmatrix_rows(out->image);
+	sp_c3matrix_set(out->image,xout,yout,0,sp_c3matrix_get(in->image,x,y,0));
+	sp_i3matrix_set(out->mask,xout,yout,0,sp_i3matrix_get(in->mask,x,y,0));
+	yout = (yout+1)%sp_c3matrix_y(out->image);
 	if(yout == 0){
 	  xout++;
 	}
       }
     }
-  }else if(sp_cmatrix_cols(in->image) < sp_cmatrix_rows(in->image)){
+  }else if(sp_c3matrix_x(in->image) < sp_c3matrix_y(in->image)){
     /* remove a line */
-    sp_cmatrix_free(out->image);
-    out->image = sp_cmatrix_alloc(sp_cmatrix_cols(in->image),sp_cmatrix_cols(in->image));
-    sp_imatrix_free(out->mask);
-    out->mask = sp_imatrix_alloc(sp_cmatrix_cols(in->image),sp_cmatrix_cols(in->image));
+    sp_c3matrix_free(out->image);
+    out->image = sp_c3matrix_alloc(sp_c3matrix_x(in->image),sp_c3matrix_x(in->image),1);
+    sp_i3matrix_free(out->mask);
+    out->mask = sp_i3matrix_alloc(sp_c3matrix_x(in->image),sp_c3matrix_x(in->image),1);
 
-    for(x = 0;x<sp_cmatrix_cols(in->image);x++){
-      for(y = 0;y<sp_cmatrix_rows(in->image);y++){
-	if(fabs(x - (sp_cmatrix_rows(in->image)-1)/2.0) < (sp_cmatrix_rows(in->image)-sp_cmatrix_cols(out->image))/2.0){
+    for(x = 0;x<sp_c3matrix_x(in->image);x++){
+      for(y = 0;y<sp_c3matrix_y(in->image);y++){
+	if(fabs(x - (sp_c3matrix_y(in->image)-1)/2.0) < (sp_c3matrix_y(in->image)-sp_c3matrix_x(out->image))/2.0){
 	  continue;
 	}
-	sp_cmatrix_set(out->image,yout,xout,sp_cmatrix_get(in->image,y,x));
-	sp_imatrix_set(out->mask,yout,xout,sp_imatrix_get(in->mask,y,x));
-	yout = (yout+1)%sp_cmatrix_rows(out->image);
+	sp_c3matrix_set(out->image,xout,yout,0,sp_c3matrix_get(in->image,x,y,0));
+	sp_i3matrix_set(out->mask,xout,yout,0,sp_i3matrix_get(in->mask,x,y,0));
+	yout = (yout+1)%sp_c3matrix_y(out->image);
 	if(yout == 0){
 	  xout++;
 	}
@@ -229,8 +233,11 @@ Image * sp_make_shifted_image_square(Image * in){
 
 /* Make an unshifted image square by padding with zeroes on the smaller dimension */
 Image * sp_make_unshifted_image_square(Image * in){
-  int size = sp_max(sp_cmatrix_cols(in->image),sp_cmatrix_rows(in->image));
-  return zero_pad_image(in,size,size,0);
+  if(sp_c3matrix_z(in->image) != 1){
+    fprintf(stderr,"error: Trying to square a 3D image");
+  }
+  int size = sp_max(sp_c3matrix_x(in->image),sp_c3matrix_y(in->image));
+  return zero_pad_image(in,size,size,1,0);
 }
 
 
@@ -240,22 +247,23 @@ Image * sp_make_unshifted_image_square(Image * in){
   extra zero pad is used on the smaller quadrants to make them the same size
   as the biggest quadrant.
   For shifted images it shifted the quadrants around (size[]-1)/2 
-
+  This function is generalized for 3D patterns as well.
 */
 Image * sp_image_shift(Image * img){
   Image * out;
   int i;
   int index1,index2;
-  int x,y;
-  int newx,newy;
-  int max_x,max_y;
+  int x,y,z;
+  int newx,newy,newz;
+  int max_x,max_y,max_z;
 
   /* fft shift the image */
   out = sp_image_duplicate(img,SP_COPY_DATA|SP_COPY_MASK);
   if(!img->shifted){
-    max_x = sp_max(img->detector->image_center[0],sp_cmatrix_cols(img->image)-img->detector->image_center[0]);
-    max_y = sp_max(img->detector->image_center[1],sp_cmatrix_rows(img->image)-img->detector->image_center[1]);
-    sp_image_realloc(out,2*max_x,2*max_y);
+    max_x = sp_max(img->detector->image_center[0],sp_c3matrix_x(img->image)-img->detector->image_center[0]);
+    max_y = sp_max(img->detector->image_center[1],sp_c3matrix_y(img->image)-img->detector->image_center[1]);
+    max_z = sp_max(img->detector->image_center[2],sp_c3matrix_z(img->image)-img->detector->image_center[2]);
+    sp_image_realloc(out,2*max_x,2*max_y,2*max_z);
   }
 
 		   
@@ -264,61 +272,118 @@ Image * sp_image_shift(Image * img){
     out->mask->data[i] = 0;
   }
   if(img->shifted){
-    out->detector->image_center[0] = (sp_cmatrix_cols(img->image))/2.0;
-    out->detector->image_center[1] = (sp_cmatrix_rows(img->image))/2.0;
-    img->detector->image_center[0] = (sp_cmatrix_cols(img->image))/2.0;
-    img->detector->image_center[1] = (sp_cmatrix_cols(img->image))/2.0;
+    out->detector->image_center[0] = (sp_c3matrix_x(img->image))/2.0;
+    out->detector->image_center[1] = (sp_c3matrix_y(img->image))/2.0;
+    out->detector->image_center[2] = (sp_c3matrix_z(img->image))/2.0;
+    img->detector->image_center[0] = (sp_c3matrix_x(img->image))/2.0;
+    img->detector->image_center[1] = (sp_c3matrix_y(img->image))/2.0;
+    img->detector->image_center[2] = (sp_c3matrix_z(img->image))/2.0;
   }else{
     out->detector->image_center[0] = 0;
     out->detector->image_center[1] = 0;
+    out->detector->image_center[2] = 0;
   }
   out->shifted = !out->shifted;
   /* shift quadrants */
-  for(x = 0;x<sp_cmatrix_cols(img->image);x++){
-    for(y = 0;y<sp_cmatrix_rows(img->image);y++){
-      index1 = x*sp_cmatrix_rows(img->image)+y;
-      index2 = 0;
-      if(y < img->detector->image_center[1]){
-	if(x < img->detector->image_center[0]){
-	  newx = sp_cmatrix_cols(out->image)-(img->detector->image_center[0]-x);
-	  newy = sp_cmatrix_rows(out->image)-(img->detector->image_center[1]-y);
-	  if(newx < sp_cmatrix_cols(img->image)/2.0 ||
-	     newy < sp_cmatrix_rows(img->image)/2.0){
-	    index2 = -1;
+  for(x = 0;x<sp_c3matrix_x(img->image);x++){
+    for(y = 0;y<sp_c3matrix_y(img->image);y++){
+      for(z = 0;z<sp_c3matrix_z(img->image);z++){
+	index1 = z*sp_c3matrix_y(img->image)*sp_c3matrix_x(img->image) +
+	  y*sp_c3matrix_x(img->image) + x;
+	index2 = 0;
+	if(z < img->detector->image_center[2]){
+	  if(y < img->detector->image_center[1]){
+	    if(x < img->detector->image_center[0]){
+	      newx = sp_c3matrix_x(out->image)-(img->detector->image_center[0]-x);
+	      newy = sp_c3matrix_y(out->image)-(img->detector->image_center[1]-y);
+	      newz = sp_c3matrix_z(out->image)-(img->detector->image_center[2]-z);
+	      if(newx < sp_c3matrix_x(img->image)/2.0 ||
+		 newy < sp_c3matrix_y(img->image)/2.0 ||
+		 newz < sp_c3matrix_z(img->image)/2.0){
+		index2 = -1;
+	      }
+	    }else{
+	      newx = x-img->detector->image_center[0];
+	      newy = sp_c3matrix_y(out->image)-(img->detector->image_center[1]-y);
+	      newz = sp_c3matrix_z(out->image)-(img->detector->image_center[2]-z);
+	      if(newx >= sp_c3matrix_x(img->image)/2.0 ||
+		 newy < sp_c3matrix_y(img->image)/2.0 ||
+		 newz < sp_c3matrix_z(img->image)/2.0){
+		index2 = -1;
+	      }
+	    }
+	  }else{	
+	    if(x < img->detector->image_center[0]){
+	      newx = sp_c3matrix_x(out->image)-(img->detector->image_center[0]-x);
+	      newy = y-img->detector->image_center[1];
+	      newz = sp_c3matrix_z(out->image)-(img->detector->image_center[2]-z);
+	      if(newx < sp_c3matrix_x(img->image)/2.0 ||
+		 newy >= sp_c3matrix_y(img->image)/2.0 ||
+		 newz < sp_c3matrix_z(img->image)/2.0){
+		   index2 = -1;
+		 }
+	    }else{
+	      newx = x-img->detector->image_center[0];
+	      newy = y-img->detector->image_center[1];
+	      newz = sp_c3matrix_z(out->image)-(img->detector->image_center[2]-z);
+		if(newx >= sp_c3matrix_x(img->image)/2.0 ||
+		   newy >= sp_c3matrix_y(img->image)/2.0 ||
+		   newz < sp_c3matrix_z(img->image)/2.0){
+		     index2 = -1;
+		   }	      
+	    }
 	  }
 	}else{
-	  newx = x-img->detector->image_center[0];
-	  newy = sp_cmatrix_rows(out->image)-(img->detector->image_center[1]-y);
-	  if(newx >= sp_cmatrix_cols(img->image)/2.0 ||
-	     newy < sp_cmatrix_rows(img->image)/2.0){
-	    index2 = -1;
+	  if(y < img->detector->image_center[1]){
+	    if(x < img->detector->image_center[0]){
+	      newx = sp_c3matrix_x(out->image)-(img->detector->image_center[0]-x);
+	      newy = sp_c3matrix_y(out->image)-(img->detector->image_center[1]-y);
+	      newz = z-img->detector->image_center[2];
+	      if(newx < sp_c3matrix_x(img->image)/2.0 ||
+		 newy < sp_c3matrix_y(img->image)/2.0 ||
+		 newz >= sp_c3matrix_z(img->image)/2.0){
+		index2 = -1;
+	      }
+	    }else{
+	      newx = x-img->detector->image_center[0];
+	      newy = sp_c3matrix_y(out->image)-(img->detector->image_center[1]-y);
+	      newz = z-img->detector->image_center[2];
+	      if(newx >= sp_c3matrix_x(img->image)/2.0 ||
+		 newy < sp_c3matrix_y(img->image)/2.0 ||
+		 newz >= sp_c3matrix_z(img->image)/2.0){
+		index2 = -1;
+	      }
+	    }
+	  }else{	
+	    if(x < img->detector->image_center[0]){
+	      newx = sp_c3matrix_x(out->image)-(img->detector->image_center[0]-x);
+	      newy = y-img->detector->image_center[1];
+	      newz = z-img->detector->image_center[2];
+	      if(newx < sp_c3matrix_x(img->image)/2.0 ||
+		 newy >= sp_c3matrix_y(img->image)/2.0 ||
+		 newz >= sp_c3matrix_z(img->image)/2.0){
+		index2 = -1;
+	      }
+	    }else{
+	      newx = x-img->detector->image_center[0];
+	      newy = y-img->detector->image_center[1];
+	      newz = z-img->detector->image_center[2];
+	      if(newx >= sp_c3matrix_x(img->image)/2.0 ||
+		 newy >= sp_c3matrix_y(img->image)/2.0 ||
+		 newz >= sp_c3matrix_z(img->image)/2.0){
+		index2 = -1;
+	      }	      
+	    }
 	  }
 	}
-      }else{	
-	if(x < img->detector->image_center[0]){
-	  newx = sp_cmatrix_cols(out->image)-(img->detector->image_center[0]-x);
-	  newy = y-img->detector->image_center[1];
-	  if(newx < sp_cmatrix_cols(img->image)/2.0 ||
-	     newy >= sp_cmatrix_rows(img->image)/2.0){
-	    index2 = -1;
-	  }
-	}else{
-	  newx = x-img->detector->image_center[0];
-	  newy = y-img->detector->image_center[1];
-	  if(newx >= sp_cmatrix_cols(img->image)/2.0 ||
-	     newy >= sp_cmatrix_rows(img->image)/2.0){
-	    index2 = -1;
-	  }
-
+	if(index2 != -1){
+	  index2 = sp_c3matrix_get_index(out->image,newx,newy,newz);
 	}
-      }
-      if(index2 != -1){
-	index2 = sp_cmatrix_get_index(out->image,newy,newx);
-      }
-
-      if(index2 != -1){
-	out->image->data[index2] = img->image->data[index1];
-	out->mask->data[index2] = img->mask->data[index1];
+	
+	if(index2 != -1){
+	  out->image->data[index2] = img->image->data[index1];
+	  out->mask->data[index2] = img->mask->data[index1];
+	}
       }
     }
   }
@@ -330,42 +395,88 @@ Image * sp_image_shift(Image * img){
 
 /* resolution given in pixels from center. 
    Image should be shifted. Square window. */
-Image * sp_image_low_pass(Image * img, int resolution){
+Image * sp_image_low_pass(Image * img, int resolution, int type){
   Image * res = sp_image_duplicate(img,SP_COPY_DATA|SP_COPY_MASK);
-  int x,y,nx,ny;
-  int dx,dy;
+  int x,y,z,nx,ny,nz;
+  int dx,dy,dz;
   if(img->shifted == 0){
     fprintf(stderr,"Error: Trying to limit resolution on an unshifted image\n");
   }
-  if(resolution*2 > sp_cmatrix_cols(res->image) || resolution*2 > sp_cmatrix_rows(res->image)){
-    return sp_image_duplicate(img,SP_COPY_DATA|SP_COPY_MASK);
-  }  
-  sp_cmatrix_free(res->image);
-  sp_imatrix_free(res->mask);
-  res->image = sp_cmatrix_alloc(resolution*2,resolution*2);
-  res->mask = sp_imatrix_alloc(resolution*2,resolution*2);
-  nx = 0;
-  ny = 0;
-  for(x = 0;x<sp_cmatrix_cols(img->image);x++){
-    dx = x;
-    if(sp_cmatrix_cols(img->image)-x-1 < dx){
-      dx = sp_cmatrix_cols(img->image)-x-1;
-    }
-    for(y = 0;y<sp_cmatrix_rows(img->image);y++){
-      dy = y;
-      if(sp_cmatrix_rows(img->image)-y-1 < dy){
-	dy = sp_cmatrix_rows(img->image)-y-1;
+  if(type == SP_2D){
+    if(resolution*2 > sp_c3matrix_x(res->image) || resolution*2 > sp_c3matrix_y(res->image)){
+      return sp_image_duplicate(img,SP_COPY_DATA|SP_COPY_MASK);
+    }  
+    sp_c3matrix_free(res->image);
+    sp_i3matrix_free(res->mask);
+    res->image = sp_c3matrix_alloc(resolution*2,resolution*2,1);
+    res->mask = sp_i3matrix_alloc(resolution*2,resolution*2,1);
+    nx = 0;
+    ny = 0;
+    for(x = 0;x<sp_c3matrix_x(img->image);x++){
+      dx = x;
+      if(sp_c3matrix_x(img->image)-x-1 < dx){
+      dx = sp_c3matrix_x(img->image)-x-1;
       }
-      if(dx < resolution && dy < resolution){
-	sp_cmatrix_set(res->image,ny,nx,sp_cmatrix_get(img->image,y,x));
-	sp_imatrix_set(res->mask,ny,nx,sp_imatrix_get(img->mask,y,x));
-	ny++;
-	if(ny == sp_cmatrix_rows(res->image)){
-	  nx++;
-	  ny = 0;
+      for(y = 0;y<sp_c3matrix_y(img->image);y++){
+	dy = y;
+	if(sp_c3matrix_y(img->image)-y-1 < dy){
+	  dy = sp_c3matrix_y(img->image)-y-1;
 	}
-      }      
-    }    
+	if(dx < resolution && dy < resolution){
+	  sp_c3matrix_set(res->image,nx,ny,0,sp_c3matrix_get(img->image,x,y,0));
+	  sp_i3matrix_set(res->mask,nx,ny,0,sp_i3matrix_get(img->mask,x,y,0));
+	  ny++;
+	  if(ny == sp_c3matrix_y(res->image)){
+	    nx++;
+	    ny = 0;
+	  }
+	}  
+      }
+    }
+  }else{
+    if(resolution*2 > sp_c3matrix_x(res->image) ||
+       resolution*2 > sp_c3matrix_y(res->image) ||
+       resolution*2 > sp_c3matrix_z(res->image)){
+      return sp_image_duplicate(img,SP_COPY_DATA|SP_COPY_MASK);
+    }
+    sp_c3matrix_free(res->image);
+    sp_i3matrix_free(res->mask);
+    res->image = sp_c3matrix_alloc(resolution*2,resolution*2,resolution*2);
+    res->mask = sp_i3matrix_alloc(resolution*2,resolution*2,resolution*2);
+    nx = 0;
+    ny = 0;
+    nz = 0;
+    for(x = 0;x<sp_c3matrix_x(img->image);x++){
+      dx = x;
+      if(sp_c3matrix_x(img->image)-x-1 < dx){
+	dx = sp_c3matrix_x(img->image)-x-1;
+      }
+      for(y = 0;y<sp_c3matrix_y(img->image);y++){
+	dy = y;
+	if(sp_c3matrix_y(img->image)-y-1 < dy){
+	  dy = sp_c3matrix_y(img->image);
+	}
+	for(z = 0;z<sp_c3matrix_z(img->image);z++){
+	  dz = z;
+	  if(sp_c3matrix_z(img->image)-z-1 < dz){
+	    dz = sp_c3matrix_z(img->image);
+	  }
+	  if(dx < resolution && dy < resolution && dz < resolution){
+	    sp_c3matrix_set(res->image,nx,ny,nz,sp_c3matrix_get(img->image,x,y,z));
+	    sp_i3matrix_set(res->mask,nx,ny,nz,sp_i3matrix_get(img->mask,x,y,z));
+	    nx++;
+	    if(nx == sp_c3matrix_x(res->image)){
+	      ny++;
+	      nx = 0;
+	      if(ny == sp_c3matrix_y(res->image)){
+		nz++;
+		nz = 0;
+	      }
+	    }
+	  }
+	}
+      }
+    }
   }
   return res;
 }
@@ -381,14 +492,14 @@ Image * sp_image_low_pass(Image * img, int resolution){
  *  SP_GAUSSIAN - *value corresponds to the standard deviation of the gaussian in pixels
  *
  */
-void sp_image_smooth_edges(Image * img, sp_imatrix * mask, int flags, real * value){
+void sp_image_smooth_edges(Image * img, sp_i3matrix * mask, int flags, real * value){
   int i;
   Image * tmp = sp_image_duplicate(img,SP_COPY_DATA|SP_COPY_MASK);
   if(flags & SP_GAUSSIAN){
     for(i = 0;i<sp_image_size(tmp);i++){
       tmp->image->data[i] = mask->data[i];
     }
-    Image * blur_mask = gaussian_blur(tmp,*value);
+    Image * blur_mask = gaussian_blur(tmp,*value,SP_3D);
 
     /* eat out the edge of the mask*/
     for(i = 0;i<sp_image_size(blur_mask);i++){
@@ -399,59 +510,66 @@ void sp_image_smooth_edges(Image * img, sp_imatrix * mask, int flags, real * val
       
     sp_image_free(tmp);
     tmp = blur_mask;
-    blur_mask = gaussian_blur(tmp,*value);
+    blur_mask = gaussian_blur(tmp,*value,SP_3D);
 
-    sp_cmatrix_mul_elements(img->image,blur_mask->image);
+    sp_c3matrix_mul_elements(img->image,blur_mask->image);
   }  
 }
 
-
 real sp_centro_sym_value(int index,Image * img){
-  int x,y;
-  real nx,ny;
-  x = index/sp_cmatrix_rows(img->image);
-  y = index%sp_cmatrix_rows(img->image);
+  int x,y,z;
+  real nx,ny,nz;
+  x = index/sp_c3matrix_y(img->image)/sp_c3matrix_z(img->image);
+  y = index/sp_c3matrix_z(img->image)%sp_c3matrix_y(img->image);
+  z = index%sp_c3matrix_z(img->image)%sp_c3matrix_y(img->image);
   nx = 2*img->detector->image_center[0]-x;
   ny = 2*img->detector->image_center[1]-y;
-  if(nx < 1 || nx >= sp_cmatrix_cols(img->image)-2 ||
-     ny < 1 || ny >= sp_cmatrix_rows(img->image)-2){
+  nz = 2*img->detector->image_center[2]-z;
+  if(nx < 1 || nx >= sp_c3matrix_x(img->image)-2 ||
+     ny < 1 || ny >= sp_c3matrix_y(img->image)-2 ||
+     nz < 1 || nz >= sp_c3matrix_z(img->image)-2){
     return -1;
   }
-  return sp_image_interp(img, nx, ny);
+  return sp_image_interp(img, nx, ny, nz);
 }
 
 int sp_centro_sym_index(int index,Image * img){
-  int x,y;
-  int nx,ny;
-  x = index/sp_cmatrix_rows(img->image);
-  y = index%sp_cmatrix_rows(img->image);
+  int x,y,z;
+  int nx,ny,nz;
+  x = index/sp_c3matrix_y(img->image)/sp_c3matrix_z(img->image);
+  y = index/sp_c3matrix_z(img->image)%sp_c3matrix_y(img->image);
+  z = index%sp_c3matrix_z(img->image)%sp_c3matrix_y(img->image);
   nx = 2*img->detector->image_center[0]-x;
   ny = 2*img->detector->image_center[1]-y;
-  if(nx < 0 || nx >= sp_cmatrix_cols(img->image) ||
-     ny < 0 || ny >= sp_cmatrix_rows(img->image)){
+  nz = 2*img->detector->image_center[2]-z;
+  if(nx < 0 || nx >= sp_c3matrix_x(img->image) ||
+     ny < 0 || ny >= sp_c3matrix_y(img->image) ||
+     nz < 0 || nz >= sp_c3matrix_z(img->image)){
     return index;
   }
-  return nx*sp_cmatrix_rows(img->image)+ny;
+  return nz*sp_c3matrix_x(img->image)*sp_c3matrix_y(img->image)+ny*sp_c3matrix_x(img->image)+nx;
 }
 
 Image * sp_centro_sym_correlation(Image  * img){
-  int x,y;
+  int x,y,z;
   Image * res = sp_image_duplicate(img,SP_COPY_DATA|SP_COPY_MASK);
   int index = 0;
   real csvalue;
-  for(x = 0;x<sp_cmatrix_cols(img->image);x++){
-    for(y = 0;y<sp_cmatrix_rows(img->image);y++){
-      csvalue = sp_centro_sym_value(index,img);
-      if(!img->mask->data[index] || csvalue == -1 || cabs(img->image->data[index])+fabs(csvalue) < 1){
-	res->image->data[index] = 1.0;
-      }else{
-	res->image->data[index] = 1.0 - cabs(img->image->data[index]-csvalue)/(cabs(img->image->data[index])+fabs(csvalue));      
+  for(x = 0;x<sp_c3matrix_x(img->image);x++){
+    for(y = 0;y<sp_c3matrix_y(img->image);y++){
+      for(z = 0;z<sp_c3matrix_z(img->image);z++){
+	csvalue = sp_centro_sym_value(index,img);
+	if(!img->mask->data[index] || csvalue == -1 || cabs(img->image->data[index])+fabs(csvalue) < 1){
+	  res->image->data[index] = 1.0;
+	}else{
+	  res->image->data[index] = 1.0 - cabs(img->image->data[index]-csvalue)/(cabs(img->image->data[index])+fabs(csvalue));      
+	}
+	if(creal(res->image->data[index]) < 0 || creal(res->image->data[index]) > 1){
+	  /* Houston we have a problem */
+	  exit(1);
+	}
+	index++;
       }
-      if(creal(res->image->data[index]) < 0 || creal(res->image->data[index]) > 1){
-	/* Houston we have a problem */
-	exit(1);
-      }
-      index++;
     }
   }
   return res;
@@ -472,65 +590,80 @@ real sp_image_dist(Image * in, int i, int type){
 }
 
 static real dist_to_axis(int i, Image * in){
-  int x = i/sp_cmatrix_rows(in->image);
-  int y = i%sp_cmatrix_rows(in->image);
-  real dx,dy;
+  int x = i/sp_c3matrix_y(in->image)/sp_c3matrix_z(in->image);
+  int y = i/sp_c3matrix_z(in->image)%sp_c3matrix_y(in->image);
+  int z = i%sp_c3matrix_z(in->image)%sp_c3matrix_y(in->image);
+  real dx,dy,dz;
   if(in->shifted){
-    dx = MIN(x,sp_cmatrix_cols(in->image)-x);
-    dy = MIN(y,sp_cmatrix_rows(in->image)-y);
+    dx = MIN(x,sp_c3matrix_x(in->image)-x);
+    dy = MIN(y,sp_c3matrix_y(in->image)-y);
+    dz = MIN(z,sp_c3matrix_z(in->image)-z);
   }else{
     dx = fabs(x-in->detector->image_center[0]);
     dy = fabs(y-in->detector->image_center[1]);
+    dz = fabs(z-in->detector->image_center[2]);
   }
-  return MIN(dx,dy);
+  return MIN(dx,MIN(dy,dz));
 }
 
 
 
 static real dist_to_center(int i, Image * in){
-  int x = i/sp_cmatrix_rows(in->image);
-  int y = i%sp_cmatrix_rows(in->image);
-  real dx,dy;
+  int x = i/sp_c3matrix_z(in->image)/sp_c3matrix_y(in->image);
+  int y = i/sp_c3matrix_z(in->image)%sp_c3matrix_y(in->image);
+  int z = i%sp_c3matrix_z(in->image)%sp_c3matrix_y(in->image);
+  real dx,dy,dz;
   if(in->shifted){
-    dx = MIN(x,sp_cmatrix_cols(in->image)-x);
-    dy = MIN(y,sp_cmatrix_rows(in->image)-y);
+    dx = MIN(x,sp_c3matrix_x(in->image)-x);
+    dy = MIN(y,sp_c3matrix_y(in->image)-y);
+    dz = MIN(z,sp_c3matrix_z(in->image)-z);
   }else{
     dx = x-in->detector->image_center[0];
     dy = y-in->detector->image_center[1];
+    dz = z-in->detector->image_center[2];
   }
-  return sqrt(dx*dx+dy*dy);
+  return sqrt(dx*dx+dy*dy+dz*dz);
 }
 
 static real square_dist_to_center(int i, Image * in){
-  int x = i/sp_cmatrix_rows(in->image);
-  int y = i%sp_cmatrix_rows(in->image);
-  real dx,dy;
+  int x = i/sp_c3matrix_z(in->image)/sp_c3matrix_y(in->image);
+  int y = i/sp_c3matrix_z(in->image)%sp_c3matrix_y(in->image);
+  int z = i%sp_c3matrix_z(in->image)%sp_c3matrix_y(in->image);
+  real dx,dy,dz;
   if(in->shifted){
-    dx = MIN(x,sp_cmatrix_cols(in->image)-x);
-    dy = MIN(y,sp_cmatrix_rows(in->image)-y);
+    dx = MIN(x,sp_c3matrix_x(in->image)-x);
+    dy = MIN(y,sp_c3matrix_y(in->image)-y);
+    dz = MIN(z,sp_c3matrix_z(in->image)-z);
   }else{
     dx = fabs(x-in->detector->image_center[0]);
     dy = fabs(y-in->detector->image_center[1]);
+    dz = fabs(z-in->detector->image_center[2]);
   }
-  return MAX(dx,dy);
+  return MAX(dx,MAX(dy,dz));
 
 }
 
 static real dist_to_corner(int i, Image * in){
-  int x = i/sp_cmatrix_rows(in->image);
-  int y = i%sp_cmatrix_rows(in->image);
-  real dx,dy;
-  if(sp_cmatrix_cols(in->image)-1-x < x){
-    dx = sp_cmatrix_cols(in->image)-1-x;
+  int x = i%sp_c3matrix_z(in->image)%sp_c3matrix_y(in->image);
+  int y = i/sp_c3matrix_x(in->image)%sp_c3matrix_z(in->image);
+  int z = i/sp_c3matrix_x(in->image)/sp_c3matrix_y(in->image);
+  real dx,dy,dz;
+  if(sp_c3matrix_x(in->image)-1-x < x){
+    dx = sp_c3matrix_x(in->image)-1-x;
   }else{
     dx = x;
   }
-  if(sp_cmatrix_rows(in->image)-1-y < y){
-    dy = sp_cmatrix_cols(in->image)-1-y;
+  if(sp_c3matrix_y(in->image)-1-y < y){
+    dy = sp_c3matrix_y(in->image)-1-y;
   }else{
     dy = y;
   }
-  return sqrt(dx*dx+dy*dy);
+  if(sp_c3matrix_z(in->image)-1-z < z){
+    dz = sp_c3matrix_z(in->image)-1-z;
+  }else{
+    dz = z;
+  }
+  return sqrt(dx*dx+dy*dy+dz*dz);
 }
 
 
@@ -582,11 +715,11 @@ Image * sp_image_get_phases(Image * img){
 
 
 void sp_image_add(Image * a, Image * b){
-  sp_cmatrix_add(a->image,b->image,NULL);
+  sp_c3matrix_add(a->image,b->image,NULL);
 }
 
 void sp_image_sub(Image * a, Image * b){
-  sp_cmatrix_sub(a->image,b->image);
+  sp_c3matrix_sub(a->image,b->image);
 }
 
 
@@ -628,28 +761,57 @@ void sp_add_noise(Image * in, real level, int type){
   }
 }
 
-void sp_image_high_pass(Image * in, real radius){
-  int x,y;
-  real dist,dx,dy;
+void sp_image_high_pass(Image * in, real radius, int type){
+  int x,y,z;
+  real dist,dx,dy,dz;
   if(radius <= 0){
     return;
   }
-  for(x = 0;x<sp_cmatrix_cols(in->image);x++){
-    for(y = 0;y<sp_cmatrix_rows(in->image);y++){
-      if(x > sp_cmatrix_cols(in->image)/2.0){
-	dx = sp_cmatrix_cols(in->image)-x;
-      }else{
-	dx = x;
+  if(type == SP_3D){
+    for(x = 0;x<sp_c3matrix_x(in->image);x++){
+      for(y = 0;y<sp_c3matrix_y(in->image);y++){
+	for(z = 0;z<sp_c3matrix_z(in->image);z++){
+	  if(x > sp_c3matrix_x(in->image)/2.0){
+	    dx = sp_c3matrix_x(in->image)-x;
+	  }else{
+	    dx = x;
+	  }
+	  if(y > sp_c3matrix_y(in->image)/2.0){
+	    dy = sp_c3matrix_y(in->image)-y;
+	  }else{
+	    dy = y;
+	  }
+	  if(z > sp_c3matrix_z(in->image)/2.0){
+	    dz = sp_c3matrix_z(in->image)-z;
+	  }
+	  dist = sqrt(dx*dx+dy*dy+dz*dz);
+	  if(dist <= radius){
+	    in->mask->data[z*sp_c3matrix_x(in->image)*sp_c3matrix_y(in->image)+
+			   y*sp_c3matrix_x(in->image)+x] = 0;
+	    in->image->data[z*sp_c3matrix_x(in->image)*sp_c3matrix_y(in->image)+
+			    y*sp_c3matrix_x(in->image)+y] = 0;
+	  }
+	}
       }
-      if(y > sp_cmatrix_rows(in->image)/2.0){
-	dy = sp_cmatrix_rows(in->image)-y;
-      }else{
-	dy = y;
-      }
-      dist = sqrt(dx*dx+dy*dy);      
-      if(dist <= radius){
-	in->mask->data[x*sp_cmatrix_rows(in->image)+y] = 0;
-	in->image->data[x*sp_cmatrix_rows(in->image)+y] = 0;
+    }
+  }else if(type == SP_2D){
+    for(x = 0;x<sp_c3matrix_x(in->image);x++){
+      for(y = 0;y<sp_c3matrix_y(in->image);y++){
+	if(x > sp_c3matrix_x(in->image)/2.0){
+	  dx = sp_c3matrix_x(in->image)-x;
+	}else{
+	  dx = x;
+	}
+	if(y > sp_c3matrix_y(in->image)/2.0){
+	  dy = sp_c3matrix_y(in->image)-y;
+	}else{
+	  dy = y;
+	}
+	dist = sqrt(dx*dx+dy*dy);
+	if(dist <= radius){
+	  in->mask->data[y*sp_c3matrix_x(in->image)+x] = 0;
+	  in->image->data[y*sp_c3matrix_x(in->image)+x] = 0;
+	}
       }
     }
   }
@@ -657,8 +819,8 @@ void sp_image_high_pass(Image * in, real radius){
 
 void sp_image_free(Image * in){
   free(in->detector);
-  sp_cmatrix_free(in->image);
-  sp_imatrix_free(in->mask);
+  sp_c3matrix_free(in->image);
+  sp_i3matrix_free(in->mask);
   free(in);
 }
 
@@ -676,28 +838,30 @@ Image * sp_image_duplicate(Image * in, int flags){
   }
 
   memcpy(res->detector,in->detector,sizeof(Detector));
-  res->image = sp_cmatrix_alloc(sp_cmatrix_rows(in->image),sp_cmatrix_cols(in->image));
+  res->image = sp_c3matrix_alloc(sp_c3matrix_x(in->image),sp_c3matrix_y(in->image),
+				 sp_c3matrix_z(in->image));
   if(!res->image){
     perror("Out of memory!\n");
     abort();
   }
   if(flags & SP_COPY_DATA){
-    sp_cmatrix_memcpy(res->image,in->image);
+    sp_c3matrix_memcpy(res->image,in->image);
   }
 
-  res->mask = sp_imatrix_alloc(sp_cmatrix_rows(in->image),sp_cmatrix_cols(in->image));
+  res->mask = sp_i3matrix_alloc(sp_c3matrix_x(in->image),sp_c3matrix_y(in->image),
+				sp_c3matrix_z(in->image));
   if(!res->mask){
     perror("Out of memory!\n");
     abort();
   }
   if(flags & SP_COPY_MASK){
-    sp_imatrix_memcpy(res->mask,in->mask);
+    sp_i3matrix_memcpy(res->mask,in->mask);
   }
   return res;
 }
 
 
-Image * sp_image_alloc(int x, int y){
+Image * sp_image_alloc(int x, int y, int z){
   Image  *res = malloc(sizeof(Image));
   if(!res){
     perror("Out of memory!\n");
@@ -706,17 +870,18 @@ Image * sp_image_alloc(int x, int y){
   res->detector = malloc(sizeof(Detector));
   res->detector->image_center[0] = x/2;
   res->detector->image_center[1] = y/2;
+  res->detector->image_center[2] = z/2;
   if(!res->detector){
     perror("Out of memory!\n");
     abort();
   }
-  res->mask = sp_imatrix_alloc(y,x);
+  res->mask = sp_i3matrix_alloc(x,y,z);
   if(!res->mask){
     perror("Out of memory!\n");
     abort();
   }  
   res->scaled = 0;
-  res->image = sp_cmatrix_alloc(y,x);
+  res->image = sp_c3matrix_alloc(x,y,z);
   if(!res->image){
     perror("Out of memory!\n");
     abort();
@@ -736,14 +901,33 @@ void sp_image_write(Image * img, const char * filename, int flags){
   /* select the correct function depending on the buffer extension */
   if(rindex(buffer,'.') && strcmp(rindex(buffer,'.'),".h5") == 0){
     /* we have an h5 file */
-    write_h5_img(img,filename,sizeof(real));
+    if(flags == SP_3D){
+      write_h5_img_3d(img,filename,sizeof(real));
+    }else{
+      write_h5_img(img,filename,sizeof(real));
+    }
   }else if(rindex(buffer,'.') && strcmp(rindex(buffer,'.'),".png") == 0){
+    if(flags == SP_3D){
+      fprintf(stderr,"Cannot export 3D file to png");
+      return;
+    }
     write_png(img,filename,flags);
   }else if(rindex(buffer,'.') && strcmp(rindex(buffer,'.'),".vtk") == 0){
-    write_vtk(img,filename);
+    if(flags == SP_3D){
+      write_vtk_3d(img,filename);
+    }else{
+      write_vtk(img,filename);
+    }
   }else if(rindex(buffer,'.') && (strcmp(rindex(buffer,'.'),".tif") == 0 ||strcmp(rindex(buffer,'.'),".tiff") == 0 )){
+    if(flags == SP_3D){
+      fprintf(stderr,"Cannot export 3D file to tiff");
+      return;
+    }
     write_tiff(img,filename);
   }else if(rindex(buffer,'.') && (strcmp(rindex(buffer,'.'),".csv") == 0)){
+    if(flags == SP_3D){
+      fprintf(stderr,"Cannot export 3D file to csv");
+    }
     write_csv(img,filename);
   }else{
     fprintf(stderr,"Unsupported file type: %s\n",filename);
@@ -782,12 +966,12 @@ static void write_h5_img(Image * img,const char * filename, int output_precision
   int version;
   hsize_t  dims[2];
   real values[2];
-  sp_matrix * tmp;
+  sp_3matrix * tmp;
   int i;
   hid_t out_type_id = 0;
   hid_t mem_type_id = 0;
   hid_t plist;
-  hsize_t chunk_size[2] = {sp_cmatrix_cols(img->image),sp_cmatrix_rows(img->image)};
+  hsize_t chunk_size[2] = {sp_c3matrix_x(img->image),sp_c3matrix_y(img->image)};
   if(output_precision == sizeof(double)){
     out_type_id = H5T_NATIVE_DOUBLE;
   }else if(output_precision == sizeof(float)){
@@ -803,8 +987,8 @@ static void write_h5_img(Image * img,const char * filename, int output_precision
     abort();
   }
 
-  dims[0] = sp_cmatrix_cols(img->image);
-  dims[1] = sp_cmatrix_rows(img->image);
+  dims[0] = sp_c3matrix_x(img->image);
+  dims[1] = sp_c3matrix_y(img->image);
   file_id = H5Fcreate(filename,  H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
   dataspace_id = H5Screate_simple( 2, dims, NULL );
 
@@ -818,7 +1002,7 @@ static void write_h5_img(Image * img,const char * filename, int output_precision
 		    H5P_DEFAULT, img->mask->data);
   status = H5Dclose(dataset_id);
 
-  tmp = sp_matrix_alloc(sp_cmatrix_rows(img->image),sp_cmatrix_cols(img->image));
+  tmp = sp_3matrix_alloc(sp_c3matrix_x(img->image),sp_c3matrix_y(img->image),1);
   for(i = 0;i<sp_image_size(img);i++){
     tmp->data[i] = creal(img->image->data[i]);
   }
@@ -828,10 +1012,10 @@ static void write_h5_img(Image * img,const char * filename, int output_precision
   status = H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		    H5P_DEFAULT, tmp->data);
   status = H5Dclose(dataset_id);
-  sp_matrix_free(tmp);
+  sp_3matrix_free(tmp);
 
   if(img->phased){
-    tmp = sp_matrix_alloc(sp_cmatrix_rows(img->image),sp_cmatrix_cols(img->image));
+    tmp = sp_3matrix_alloc(sp_c3matrix_x(img->image),sp_c3matrix_y(img->image),1);
     for(i = 0;i<sp_image_size(img);i++){
       tmp->data[i] = cimag(img->image->data[i]);
     }
@@ -841,7 +1025,7 @@ static void write_h5_img(Image * img,const char * filename, int output_precision
     status = H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		    H5P_DEFAULT, tmp->data);
     status = H5Dclose(dataset_id);
-    sp_matrix_free(tmp);
+    sp_3matrix_free(tmp);
 
   }
   dims[0] = 2;
@@ -878,7 +1062,9 @@ static void write_h5_img(Image * img,const char * filename, int output_precision
 		    H5P_DEFAULT, values);
   status = H5Dclose(dataset_id);
 
-  values[0] = img->detector->pixel_size;
+  values[0] = img->detector->pixel_size[0];
+  values[1] = img->detector->pixel_size[1];
+  values[2] = img->detector->pixel_size[2];
   dataset_id = H5Dcreate(file_id, "/pixel_size", out_type_id,
 			 dataspace_id, H5P_DEFAULT);
   status = H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
@@ -914,17 +1100,28 @@ static void write_h5_img(Image * img,const char * filename, int output_precision
   status = H5Fclose(file_id);
 }
 
-Image * read_imagefile(const char * filename){
-  Image * res = malloc(sizeof(Image));
-  int file_id,dataset_id,space;
-  int status,i;
+
+static void write_h5_img_3d(Image * img,const char * filename, int output_precision){
+  hid_t dataspace_id;
+  hid_t dataset_id;
+  hid_t file_id;
+  int status;
   int version;
-  hsize_t dims[2];
+  hsize_t  dims[3];
+  real values[3];
+  sp_3matrix * tmp;
+  int i;
+  hid_t out_type_id = 0;
   hid_t mem_type_id = 0;
-  H5E_auto_t func;
-  void * client_data;
-  real values[2];
-  sp_matrix * tmp;
+  hid_t plist;
+  hsize_t chunk_size[3] = {sp_c3matrix_x(img->image),sp_c3matrix_y(img->image),sp_c3matrix_z(img->image)};
+  if(output_precision == sizeof(double)){
+    out_type_id = H5T_NATIVE_DOUBLE;
+  }else if(output_precision == sizeof(float)){
+    out_type_id = H5T_NATIVE_FLOAT;
+  }else{
+    abort();
+  }
   if(sizeof(real) == sizeof(float)){
     mem_type_id = H5T_NATIVE_FLOAT;
   }else if(sizeof(real) == sizeof(double)){
@@ -933,13 +1130,150 @@ Image * read_imagefile(const char * filename){
     abort();
   }
 
+  dims[0] = sp_c3matrix_x(img->image);
+  dims[1] = sp_c3matrix_y(img->image);
+  dims[2] = sp_c3matrix_z(img->image);
+  file_id = H5Fcreate(filename,  H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+  dataspace_id = H5Screate_simple( 3, dims, NULL );
+
+  plist = H5Pcreate (H5P_DATASET_CREATE);
+  H5Pset_chunk(plist,3,chunk_size);
+  H5Pset_deflate(plist,6);
+
+  dataset_id = H5Dcreate(file_id, "/mask", H5T_NATIVE_INT,
+			 dataspace_id, plist);
+  status = H5Dwrite(dataset_id,H5T_NATIVE_INT , H5S_ALL, H5S_ALL,
+		    H5P_DEFAULT, img->mask->data);
+  status = H5Dclose(dataset_id);
+
+  tmp = sp_3matrix_alloc(sp_c3matrix_x(img->image),sp_c3matrix_y(img->image),
+			 sp_c3matrix_z(img->image));
+  for(i = 0;i<sp_image_size(img);i++){
+    tmp->data[i] = creal(img->image->data[i]);
+  }
+
+  dataset_id = H5Dcreate(file_id, "/real", out_type_id,
+			 dataspace_id, plist);
+  status = H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
+		    H5P_DEFAULT, tmp->data);
+  status = H5Dclose(dataset_id);
+  sp_3matrix_free(tmp);
+
+  if(img->phased){
+    tmp = sp_3matrix_alloc(sp_c3matrix_x(img->image),sp_c3matrix_y(img->image),
+			   sp_c3matrix_z(img->image));
+    for(i = 0;i<sp_image_size(img);i++){
+      tmp->data[i] = cimag(img->image->data[i]);
+    }
+
+    dataset_id = H5Dcreate(file_id, "/imag",out_type_id,
+			   dataspace_id, plist);
+    status = H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
+		    H5P_DEFAULT, tmp->data);
+    status = H5Dclose(dataset_id);
+    sp_3matrix_free(tmp);
+
+  }
+  dims[0] = 3;
+  dataspace_id = H5Screate_simple( 1, dims, NULL );
+  dataset_id = H5Dcreate(file_id, "/image_center",out_type_id ,
+			 dataspace_id, H5P_DEFAULT);
+  values[0] = img->detector->image_center[0];
+  values[1] = img->detector->image_center[1];
+  values[2] = img->detector->image_center[2];
+  status = H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
+		    H5P_DEFAULT, values);
+  status = H5Dclose(dataset_id);
+  status = H5Sclose(dataspace_id);
+
+  dims[0] = 1;
+  dataspace_id = H5Screate_simple( 1, dims, NULL );
+  values[0] = img->phased;
+  dataset_id = H5Dcreate(file_id, "/phased", out_type_id,
+			 dataspace_id, H5P_DEFAULT);
+  status = H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
+		    H5P_DEFAULT, values);
+  status = H5Dclose(dataset_id);
+
+  values[0] = img->shifted;
+  dataset_id = H5Dcreate(file_id, "/shifted", out_type_id,
+			 dataspace_id, H5P_DEFAULT);
+  status = H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
+		    H5P_DEFAULT, values);
+  status = H5Dclose(dataset_id);
+
+  values[0] = img->detector->lambda;
+  dataset_id = H5Dcreate(file_id, "/lambda", out_type_id,
+			 dataspace_id, H5P_DEFAULT);
+  status = H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
+		    H5P_DEFAULT, values);
+  status = H5Dclose(dataset_id);
+
+  values[0] = img->detector->pixel_size[0];
+  values[1] = img->detector->pixel_size[1];
+  values[2] = img->detector->pixel_size[2];
+  dataset_id = H5Dcreate(file_id, "/pixel_size", out_type_id,
+			 dataspace_id, H5P_DEFAULT);
+  status = H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
+		    H5P_DEFAULT, values);
+  status = H5Dclose(dataset_id);
+
+  values[0] = img->detector->detector_distance;
+  dataset_id = H5Dcreate(file_id, "/detector_distance", out_type_id,
+			 dataspace_id, H5P_DEFAULT);
+  status = H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
+		    H5P_DEFAULT, values);
+  status = H5Dclose(dataset_id);
+
+  values[0] = img->scaled;
+  dataset_id = H5Dcreate(file_id, "/scaled", out_type_id,
+			 dataspace_id, H5P_DEFAULT);
+  status = H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
+		    H5P_DEFAULT, values);
+  status = H5Dclose(dataset_id);
 
 
+  version = 2;
+  dataset_id = H5Dcreate(file_id, "/version", H5T_NATIVE_INT,
+			 dataspace_id, H5P_DEFAULT);
+  status = H5Dwrite(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL,
+		    H5P_DEFAULT, &version);
+  status = H5Dclose(dataset_id);
+
+
+  status = H5Sclose(dataspace_id);
+
+
+  status = H5Fclose(file_id);
+}
+
+
+Image * read_imagefile(const char * filename){
+  Image * res = malloc(sizeof(Image));
+  int file_id,dataset_id,space;
+  int status,i;
+  int version;
+  hsize_t dims[3];
+  hid_t mem_type_id = 0;
+  H5E_auto_t func;
+  void * client_data;
+  real values[3];
+  sp_3matrix * tmp;
+  if(sizeof(real) == sizeof(float)){
+    mem_type_id = H5T_NATIVE_FLOAT;
+  }else if(sizeof(real) == sizeof(double)){
+    mem_type_id = H5T_NATIVE_DOUBLE;
+  }else{
+    abort();
+  }
+  
+  
+  
   res->detector = malloc(sizeof(Detector));
-
+  
   
   file_id = H5Fopen(filename,H5F_ACC_RDONLY,H5P_DEFAULT);
-
+  
   H5Eget_auto(&func,&client_data);
   /* turn off warning to check version because it might not exist */
   H5Eset_auto(NULL,NULL);
@@ -952,9 +1286,14 @@ Image * read_imagefile(const char * filename){
       dataset_id = H5Dopen(file_id, "/mask");
       space = H5Dget_space(dataset_id);
       H5Sget_simple_extent_dims(space,dims,NULL);
-      res->image = sp_cmatrix_alloc(dims[1],dims[0]);
+      if((int)dims[2]){
+	res->image = sp_c3matrix_alloc(dims[0],dims[1],dims[2]);
+	res->mask = sp_i3matrix_alloc(dims[0],dims[1],dims[2]);
+      }else{
+	res->image = sp_c3matrix_alloc(dims[0],dims[1],1);
+	res->mask = sp_i3matrix_alloc(dims[0],dims[1],1);
+      }
       
-      res->mask = sp_imatrix_alloc(dims[1],dims[0]);
       status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL,
 		       H5P_DEFAULT, res->mask->data);
       status = H5Dclose(dataset_id);
@@ -965,6 +1304,11 @@ Image * read_imagefile(const char * filename){
       status = H5Dclose(dataset_id);
       res->detector->image_center[0] = values[0];
       res->detector->image_center[1] = values[1];
+      if(values[2]){
+	res->detector->image_center[2] = values[2];
+      }else{
+	res->detector->image_center[2] = 0;
+      }
       
       dataset_id = H5Dopen(file_id, "/phased");
       status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
@@ -1000,30 +1344,35 @@ Image * read_imagefile(const char * filename){
       status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		       H5P_DEFAULT, values);
       status = H5Dclose(dataset_id);
-      res->detector->pixel_size = values[0];
+      res->detector->pixel_size[0] = values[0];
+      res->detector->pixel_size[1] = values[1];
+      res->detector->pixel_size[2] = values[2];
       
       
       if(res->phased){
-	tmp = sp_matrix_alloc(sp_imatrix_rows(res->mask),sp_imatrix_cols(res->mask));
+	tmp = sp_3matrix_alloc(sp_i3matrix_x(res->mask),
+			       sp_i3matrix_y(res->mask),
+			       sp_i3matrix_z(res->mask));
 	dataset_id = H5Dopen(file_id, "/imag");
 	status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 			 H5P_DEFAULT, tmp->data);
 	status = H5Dclose(dataset_id);
-	for(i = 0;i<sp_matrix_size(tmp);i++){
+	for(i = 0;i<sp_3matrix_size(tmp);i++){
 	  res->image->data[i] = tmp->data[i]*I;
 	}
-	sp_matrix_free(tmp);
+	sp_3matrix_free(tmp);
       }
       
-      tmp = sp_matrix_alloc(sp_imatrix_rows(res->mask),sp_imatrix_cols(res->mask));
+      tmp = sp_3matrix_alloc(sp_i3matrix_x(res->mask),sp_i3matrix_y(res->mask),
+			     sp_i3matrix_z(res->mask));
       dataset_id = H5Dopen(file_id, "/real");
       status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		       H5P_DEFAULT, tmp->data);
       status = H5Dclose(dataset_id);
-      for(i = 0;i<sp_matrix_size(tmp);i++){
+      for(i = 0;i<sp_3matrix_size(tmp);i++){
 	res->image->data[i] += tmp->data[i];
       }
-      sp_matrix_free(tmp);
+      sp_3matrix_free(tmp);
       
       status = H5Fclose(file_id);
     }
@@ -1031,17 +1380,22 @@ Image * read_imagefile(const char * filename){
     dataset_id = H5Dopen(file_id, "/mask");
     space = H5Dget_space(dataset_id);
     H5Sget_simple_extent_dims(space,dims,NULL);
-    res->image = sp_cmatrix_alloc(dims[1],dims[0]);
+    if(dims[2]){
+      res->image = sp_c3matrix_alloc(dims[0],dims[1],dims[2]);
+      res->mask = sp_i3matrix_alloc(dims[0],dims[1],dims[2]);
+    }else{
+      res->image = sp_c3matrix_alloc(dims[0],dims[1],1);
+      res->image = sp_c3matrix_alloc(dims[0],dims[1],1);
+    }
+    tmp = sp_3matrix_alloc(sp_i3matrix_x(res->mask),sp_i3matrix_y(res->mask),
+			   sp_i3matrix_z(res->mask));
     
-    res->mask = sp_imatrix_alloc(dims[1],dims[0]);
-    tmp = sp_matrix_alloc(sp_imatrix_rows(res->mask),sp_imatrix_cols(res->mask));
-
     status = H5Dread(dataset_id,mem_type_id , H5S_ALL, H5S_ALL,
 		     H5P_DEFAULT, tmp->data);
-    for(i = 0;i<sp_matrix_size(tmp);i++){
+    for(i = 0;i<sp_3matrix_size(tmp);i++){
       res->mask->data[i] = tmp->data[i];
     }
-    sp_matrix_free(tmp);
+    sp_3matrix_free(tmp);
     
     status = H5Dclose(dataset_id);
     
@@ -1051,6 +1405,11 @@ Image * read_imagefile(const char * filename){
     status = H5Dclose(dataset_id);
     res->detector->image_center[0] = values[0];
     res->detector->image_center[1] = values[1];
+    if(values[2]){
+      res->detector->image_center[2] = values[2];
+    }else{
+      res->detector->image_center[2] = 0;
+    }
     
     dataset_id = H5Dopen(file_id, "/phased");
     status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
@@ -1086,50 +1445,56 @@ Image * read_imagefile(const char * filename){
     status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		     H5P_DEFAULT, values);
     status = H5Dclose(dataset_id);
-    res->detector->pixel_size = values[0];
+    res->detector->pixel_size[0] = values[0];
+    res->detector->pixel_size[1] = values[0];
+    res->detector->pixel_size[2] = values[0];
     
     
     if(res->phased){
-      tmp = sp_matrix_alloc(sp_imatrix_rows(res->mask),sp_imatrix_cols(res->mask));
+      tmp = sp_3matrix_alloc(sp_i3matrix_x(res->mask),sp_i3matrix_y(res->mask),
+			     sp_i3matrix_z(res->mask));
       dataset_id = H5Dopen(file_id, "/complex");
       status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		       H5P_DEFAULT, tmp->data);
       status = H5Dclose(dataset_id);
-      for(i = 0;i<sp_matrix_size(tmp);i++){
+      for(i = 0;i<sp_3matrix_size(tmp);i++){
 	res->image->data[i] = tmp->data[i]*I;
       }
-      sp_matrix_free(tmp);
-      tmp = sp_matrix_alloc(sp_imatrix_rows(res->mask),sp_imatrix_cols(res->mask));
+      sp_3matrix_free(tmp);
+      tmp = sp_3matrix_alloc(sp_i3matrix_x(res->mask),sp_i3matrix_y(res->mask),
+			     sp_i3matrix_z(res->mask));
       dataset_id = H5Dopen(file_id, "/real");
       status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		       H5P_DEFAULT, tmp->data);
       status = H5Dclose(dataset_id);
-      for(i = 0;i<sp_matrix_size(tmp);i++){
+      for(i = 0;i<sp_3matrix_size(tmp);i++){
 	res->image->data[i] += tmp->data[i];
       }
-      sp_matrix_free(tmp);
+      sp_3matrix_free(tmp);
       
     }else{
       if(!res->scaled){
-	tmp = sp_matrix_alloc(sp_imatrix_rows(res->mask),sp_imatrix_cols(res->mask));
+	tmp = sp_3matrix_alloc(sp_i3matrix_x(res->mask),sp_i3matrix_y(res->mask),
+			       sp_i3matrix_z(res->mask));
 	dataset_id = H5Dopen(file_id, "/intensities");
 	status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 			 H5P_DEFAULT, tmp->data);
 	status = H5Dclose(dataset_id);
-	for(i = 0;i<sp_matrix_size(tmp);i++){
+	for(i = 0;i<sp_3matrix_size(tmp);i++){
 	  res->image->data[i] += tmp->data[i];
 	}
-	sp_matrix_free(tmp);
+	sp_3matrix_free(tmp);
       }else{
-	tmp = sp_matrix_alloc(sp_imatrix_rows(res->mask),sp_imatrix_cols(res->mask));
+	tmp = sp_3matrix_alloc(sp_i3matrix_x(res->mask),sp_i3matrix_y(res->mask),
+			       sp_i3matrix_z(res->mask));
 	dataset_id = H5Dopen(file_id, "/amplitudes");
 	status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 			 H5P_DEFAULT, tmp->data);
 	status = H5Dclose(dataset_id);
-	for(i = 0;i<sp_matrix_size(tmp);i++){
+	for(i = 0;i<sp_3matrix_size(tmp);i++){
 	  res->image->data[i] += tmp->data[i];
 	}
-	sp_matrix_free(tmp);	 
+	sp_3matrix_free(tmp);	 
       }
     }        
     status = H5Fclose(file_id);    
@@ -1187,8 +1552,8 @@ Image * read_tiff(const char * filename){
   
   /* Transpose image, because TIFF is saved row by row (which they call strips)
      unlike Hawk that saves column by column */
-  out->image = sp_cmatrix_alloc(height,width);
-  out->mask = sp_imatrix_alloc(height,width);
+  out->image = sp_c3matrix_alloc(height,width,1);
+  out->mask = sp_i3matrix_alloc(height,width,1);
   if(datatype == SAMPLEFORMAT_UINT){
     tmpui = (unsigned short *)img;
     for(x = 0;x<width;x++){
@@ -1219,7 +1584,7 @@ Image * read_tiff(const char * filename){
       }    
     }
   }
-  for(i = 0;i<sp_cmatrix_size(out->image);i++){
+  for(i = 0;i<sp_c3matrix_size(out->image);i++){
     out->mask->data[i] = 1;
   }
   free(img);
@@ -1238,8 +1603,8 @@ void write_tiff(Image * img,const char * filename){
   int stripsize;
   TIFF * tif;
   int x,y;
-  int width = sp_image_width(img);
-  int height = sp_image_height(img);
+  int width = sp_image_x(img);
+  int height = sp_image_y(img);
 
 
   tif = TIFFOpen(filename, "w");  
@@ -1255,9 +1620,9 @@ void write_tiff(Image * img,const char * filename){
   TIFFSetField(tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
   TIFFSetField(tif, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_IEEEFP);
   data = malloc(nstrips*stripsize);
-  for(y = 0;y<sp_image_height(img);y++){
-    for(x = 0;x<sp_image_width(img);x++){
-      data[x] =cabsr(sp_image_get(img,x,y));      
+  for(y = 0;y<sp_image_x(img);y++){
+    for(x = 0;x<sp_image_y(img);x++){
+      data[x] =cabsr(sp_image_get(img,x,y,0));      
     }
     TIFFWriteEncodedStrip(tif,y,data,stripsize);
   }
@@ -1280,9 +1645,9 @@ void write_csv(Image * img,const char * filename){
     exit(0);
   }
   fprintf(f,"x,y,amplitude,phase,real,imaginary\n");
-  for(y = 0;y<sp_image_height(img);y++){
-    for(x = 0;x<sp_image_width(img);x++){
-      fprintf(f,"%d,%d,%f,%f,%f,%f\n",x,y,cabsr(sp_image_get(img,x,y)),carg(sp_image_get(img,x,y)),creal(sp_image_get(img,x,y)),cimag(sp_image_get(img,x,y)));
+  for(y = 0;y<sp_image_y(img);y++){
+    for(x = 0;x<sp_image_x(img);x++){
+      fprintf(f,"%d,%d,%f,%f,%f,%f\n",x,y,cabsr(sp_image_get(img,x,y,0)),carg(sp_image_get(img,x,y,0)),creal(sp_image_get(img,x,y,0)),cimag(sp_image_get(img,x,y,0)));
     }
   }
   fclose(f);
@@ -1300,16 +1665,18 @@ void write_csv(Image * img,const char * filename){
    If size is NULL the size of a will be used (resulting in wrap around effects).
 
 */
+
 Image * sp_image_cross_correlate(Image * a, Image * b, int * size){
   int x;
-  int y;  
+  int y;
+  int z;
   int i;
   Image * res;
   Image * a_ft;
   Image * b_ft;
   Image * tmp;
 
-  if(sp_cmatrix_cols(a->image) < sp_cmatrix_cols(b->image)){
+  if(sp_c3matrix_x(a->image) < sp_c3matrix_x(b->image)){
     /* swap */
     res = a;
     a = b;
@@ -1319,16 +1686,18 @@ Image * sp_image_cross_correlate(Image * a, Image * b, int * size){
   if(size){
     x = size[0];
     y = size[1];
+    z = size[2];
   }else{
-    x = sp_cmatrix_cols(a->image);
-    y = sp_cmatrix_rows(a->image);
+    x = sp_c3matrix_x(a->image);
+    y = sp_c3matrix_y(a->image);
+    z = sp_c3matrix_z(a->image);
   }
 
-  tmp = zero_pad_image(a,x,y,1);
+  tmp = zero_pad_image(a,x,y,z,1);
   a_ft = sp_image_fft(tmp);
   sp_image_free(tmp);
 
-  tmp = zero_pad_image(b,x,y,1);
+  tmp = zero_pad_image(b,x,y,z,1);
   b_ft = sp_image_fft(tmp);
   sp_image_free(tmp);
 
@@ -1337,7 +1706,7 @@ Image * sp_image_cross_correlate(Image * a, Image * b, int * size){
   sp_image_rephase(tmp,SP_ZERO_PHASE);
   /* Now do the multiplication in fourier space */
   /* Using the Convolution Theorem */
-  for(i = 0;i<x*y;i++){
+  for(i = 0;i<x*y*z;i++){
     tmp->image->data[i] = a_ft->image->data[i]*conj(b_ft->image->data[i]);
   }
 
@@ -1367,13 +1736,14 @@ Image * sp_image_cross_correlate(Image * a, Image * b, int * size){
 Image * sp_image_convolute(Image * a, Image * b, int * size){
   int x;
   int y;  
+  int z;
   int i;
   Image * res;
   Image * a_ft;
   Image * b_ft;
   Image * tmp;
 
-  if(sp_cmatrix_cols(a->image) < sp_cmatrix_cols(b->image)){
+  if(sp_c3matrix_x(a->image) < sp_c3matrix_x(b->image)){
     /* swap */
     res = a;
     a = b;
@@ -1381,19 +1751,21 @@ Image * sp_image_convolute(Image * a, Image * b, int * size){
   }
   
   if(!size){
-    x = sp_cmatrix_cols(a->image)/*+(sp_cmatrix_cols(b->image)-1)/2*/;
-    y = sp_cmatrix_rows(a->image)/*+(sp_cmatrix_rows(b->image)-1)/2*/;
+    x = sp_c3matrix_x(a->image)/*+(sp_cmatrix_cols(b->image)-1)/2*/;
+    y = sp_c3matrix_y(a->image)/*+(sp_cmatrix_rows(b->image)-1)/2*/;
+    z = sp_c3matrix_z(a->image);
   }else{
     x = size[0];
     y = size[1];
+    z = size[2];
   }
 
-  tmp = zero_pad_image(a,x,y,1);
+  tmp = zero_pad_image(a,x,y,z,1);
 /*  sp_image_dephase(tmp);*/
   a_ft = sp_image_fft(tmp);
   sp_image_free(tmp);
 
-  tmp = zero_pad_image(b,x,y,1);
+  tmp = zero_pad_image(b,x,y,z,1);
 /*  sp_image_dephase(tmp);*/
   b_ft = sp_image_fft(tmp);
   sp_image_free(tmp);
@@ -1403,7 +1775,7 @@ Image * sp_image_convolute(Image * a, Image * b, int * size){
 /*  sp_image_rephase(tmp,SP_ZERO_PHASE);*/
   /* Now do the multiplication in fourier space */
   /* Using the Convolution Theorem */
-  for(i = 0;i<x*y;i++){
+  for(i = 0;i<x*y*z;i++){
     tmp->image->data[i] = a_ft->image->data[i]*b_ft->image->data[i];
   }
 
@@ -1427,13 +1799,18 @@ Image * sp_image_convolute(Image * a, Image * b, int * size){
  The filter function is given by:
 
 f(x,y) = 1/sqrt(2*M_PI*radius) * exp(-(x^2+y^2)/(2*radius^2)) */
-Image * gaussian_blur(Image * in, real radius){
+Image * gaussian_blur(Image * in, real radius,int type){
   /* Lets make this convolution using a fourier transform shallw we... good....*/
-  int x,y;
-  int i,j;
+  int x,y,z;
+  int i,j,k;
   int filter_side = ceil(radius)*3*2+1;
   real total_filter = 0;
-  Image * filter_img = sp_image_alloc(filter_side,filter_side);
+  Image * filter_img = sp_image_alloc(filter_side,filter_side,filter_side);
+  filter_img->detector->image_center[2] = (filter_side-1)/2.0;
+  if(type == SP_2D){
+    sp_image_realloc(filter_img,filter_side,filter_side,1);
+    filter_img->detector->image_center[2] = 0;
+  }
   Image * centered_filter;
   Image * res;
   Image * tmp;
@@ -1445,10 +1822,18 @@ Image * gaussian_blur(Image * in, real radius){
     i = x+ceil(radius)*3;
     for(y = -ceil(radius)*3;y<=ceil(radius)*3;y++){
       j = y+ceil(radius)*3;
-      filter_img->image->data[i*filter_side+j] = 1/sqrt(2*M_PI*radius) * exp(-(x*x+y*y)/(2*radius*radius));
-      /* Make the filter symmetric in the imaginary part */
-/*      filter_img->image->data[i*filter_side+j] = filter_img->image->data[i*filter_side+j] + filter_img->image->data[i*filter_side+j]*I;*/
-      total_filter += filter_img->image->data[i*filter_side+j];
+      for(z = -ceil(radius)*3;z<=ceil(radius)*3;z++){
+	if(type == SP_3D){
+	  k = z+ceil(radius)*3;
+	}else{
+	  k = 0;
+	}
+	filter_img->image->data[k*filter_side*filter_side+j*filter_side+i] = 1/sqrt(2*M_PI*radius) * exp(-(x*x+y*y+z*z)/(2*radius*radius));
+	/* Make the filter symmetric in the imaginary part */
+	/*      filter_img->image->data[i*filter_side+j] = filter_img->image->data[i*filter_side+j] + filter_img->image->data[i*filter_side+j]*I;*/
+	total_filter += filter_img->image->data[k*filter_side*filter_side+
+						j*filter_side+i];
+      }
     }
   }
   for(i = 0;i<sp_image_size(filter_img);i++){
@@ -1461,10 +1846,12 @@ Image * gaussian_blur(Image * in, real radius){
   sp_image_free(centered_filter);
   /* we should crop the result if it's bigger than the input */
   if(sp_image_size(res) > sp_image_size(in)){
-    tmp = rectangle_crop(res, (sp_cmatrix_cols(res->image)-sp_cmatrix_cols(in->image))/2,
-			 (sp_cmatrix_rows(res->image)-sp_cmatrix_rows(in->image))/2, 
-			 sp_cmatrix_cols(in->image)/2-1+(sp_cmatrix_cols(res->image)-sp_cmatrix_cols(in->image))/2,
-			 sp_cmatrix_cols(in->image)/2-1+(sp_cmatrix_rows(res->image)-sp_cmatrix_rows(in->image))/2);
+    tmp = cube_crop(res, (sp_c3matrix_x(res->image)-sp_c3matrix_x(in->image))/2,
+		    (sp_c3matrix_y(res->image)-sp_c3matrix_y(in->image))/2,
+		    (sp_c3matrix_z(res->image)-sp_c3matrix_z(in->image))/2,
+		    sp_c3matrix_x(in->image)/2-1+(sp_c3matrix_x(res->image)-sp_c3matrix_x(in->image))/2,
+		    sp_c3matrix_x(in->image)/2-1+(sp_c3matrix_y(res->image)-sp_c3matrix_y(in->image))/2,
+		    sp_c3matrix_x(in->image)/2-1+(sp_c3matrix_z(res->image)-sp_c3matrix_z(in->image))/2);
     sp_image_free(res);
     res = tmp;
   }
@@ -1476,27 +1863,34 @@ Image * gaussian_blur(Image * in, real radius){
  The filter function is given by:
 
 f(x,y) = 1/((2*radius+1)^2)) */
-Image * square_blur(Image * in, real radius){
+Image * square_blur(Image * in, real radius, int type){
   /* Lets make this convolution using a fourier transform shallw we... good....*/
-  int x,y;
-  int i,j;
+  int x,y,z;
+  int i,j,k;
   int filter_side = ceil(radius)*3*2+1;
-  sp_cmatrix * filter = sp_cmatrix_alloc(filter_side,filter_side);
-  real total_filter = 0;
   Image * filter_img = sp_image_duplicate(in,SP_COPY_DETECTOR);
+  sp_c3matrix * filter = sp_c3matrix_alloc(filter_side,filter_side,(type == SP_2D)? 1:filter_side);
+  filter_img->detector->image_center[2] = (filter_side-1)/2.0;
+  if(type == SP_2D){
+    filter_img->detector->image_center[2] = 0;
+  }
+  real total_filter = 0;
   Image * centered_filter;
   Image * res;
   filter_img->detector->image_center[0] = (filter_side-1)/2.0;
   filter_img->detector->image_center[1] = (filter_side-1)/2.0;
-  sp_cmatrix_free(filter_img->image);
+  sp_c3matrix_free(filter_img->image);
   filter_img->image = filter;
   sp_image_dephase(filter_img);
   for(x = -ceil(radius)*3;x<=ceil(radius)*3;x++){
     i = x+ceil(radius)*3;
     for(y = -ceil(radius)*3;y<=ceil(radius)*3;y++){
       j = y+ceil(radius)*3;
-      filter->data[i*filter_side+j] = 1.0/((2*radius+1)*(2*radius+1));
-      total_filter += filter->data[i*filter_side+j];
+      for(z = -ceil(radius)*3;z<=ceil(radius)*3;z++){
+	if(type == SP_3D){k = z+ceil(radius)*3;}else{k = 0;}
+	filter->data[k*filter_side*filter_side+j*filter_side+i] = 1.0/((2*radius+1)*(2*radius+1));
+	total_filter += filter->data[k*filter_side*filter_side+j*filter_side+i];
+      }
     }
   }
   for(i = 0;i<sp_image_size(filter_img);i++){
@@ -1514,11 +1908,15 @@ int write_mask_to_png(Image * img, char * filename, int color){
   Image  * res = sp_image_duplicate(img,SP_COPY_DATA|SP_COPY_MASK);
   int ret;
   int i;
-  for(i = 0;i<sp_image_size(img);i++){
-    res->image->data[i] = res->mask->data[i];
+  if(sp_i3matrix_z(img->mask) != 1){
+    fprintf(stderr,"Can't write 3D mask to png");
+  }else{
+    for(i = 0;i<sp_image_size(img);i++){
+      res->image->data[i] = res->mask->data[i];
+    }
+    ret = write_png(res,filename,color);
+    sp_image_free(res);
   }
-  ret = write_png(res,filename,color);
-  sp_image_free(res);
   return ret;
 }
 
@@ -1594,11 +1992,11 @@ Image * read_png(const char * filename){
    row_pointers[i] = malloc(sizeof(png_byte)*width*bit_depth/8);
  }
  png_read_image(png_ptr, row_pointers);
- res = sp_image_alloc(width,height);
+ res = sp_image_alloc(width,height,1);
  for(i = 0;i<height;i++){
    for(j = 0;j<width;j++){
-     res->image->data[j*height+i] = row_pointers[i][(int)(j*bit_depth/8)];
-     res->mask->data[j*height+i] = 1;
+     res->image->data[j*width+i] = row_pointers[i][(int)(j*bit_depth/8)];
+     res->mask->data[j*width+i] = 1;
    }
  }
  return res;
@@ -1721,20 +2119,20 @@ int write_png(Image * img,const char * filename, int color){
   /* 8 bits 3 channels */
   pixel_size = 3*1;
    /* png_set_compression_level(png_ptr,Z_BEST_COMPRESSION); */
-  png_set_IHDR(png_ptr, info_ptr, sp_cmatrix_cols(img->image), sp_cmatrix_rows(img->image),
+  png_set_IHDR(png_ptr, info_ptr, sp_c3matrix_x(img->image), sp_c3matrix_y(img->image),
 	       bit_depth, color_type, interlace_type,
 	       compression_type, filter_method);
   
   
 
-  row_pointers = png_malloc(png_ptr,sp_cmatrix_rows(img->image)*sizeof(png_byte *));
-  for (i=0; i<sp_cmatrix_rows(img->image); i++){
-    row_pointers[i] = png_malloc(png_ptr,sp_cmatrix_cols(img->image)*pixel_size*sizeof(png_byte));
+  row_pointers = png_malloc(png_ptr,sp_c3matrix_y(img->image)*sizeof(png_byte *));
+  for (i=0; i<sp_c3matrix_y(img->image); i++){
+    row_pointers[i] = png_malloc(png_ptr,sp_c3matrix_x(img->image)*pixel_size*sizeof(png_byte));
   }
   
   /* We're gonna scale the image so that it fits on the 8 bits */
-  min_v = sp_cmatrix_min(img->image,NULL);
-  max_v = sp_cmatrix_max(img->image,NULL);
+  min_v = sp_c3matrix_min(img->image,NULL);
+  max_v = sp_c3matrix_max(img->image,NULL);
   if(max_v-min_v){
     scale = 1/(max_v-min_v);
   }else{
@@ -1744,8 +2142,8 @@ int write_png(Image * img,const char * filename, int color){
   i = 0;
   log_of_2 = log(2.0);
   /* this is a special kind of color */
-  for(x = 0;x<sp_cmatrix_cols(img->image);x++){
-    for(y = 0;y<sp_cmatrix_rows(img->image);y++){
+  for(x = 0;x<sp_c3matrix_x(img->image);x++){
+    for(y = 0;y<sp_c3matrix_y(img->image);y++){
       /* traditional color scale taken from gnuplot manual */
       if(color & LOG_SCALE){
 	value = log((cabs(img->image->data[i])-offset)*scale+1)/log_of_2;
@@ -1771,7 +2169,7 @@ int write_png(Image * img,const char * filename, int color){
   png_write_png(png_ptr, info_ptr, png_transforms, NULL);
   png_write_flush(png_ptr);
   /* png_write_end(png_ptr, info_ptr);*/
-  for(i=0; i<sp_cmatrix_rows(img->image); i++){
+  for(i=0; i<sp_c3matrix_y(img->image); i++){
     png_free(png_ptr,row_pointers[i]);
   }
   png_free(png_ptr,row_pointers);
@@ -1826,13 +2224,13 @@ Image * low_pass_square_filter(Image * in, int edge_size){
   for(i = 0;i<sp_image_size(tmp);i++){
     tmp->image->data[i] = log(tmp->image->data[i]+1);
   }
-  write_png(tmp,"after_low_pass.png",COLOR_JET);
+  //  write_png(tmp,"after_low_pass.png",COLOR_JET); //not compatible with 3D
   sp_image_free(tmp);
-
   
   return res;
 }
 
+//I am here
 /* Low pass filter using a centered gaussian window of side edge_size */
 Image * low_pass_gaussian_filter(Image * in, int edge_size){
   Image * fft_img = sp_image_fft(in);
@@ -1892,11 +2290,11 @@ Image * gaussian_filter(Image * in, real radius,int in_place){
 }
 
 
-Image * zero_pad_image(Image * a, int newx, int newy, int pad_mask){
+Image * zero_pad_image(Image * a, int newx, int newy, int newz, int pad_mask){
   if(a->shifted){
-    return zero_pad_shifted_image(a,newx,newy,pad_mask);
+    return zero_pad_shifted_image(a,newx,newy,newz,pad_mask);
   }else{
-    return zero_pad_unshifted_image(a,newx,newy,pad_mask);
+    return zero_pad_unshifted_image(a,newx,newy,newz,pad_mask);
   }
   return NULL;
 }
@@ -1920,48 +2318,62 @@ The in is split through the middle. In case of odd in dimensions
 the upper left corner gets the extra row/column.
 
 */
-Image * zero_pad_shifted_image(Image * a, int newx, int newy,int pad_mask){
+Image * zero_pad_shifted_image(Image * a, int newx, int newy, int newz,int pad_mask){
   Image * out;
-  int x,y;
+  int x,y,z;
   int sourcex;
   int sourcey;
-  if(newx < sp_cmatrix_cols(a->image) || 
-     newy < sp_cmatrix_rows(a->image)){
+  int sourcez;
+  if(newx < sp_c3matrix_x(a->image) || 
+     newy < sp_c3matrix_y(a->image) ||
+     newz < sp_c3matrix_z(a->image)){
     fprintf(stderr,"Negative padding!\n");
     abort();
-  }else if(newx == sp_cmatrix_cols(a->image) &&
-	   newy == sp_cmatrix_rows(a->image)){
+  }else if(newx == sp_c3matrix_x(a->image) &&
+	   newy == sp_c3matrix_y(a->image) &&
+	   newz == sp_c3matrix_z(a->image)){
     return sp_image_duplicate(a,SP_COPY_DATA|SP_COPY_MASK);
   }
   out = sp_image_duplicate(a,SP_COPY_DETECTOR);
-  sp_cmatrix_free(out->image);
-  out->image = sp_cmatrix_alloc(newy,newx);
-  sp_imatrix_free(out->mask);
-  out->mask = sp_imatrix_alloc(newy,newx);
+  sp_c3matrix_free(out->image);
+  out->image = sp_c3matrix_alloc(newx,newy,newz);
+  sp_i3matrix_free(out->mask);
+  out->mask = sp_i3matrix_alloc(newx,newy,newz);
 
-  for(x = 0;x<sp_cmatrix_cols(out->image);x++){
-    if(x < sp_cmatrix_cols(a->image)/2.0){
+  for(x = 0;x<sp_c3matrix_x(out->image);x++){
+    if(x < sp_c3matrix_x(a->image)/2.0){
       sourcex = x;
-    }else if(sp_cmatrix_cols(out->image)-x-1 < (sp_cmatrix_cols(a->image)-1)/2.0){
-      sourcex = (sp_cmatrix_cols(a->image)-1)-(sp_cmatrix_cols(out->image)-x-1);
+    }else if(sp_c3matrix_x(out->image)-x-1 < (sp_c3matrix_x(a->image)-1)/2.0){
+      sourcex = (sp_c3matrix_x(a->image)-1)-(sp_c3matrix_x(out->image)-x-1);
     }else{
       sourcex = -1;
     }
 
-    for(y = 0;y<sp_cmatrix_rows(out->image);y++){
-      if(y < sp_cmatrix_rows(a->image)/2.0){
+    for(y = 0;y<sp_c3matrix_y(out->image);y++){
+      if(y < sp_c3matrix_y(a->image)/2.0){
 	sourcey = y;
-      }else if(sp_cmatrix_rows(out->image)-y-1 < (sp_cmatrix_rows(a->image)-1)/2.0){
-	sourcey = (sp_cmatrix_cols(a->image)-1)-(sp_cmatrix_rows(out->image)-y-1);
+      }else if(sp_c3matrix_y(out->image)-y-1 < (sp_c3matrix_y(a->image)-1)/2.0){
+	sourcey = (sp_c3matrix_y(a->image)-1)-(sp_c3matrix_y(out->image)-y-1);
       }else{
 	sourcey = -1;
       }
-      if(sourcey == -1 || sourcex == -1){
-	out->image->data[x*sp_cmatrix_rows(out->image)+y] = 0;
-	out->mask->data[x*sp_cmatrix_rows(out->image)+y] = pad_mask;
-      }else{
-	out->image->data[x*sp_cmatrix_rows(out->image)+y] = a->image->data[sourcex*sp_cmatrix_rows(a->image)+sourcey];
-	out->mask->data[x*sp_cmatrix_rows(out->image)+y] = a->mask->data[sourcex*sp_cmatrix_rows(a->image)+sourcey];
+      for(z = 0; z<sp_c3matrix_z(out->image);z++){
+	if(z < sp_c3matrix_z(a->image)/2.0){
+	  sourcez = z;
+	}else if(sp_c3matrix_z(out->image)-z-1 <(sp_c3matrix_z(a->image)-1)/2.0){
+	  sourcez = (sp_c3matrix_z(a->image)-1)-(sp_c3matrix_z(out->image)-z-1);
+	}else{
+	  sourcez = -1;
+	}
+	if(sourcex == -1 || sourcey == -1 || sourcez == -1){
+	  out->image->data[z*sp_c3matrix_y(out->image)*sp_c3matrix_x(out->image)+
+			   y*sp_c3matrix_x(out->image)+x] = 0;
+	  out->mask->data[z*sp_c3matrix_y(out->image)*sp_c3matrix_x(out->image)+
+			  y*sp_c3matrix_x(out->image)+x] = pad_mask;
+	}else{
+	  out->image->data[z*sp_c3matrix_y(out->image)*sp_c3matrix_x(out->image)+y*sp_c3matrix_x(out->image)+x] = a->image->data[sourcez*sp_c3matrix_y(a->image)*sp_c3matrix_x(a->image)+sourcey*sp_c3matrix_x(a->image)+sourcex];
+	  out->mask->data[z*sp_c3matrix_y(out->image)*sp_c3matrix_x(out->image)+y*sp_c3matrix_x(out->image)+x] = a->mask->data[sourcez*sp_c3matrix_y(a->image)*sp_c3matrix_x(a->image)+sourcey*sp_c3matrix_x(a->image)+sourcex];
+	}
       }
     }
   }
@@ -1984,44 +2396,57 @@ out = 1 1 2 2 0 0
       0 0 0 0 0 0
 
 */
-Image * zero_pad_unshifted_image(Image * a, int newx, int newy, int pad_mask){
+Image * zero_pad_unshifted_image(Image * a, int newx, int newy, int newz, int pad_mask){
   Image * out;
-  int x,y;
+  int x,y,z;
   int sourcex;
   int sourcey;
-  if(newx < sp_cmatrix_cols(a->image) || 
-     newy < sp_cmatrix_rows(a->image)){
+  int sourcez;
+  if(newx < sp_c3matrix_x(a->image) || 
+     newy < sp_c3matrix_y(a->image) ||
+     newz < sp_c3matrix_z(a->image)){
     fprintf(stderr,"Negative padding!\n");
     abort();
-  }else if(newx == sp_cmatrix_cols(a->image) &&
-	   newy == sp_cmatrix_rows(a->image)){
+  }else if(newx == sp_c3matrix_x(a->image) &&
+	   newy == sp_c3matrix_y(a->image) &&
+	   newz == sp_c3matrix_z(a->image)){
     return sp_image_duplicate(a,SP_COPY_DATA|SP_COPY_MASK);
   }
   out = sp_image_duplicate(a,SP_COPY_DETECTOR);
-  sp_cmatrix_free(out->image);
-  out->image = sp_cmatrix_alloc(newy,newx);
-  sp_imatrix_free(out->mask);
-  out->mask = sp_imatrix_alloc(newy,newx);
+  sp_c3matrix_free(out->image);
+  out->image = sp_c3matrix_alloc(newx,newy,newz);
+  sp_i3matrix_free(out->mask);
+  out->mask = sp_i3matrix_alloc(newx,newy,newz);
 
-  for(x = 0;x<sp_cmatrix_cols(out->image);x++){
-    if(x < sp_cmatrix_cols(a->image)){
+  for(x = 0;x<sp_c3matrix_x(out->image);x++){
+    if(x < sp_c3matrix_x(a->image)){
       sourcex = x;
     }else{
       sourcex = -1;
     }
     
-    for(y = 0;y<sp_cmatrix_rows(out->image);y++){
-      if(y < sp_cmatrix_rows(a->image)){
+    for(y = 0;y<sp_c3matrix_y(out->image);y++){
+      if(y < sp_c3matrix_y(a->image)){
 	sourcey = y;
       }else{
 	sourcey = -1;
       }
-      if(sourcey == -1 || sourcex == -1){
-	out->image->data[x*sp_cmatrix_rows(out->image)+y] = 0;
-	out->mask->data[x*sp_cmatrix_rows(out->image)+y] = pad_mask;
-      }else{
-	out->image->data[x*sp_cmatrix_rows(out->image)+y] = a->image->data[sourcex*sp_cmatrix_rows(a->image)+sourcey];
-	out->mask->data[x*sp_cmatrix_rows(out->image)+y] = a->mask->data[sourcex*sp_cmatrix_rows(a->image)+sourcey];
+
+      for(z = 0;z<sp_c3matrix_z(out->image);z++){
+	if(z < sp_c3matrix_z(a->image)){
+	  sourcez = z;
+	}else{
+	  sourcez = -1;
+	}
+	if(sourcey == -1 || sourcex == -1 || sourcez == -1){
+	out->image->data[z*sp_c3matrix_y(out->image)*sp_c3matrix_x(out->image)+
+			 y*sp_c3matrix_x(out->image)+x] = 0;
+	out->mask->data[z*sp_c3matrix_y(out->image)*sp_c3matrix_x(out->image)+
+			y*sp_c3matrix_x(out->image)+x] = pad_mask;
+	}else{
+	  out->image->data[z*sp_c3matrix_y(out->image)*sp_c3matrix_x(out->image)+y*sp_c3matrix_x(out->image)+x] = a->image->data[sourcez*sp_c3matrix_y(a->image)*sp_c3matrix_x(a->image)+sourcey*sp_c3matrix_x(a->image)+sourcex];
+	  out->mask->data[z*sp_c3matrix_y(out->image)*sp_c3matrix_x(out->image)+y*sp_c3matrix_x(out->image)+x] = a->mask->data[sourcez*sp_c3matrix_y(a->image)*sp_c3matrix_x(a->image)+sourcey*sp_c3matrix_x(a->image)+sourcex];
+	}
       }
     }
   }
@@ -2049,11 +2474,11 @@ Image * shift_center_to_top_left(Image * a){
   int x,y;
   int destx;
   int desty;
-  for(x = 0;x<sp_cmatrix_cols(out->image);x++){
-    destx = (int)(x+sp_cmatrix_cols(out->image)-out->detector->image_center[0])%sp_cmatrix_cols(out->image);
-    for(y = 0;y<sp_cmatrix_rows(out->image);y++){
-      desty = (int)(y+sp_cmatrix_rows(out->image)-out->detector->image_center[1])%sp_cmatrix_rows(out->image);
-      out->image->data[destx*sp_cmatrix_rows(out->image)+desty] = a->image->data[x*sp_cmatrix_rows(a->image)+y];
+  for(x = 0;x<sp_c3matrix_x(out->image);x++){
+    destx = (int)(x+sp_c3matrix_x(out->image)-out->detector->image_center[0])%sp_c3matrix_x(out->image);
+    for(y = 0;y<sp_c3matrix_y(out->image);y++){
+      desty = (int)(y+sp_c3matrix_y(out->image)-out->detector->image_center[1])%sp_c3matrix_y(out->image);
+      out->image->data[desty*sp_c3matrix_x(out->image)+destx] = a->image->data[y*sp_c3matrix_x(a->image)+x];
     }
   }
   return out;
@@ -2095,16 +2520,51 @@ int write_vtk(Image * img, const char * filename){
   fprintf(f,"Generated by image_util write_vtk()\n");
   fprintf(f,"ASCII\n");
   fprintf(f,"DATASET STRUCTURED_POINTS\n");
-  fprintf(f,"DIMENSIONS %d %d 1\n",sp_cmatrix_cols(img->image),sp_cmatrix_rows(img->image));
-  fprintf(f,"ORIGIN 0 %d 0\n",sp_cmatrix_rows(img->image));
+  fprintf(f,"DIMENSIONS %d %d 1\n",sp_c3matrix_x(img->image),sp_c3matrix_y(img->image));
+  fprintf(f,"ORIGIN 0 %d 0\n",sp_c3matrix_y(img->image));
   fprintf(f,"SPACING 1 -1 1\n");
-  fprintf(f,"POINT_DATA %d\n",sp_image_size(img));
+  fprintf(f,"POINT_DATA %lld\n",sp_image_size(img));
   fprintf(f,"SCALARS amplitudes float 1\n");
   fprintf(f,"LOOKUP_TABLE default\n");
   fprintf(f,"%6g",cabs(img->image->data[0]));
-  for(y = 0;y<sp_cmatrix_rows(img->image);y++){
-    for(x = 0;x<sp_cmatrix_cols(img->image);x++){
-      fprintf(f," %g",cabs(img->image->data[x*sp_cmatrix_rows(img->image)+y]));    
+  for(y = 0;y<sp_c3matrix_y(img->image);y++){
+    for(x = 0;x<sp_c3matrix_x(img->image);x++){
+      fprintf(f," %g",cabs(img->image->data[y*sp_c3matrix_x(img->image)+x]));    
+    }
+  }
+/*  for(i = 1;i<sp_image_size(img);i++){
+    fprintf(f," %g",img->image->data[i]);    
+  }*/
+  fprintf(f,"\n");
+  fflush(f);
+  fclose(f);
+  return 0;
+}
+
+int write_vtk_3d(Image * img, const char * filename){
+  FILE * f = fopen(filename,"w");
+  int x,y,z;
+  if(!f){
+    perror("Bad file in write_vtk!");
+    abort();
+  }
+  fprintf(f,"# vtk DataFile Version 2.0\n");
+  fprintf(f,"Generated by image_util write_vtk()\n");
+  fprintf(f,"ASCII\n");
+  fprintf(f,"DATASET STRUCTURED_POINTS\n");
+  fprintf(f,"DIMENSIONS %d %d %d\n",sp_c3matrix_x(img->image),
+	  sp_c3matrix_y(img->image),sp_c3matrix_z(img->image));
+  fprintf(f,"ORIGIN 0 0 0\n");//changed from 0 y 0
+  fprintf(f,"SPACING 1 1 1\n");//changed from 1 -1 1 when going to 3d ??
+  fprintf(f,"POINT_DATA %lld\n",sp_image_size(img));
+  fprintf(f,"SCALARS amplitudes float 1\n");
+  fprintf(f,"LOOKUP_TABLE default\n");
+  fprintf(f,"%6g",cabs(img->image->data[0]));
+  for(z = 0;z<sp_c3matrix_z(img->image);z++){
+    for(y = 0;y<sp_c3matrix_y(img->image);y++){
+      for(x = 0;x<sp_c3matrix_x(img->image);x++){
+	fprintf(f," %g",cabs(img->image->data[z*sp_c3matrix_x(img->image)*sp_c3matrix_y(img->image)+y*sp_c3matrix_x(img->image)+x]));
+      }
     }
   }
 /*  for(i = 1;i<sp_image_size(img);i++){
@@ -2127,70 +2587,113 @@ Image * rectangle_crop(Image * in, int x1, int y1, int x2, int y2){
   cropped = sp_image_duplicate(in,SP_COPY_DETECTOR);
   cropped->detector->image_center[0] -= x1;
   cropped->detector->image_center[1] -= y1;
-  sp_cmatrix_free(cropped->image);
-  cropped->image = sp_cmatrix_alloc(y2-y1+1,x2-x1+1);
-  sp_imatrix_free(cropped->mask);
-  cropped->mask = sp_imatrix_alloc(y2-y1+1,x2-x1+1);
+  sp_c3matrix_free(cropped->image);
+  cropped->image = sp_c3matrix_alloc(y2-y1+1,x2-x1+1,sp_c3matrix_z(in->image));
+  sp_i3matrix_free(cropped->mask);
+  cropped->mask = sp_i3matrix_alloc(y2-y1+1,x2-x1+1,sp_c3matrix_z(in->image));
 
 
-  for(i = x1;i<= x2;i++){
-    memcpy(&cropped->image->data[(i-x1)*sp_cmatrix_rows(cropped->image)],&in->image->data[(i)*sp_cmatrix_rows(in->image)+y1],sp_cmatrix_rows(cropped->image)*sizeof(real));
-    memcpy(&cropped->mask->data[(i-x1)*sp_cmatrix_rows(cropped->image)],&in->mask->data[(i)*sp_cmatrix_rows(in->image)+y1],sp_cmatrix_rows(cropped->image)*sizeof(real));
+  for(i = y1;i<= y2;i++){
+    memcpy(&cropped->image->data[(i-y1)*sp_c3matrix_x(cropped->image)],&in->image->data[(i)*sp_c3matrix_x(in->image)+x1],sp_c3matrix_x(cropped->image)*sizeof(real));
+    memcpy(&cropped->mask->data[(i-y1)*sp_c3matrix_x(cropped->image)],&in->mask->data[(i)*sp_c3matrix_x(in->image)+x1],sp_c3matrix_x(cropped->image)*sizeof(real));
+  }
+  return cropped;
+}
+
+Image * cube_crop(Image * in, int x1, int y1, int z1, int x2, int y2, int z2){
+  Image * cropped;
+  int i,j;
+  /* x1,y1 should be upper left, x2,y2 lower right */
+  if(x1 > x2 || y1 > y2 || z1 > z2){
+    return NULL;
+  }
+  cropped = sp_image_duplicate(in,SP_COPY_DETECTOR);
+  cropped->detector->image_center[0] -= x1;
+  cropped->detector->image_center[1] -= y1;
+  cropped->detector->image_center[2] -= z1;
+  sp_c3matrix_free(cropped->image);
+  cropped->image = sp_c3matrix_alloc(y2-y1+1,x2-x1+1,z2-z1+1);
+  sp_i3matrix_free(cropped->mask);
+  cropped->mask = sp_i3matrix_alloc(y2-y1+1,x2-x1+1,z2-z1+1);
+
+
+  for(i = z1;i<=z2;i++){
+    for(j = y1;j<=y2;j++){
+      memcpy(&cropped->image->data[(i-z1)*sp_c3matrix_y(cropped->image)*sp_c3matrix_x(cropped->image)+(j-y1)*sp_c3matrix_x(cropped->image)],
+	     &in->image->data[(i)*sp_c3matrix_y(in->image)*sp_c3matrix_x(in->image)+(j)*sp_c3matrix_x(in->image)+x1],sp_c3matrix_x(cropped->image)*sizeof(real));
+      memcpy(&cropped->mask->data[(i-z1)*sp_c3matrix_y(cropped->image)*sp_c3matrix_x(cropped->image)+(j-y1)*sp_c3matrix_x(cropped->image)],
+	     &in->mask->data[(i)*sp_c3matrix_y(in->image)*sp_c3matrix_x(in->image)+(j)*sp_c3matrix_x(in->image)+x1],sp_c3matrix_x(cropped->image)*sizeof(real));
+    }
   }
   return cropped;
 }
 
 
-void find_center(Image * img, real * center_x, real * center_y){
-  int x,y;
+void find_center(Image * img, real * center_x, real * center_y, real * center_z){
+  int x,y,z;
   float bx = -1;
   float by = -1;
+  float bz = -1;
   Image * a = sp_image_convolute(img,img,NULL);
   real max = 0;
-  int index;
-  max = sp_cmatrix_max(a->image,&index);
-  sp_cmatrix_get_row_col(a->image,index,&y,&x);
+  long long index;
+  max = sp_c3matrix_max(a->image,&index);
+  sp_c3matrix_get_xyz(a->image,index,&x,&y,&z);
   bx = x;
   by = y;
-  if(bx < sp_cmatrix_cols(img->image)/2.0){
-    bx = (sp_cmatrix_cols(img->image))/2.0+bx/2.0;
+  bz = z;
+  if(bx < sp_c3matrix_x(img->image)/2.0){
+    bx = (sp_c3matrix_x(img->image))/2.0+bx/2.0;
   }else{
-    bx = (sp_cmatrix_cols(img->image))/2.0-(sp_cmatrix_cols(img->image)-bx)/2.0;
+    bx = (sp_c3matrix_x(img->image))/2.0-(sp_c3matrix_x(img->image)-bx)/2.0;
   }
-  if(by < sp_cmatrix_rows(img->image)/2.0){
-    by = (sp_cmatrix_rows(img->image))/2.0+by/2.0;
+  if(by < sp_c3matrix_y(img->image)/2.0){
+    by = (sp_c3matrix_y(img->image))/2.0+by/2.0;
   }else{
-    by = (sp_cmatrix_rows(img->image))/2.0-(sp_cmatrix_rows(img->image)-by)/2.0;
+    by = (sp_c3matrix_y(img->image))/2.0-(sp_c3matrix_y(img->image)-by)/2.0;
   }
-  printf("Center x - %f y - %f\n",bx,by);
-  write_png(a,"centrosym_convolve.png",COLOR_JET|LOG_SCALE);
-  *center_x  = bx;
+  if(bz < sp_c3matrix_z(img->image)/2.0){
+    bz = (sp_c3matrix_z(img->image))/2.0+bz/2.0;
+  }else{
+    bz = (sp_c3matrix_z(img->image))/2.0-(sp_c3matrix_z(img->image)-bz)/2.0;
+  }
+  printf("Center x - %f y - %f z - %f\n",bx,by,bz);
+  if(sp_c3matrix_z(img->image)){
+    write_png(a,"centrosym_convolve.png",COLOR_JET|LOG_SCALE);
+  }else{
+    fprintf(stderr,"3D image, cant write centrosym_convolve.png");
+  }
+  *center_x = bx;
   *center_y = by;
+  *center_z = bz;
   sp_image_free(a);
 }
 
-int pixel_to_index(Image * img, real * point){
-  return ((int)point[0])*sp_cmatrix_rows(img->image)+point[1];
+long long pixel_to_index(Image * img, real * point){
+  return ((int)point[2])*sp_c3matrix_y(img->image)*sp_c3matrix_x(img->image)+
+    (int)point[1]*sp_c3matrix_x(img->image)+(int)point[0];
 }
 
 
 /* This doesn't really rescale the mask which is a problem and doesn't really downscale */
-Image * fourier_rescale(Image * img, int new_x, int new_y){
+Image * fourier_rescale(Image * img, int new_x, int new_y, int new_z){
   Image * res = sp_image_fft(img);
   Image * tmp;
   int i;
   real inv_size;
-  if(new_x < sp_cmatrix_cols(img->image) ||
-     new_y < sp_cmatrix_rows(img->image)){
+  if(new_x < sp_c3matrix_x(img->image) ||
+     new_y < sp_c3matrix_y(img->image) ||
+     new_z < sp_c3matrix_z(img->image)){
     perror("fourier_scale doesn't downscale");
     abort();
   }
-  tmp = zero_pad_image(res,new_x,new_y,1);
+  tmp = zero_pad_image(res,new_x,new_y,new_z,1);
   sp_image_free(res);
   res = sp_image_ifft(tmp);
   sp_image_free(tmp);
-  res->detector->image_center[0] = img->detector->image_center[0]*(new_x/sp_cmatrix_cols(img->image));
-  res->detector->image_center[1] = img->detector->image_center[1]*(new_x/sp_cmatrix_rows(img->image));
+  res->detector->image_center[0] = img->detector->image_center[0]*(new_x/sp_c3matrix_x(img->image));
+  res->detector->image_center[1] = img->detector->image_center[1]*(new_y/sp_c3matrix_y(img->image));
+  res->detector->image_center[2] = img->detector->image_center[2]*(new_z/sp_c3matrix_z(img->image));
   inv_size = 1.0/sp_image_size(img);
   for(i = 0;i<sp_image_size(res);i++){
     res->image->data[i] *= inv_size;
@@ -2199,63 +2702,78 @@ Image * fourier_rescale(Image * img, int new_x, int new_y){
 }
 
 
-Image * bilinear_rescale(Image * img, int new_x, int new_y){
+Image * bilinear_rescale(Image * img, int new_x, int new_y, int new_z){
   Image * res = sp_image_duplicate(img,SP_COPY_DATA|SP_COPY_MASK);
 
   real virtual_x;
   real virtual_y;
-  int x,y;
-  res->detector->image_center[0] *= new_x/sp_cmatrix_cols(img->image);
-  res->detector->image_center[1] *= new_y/sp_cmatrix_rows(img->image);
-  sp_cmatrix_free(res->image);
-  res->image = sp_cmatrix_alloc(new_y,new_x);
-  sp_imatrix_free(res->mask);
-  res->mask = sp_imatrix_alloc(new_y,new_x);
+  real virtual_z;
+  int x,y,z;
+  res->detector->image_center[0] *= new_x/(real)sp_c3matrix_x(img->image);
+  res->detector->image_center[1] *= new_y/(real)sp_c3matrix_y(img->image);
+  res->detector->image_center[2] *= new_z/(real)sp_c3matrix_z(img->image);
+  res->detector->pixel_size[0] *= sp_c3matrix_x(img->image)/(real)new_x;
+  res->detector->pixel_size[1] *= sp_c3matrix_y(img->image)/(real)new_y;
+  res->detector->pixel_size[2] *= sp_c3matrix_z(img->image)/(real)new_z;
+  sp_c3matrix_free(res->image);
+  res->image = sp_c3matrix_alloc(new_x,new_y,new_z);
+  sp_i3matrix_free(res->mask);
+  res->mask = sp_i3matrix_alloc(new_x,new_y,new_z);
   
 
-  for(x = 0; x<sp_cmatrix_cols(res->image); x++){
-    virtual_x = (real)x*sp_cmatrix_cols(img->image)/sp_cmatrix_cols(res->image);
-    for(y = 0; y<sp_cmatrix_rows(res->image); y++){
-      virtual_y = (real)y*sp_cmatrix_rows(img->image)/sp_cmatrix_rows(res->image);
-      res->image->data[x*sp_cmatrix_rows(res->image)+y] = sp_cmatrix_interp(img->image,virtual_y,virtual_x);	
-      res->mask->data[x*sp_cmatrix_rows(res->image)+y] = sp_imatrix_interp(img->mask,virtual_y,virtual_x);
+  for(x = 0; x<sp_c3matrix_x(res->image); x++){
+    virtual_x = (real)x*sp_c3matrix_x(img->image)/sp_c3matrix_x(res->image);
+    for(y = 0; y<sp_c3matrix_y(res->image); y++){
+      virtual_y = (real)y*sp_c3matrix_y(img->image)/sp_c3matrix_y(res->image);
+      for(z = 0; z<sp_c3matrix_z(res->image); z++){
+	virtual_z = (real)z*sp_c3matrix_z(img->image)/sp_c3matrix_z(res->image);
+	res->image->data[z*sp_c3matrix_y(res->image)*sp_c3matrix_x(res->image)+
+			 y*sp_c3matrix_x(res->image)+x] =
+	  sp_c3matrix_interp(img->image,virtual_x,virtual_y,virtual_z);	
+	res->mask->data[z*sp_c3matrix_y(res->image)*sp_c3matrix_x(res->image)+
+			y*sp_c3matrix_x(res->image)+x] = 
+	  sp_i3matrix_interp(img->mask,virtual_x,virtual_y,virtual_z);
+      }
     }
-  } 
+  }
   return res;
 }
   
 
-real sp_image_interp(Image * img, real v_x, real v_y){
-  return creal(sp_cmatrix_interp(img->image,v_y,v_x));
+real sp_image_interp(Image * img, real v_x, real v_y, real v_z){
+  return creal(sp_c3matrix_interp(img->image,v_x,v_y,v_z));
 }
 
 void sp_image_scale(Image * img, real value){
-  sp_cmatrix_scale(img->image,value);
+  sp_c3matrix_scale(img->image,value);
 }
 
 
-real sp_image_max(Image * img, int * index,int * x, int * y){
+real sp_image_max(Image * img, long long * index,int * x, int * y, int * z){
   real ret;
-  ret = sp_cmatrix_max(img->image,index);
+  ret = sp_c3matrix_max(img->image,index);
   if(index){
     if(x){
-      *x = *index/sp_image_height(img);
+      *x = *index%sp_image_z(img)%sp_image_y(img);
     }
     if(y){
-      *y = *index%sp_image_height(img);
+      *y = *index/sp_image_x(img)%sp_image_z(img);
+    }
+    if(z){
+      *z = *index/sp_image_x(img)/sp_image_y(img);
     }
   }
   return ret;
 }
 
 
-void sp_image_realloc(Image * img, int new_x, int new_y){
-  sp_cmatrix_realloc(img->image,new_y,new_x);
-  sp_imatrix_realloc(img->mask,new_y,new_x);
+void sp_image_realloc(Image * img, int new_x, int new_y, int new_z){
+  sp_c3matrix_realloc(img->image,new_x,new_y,new_z);
+  sp_i3matrix_realloc(img->mask,new_x,new_y,new_z);
 }
 
 Image * rectangular_window(int image_x, int image_y, int width, int height, int shifted){
-  Image * res = sp_image_alloc(image_x,image_y);
+  Image * res = sp_image_alloc(image_x,image_y,1);
   int x,y,i;
   int center[2];
   i = 0;
@@ -2291,9 +2809,52 @@ Image * rectangular_window(int image_x, int image_y, int width, int height, int 
   return res;
 }
 
+Image * cube_window(int image_x, int image_y, int image_z, int dx, int dy, int dz, int shifted){
+  Image * res = sp_image_alloc(image_x,image_y,image_z);
+  int x,y,z,i;
+  int center[3];
+  i = 0;
+  
+  if(shifted){
+    for(x = 0;x<image_x;x++){
+      for(y = 0;y<image_y;y++){
+	for(z = 0;z<image_z;z++){
+	  if((fabs(x) < dx/2 || fabs(image_x-x) < dx/2 )&&
+	     (fabs(y) < dy/2 || fabs(image_y-y) < dy/2 )&&
+	     (fabs(z) < dz/2 || fabs(image_z-z) < dz/2 )){
+	    res->image->data[i] = 1;
+	  }else{
+	    res->image->data[i] = 0;
+	  }
+	  i++;
+	}
+      }
+    }
+  }else{
+    center[0] = image_x/2;
+    center[1] = image_y/2;
+    center[2] = image_z/2;
+    for(x = 0;x<image_x;x++){
+      for(y = 0;y<image_y;y++){
+	for(z = 0;z<image_z;z++){
+	  if(fabs(x-center[0]) < dx/2 &&
+	     fabs(y-center[1]) < dy/2 &&
+	     fabs(z-center[2]) < dz/2){
+	    res->image->data[i] = 1;
+	  }else{
+	    res->image->data[i] = 0;
+	  }
+	  i++;
+	}
+      }
+    }
+  }
+  sp_image_rephase(res,SP_ZERO_PHASE);
+  return res;
+}
 
 Image * circular_window(int x, int y, int radius, int shifted){
-  Image * res = sp_image_alloc(x,y);
+  Image * res = sp_image_alloc(x,y,1);
   int i;
   if(shifted){
     res->detector->image_center[0] = 0;
@@ -2312,6 +2873,29 @@ Image * circular_window(int x, int y, int radius, int shifted){
   sp_image_rephase(res,SP_ZERO_PHASE);
   return res;
 }
+
+Image * spherical_window(int x, int y, int z, int radius, int shifted){
+  Image * res = sp_image_alloc(x,y,z);
+  int i;
+  if(shifted){
+    res->detector->image_center[0] = 0;
+    res->detector->image_center[1] = 0;
+    res->detector->image_center[2] = 0;
+  }else{
+    res->detector->image_center[0] = x/2;
+    res->detector->image_center[1] = y/2;
+    res->detector->image_center[2] = z/2;
+  }
+  for(i = 0;i<x*y*z;i++){
+    if(dist_to_center(i,res) < radius){
+      res->image->data[i] = 1;
+    }else{
+      res->image->data[i] = 0;
+    }
+  }
+  sp_image_rephase(res,SP_ZERO_PHASE);
+  return res;
+} 
 
 
 void sp_image_normalize(Image * in){
@@ -2336,7 +2920,7 @@ Image * sp_image_get_mask(Image * a){
 }
 
 real sp_point_convolute(Image * a, Image * b, int index){
-  int index_x, index_y,x,y;
+  int index_x, index_y, index_z,x,y,z;
   double out = 0;
   int ai,bi;
   Image * tmp = NULL;
@@ -2349,43 +2933,59 @@ real sp_point_convolute(Image * a, Image * b, int index){
     fprintf(stderr,"Point convoluting with a shifted function is not currently defined!\n");
     return 0;
   }
-  index_x = index/sp_cmatrix_rows(a->image)-a->detector->image_center[0];
-  index_y = index%sp_cmatrix_rows(a->image)-a->detector->image_center[1];
-  for(x = -b->detector->image_center[0];x<sp_cmatrix_cols(b->image)-b->detector->image_center[0];x++){
-    for(y = -b->detector->image_center[1];y<sp_cmatrix_rows(b->image)-b->detector->image_center[1];y++){
-      if(x+index_x < -a->detector->image_center[0] || 
-	 x+index_x >=  sp_cmatrix_cols(a->image)-a->detector->image_center[0] ||
-	 y+index_y < -a->detector->image_center[1] || 
-	 y+index_y >=  sp_cmatrix_rows(a->image)-a->detector->image_center[1]){
-	/* we're outside of image a */
-	continue;
+  index_x = index%sp_c3matrix_z(a->image)%sp_c3matrix_y(a->image)-
+    a->detector->image_center[0];
+  index_y = index/sp_c3matrix_x(a->image)%sp_c3matrix_z(a->image)-
+    a->detector->image_center[1];
+  index_z = index/sp_c3matrix_x(a->image)/sp_c3matrix_y(a->image)-
+    a->detector->image_center[2];
+  for(x = -b->detector->image_center[0];x<sp_c3matrix_x(b->image)-b->detector->image_center[0];x++){
+    for(y = -b->detector->image_center[1];y<sp_c3matrix_y(b->image)-b->detector->image_center[1];y++){
+      for(z = -b->detector->image_center[2];z<sp_c3matrix_z(b->image)-b->detector->image_center[2];z++){
+	if(x+index_x < -a->detector->image_center[0] || 
+	   x+index_x >=  sp_c3matrix_x(a->image)-a->detector->image_center[0] ||
+	   y+index_y < -a->detector->image_center[1] || 
+	   y+index_y >=  sp_c3matrix_y(a->image)-a->detector->image_center[1] ||
+	   z+index_z < -a->detector->image_center[2] ||
+	   z+index_z >=  sp_c3matrix_z(a->image)-a->detector->image_center[2]){
+	  /* we're outside of image a */
+	  continue;
+	}
+	ai = (index_z+z+a->detector->image_center[2])*sp_c3matrix_y(a->image)*sp_c3matrix_x(a->image)+(index_y+y+a->detector->image_center[1])*sp_c3matrix_x(a->image)+(index_x+x+a->detector->image_center[0]);
+	bi = (z+b->detector->image_center[2])*sp_c3matrix_y(b->image)*sp_c3matrix_x(b->image)+(y+b->detector->image_center[1])*sp_c3matrix_x(b->image)+(x+b->detector->image_center[0]);
+	out += a->image->data[ai]*b->image->data[bi];
       }
-      ai = (index_x+x+a->detector->image_center[0])*sp_cmatrix_rows(a->image)+index_y+y+a->detector->image_center[1];
-      bi = (x+b->detector->image_center[0])*sp_cmatrix_rows(b->image)+y+b->detector->image_center[1];
-      out += a->image->data[ai]*b->image->data[bi];
     }
   }
   if(a->shifted){
     sp_image_free(tmp);
   }
   return out;
-}
+  }
 
-int sp_image_shift_index(Image * a, int index){
-  int x = index/sp_cmatrix_rows(a->image);
-  int y = index%sp_cmatrix_rows(a->image);
+int sp_image_shift_index(Image * a, long long index){
+  int x = index%sp_c3matrix_z(a->image)%sp_c3matrix_y(a->image);
+  int y = index/sp_c3matrix_x(a->image)%sp_c3matrix_z(a->image);
+  int z = index/sp_c3matrix_x(a->image)/sp_c3matrix_y(a->image);
   if(a->shifted){
-    x = (x+sp_cmatrix_cols(a->image)/2)%sp_cmatrix_cols(a->image);
-    y = (y+sp_cmatrix_rows(a->image)/2)%sp_cmatrix_rows(a->image);
+    x = (x+sp_c3matrix_x(a->image)/2)%sp_c3matrix_x(a->image);
+    y = (y+sp_c3matrix_y(a->image)/2)%sp_c3matrix_y(a->image);
+    z = (z+sp_c3matrix_z(a->image)/2)%sp_c3matrix_z(a->image);
   }else{
     x -= a->detector->image_center[0];
     y -= a->detector->image_center[1];
-    x += sp_cmatrix_cols(a->image);
-    x %= sp_cmatrix_cols(a->image);
-    y += sp_cmatrix_rows(a->image);
-    y %= sp_cmatrix_rows(a->image);
+    z -= a->detector->image_center[2];
+    x += sp_c3matrix_x(a->image);
+    x %= sp_c3matrix_x(a->image);
+    y += sp_c3matrix_y(a->image);
+    y %= sp_c3matrix_y(a->image);
+    z += sp_c3matrix_z(a->image);
+    z %= sp_c3matrix_z(a->image);
   }
-  return x*sp_cmatrix_rows(a->image)+y;
+  long long ret = z*sp_c3matrix_y(a->image)*sp_c3matrix_x(a->image)+
+    y*sp_c3matrix_x(a->image)+x;
+  return ret;
+
 }
 
 /*
@@ -2407,8 +3007,8 @@ real sp_image_distance_to_edge(Image * img, real * point, real direction, real *
   }else{
     center = img->detector->image_center;
   }
-  dim[0] = sp_cmatrix_cols(img->image);
-  dim[1] = sp_cmatrix_rows(img->image);
+  dim[0] = sp_c3matrix_x(img->image);
+  dim[1] = sp_c3matrix_y(img->image);
   if(cos(direction)>0){
     /* d1 assumes that the intersection is with the right border */
     y1 = center[1]-tan(direction)*(dim[0]-center[0]);
@@ -2459,7 +3059,7 @@ real sp_image_distance_to_edge(Image * img, real * point, real direction, real *
  */
 Image * sp_image_radial_sector(Image * img, real * point, real direction, int samples, real * intersection){
   int i;
-  Image  *ret = sp_image_alloc(samples,1);
+  Image  *ret = sp_image_alloc(samples,1,1);
   real fpixel[2];
   real d_to_border;
   real * center;
@@ -2469,8 +3069,8 @@ Image * sp_image_radial_sector(Image * img, real * point, real direction, int sa
   }else{
     center = img->detector->image_center;
   }
-  dim[0] = sp_cmatrix_cols(img->image);
-  dim[1] = sp_cmatrix_rows(img->image);
+  dim[0] = sp_c3matrix_x(img->image);
+  dim[1] = sp_c3matrix_y(img->image);
 
   d_to_border = sp_image_distance_to_edge(img,center,direction, intersection);
   for(i = 0;i<samples;i++){
@@ -2478,9 +3078,9 @@ Image * sp_image_radial_sector(Image * img, real * point, real direction, int sa
     /* The - happens because the pixel 0,0 on an image is the upper left not the lower left */
     fpixel[1] = center[1]-sin(direction)*d_to_border*((real)i/samples);
     /* bilinear interpolation around fpixel */
-    ret->image->data[i] = sp_cmatrix_interp(img->image,fpixel[1],fpixel[0]);
+    ret->image->data[i] = sp_c3matrix_interp(img->image,fpixel[1],fpixel[0],0);
     /* bilinear interpolation around fpixel */
-    ret->mask->data[i] = sp_imatrix_interp(img->mask,fpixel[1],fpixel[0]);
+    ret->mask->data[i] = sp_i3matrix_interp(img->mask,fpixel[1],fpixel[0],0);
   }
   return ret;  
 }
@@ -2494,7 +3094,7 @@ Image * sp_image_radial_sector(Image * img, real * point, real direction, int sa
 
 Image * sp_image_create_from_sector(Image * sector, int * img_size, real * center){
   int x,y;
-  Image * ret = sp_image_alloc(img_size[0],img_size[1]);
+  Image * ret = sp_image_alloc(img_size[0],img_size[1],1);
   int bin;
   real d;
   real u;
@@ -2504,13 +3104,13 @@ Image * sp_image_create_from_sector(Image * sector, int * img_size, real * cente
       d = sqrt((x-center[0])*(x-center[0])+(y-center[1])*(y-center[1]));
       bin = d;
       u = d-bin;
-      if(d+1 < sp_cmatrix_cols(sector->image)-1){
-	ret->image->data[x*img_size[1]+y] = (1.0-u)*sector->image->data[bin];
-	ret->image->data[x*img_size[1]+y] += (u)*sector->image->data[bin+1];
-	ret->mask->data[x*img_size[1]+y] = 1;
+      if(d+1 < sp_c3matrix_x(sector->image)-1){
+	ret->image->data[y*img_size[0]+x] = (1.0-u)*sector->image->data[bin];
+	ret->image->data[y*img_size[0]+x] += (u)*sector->image->data[bin+1];
+	ret->mask->data[y*img_size[0]+x] = 1;
       }else{
-	ret->image->data[x*img_size[1]+y] = 0;
-	ret->mask->data[x*img_size[1]+y] = 0;
+	ret->image->data[y*img_size[0]+x] = 0;
+	ret->mask->data[y*img_size[0]+x] = 0;
       }
     }
   }
@@ -2521,22 +3121,22 @@ Image * sp_image_create_from_sector(Image * sector, int * img_size, real * cente
 
 Image * sp_image_local_variance(Image * img, Image * window){
   int i;
-  int size[2] = {sp_cmatrix_cols(img->image)+sp_cmatrix_cols(window->image)-1,sp_cmatrix_rows(img->image)+sp_cmatrix_rows(window->image)-1};
+  int size[3] = {sp_c3matrix_x(img->image)+sp_c3matrix_x(window->image)-1,sp_c3matrix_y(img->image)+sp_c3matrix_y(window->image)-1,sp_c3matrix_z(img->image)+sp_c3matrix_z(window->image)-1};
   Image * norm_window = sp_image_duplicate(window,SP_COPY_DATA|SP_COPY_MASK);
   
   sp_image_normalize(norm_window);
   Image * ra = sp_image_convolute(img,norm_window,size);
-  Image * res = rectangle_crop(ra,0,0,sp_cmatrix_cols(img->image)-1,sp_cmatrix_rows(img->image)-1);
-  write_png(img,"non_averaged.png",COLOR_JET);
+  Image * res = cube_crop(ra,0,0,0,sp_c3matrix_x(img->image)-1,sp_c3matrix_y(img->image)-1,sp_c3matrix_z(img->image)-1);
+  /*  write_png(img,"non_averaged.png",COLOR_JET);
   write_png(ra,"total_averaged.png",COLOR_JET);
-  write_png(res,"crop_total_averaged.png",COLOR_JET);
+  write_png(res,"crop_total_averaged.png",COLOR_JET);*/
   for(i = 0;i<sp_image_size(res);i++){
     res->image->data[i] = fabs(res->image->data[i]-img->image->data[i]);
   }
   sp_image_free(ra);
   ra = sp_image_convolute(res,norm_window,size);
   sp_image_free(res);
-  res = rectangle_crop(ra,0,0,sp_cmatrix_cols(img->image)-1,sp_cmatrix_rows(img->image)-1);
+  res = cube_crop(ra,0,0,0,sp_c3matrix_x(img->image)-1,sp_c3matrix_y(img->image)-1,sp_c3matrix_z(img->image)-1);
   sp_image_free(ra);
   sp_image_free(norm_window);
 
@@ -2544,9 +3144,8 @@ Image * sp_image_local_variance(Image * img, Image * window){
 }
 
 
-
 Complex sp_image_dot_prod(Image * a, Image * b){
-  return sp_cmatrix_froenius_prod(a->image,b->image);
+  return sp_c3matrix_froenius_prod(a->image,b->image);
 }
 
 Image * sp_proj_module(Image * a, Image * b){
@@ -2585,35 +3184,37 @@ int sp_image_invert(Image * a){
 
 
 void sp_image_mul_elements(Image * a, Image * b){
-  sp_cmatrix_mul_elements(a->image,b->image);  
+  sp_c3matrix_mul_elements(a->image,b->image);  
 }
 
 void sp_image_conj(Image * a){  
-  sp_cmatrix_conj(a->image);
+  sp_c3matrix_conj(a->image);
 }
 
 
 void sp_image_memcpy(Image * dst,Image * src){  
-  sp_imatrix_memcpy(dst->mask,src->mask);
-  sp_cmatrix_memcpy(dst->image,src->image);
+  sp_i3matrix_memcpy(dst->mask,src->mask);
+  sp_c3matrix_memcpy(dst->image,src->image);
   memcpy(dst->detector,src->detector,sizeof(Detector));
 }
 
 void sp_image_transpose(Image * a){
-  sp_cmatrix_transpose(a->image);
-  sp_imatrix_transpose(a->mask);
+  sp_c3matrix_transpose_xy(a->image);
+  sp_i3matrix_transpose_xy(a->mask);
 }
 
-/*! Inserts image from into image to at the position at_x, at_y
+/*! Inserts image from into image to at the position at_x, at_y, at_z
  *
  *  If from doesn't fit in to, the image is silently clipped.
  */
-void sp_image_insert(Image * to, Image * from, int at_x, int at_y){
- int x;
-  for(x = 0;x<sp_min(sp_image_width(from),sp_image_width(to)-at_x);x++){
-    memcpy(&(to->image->data[sp_image_get_index(to,x+at_x,at_y)]),
-	   &from->image->data[sp_image_get_index(from,x,0)],
-	   sp_min(sp_image_height(from),sp_image_height(to)-at_x)*sizeof(Complex));
+void sp_image_insert(Image * to, Image * from, int at_x, int at_y, int at_z){
+ int y,z;
+  for(z = 0;z<sp_min(sp_image_z(from),sp_image_z(to)-at_z);z++){
+    for(y = 0;y<sp_min(sp_image_y(from),sp_image_y(to)-at_y);y++){
+      memcpy(&(to->image->data[sp_image_get_index(to,at_x,y+at_y,z+at_z)]),
+	     &from->image->data[sp_image_get_index(from,0,y,z)],
+	     sp_min(sp_image_x(from),sp_image_x(to)-at_x)*sizeof(Complex));
+    }
   }
 }
 
@@ -2633,149 +3234,445 @@ void sp_image_insert(Image * to, Image * from, int at_x, int at_y){
  * assumed to equal the nearest image border value.
  * SP_CIRCULAR_EDGE - The values outside the bounds of the image are
  * computed by implicitly assuming the input image is periodic.
+ * 
+ * type is either SP_2D or SP_3D
  */
-Image * sp_image_edge_extend(Image * a, int radius, int edge_flags){
-  Image * res = sp_image_alloc(sp_cmatrix_cols(a->image)+radius*2,sp_cmatrix_rows(a->image)+radius*2);
-  int x,y,x0,y0;
+Image * sp_image_edge_extend(Image * a, int radius, int edge_flags, int type){
+  Image * res = sp_image_alloc(sp_c3matrix_x(a->image)+radius*2,sp_c3matrix_y(a->image)+radius*2,sp_c3matrix_z(a->image)+radius*2);
+  int x,y,z,x0,y0,z0;
   /* first put there the initial image */
-  sp_image_insert(res,a,radius,radius);
+  if(type == SP_2D){
+    sp_image_insert(res,a,radius,radius,1);
+  }else{
+    sp_image_insert(res,a,radius,radius,radius);
+  }
   /* now fill the edges */
   if(edge_flags == SP_ZERO_PAD_EDGE){
     return res;
   }else if(edge_flags == SP_SYMMETRIC_EDGE){
-    /* First do the four corners */
+    /* First do the four/eight corners */
     for(x = 0,x0=x;x<radius;x++){
-      for(y = 0,y0=y,y0=y;y<radius;y++){
-	sp_image_set(res,x,y,sp_image_get(a,radius-x-1,radius-y-1));
-      }
-    }
-    for(x = radius+sp_image_width(a),x0=x;x<sp_image_width(res);x++){
       for(y = 0,y0=y;y<radius;y++){
-	sp_image_set(res,x,y,sp_image_get(a,sp_image_width(a)-(x-x0)-1,radius-y-1));
+	if(type == SP_2D){
+	  sp_image_set(res,x,y,0,sp_image_get(a,radius-x-1,radius-y-1,0));
+	}else{
+	  for(z = 0,z0=z;z<radius;z++){
+	    sp_image_set(res,x,y,z,sp_image_get(a,radius-x-1,radius-y-1,
+						radius-z-1));
+	  }
+	}
       }
     }
-
-    for(x = radius+sp_image_width(a),x0=x;x<sp_image_width(res);x++){
-      for(y = radius+sp_image_height(a),y0=y;y<sp_image_height(res);y++){
-	sp_image_set(res,x,y,sp_image_get(a,sp_image_width(a)-(x-x0)-1,sp_image_height(a)-(y-y0)-1));
-      }
-    }
-
-    for(x = 0,x0=x;x<radius;x++){
-      for(y = radius+sp_image_height(a),y0=y;y<sp_image_height(res);y++){
-	sp_image_set(res,x,y,sp_image_get(a,radius-(x-x0)-1,sp_image_height(a)-(y-y0)-1));
-      }
-    }
-    /* And now the four sides */
-    for(x = radius,x0=x;x<radius+sp_image_width(a);x++){
+    for(x = radius+sp_image_x(a),x0=x;x<sp_image_x(res);x++){
       for(y = 0,y0=y;y<radius;y++){
-	sp_image_set(res,x,y,sp_image_get(a,(x-x0),radius-(y-y0)-1));
-      }
-    }
-    for(x = radius,x0=x;x<radius+sp_image_width(a);x++){
-      for(y = radius+sp_image_height(a),y0=y;y<sp_image_height(res);y++){
-	sp_image_set(res,x,y,sp_image_get(a,(x-x0),sp_image_height(a)-(y-y0)-1));
-      }
-    }
-    for(x = 0,x0=x;x<radius;x++){
-      for(y = radius,y0=y;y<radius+sp_image_height(a);y++){
-	sp_image_set(res,x,y,sp_image_get(a,radius-(x-x0)-1,(y-y0)));
-      }
-    }
-    for(x = radius+sp_image_width(a),x0=x;x<sp_image_width(a);x++){
-      for(y = radius,y0=y;y<radius+sp_image_height(a);y++){
-	sp_image_set(res,x,y,sp_image_get(a,sp_image_width(a)-(x-x0)-1,(y-y0)));
-      }
-    }
-  }else if(edge_flags == SP_REPLICATE_EDGE){
-    /* First do the four corners */
-    for(x = 0,x0=x;x<radius;x++){
-      for(y = 0,y0=y,y0=y;y<radius;y++){
-	sp_image_set(res,x,y,sp_image_get(a,0,0));
-      }
-    }
-    for(x = radius+sp_image_width(a),x0=x;x<sp_image_width(res);x++){
-      for(y = 0,y0=y;y<radius;y++){
-	sp_image_set(res,x,y,sp_image_get(a,sp_image_width(a)-1,0));
-      }
-    }
-
-    for(x = radius+sp_image_width(a),x0=x;x<sp_image_width(res);x++){
-      for(y = radius+sp_image_height(a),y0=y;y<sp_image_height(res);y++){
-	sp_image_set(res,x,y,sp_image_get(a,sp_image_width(a)-1,sp_image_height(a)-1));
-      }
-    }
-
-    for(x = 0,x0=x;x<radius;x++){
-      for(y = radius+sp_image_height(a),y0=y;y<sp_image_height(res);y++){
-	sp_image_set(res,x,y,sp_image_get(a,0,sp_image_height(a)-1));
-      }
-    }
-    /* And now the four sides */
-    for(x = radius,x0=x;x<radius+sp_image_width(a);x++){
-      for(y = 0,y0=y;y<radius;y++){
-	sp_image_set(res,x,y,sp_image_get(a,(x-x0),0));
-      }
-    }
-    for(x = radius,x0=x;x<radius+sp_image_width(a);x++){
-      for(y = radius+sp_image_height(a),y0=y;y<sp_image_height(res);y++){
-	sp_image_set(res,x,y,sp_image_get(a,(x-x0),sp_image_height(a)-1));
-      }
-    }
-    for(x = 0,x0=x;x<radius;x++){
-      for(y = radius,y0=y;y<radius+sp_image_height(a);y++){
-	sp_image_set(res,x,y,sp_image_get(a,0,(y-y0)));
-      }
-    }
-    for(x = radius+sp_image_width(a),x0=x;x<sp_image_width(a);x++){
-      for(y = radius,y0=y;y<radius+sp_image_height(a);y++){
-	sp_image_set(res,x,y,sp_image_get(a,sp_image_width(a)-1,(y-y0)));
+	if(type == SP_2D){
+	  sp_image_set(res,x,y,0,sp_image_get(a,sp_image_x(a)-(x-x0)-1,radius-y-1,
+					      0));
+	}else{
+	  for(z = 0, z0=z;z<radius;z++){
+	    sp_image_set(res,x,y,z,sp_image_get(a,sp_image_x(a)-(x-x0)-1,
+						radius-y-1,radius-z-1));
+	  }
+	}
       }
     }
     
+    for(x = radius+sp_image_x(a),x0=x;x<sp_image_x(res);x++){
+      for(y = radius+sp_image_y(a),y0=y;y<sp_image_y(res);y++){
+	if(type == SP_2D){
+	  sp_image_set(res,x,y,0,sp_image_get(a,sp_image_x(a)-(x-x0)-1,sp_image_y(a)-(y-y0)-1,0));
+	}else{
+	  for(z = 0,z0=z;z<radius;z++){
+	    sp_image_set(res,x,y,z,sp_image_get(a,sp_image_x(a)-(x-x0)-1,sp_image_y(a)-(y-y0)-1,radius-z-1));
+	  }
+	}
+      }
+    }
+    
+    for(x = 0,x0=x;x<radius;x++){
+      for(y = radius+sp_image_y(a),y0=y;y<sp_image_y(res);y++){
+	if(type == SP_2D){
+	  sp_image_set(res,x,y,0,sp_image_get(a,radius-(x-x0)-1,sp_image_y(a)-(y-y0)-1,0));
+	}else{
+	  for(z = 0,z0=z;z<radius;z++){
+	    sp_image_set(res,x,y,z,sp_image_get(a,radius-(x-x0)-1,sp_image_y(a)-(y-y0)-1,radius-z-1));
+	  }
+	}
+      }
+    }
+    if(type != SP_2D){
+      for(x = 0,x0=x;x<radius;x++){
+	for(y = 0,y0=y;y<radius;y++){
+	  for(z = radius+sp_image_z(a),z0=z;z<sp_image_z(res);z++){
+	    sp_image_set(res,x,y,z,sp_image_get(a,radius-x-1,radius-y-1,
+						sp_image_z(a)-(z-z0)-1));
+	  }
+	}
+      }
+      for(x = radius+sp_image_x(a),x0=x;x<sp_image_x(res);x++){
+	for(y = 0,y0=y;y<radius;y++){
+	  for(z = radius+sp_image_z(a),z0=z;z<sp_image_z(res);z++){
+	    sp_image_set(res,x,y,z,sp_image_get(a,sp_image_x(a)-(x-x0)-1,
+						radius-y-1,sp_image_z(a)-(z-z0)-1));
+	  }
+	}
+      }
+      for(x = radius+sp_image_x(a),x0=x;x<sp_image_x(res);x++){
+	for(y = radius+sp_image_y(a),y0=y;y<sp_image_y(res);y++){
+	  for(z = radius+sp_image_z(a),z0=z;z<sp_image_z(res);z++){
+	    sp_image_set(res,x,y,z,sp_image_get(a,sp_image_x(a)-(x-x0)-1,sp_image_y(a)-(y-y0)-1,sp_image_z(a)-(z-z0)-1));
+	  }
+	}
+      }
+      for(x = 0,x0=x;x<radius;x++){
+	for(y = radius+sp_image_y(a),y0=y;y<sp_image_y(res);y++){
+	  for(z = radius+sp_image_z(a),z0=z;z<sp_image_z(res);z++){
+	    sp_image_set(res,x,y,z,sp_image_get(a,radius-(x-x0)-1,sp_image_y(a)-(y-y0)-1,sp_image_z(a)-(z-z0)-1));
+	  }
+	}
+      }
+    }
+    /* And now the four/six sides */
+    for(x = radius,x0=x;x<radius+sp_image_x(a);x++){
+      for(y = 0,y0=y;y<radius;y++){
+	if(type == SP_2D){
+	  sp_image_set(res,x,y,0,sp_image_get(a,(x-x0),radius-(y-y0)-1,0));
+	}else{
+	  for(z = radius,z0=z;z<radius+sp_image_z(a);z++){
+	    sp_image_set(res,x,y,z,sp_image_get(a,(x-x0),radius-(y-y0)-1,(z-z0)));
+	  }
+	}
+      }
+    }
+    for(x = radius,x0=x;x<radius+sp_image_x(a);x++){
+      for(y = radius+sp_image_y(a),y0=y;y<sp_image_y(res);y++){
+	if(type == SP_2D){
+	  sp_image_set(res,x,y,0,sp_image_get(a,(x-x0),sp_image_y(a)-(y-y0)-1,0));
+	}else{
+	  for(z = radius,z0=z;z<radius+sp_image_z(a);z++){
+	    sp_image_set(res,x,y,z,sp_image_get(a,(x-x0),sp_image_y(a)-(y-y0)-1,(z-z0)));
+	  }
+	}
+      }
+    }
+    for(x = 0,x0=x;x<radius;x++){
+      for(y = radius,y0=y;y<radius+sp_image_y(a);y++){
+	if(type == SP_2D){
+	  sp_image_set(res,x,y,0,sp_image_get(a,radius-(x-x0)-1,(y-y0),0));
+	}else{
+	  for(z = radius,z0=z;z<radius+sp_image_z(a);z++){
+	    sp_image_set(res,x,y,z,sp_image_get(a,radius-(x-x0)-1,(y-y0),(z-z0)));
+	  }
+	}
+      }
+    }
+    for(x = radius+sp_image_x(a),x0=x;x<sp_image_x(a);x++){
+      for(y = radius,y0=y;y<radius+sp_image_y(a);y++){
+	if(type == SP_2D){
+	  sp_image_set(res,x,y,0,sp_image_get(a,sp_image_x(a)-(x-x0)-1,(y-y0),0));
+	}else{
+	  for(z = radius,z0=z;z<radius+sp_image_z(a);z++){
+	    sp_image_set(res,x,y,z,sp_image_get(a,sp_image_x(a)-(x-x0)-1,(y-y0),(z-z0)));
+	  }
+	}
+      }
+    }
+    if(type == SP_2D){
+      for(x = radius,x0=x;x<radius+sp_image_x(a);x++){
+	for(y = radius,y0=y;y<radius+sp_image_y(a);y++){
+	  for(z = 0,z0=z;z<radius;z++){
+	    sp_image_set(res,x,y,z,sp_image_get(a,(x-x0),(y-y0),radius-(z-z0)-1));
+	  }
+	}
+      }
+      for(x = radius,x0=x;x<radius+sp_image_x(a);x++){
+	for(y = radius,y0=y;y<radius+sp_image_y(a);y++){
+	  for(z = radius+sp_image_z(a),z0=z;z<sp_image_z(a);z++){
+	    sp_image_set(res,x,y,z,sp_image_get(a,(x-x0),(y-y0),sp_image_z(a)-(z-z0)));
+	  }
+	}
+      }
+    }
   }else if(edge_flags == SP_CIRCULAR_EDGE){
-    /* First do the four corners */
+    /* First do the four/eight corners */
     for(x = 0,x0=x;x<radius;x++){
       for(y = 0,y0=y,y0=y;y<radius;y++){
-	sp_image_set(res,x,y,sp_image_get(a,sp_image_width(a)-radius+(x-x0),sp_image_height(a)-radius+(y-y0)));
+	if(type == SP_2D){
+	sp_image_set(res,x,y,0,sp_image_get(a,sp_image_x(a)-radius+(x-x0),sp_image_y(a)-radius+(y-y0),0));
+	}else{
+	  for(z = 0,z0=z;z<radius;z++){
+	    sp_image_set(res,x,y,z,sp_image_get(a,sp_image_x(a)-radius+(x-x0),sp_image_y(a)-radius+(y-y0),sp_image_z(a)-radius+(z-z0)));
+	  }
+	}
       }
     }
-    for(x = radius+sp_image_width(a),x0=x;x<sp_image_width(res);x++){
+    for(x = radius+sp_image_x(a),x0=x;x<sp_image_x(res);x++){
       for(y = 0,y0=y;y<radius;y++){
-	sp_image_set(res,x,y,sp_image_get(a,(x-x0),sp_image_height(a)-radius+(y-y0)));
+	if(type == SP_2D){
+	sp_image_set(res,x,y,0,sp_image_get(a,(x-x0),sp_image_y(a)-radius+(y-y0),0));
+	}else{
+	  for(z = 0,z0=z;z<radius;z++){
+	    sp_image_set(res,x,y,z,sp_image_get(a,(x-x0),sp_image_y(a)-radius+(y-y0),sp_image_z(a)-radius+(z-z0)));
+	  }
+	}
       }
     }
 
-    for(x = radius+sp_image_width(a),x0=x;x<sp_image_width(res);x++){
-      for(y = radius+sp_image_height(a),y0=y;y<sp_image_height(res);y++){
-	sp_image_set(res,x,y,sp_image_get(a,(x-x0),(y-y0)));
+    for(x = radius+sp_image_x(a),x0=x;x<sp_image_x(res);x++){
+      for(y = radius+sp_image_y(a),y0=y;y<sp_image_y(res);y++){
+	if(type == SP_2D){
+	sp_image_set(res,x,y,0,sp_image_get(a,(x-x0),(y-y0),0));
+	}else{
+	  for(z = 0,z0=z;z<radius;z++){
+	    sp_image_set(res,x,y,z,sp_image_get(a,(x-x0),(y-y0),sp_image_z(a)-radius+(z-z0)));
+	  }
+	}
       }
     }
 
     for(x = 0,x0=x;x<radius;x++){
-      for(y = radius+sp_image_height(a),y0=y;y<sp_image_height(res);y++){
-	sp_image_set(res,x,y,sp_image_get(a,sp_image_width(a)-radius+(x-x0),(y-y0)));
+      for(y = radius+sp_image_y(a),y0=y;y<sp_image_y(res);y++){
+	if(type == SP_2D){
+	sp_image_set(res,x,y,0,sp_image_get(a,sp_image_x(a)-radius+(x-x0),(y-y0),0));
+	}else{
+	  for(z = 0,z0=z;z<radius;z++){
+	    sp_image_set(res,x,y,z,sp_image_get(a,sp_image_x(a)-radius+(x-x0),(y-y0),sp_image_z(a)-radius+(z-z0)));
+	  }
+	}
       }
     }
-    /* And now the four sides */
-    for(x = radius,x0=x;x<radius+sp_image_width(a);x++){
+    if(type != SP_2D){
+      for(x = 0,x0=x;x<radius;x++){
+	for(y = 0,y0=y,y0=y;y<radius;y++){
+	  for(z = radius+sp_image_z(a),z0=z;z<sp_image_z(res);z++){
+	    sp_image_set(res,x,y,z,sp_image_get(a,sp_image_x(a)-radius+(x-x0),sp_image_y(a)-radius+(y-y0),(z-z0)));
+	  }
+	}
+      }
+      for(x = radius+sp_image_x(a),x0=x;x<sp_image_x(res);x++){
+	for(y = 0,y0=y;y<radius;y++){
+	  for(z = radius+sp_image_z(a),z0=z;z<sp_image_z(res);z++){
+	    sp_image_set(res,x,y,z,sp_image_get(a,(x-x0),sp_image_y(a)-radius+(y-y0),(z-z0)));
+	  }
+	}
+      }
+      
+      for(x = radius+sp_image_x(a),x0=x;x<sp_image_x(res);x++){
+	for(y = radius+sp_image_y(a),y0=y;y<sp_image_y(res);y++){
+	  for(z = radius+sp_image_z(a),z0=z;z<sp_image_z(res);z++){
+	    sp_image_set(res,x,y,z,sp_image_get(a,(x-x0),(y-y0),(z-z0)));
+	  }
+	}
+      }
+      
+      for(x = 0,x0=x;x<radius;x++){
+	for(y = radius+sp_image_y(a),y0=y;y<sp_image_y(res);y++){
+	  for(z = radius+sp_image_z(a),z0=z;z<sp_image_z(res);z++){
+	    sp_image_set(res,x,y,z,sp_image_get(a,sp_image_x(a)-radius+(x-x0),(y-y0),(z-z0)));
+	  }
+	}
+      }
+    }
+    /* And now the four/six sides */
+    for(x = radius,x0=x;x<radius+sp_image_x(a);x++){
       for(y = 0,y0=y;y<radius;y++){
-	sp_image_set(res,x,y,sp_image_get(a,(x-x0),sp_image_height(a)-radius+(y-y0)));
+	if(type == SP_2D){
+	  sp_image_set(res,x,y,0,sp_image_get(a,(x-x0),0,0));
+	}else{
+	  for(z = radius,z0=z;z<radius+sp_image_z(a);z++){
+	    sp_image_set(res,x,y,z,sp_image_get(a,(x-x0),0,(z-z0)));
+	  }
+	}
       }
     }
-    for(x = radius,x0=x;x<radius+sp_image_width(a);x++){
-      for(y = radius+sp_image_height(a),y0=y;y<sp_image_height(res);y++){
-	sp_image_set(res,x,y,sp_image_get(a,(x-x0),(y-y0)));
+    for(x = radius,x0=x;x<radius+sp_image_x(a);x++){
+      for(y = radius+sp_image_y(a),y0=y;y<sp_image_y(res);y++){
+	if(type == SP_2D){
+	  sp_image_set(res,x,y,0,sp_image_get(a,(x-x0),sp_image_y(a)-1,0));
+	}else{
+	  for(z = radius,z0=z;z<radius+sp_image_z(a);z++){
+	    sp_image_set(res,x,y,z,sp_image_get(a,(x-x0),sp_image_y(a)-1,(z-z0)));
+	  }
+	}
       }
     }
     for(x = 0,x0=x;x<radius;x++){
-      for(y = radius,y0=y;y<radius+sp_image_height(a);y++){
-	sp_image_set(res,x,y,sp_image_get(a,sp_image_height(a)-radius+(x-x0),(y-y0)));
+      for(y = radius,y0=y;y<radius+sp_image_y(a);y++){
+	if(type == SP_2D){
+	  sp_image_set(res,x,y,0,sp_image_get(a,0,(y-y0),0));
+	}else{
+	  for(z = radius,z0=z;z<radius+sp_image_z(a);z++){
+	    sp_image_set(res,x,y,z,sp_image_get(a,0,(y-y0),(z-z0)));
+	  }
+	}
       }
     }
-    for(x = radius+sp_image_width(a),x0=x;x<sp_image_width(a);x++){
-      for(y = radius,y0=y;y<radius+sp_image_height(a);y++){
-	sp_image_set(res,x,y,sp_image_get(a,(x-x0),(y-y0)));
+    for(x = radius+sp_image_x(a),x0=x;x<sp_image_x(a);x++){
+      for(y = radius,y0=y;y<radius+sp_image_y(a);y++){
+	if(type == SP_2D){
+	  sp_image_set(res,x,y,0,sp_image_get(a,sp_image_x(a)-1,(y-y0),0));
+	}else{
+	  for(z = radius,z0=z;z<radius+sp_image_z(a);z++){
+	    sp_image_set(res,x,y,z,sp_image_get(a,sp_image_x(a)-1,(y-y0),(z-z0)));
+	  }
+	}
+      }
+    }
+    if(type != SP_2D){
+      for(x = radius,x0=x;x<sp_image_x(a);x++){
+	for(y = radius,y0=y;y<sp_image_y(a);y++){
+	  for(z = 0,z0=z;z<radius;z++){
+	    sp_image_set(res,x,y,z,sp_image_get(a,(x-x0),(y-y0),0));
+	  }
+	}
+      }
+      for(x = radius,x0=x;x<sp_image_x(a);x++){
+	for(y = radius,y0=y;y<sp_image_y(a);y++){
+	  for(z = radius+sp_image_z(a),z0=z;z<sp_image_z(a);z++){
+	    sp_image_set(res,x,y,z,sp_image_get(a,(x-x0),(y-y0),sp_image_z(a)-1));
+	  }
+	}
+      }
+    }
+  }else if(edge_flags == SP_REPLICATE_EDGE){
+    /* First do the four/eight corners */
+    for(x = 0,x0=x;x<radius;x++){
+      for(y = 0,y0=y,y0=y;y<radius;y++){
+	if(type == SP_2D){
+	  sp_image_set(res,x,y,0,sp_image_get(a,0,0,0));
+	}else{
+	  for(z = 0,z0=z;z<radius;z++){
+	    sp_image_set(res,x,y,z,sp_image_get(a,0,0,0));
+	  }
+	}
+      }
+    }
+    for(x = radius+sp_image_x(a),x0=x;x<sp_image_x(res);x++){
+      for(y = 0,y0=y;y<radius;y++){
+	if(type == SP_2D){
+	sp_image_set(res,x,y,z,sp_image_get(a,sp_image_x(a)-1,0,0));
+	}else{
+	  for(z = 0,z0=z;z<radius;z++){
+	    sp_image_set(res,x,y,z,sp_image_get(a,sp_image_x(a)-1,0,0));
+	  }
+	}
+      }
+    }
+
+    for(x = radius+sp_image_x(a),x0=x;x<sp_image_x(res);x++){
+      for(y = radius+sp_image_y(a),y0=y;y<sp_image_y(res);y++){
+	if(type == SP_2D){
+	sp_image_set(res,x,y,z,sp_image_get(a,sp_image_x(a)-1,sp_image_y(a)-1,0));
+	}else{
+	  for(z = 0,z0=z;z<radius;z++){
+	    sp_image_set(res,x,y,z,sp_image_get(a,sp_image_x(a)-1,sp_image_y(a)-1,0));
+	  }
+	}
+      }
+    }
+
+    for(x = 0,x0=x;x<radius;x++){
+      for(y = radius+sp_image_y(a),y0=y;y<sp_image_y(res);y++){
+	if(type == SP_2D){
+	sp_image_set(res,x,y,z,sp_image_get(a,0,sp_image_y(a)-1,0));
+	}else{
+	  for(z = 0,z0=z;z<radius;z++){
+	    sp_image_set(res,x,y,z,sp_image_get(a,0,sp_image_y(a)-1,0));
+	  }
+	}
+      }
+    }
+    if(type != SP_2D){
+      for(x = 0,x0=x;x<radius;x++){
+	for(y = 0,y0=y,y0=y;y<radius;y++){
+	  for(z = radius+sp_image_z(a),z0=z;z<sp_image_z(res);z++){
+	    sp_image_set(res,x,y,z,sp_image_get(a,0,0,sp_image_z(a)-1));
+	  }
+	}
+      }
+      for(x = radius+sp_image_x(a),x0=x;x<sp_image_x(res);x++){
+	for(y = 0,y0=y;y<radius;y++){
+	  for(z = radius+sp_image_z(a),z0=z;z<sp_image_z(res);z++){
+	    sp_image_set(res,x,y,z,sp_image_get(a,0,0,sp_image_z(a)-1));
+	  }
+	}
+      }
+      
+      for(x = radius+sp_image_x(a),x0=x;x<sp_image_x(res);x++){
+	for(y = radius+sp_image_y(a),y0=y;y<sp_image_y(res);y++){
+	  for(z = radius+sp_image_z(a),z0=z;z<sp_image_z(res);z++){
+	    sp_image_set(res,x,y,z,sp_image_get(a,sp_image_x(a)-1,sp_image_y(a)-1,sp_image_z(a)-1));
+	  }
+	}
+      }
+      
+      for(x = 0,x0=x;x<radius;x++){
+	for(y = radius+sp_image_y(a),y0=y;y<sp_image_y(res);y++){
+	  for(z = radius+sp_image_z(a),z0=z;z<sp_image_z(res);z++){
+	    sp_image_set(res,x,y,z,sp_image_get(a,0,sp_image_y(a)-1,sp_image_z(a)-1));
+	  }
+	}
+      }
+    }
+    /* And now the four/six sides */
+    for(x = radius,x0=x;x<radius+sp_image_x(a);x++){
+      for(y = 0,y0=y;y<radius;y++){
+	if(type == SP_2D){
+	  sp_image_set(res,x,y,0,sp_image_get(a,(x-x0),0,0));
+	}else{
+	  for(z = radius,z0=z;z<radius+sp_image_z(a);z++){
+	    sp_image_set(res,x,y,z,sp_image_get(a,(x-x0),0,(z-z0)));
+	  }
+	}
+      }
+    }
+    for(x = radius,x0=x;x<radius+sp_image_x(a);x++){
+      for(y = radius+sp_image_y(a),y0=y;y<sp_image_y(res);y++){
+	if(type == SP_2D){
+	  sp_image_set(res,x,y,0,sp_image_get(a,(x-x0),sp_image_y(a),0));
+	}else{
+	  for(z = radius,z0=z;z<radius+sp_image_z(a);z++){
+	    sp_image_set(res,x,y,z,sp_image_get(a,(x-x0),sp_image_y(a)-1,(z-z0)));
+	  }
+	}
+      }
+    }
+    for(x = 0,x0=x;x<radius;x++){
+      for(y = radius,y0=y;y<radius+sp_image_y(a);y++){
+	if(type == SP_2D){
+	  sp_image_set(res,x,y,0,sp_image_get(a,sp_image_x(a)-radius+(x-x0),(y-y0),0));
+	}else{
+	  for(z = radius,z0=z;z<radius+sp_image_z(a);z++){
+	    sp_image_set(res,x,y,0,sp_image_get(a,0,(y-y0),(z-z0)));
+	  }
+	}
+      }
+    }
+    for(x = radius+sp_image_x(a),x0=x;x<sp_image_x(res);x++){
+      for(y = radius,y0=y;y<radius+sp_image_y(a);y++){
+	if(type == SP_2D){
+	  sp_image_set(res,x,y,0,sp_image_get(a,(x-x0),(y-y0),0));
+	}else{
+	  for(z = radius,z0=z;z<radius+sp_image_z(a);z++){
+	    sp_image_set(res,x,y,z,sp_image_get(a,sp_image_x(a)-1,(y-y0),(z-z0)));
+	  }
+	}
+      }
+    }
+    if(type != SP_2D){
+      for(x = radius,x0=x;x<radius+sp_image_x(a);x++){
+	for(y = radius,y0=y;y<radius+sp_image_y(a);y++){
+	  for(z = 0,z0=z;z<radius;z++){
+	    sp_image_set(res,x,y,z,sp_image_get(a,(x-x0),(y-y0),0));
+	  }
+	}
+      }
+      for(x = radius,x0=x;x<radius+sp_image_x(a);x++){
+	for(y = radius,y0=y;y<radius+sp_image_y(a);y++){
+	  for(z = radius+sp_image_z(a),z0=z;z<sp_image_z(res);z++){
+	    sp_image_set(res,x,y,z,sp_image_get(a,(x-x0),(y-y0),sp_image_z(a)-1));
+	  }
+	}
       }
     }
   }
@@ -2788,40 +3685,70 @@ Image * sp_image_edge_extend(Image * a, int radius, int edge_flags){
  * The center of the center is equal to its dimensions/2.
  * The edge_flags correspond to the sp_image_edge_extend flags().
  */
-void sp_image_median_filter(Image * a,sp_imatrix * kernel, int edge_flags){
+void sp_image_median_filter(Image * a,sp_i3matrix * kernel, int edge_flags, int type){
   int integral = 0;
-  int n,i,x,y;
-  int kx,ky;
-  int kcx = sp_imatrix_cols(kernel)/2;
-  int kcy = sp_imatrix_rows(kernel)/2;
+  int n,i,x,y,z;
+  int kx,ky,kz;
+  int kcx = sp_i3matrix_x(kernel)/2;
+  int kcy = sp_i3matrix_y(kernel)/2;
+  int kcz = sp_i3matrix_z(kernel)/2;
+  int radius;
+  Image * work;
 
-  for(i =0 ;i<sp_imatrix_size(kernel);i++){
+  for(i =0 ;i<sp_i3matrix_size(kernel);i++){
     integral += kernel->data[i];
   }
   real * buffer = malloc(sizeof(real)*integral);
-  int radius = sp_max((sp_imatrix_cols(kernel)+1)/2,(sp_imatrix_rows(kernel)+1)/2);
-  Image * work = sp_image_edge_extend(a,radius,edge_flags);
-  
-  for(x = radius;x<radius+sp_image_width(a);x++){
-    for(y = radius;y<radius+sp_image_height(a);y++){
-      n = 0;
-      for(kx = -kcx;kx<sp_imatrix_cols(kernel)-kcx;kx++){
-	for(ky = -kcy;ky<sp_imatrix_rows(kernel)-kcy;ky++){
-	  for(i = 0;i<sp_imatrix_get(kernel,ky+kcy,kx+kcx);i++){
-	    buffer[n++] = sp_image_get(work,x+kx,y+ky);
+  if(type == SP_2D){
+    radius = sp_max((sp_i3matrix_x(kernel)+1)/2,
+			(sp_i3matrix_y(kernel)+1)/2);
+  }else{
+    radius = sp_max((sp_i3matrix_x(kernel)+1)/2,
+			sp_max((sp_i3matrix_y(kernel)+1)/2,
+			       (sp_i3matrix_z(kernel)+1)/2));
+  }
+  if(type == SP_2D){
+    work = sp_image_edge_extend(a,radius,edge_flags,SP_2D);
+  }else{
+    work = sp_image_edge_extend(a,radius,edge_flags,SP_3D);
+  }
+
+  for(x = radius;x<radius+sp_image_x(a);x++){
+    for(y = radius;y<radius+sp_image_y(a);y++){
+      for(z = radius;z<radius+sp_image_z(a);z++){
+	n = 0;
+	for(kx = -kcx;kx<sp_i3matrix_x(kernel)-kcx;kx++){
+	  for(ky = -kcy;ky<sp_i3matrix_y(kernel)-kcy;ky++){
+	    for(kz = -kcz;kz<sp_i3matrix_z(kernel)-kcz;kz++){
+	      for(i = 0;i<sp_i3matrix_get(kernel,ky+kcy,kx+kcx,kz+kcz);i++){
+		if(type == SP_2D){
+		  buffer[n++] = sp_image_get(work,x+kx,y+ky,0);
+		}else{
+		  buffer[n++] = sp_image_get(work,x+kx,y+ky,z+kz);
+		}
+	      }
+	    }
+	  }
+	}
+	sp_bubble_sort(buffer,n);
+	if(n%2){
+	  /* odd n take the middle one */
+	  if(type == SP_2D){
+	    sp_image_set(a,x-radius,y-radius,0,buffer[n/2]);
+	  }else{
+	    sp_image_set(a,x-radius,y-radius,z-radius,buffer[n/2]);
+	  }
+	}else{
+	  /* even n take the average */
+	  if(type == SP_2D){
+	    sp_image_set(a,x-radius,y-radius,0,(buffer[n/2]+buffer[n/2-1])/2);
+	  }else{
+	    sp_image_set(a,x-radius,y-radius,z-radius,(buffer[n/2]+buffer[n/2-1])/2);
 	  }
 	}
       }
-      sp_bubble_sort(buffer,n);
-      if(n%2){
-	/* odd n take the middle one */
-	sp_image_set(a,x-radius,y-radius,buffer[n/2]);
-      }else{
-	/* even n take the average */
-	sp_image_set(a,x-radius,y-radius,(buffer[n/2]+buffer[n/2-1])/2);
-      }
     }
-  }    
+  }
 }
  
 
@@ -2833,82 +3760,80 @@ void sp_image_median_filter(Image * a,sp_imatrix * kernel, int edge_flags){
  */
 void sp_image_adaptative_constrast_stretch(Image * a,int x_div, int y_div){
   int dx,dy,x,y;
-  int x_div_size = sp_image_width(a)/(x_div-1);
-  int y_div_size = sp_image_height(a)/(y_div-1);
-  sp_matrix * div_max = sp_matrix_alloc(x_div,y_div);
-  sp_matrix * div_min = sp_matrix_alloc(x_div,y_div);
-  sp_matrix * div_mean = sp_matrix_alloc(x_div,y_div);
-  sp_matrix * div_std_dev = sp_matrix_alloc(x_div,y_div);
-  sp_matrix * offsets = sp_matrix_alloc(sp_image_width(a),sp_image_height(a));
-  sp_matrix * factors = sp_matrix_alloc(sp_image_width(a),sp_image_height(a));
+  int x_div_size = sp_image_x(a)/(x_div-1);
+  int y_div_size = sp_image_y(a)/(y_div-1);
+  sp_3matrix * div_max = sp_3matrix_alloc(x_div,y_div,1);
+  sp_3matrix * div_min = sp_3matrix_alloc(x_div,y_div,1);
+  sp_3matrix * div_mean = sp_3matrix_alloc(x_div,y_div,1);
+  sp_3matrix * div_std_dev = sp_3matrix_alloc(x_div,y_div,1);
+  sp_3matrix * offsets = sp_3matrix_alloc(sp_image_x(a),sp_image_y(a),1);
+  sp_3matrix * factors = sp_3matrix_alloc(sp_image_x(a),sp_image_y(a),1);
   int radius = sp_max(x_div_size/2,y_div_size/2);
-  Image * work = sp_image_edge_extend(a, radius, SP_SYMMETRIC_EDGE);
+  Image * work = sp_image_edge_extend(a, radius, SP_SYMMETRIC_EDGE,SP_2D);
   for(dx = 0;dx <x_div;dx++){
     for(dy = 0;dy <y_div;dy++){
-      sp_matrix_set(div_max,dx,dy,sp_image_get(work,radius+dx*x_div_size,radius+dy*y_div_size));
-      sp_matrix_set(div_min,dx,dy,sp_image_get(work,radius+dx*x_div_size,radius+dy*y_div_size));
+      sp_3matrix_set(div_max,dx,dy,0,sp_image_get(work,radius+dx*x_div_size,radius+dy*y_div_size,0));
+      sp_3matrix_set(div_min,dx,dy,0,sp_image_get(work,radius+dx*x_div_size,radius+dy*y_div_size,0));
       for(x = radius+dx*x_div_size;x<radius+(dx+1)*x_div_size;x++){	
-	if(x == sp_image_width(work)){
+	if(x == sp_image_x(work)){
 	  break;
 	}
 
 	for(y = radius+dy*y_div_size;y<radius+(dy+1)*y_div_size;y++){
-	  if(y == sp_image_height(work)){
+	  if(y == sp_image_y(work)){
 	    break;
 	  }
-	  if(cabs(sp_image_get(work,x,y)) < sp_matrix_get(div_min,dx,dy)){
-	    sp_matrix_set(div_min,dx,dy,cabs(sp_image_get(work,x,y)));
+	  if(cabs(sp_image_get(work,x,y,0)) < sp_3matrix_get(div_min,dx,dy,0)){
+	    sp_3matrix_set(div_min,dx,dy,0,cabs(sp_image_get(work,x,y,0)));
 	  }
-	  if(cabs(sp_image_get(work,x,y)) > sp_matrix_get(div_max,dx,dy)){
-	    sp_matrix_set(div_max,dx,dy,cabs(sp_image_get(work,x,y)));
+	  if(cabs(sp_image_get(work,x,y,0)) > sp_3matrix_get(div_max,dx,dy,0)){
+	    sp_3matrix_set(div_max,dx,dy,0,cabs(sp_image_get(work,x,y,0)));
 	  }
-	  sp_matrix_set(div_mean,dx,dy,sp_image_get(work,x,y)+sp_matrix_get(div_mean,dx,dy));
+	  sp_3matrix_set(div_mean,dx,dy,0,sp_image_get(work,x,y,0)+sp_3matrix_get(div_mean,dx,dy,0));
 	}
       }
-      sp_matrix_set(div_mean,dx,dy,sp_matrix_get(div_mean,dx,dy)/(x_div_size*y_div_size));
+      sp_3matrix_set(div_mean,dx,dy,0,sp_3matrix_get(div_mean,dx,dy,0)/(x_div_size*y_div_size));
       /* Second pass to calculate standard deviation */
       for(x = radius+dx*x_div_size;x<radius+(dx+1)*x_div_size;x++){	
-	if(x == sp_image_width(work)){
+	if(x == sp_image_x(work)){
 	  break;
 	}
 
 	for(y = radius+dy*y_div_size;y<radius+(dy+1)*y_div_size;y++){
-	  if(y == sp_image_height(work)){
+	  if(y == sp_image_y(work)){
 	    break;
 	  }
-	  sp_matrix_set(div_std_dev,dx,dy,sp_matrix_get(div_std_dev,dx,dy)+
-			cabs(sp_image_get(work,x,y)*sp_image_get(work,x,y)-
-			     sp_matrix_get(div_mean,dx,dy)*sp_matrix_get(div_mean,dx,dy)));
+	  sp_3matrix_set(div_std_dev,dx,dy,0,sp_3matrix_get(div_std_dev,dx,dy,0)+
+			cabs(sp_image_get(work,x,y,0)*sp_image_get(work,x,y,0)-
+			     sp_3matrix_get(div_mean,dx,dy,0)*sp_3matrix_get(div_mean,dx,dy,0)));
 	}
       }
-      sp_matrix_set(div_std_dev,dx,dy,sqrt(sp_matrix_get(div_std_dev,dx,dy)/((x_div_size*y_div_size)-1)));
+      sp_3matrix_set(div_std_dev,dx,dy,0,sqrt(sp_3matrix_get(div_std_dev,dx,dy,0)/((x_div_size*y_div_size)-1)));
     }
   }
   sp_image_free(work);
-  for(x = 0;x<sp_image_width(a);x++){
-    for(y = 0;y<sp_image_height(a);y++){
-      sp_matrix_set(offsets,x,y,-sp_matrix_interp(div_mean,sp_min((float)x/x_div_size,x_div-0.001),
-						  sp_min((float)y/y_div_size,y_div-0.001))); 
+  for(x = 0;x<sp_image_x(a);x++){
+    for(y = 0;y<sp_image_y(a);y++){
+      sp_3matrix_set(offsets,x,y,0,-sp_3matrix_interp(div_mean,sp_min((float)x/x_div_size,x_div-0.001),sp_min((float)y/y_div_size,y_div-0.001),0)); 
       /* allow 3 standard deviation on each side of the mean */
-      sp_matrix_set(factors,x,y,1.0/(6*sp_matrix_interp(div_std_dev,sp_min((float)x/x_div_size,x_div-0.001),
-						      sp_min((float)y/y_div_size,y_div-0.001)))); 
+      sp_3matrix_set(factors,x,y,0,1.0/(6*sp_3matrix_interp(div_std_dev,sp_min((float)x/x_div_size,x_div-0.001),sp_min((float)y/y_div_size,y_div-0.001),0))); 
     }
   }
-  for(x = 0;x<sp_image_width(a);x++){
-    for(y = 0;y<sp_image_height(a);y++){
+  for(x = 0;x<sp_image_x(a);x++){
+    for(y = 0;y<sp_image_y(a);y++){
       /* cap extreme values */
-      if(creal(sp_image_get(a,x,y)) < -sp_matrix_get(offsets,x,y)-1/sp_matrix_get(factors,x,y)){
-	sp_image_set(a,x,y,-sp_matrix_get(offsets,x,y)-1/sp_matrix_get(factors,x,y));
-      }else if(creal(sp_image_get(a,x,y)) > -sp_matrix_get(offsets,x,y)+1/sp_matrix_get(factors,x,y)){
-	sp_image_set(a,x,y,-sp_matrix_get(offsets,x,y)+1/sp_matrix_get(factors,x,y));
+      if(creal(sp_image_get(a,x,y,0)) < -sp_3matrix_get(offsets,x,y,0)-1/sp_3matrix_get(factors,x,y,0)){
+	sp_image_set(a,x,y,0,-sp_3matrix_get(offsets,x,y,0)-1/sp_3matrix_get(factors,x,y,0));
+      }else if(creal(sp_image_get(a,x,y,0)) > -sp_3matrix_get(offsets,x,y,0)+1/sp_3matrix_get(factors,x,y,0)){
+	sp_image_set(a,x,y,0,-sp_3matrix_get(offsets,x,y,0)+1/sp_3matrix_get(factors,x,y,0));
       }
-      sp_image_set(a,x,y,(sp_image_get(a,x,y)+sp_matrix_get(offsets,x,y))*sp_matrix_get(factors,x,y));
+      sp_image_set(a,x,y,0,(sp_image_get(a,x,y,0)+sp_3matrix_get(offsets,x,y,0))*sp_3matrix_get(factors,x,y,0));
     }
   }
-  sp_matrix_free(offsets);
-  sp_matrix_free(factors);
-  sp_matrix_free(div_max);
-  sp_matrix_free(div_min);
+  sp_3matrix_free(offsets);
+  sp_3matrix_free(factors);
+  sp_3matrix_free(div_max);
+  sp_3matrix_free(div_min);
 }
 
 
@@ -2932,9 +3857,9 @@ void sp_bubble_sort(real * a, int n){
     }
   }
 }
-
-
-void sp_image_fourier_coords(Image * in, sp_matrix * k_x, sp_matrix * k_y, sp_matrix * k_z){
+ 
+ 
+void sp_image_fourier_coords(Image * in, sp_3matrix * k_x, sp_3matrix * k_y, sp_3matrix * k_z){
   /* We need to get the wavelength and detector size */
   /* Calculate the fourier coordinates of each pixel in the detector */
   /* First we project the pixels on the ewald sphere and then we calculate it's coordinates */
@@ -2951,11 +3876,11 @@ void sp_image_fourier_coords(Image * in, sp_matrix * k_x, sp_matrix * k_y, sp_ma
   real ewald_radius = 1.0/in->detector->lambda;
   real distance_to_ewald_sphere_center;
 
-  real det_width = in->detector->pixel_size * sp_image_width(in);
-  real det_height = in->detector->pixel_size * sp_image_height(in);
+  real det_x = in->detector->pixel_size[0] * sp_image_x(in);
+  real det_y = in->detector->pixel_size[1] * sp_image_y(in);
   
-  nx = sp_image_width(in);
-  ny = sp_image_height(in);
+  nx = sp_image_x(in);
+  ny = sp_image_y(in);
 
   for(x = 0;x<nx;x++){
     for(y = 0;y<ny;y++){
@@ -2967,21 +3892,21 @@ void sp_image_fourier_coords(Image * in, sp_matrix * k_x, sp_matrix * k_y, sp_ma
 
 	 Upper left corner of the detector with negative x and positive y
       */
-      px = ((x-in->detector->image_center[0])/nx)*det_width;
-      py = ((in->detector->image_center[1]-y)/ny)*det_height;
-
+      px = ((x-in->detector->image_center[0])/nx)*det_x;
+      py = ((in->detector->image_center[1]-y)/ny)*det_y;
+      
       rx = px*real_to_reciprocal;
       ry = py*real_to_reciprocal;
       /* Project pixel into Ewald sphere. */
       distance_to_ewald_sphere_center = sqrt(rx*rx+ry*ry+ewald_radius*ewald_radius);
       if(k_x){      
-	sp_matrix_set(k_x,x,y,rx * ewald_radius/distance_to_ewald_sphere_center);
+	sp_3matrix_set(k_x,x,y,0,rx * ewald_radius/distance_to_ewald_sphere_center);
       }
       if(k_y){
-	sp_matrix_set(k_y,x,y,ry * ewald_radius/distance_to_ewald_sphere_center);
+	sp_3matrix_set(k_y,x,y,0,ry * ewald_radius/distance_to_ewald_sphere_center);
       }
       if(k_z){
-	sp_matrix_set(k_z,x,y,ewald_radius-(ewald_radius * ewald_radius/distance_to_ewald_sphere_center));
+	sp_3matrix_set(k_z,x,y,0,ewald_radius-(ewald_radius * ewald_radius/distance_to_ewald_sphere_center));
       }
     }
   }

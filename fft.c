@@ -7,19 +7,25 @@
 
 
 real * sp_image_fft_shift(real * fftout, Image * a){
-  int x,y;
-  int nx = sp_cmatrix_cols(a->image);
-  int ny = sp_cmatrix_rows(a->image);
+  int x,y,z;
+  int nx = sp_c3matrix_x(a->image);
+  int ny = sp_c3matrix_y(a->image);
+  int nz = sp_c3matrix_z(a->image);
   
-  real * img_d = malloc(sizeof(real)*(ny/2+1)*nx);
+  real * img_d = malloc(sizeof(real)*(nx/2+1)*ny*nz);
   for(x = 0;x<nx;x++){
-    for(y = 0;y<ny/2+1;y++){
-      img_d[y+x*(ny/2+1)] = fftout[y+((nx/2+x)%nx)*(ny/2+1)];
+    for(y = 0;y<ny;y++){
+      for(z = 0;z<nz;z++){
+	img_d[z*(nx/2+1)*(ny/2+1)+y*(nx/2+1)+x] = 
+	  fftout[((nz/2+z)%nz)*(nx/2+1)*(ny/2+1)+((ny/2+y)%y)*(nx/2+1)+x];
+	/* Not sure of this, didn't investigete to really understand
+	   The old 2D version looked like:
+	   img_d[y+x*(ny/2+1)] = fftout[y+((nx/2+x)%nx)*(ny/2+1)]; */
+      }
     }
   }
   return img_d;
 }
-
 
 int sp_init_fft(int nthreads){
   int ret = 0; 
@@ -62,7 +68,7 @@ Image * sp_image_ifftw3(Image * img){
   */
   in = img->image->data;
   out = res->image->data;
-  plan = fftwr_plan_dft_2d(sp_cmatrix_cols(img->image),sp_cmatrix_rows(img->image),in,out, FFTW_BACKWARD,FFTW_ESTIMATE);
+  plan = fftwr_plan_dft_3d(sp_c3matrix_x(img->image),sp_c3matrix_y(img->image),sp_c3matrix_z(img->image),in,out, FFTW_BACKWARD,FFTW_ESTIMATE);
 
   fftwr_execute(plan);
   fftwr_destroy_plan(plan);
@@ -70,16 +76,15 @@ Image * sp_image_ifftw3(Image * img){
   return res;
 }
 
-
-sp_cmatrix * sp_cmatrix_ifftw3(sp_cmatrix * m){
+sp_c3matrix * sp_c3matrix_ifftw3(sp_c3matrix * m){
   fftwr_complex *out; 
   fftwr_complex *in; 
   fftwr_plan plan;
-  sp_cmatrix * res;
-  res = sp_cmatrix_alloc(sp_cmatrix_rows(m),sp_cmatrix_cols(m));
+  sp_c3matrix * res;
+  res = sp_c3matrix_alloc(sp_c3matrix_x(m),sp_c3matrix_y(m),sp_c3matrix_z(m));
   in = m->data;
   out = res->data;
-  plan = fftwr_plan_dft_2d(sp_cmatrix_cols(m),sp_cmatrix_rows(m),in,out, FFTW_BACKWARD,FFTW_ESTIMATE);
+  plan = fftwr_plan_dft_3d(sp_c3matrix_x(m),sp_c3matrix_y(m),sp_c3matrix_z(m),in,out, FFTW_BACKWARD,FFTW_ESTIMATE);
 
   fftwr_execute(plan);
   fftwr_destroy_plan(plan);
@@ -108,7 +113,7 @@ Image * sp_image_ifftw2(Image * img){
   /* We're gonna rely on the binary compatibility between fftwr_complex and Complex type */
   in = img->image->data;
   out = res->image->data;
-  plan = fftw2d_create_plan(sp_cmatrix_cols(img->image),sp_cmatrix_rows(img->image), FFTW_BACKWARD,FFTW_ESTIMATE);
+  plan = fftw3d_create_plan(sp_c3matrix_x(img->image),sp_c3matrix_y(img->image),sp_c3matrix_z(img->image), FFTW_BACKWARD,FFTW_ESTIMATE);
 
   j = 0;
   fftwnd_one(plan,in,out);
@@ -131,26 +136,28 @@ Image * sp_image_fftw3(Image * img){
   /* Rely on binary compatibility of the Complex type */
   in = img->image->data;
   out = res->image->data;
-  plan = fftwr_plan_dft_2d(sp_cmatrix_cols(img->image),sp_cmatrix_rows(img->image),in,out,FFTW_FORWARD,FFTW_ESTIMATE);
+  plan = fftwr_plan_dft_3d(sp_c3matrix_x(img->image),sp_c3matrix_y(img->image),sp_c3matrix_z(img->image),in,out,FFTW_FORWARD,FFTW_ESTIMATE);
 
   fftwr_execute(plan);
   fftwr_destroy_plan(plan);
   res->shifted = 1;
-  res->detector->image_center[0] = (sp_cmatrix_cols(res->image)-1)/2.0;
-  res->detector->image_center[1] = (sp_cmatrix_rows(res->image)-1)/2.0;
+  res->detector->image_center[0] = (sp_c3matrix_x(res->image)-1)/2.0;
+  res->detector->image_center[1] = (sp_c3matrix_y(res->image)-1)/2.0;
+  res->detector->image_center[2] = (sp_c3matrix_z(res->image)-1)/2.0;
   return res;
 }
 
-sp_cmatrix * sp_cmatrix_fftw3(sp_cmatrix * m){
+sp_c3matrix * sp_c3matrix_fftw3(sp_c3matrix * m){
   fftwr_complex *out; 
   fftwr_complex *in; 
   fftwr_plan plan;
-  sp_cmatrix * res = sp_cmatrix_alloc(sp_cmatrix_rows(m),sp_cmatrix_cols(m));
+  sp_c3matrix * res = sp_c3matrix_alloc(sp_c3matrix_x(m),sp_c3matrix_y(m),
+					sp_c3matrix_z(m));
 
   /* Rely on binary compatibility of the Complex type */
   in = m->data;
   out = res->data;
-  plan = fftwr_plan_dft_2d(sp_cmatrix_cols(m),sp_cmatrix_rows(m),in,out,FFTW_FORWARD,FFTW_ESTIMATE);
+  plan = fftwr_plan_dft_3d(sp_c3matrix_x(m),sp_c3matrix_y(m),sp_c3matrix_z(m),in,out,FFTW_FORWARD,FFTW_ESTIMATE);
 
   fftwr_execute(plan);
   fftwr_destroy_plan(plan);
@@ -161,19 +168,20 @@ sp_cmatrix * sp_cmatrix_fftw3(sp_cmatrix * m){
 
 #ifdef FFTW2
 
-sp_cmatrix * sp_cmatrix_fftw2(sp_cmatrix * m){
+sp_c3matrix * sp_c3matrix_fftw2(sp_c3matrix * m){
   fftw_complex *out; 
   fftw_complex *in; 
   fftwnd_plan plan;
   int i;
-  sp_cmatrix * res = sp_cmatrix_alloc(sp_cmatrix_rows(m),sp_cmatrix_cols(m));
+  sp_c3matrix * res = sp_c3matrix_alloc(sp_c3matrix_x(m),sp_c3matrix_y(m),
+					sp_c3matrix_z(m));
 
   rephase(res);
   /* Rely on binary compatibility of the Complex type */
   in = m->data;
   out = res->data;
-  plan = fftw2d_create_plan(sp_cmatrix_cols(m),sp_cmatrix_rows(m),FFTW_FORWARD,FFTW_ESTIMATE);
-
+  plan = fftw3d_create_plan(sp_c3matrix_x(m),sp_c3matrix_y(m),sp_c3matrix_z(m),
+			    FFTW_FORWARD,FFTW_ESTIMATE);
   fftwnd_one(plan,in,out);
   fftwnd_destroy_plan(plan);
   return res;

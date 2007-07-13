@@ -81,6 +81,56 @@ void sp_cmatrix_free(sp_cmatrix * a){
 
 
 
+sp_3matrix * sp_3matrix_alloc(unsigned int nx, unsigned int ny, unsigned int nz){
+  sp_3matrix * res = malloc(sizeof(sp_3matrix));
+  res->x = nx;
+  res->y = ny;
+  res->z = nz;
+  res->data = calloc(nx*ny*nz,sizeof(real));
+  return res;
+}
+
+sp_i3matrix * sp_i3matrix_alloc(unsigned int nx, unsigned int ny, unsigned int nz){
+  sp_i3matrix * res = malloc(sizeof(sp_i3matrix));
+  res->x = nx;
+  res->y = ny;
+  res->z = nz;
+  res->data = calloc(nx*ny*nz,sizeof(int));
+  return res;
+}
+
+sp_c3matrix * sp_c3matrix_alloc(unsigned int nx, unsigned int ny, unsigned int nz){
+  sp_c3matrix * res = malloc(sizeof(sp_c3matrix));
+  res->x = nx;
+  res->y = ny;
+  res->z = nz;
+  res->data = calloc(nx*ny*nz,sizeof(Complex));
+  return res;
+}
+
+
+sp_c3matrix * sp_c3matrix_duplicate(sp_c3matrix * m){
+  sp_c3matrix * res = sp_c3matrix_alloc(sp_c3matrix_x(m),sp_c3matrix_y(m),sp_c3matrix_z(m));
+  sp_c3matrix_memcpy(res,m);
+  return res;
+}
+
+void sp_3matrix_free(sp_3matrix * a){
+  free(a->data);
+  free(a);
+}
+
+void sp_i3matrix_free(sp_i3matrix * a){
+  free(a->data);
+  free(a);
+}
+
+void sp_c3matrix_free(sp_c3matrix * a){
+  free(a->data);
+  free(a);
+}
+
+
 
 
 

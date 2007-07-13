@@ -26,6 +26,8 @@
   #define fftwr_free(a) fftw_free(a)
   #define fftwr_plan_dft_2d(a,b,c,d,e,f) fftw_plan_dft_2d(a,b,c,d,e,f)
   #define fftwr_plan_dft_r2c_2d(a,b,c,d,e) fftw_plan_dft_r2c_2d(a,b,c,d,e)
+  #define fftwr_plan_dft_3d(a,b,c,d,e,f,g) fftw_plan_dft_3d(a,b,c,d,e,f,g)
+  #define fftwr_plan_dft_r2c_3d(a,b,c,d,e,f) fftw_plan_dft_r2c_3d(a,b,c,d,e,f)
   #define fftwr_plan_guru_split_dft(a,b,c,d,e,f,g,h,i) fftw_plan_guru_split_dft(a,b,c,d,e,f,g,h,i)
   #define fftwr_init_threads() fftw_init_threads()
   #define fftwr_plan_with_nthreads(a) fftw_plan_with_nthreads(a)
@@ -38,6 +40,8 @@
   #define fftwr_free(a) fftwf_free(a)
   #define fftwr_plan_dft_2d(a,b,c,d,e,f) fftwf_plan_dft_2d(a,b,c,d,e,f) 
   #define fftwr_plan_dft_r2c_2d(a,b,c,d,e) fftwf_plan_dft_r2c_2d(a,b,c,d,e) 
+  #define fftwr_plan_dft_3d(a,b,c,d,e,f,g) fftwf_plan_dft_3d(a,b,c,d,e,f,g)
+  #define fftwf_plan_dft_r2c_3d(a,b,c,d,e,f) fftwf_plan_dft_r2c_3d(a,b,c,d,e,f)
   #define fftwr_plan_guru_split_dft(a,b,c,d,e,f,g,h,i) fftwf_plan_guru_split_dft(a,b,c,d,e,f,g,h,i)
   #define fftwr_init_threads() fftwf_init_threads()
   #define fftwr_plan_with_nthreads(a) fftwf_plan_with_nthreads(a)
@@ -65,6 +69,9 @@ spimage_EXPORT Image * sp_image_fft(Image * img);
 /*! Returns the forward FFT of m.
  */
 spimage_EXPORT sp_cmatrix * sp_cmatrix_fft(sp_cmatrix * m);
+/*! Returns the forward FFT of m.
+ */
+spimage_EXPORT sp_c3matrix * sp_c3matrix_fft(sp_c3matrix * m);
 /*! Returns the backward FFT of img.
  *
  * The mask is copied unchanged
@@ -73,6 +80,9 @@ spimage_EXPORT Image * sp_image_ifft(Image * img);
 /*! Returns the backward FFT of m.
  */
 spimage_EXPORT sp_cmatrix * sp_cmatrix_ifft(sp_cmatrix * img);
+/*! Returns the backward FFT of m.
+ */
+spimage_EXPORT sp_c3matrix * sp_c3matrix_ifft(sp_c3matrix * img);
 /*! Initializes the fft routine and tells it to use 
  *   nthreads threads
  */

@@ -46,6 +46,9 @@
 #define SP_REPLICATE_EDGE 3
 #define SP_CIRCULAR_EDGE 4
 
+#define SP_2D 0
+#define SP_3D 1
+
 /** @defgroup Distance
  *  Calculates several kinds of distances in an image
  *  @{
@@ -122,7 +125,7 @@ spimage_EXPORT int write_mask_to_png(Image * img, char * filename, int color);
 
 /*! Allocates an image of width x and height y
  */
-spimage_EXPORT Image * sp_image_alloc(int x, int y);
+spimage_EXPORT Image * sp_image_alloc(int x, int y, int z);
 
 /*! Create a copy of Image in
  *
@@ -155,15 +158,16 @@ spimage_EXPORT void sp_image_memcpy(Image * dst,Image *src);
 /*! Masks out all pixels whose distance to center
   is smaller than radius. It also puts their values to 0.
  */
-spimage_EXPORT void sp_image_high_pass(Image * in, real radius);
+spimage_EXPORT void sp_image_high_pass(Image * in, real radius, int type);
 /*! Masks out all pixels whose "manhattan distance" to center
   is bigger than radius. It also puts their values to 0.
  */
-spimage_EXPORT Image * sp_image_low_pass(Image * img, int resolution);
+spimage_EXPORT Image * sp_image_low_pass(Image * img, int resolution, int type);
 /*! Creates a new image from the rectange define by the upper left corner (x1,y1)
   and lower right corner (x2,y2).
  */
 spimage_EXPORT Image * rectangle_crop(Image * in, int x1, int y1, int x2, int y2); 
+spimage_EXPORT Image * cube_crop(Image * in, int x1, int y1, int z1, int x2, int y2, int z2);
 
 /*! Returns a ray from the image along a given direction
 
@@ -209,42 +213,47 @@ spimage_EXPORT Image * circular_image_from_sector(Image * sector, int * size, re
  *  @{
  */
 
-/*! Sets the point x,y to the value v
+/*! Sets the point x,y,z (or x,y,0 for 2D) to the value v
  */
-static inline void  sp_image_set(Image * a,int x,int y,Complex v){
-  sp_cmatrix_set(a->image,y,x,v);
+static inline void sp_image_set(Image * a,int x,int y,int z,Complex v){
+  sp_c3matrix_set(a->image,x,y,z,v);
 }
 
-/*! Returns the image value at point x,y
+/*! Returns the image value at point x,y,z (or x,y,0 for 2D)
  */
-static inline Complex sp_image_get(Image * a,int x,int y){
-  return sp_cmatrix_get(a->image,y,x);
+static inline Complex sp_image_get(Image * a,int x,int y,int z){
+  return sp_c3matrix_get(a->image,x,y,z);
 }
 
-/*! Returns the width*height of image a
+/*! Returns x*y*z size of image a
  */
-static inline int sp_image_size(Image * a){
-  return sp_cmatrix_size(a->image);
+static inline long long sp_image_size(Image * a){
+  return sp_c3matrix_size(a->image);
 }
 
-/*! Returns the width of image a
+/*! Returns the x length of image a
  */
-static inline int sp_image_width(const Image * a){
-  return sp_cmatrix_cols(a->image);
+static inline int sp_image_x(const Image * a){
+  return sp_c3matrix_x(a->image);
 }
 
-/*! Returns the height of image a
+/*! Returns the y length of image a
  */
-static inline int sp_image_height(const Image * a){
-  return sp_cmatrix_rows(a->image);
+static inline int sp_image_y(const Image * a){
+  return sp_c3matrix_y(a->image);
 }
 
-/*! Returns the index of point x,y  of image a
+/*! Returns the z length of image a
  */
-static inline  int sp_image_get_index(const Image * a, int x, int y){
-  return sp_cmatrix_get_index(a->image,y,x);
+static inline int sp_image_z(const Image * a){
+  return sp_c3matrix_z(a->image);
 }
 
+/*! Returns the index of point x,y,z (or x,y,0)  of image a
+ */
+static inline  long long sp_image_get_index(const Image * a, int x, int y, int z){
+  return sp_c3matrix_get_index(a->image,x,y,z);
+}
 
 
 /*! Add Image b to Image a
@@ -328,7 +337,7 @@ spimage_EXPORT void sp_image_scale(Image * img, real value);
 /*! Returns the maximum value of the image and sets *index to the
   index of that pixel along iwth *x and *y
  */
-spimage_EXPORT real sp_image_max(Image * img, int * index, int * x, int * y);
+spimage_EXPORT real sp_image_max(Image * img, long long * index, int * x, int * y, int * z);
 
 /*! Returns the phase of the image on each pixel, in radians
  *
@@ -342,7 +351,7 @@ spimage_EXPORT void sp_image_tranpose(Image * in);
 
 /*! Returns the linearly interpolated value of the image at v_x, v_y
 */
-spimage_EXPORT real sp_image_interp(Image * img, real v_x, real v_y);
+spimage_EXPORT real sp_image_interp(Image * img, real v_x, real v_y, real v_z);
 
 /*@}*/
 
@@ -358,7 +367,7 @@ spimage_EXPORT real sp_image_interp(Image * img, real v_x, real v_y);
  * \f$ f(x,y) = (2 \pi \times radius)^{-0.5} \times \exp{\frac{-(x^2+y^2)}{(2 \times radius^2)}} \f$
  *  The mask will not be blurred.
  */
-spimage_EXPORT Image * gaussian_blur(Image * in, real radius);
+spimage_EXPORT Image * gaussian_blur(Image * in, real radius, int type);
 /*! Multiplies the image with a gaussian centered in the image center of a given radius 
  *
  *   The mask will not be multiplied.
@@ -402,11 +411,14 @@ spimage_EXPORT Image * sp_image_cross_correlate(Image * a, Image * b, int * size
  */
 spimage_EXPORT Image * rectangular_window(int image_x, int image_y, int width, int height, int shifted);
 
+spimage_EXPORT Image * cube_window(int image_x, int image_y, int image_z, int dx, int dy, int dz, int shifted); 
 
 /*! Returns a circular window centered on the image center
  * with the given radius
  */
 spimage_EXPORT Image * circular_window(int x, int y, int radius, int shifted);
+ 
+spimage_EXPORT Image * spherical_window(int x, int y, int z, int radius, int shifted); 
 
 /*! Convolutes Image a with Image b at point i
  *
@@ -454,8 +466,8 @@ spimage_EXPORT Image * sp_proj_support(Image * a, Image * b);
 spimage_EXPORT void sp_add_noise(Image * in, real level,int type);
 spimage_EXPORT float box_muller(float m, float s);
 spimage_EXPORT real lin_image_interpol(Image * img, real x, real y);
-spimage_EXPORT real centro_sym_value(int index,Image * img);
-spimage_EXPORT int centro_sym_index(int index,Image * img);
+spimage_EXPORT real centro_sym_value(long long index,Image * img);
+spimage_EXPORT int centro_sym_index(long long index,Image * img);
 spimage_EXPORT Image * centro_sym_correlation(Image  * img);
 spimage_EXPORT Image * sp_image_shift(Image * img);
 spimage_EXPORT Image * make_shifted_image_square(Image * in);
@@ -465,20 +477,20 @@ spimage_EXPORT real r_factor(Image * fobs, Image *fcalc,real low_intensity_cutof
 spimage_EXPORT Image * sp_image_reflect(Image * in, int in_place,int axis);
 spimage_EXPORT Image * centrosym_convolve(Image * in);
 spimage_EXPORT Image * get_phase_angle_image(Image * img);
-spimage_EXPORT Image * zero_pad_image(Image * a, int newx, int newy, int pad_mask);
+spimage_EXPORT Image * zero_pad_image(Image * a, int newx, int newy, int newz, int pad_mask);
 spimage_EXPORT Image * shift_center_to_top_left(Image * a);
 spimage_EXPORT real I_divergenge(Image * a, Image * b);
-spimage_EXPORT Image * square_blur(Image * in, real radius);
+spimage_EXPORT Image * square_blur(Image * in, real radius, int type);
 spimage_EXPORT Image * sp_image_patterson(Image * a);
-spimage_EXPORT void find_center(Image * img, real * center_x, real * center_y);
-spimage_EXPORT int pixel_to_index(Image * img, real * point);
-spimage_EXPORT void sp_image_smooth_edges(Image * img, sp_imatrix * mask, int flags, real * value);
-spimage_EXPORT Image * fourier_rescale(Image * img, int x, int y);
+spimage_EXPORT void find_center(Image * img, real * center_x, real * center_y, real * center_z);
+spimage_EXPORT long long pixel_to_index(Image * img, real * point);
+spimage_EXPORT void sp_image_smooth_edges(Image * img, sp_i3matrix * mask, int flags, real * value);
+spimage_EXPORT Image * fourier_rescale(Image * img, int x, int y, int z);
 spimage_EXPORT real bilinear_interpol_img(Image * img, real * data, real v_x, real v_y);
-spimage_EXPORT Image * bilinear_rescale(Image * img, int new_x, int new_y);
+spimage_EXPORT Image * bilinear_rescale(Image * img, int new_x, int new_y, int new_z);
 spimage_EXPORT void resize_empty_image(Image * a,int newx, int newy);
 spimage_EXPORT Image * get_mask_from_image(Image * a);
-spimage_EXPORT int sp_image_shift_index(Image * a, int index);
+spimage_EXPORT int sp_image_shift_index(Image * a, long long index);
 spimage_EXPORT void sp_image_normalize(Image * in);
 
 spimage_EXPORT real p_drand48();
@@ -486,7 +498,7 @@ spimage_EXPORT real p_drand48();
 /*! Resizes the input image to the desired size. It's content is discarded
  *
  */
-spimage_EXPORT void sp_image_realloc(Image * img, int new_x, int new_y);
+spimage_EXPORT void sp_image_realloc(Image * img, int new_x, int new_y, int new_z);
 
 /*! Filters the input image with a median filter
  *
@@ -494,7 +506,7 @@ spimage_EXPORT void sp_image_realloc(Image * img, int new_x, int new_y);
  * The center of the center is equal to its dimensions/2.
  * The edge_flags correspond to the sp_image_edge_extend flags().
  */
-spimage_EXPORT void sp_image_median_filter(Image * a,sp_imatrix * kernel, int edge_flags);
+spimage_EXPORT void sp_image_median_filter(Image * a,sp_i3matrix * kernel, int edge_flags, int type);
 
 
 /*! Extend an image outside its borders by radius pixels on each
@@ -514,13 +526,13 @@ spimage_EXPORT void sp_image_median_filter(Image * a,sp_imatrix * kernel, int ed
  * SP_CIRCULAR_EDGE - The values outside the bounds of the image are
  * computed by implicitly assuming the input image is periodic.
  */
-spimage_EXPORT Image * sp_image_edge_extend(Image * a, int radius, int edge_flags);
+spimage_EXPORT Image * sp_image_edge_extend(Image * a, int radius, int edge_flags, int type);
 
 /*! Inserts image from into image to at the position at_x, at_y
  *
  *  If from doesn't fit in to, the image is silently clipped.
  */
-spimage_EXPORT void sp_image_insert(Image * to, Image * from, int at_x, int at_y);
+spimage_EXPORT void sp_image_insert(Image * to, Image * from, int at_x, int at_y, int at_z);
 
 /*! Implements the beloved bubble sort for a list of reals
  *
@@ -549,7 +561,7 @@ spimage_EXPORT void sp_image_adaptative_constrast_stretch(Image * a,int x_div, i
  * The wavelength distance to detector and pixel size of the image must be correctly set for
  * this function to work!
  */
-spimage_EXPORT void sp_image_fourier_coords(Image * in, sp_matrix * k_x, sp_matrix * k_y, sp_matrix * k_z);
+spimage_EXPORT void sp_image_fourier_coords(Image * in, sp_3matrix * k_x, sp_3matrix * k_y, sp_3matrix * k_z);
 
 /*! Initialize the random number generator with a given seed
  *

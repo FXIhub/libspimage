@@ -41,8 +41,8 @@ typedef _Complex float Complex;
 */
 
 typedef struct{
-  real image_center[2];
-  real pixel_size;
+  real image_center[3];
+  real pixel_size[3];
   real detector_distance;
   real lambda;
 }Detector;
@@ -63,13 +63,15 @@ typedef struct{
   (when unscalled) */
   int scaled;
   /* The actual image */
-  sp_cmatrix * image;
+  sp_c3matrix * image;
   /* The integer mask */
-  sp_imatrix * mask;
+  sp_i3matrix * mask;
   Detector * detector;
   /* this flag tells wether the image is shifted 
      (in FFTW format, center on the corners) or not*/
   int shifted;
+  sp_3matrix * rec_coords;
+
 }Image;
 
 #endif
