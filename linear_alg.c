@@ -189,6 +189,61 @@ void sp_matrix_invert(sp_matrix * m){
   sp_matrix_free(inv);
 }
 
+void sp_3matrix_invert(sp_3matrix * m){
+  int i,j;
+  real x;
+  sp_3matrix * inv = sp_3matrix_alloc(m->x,m->y,0);
+  if(m->y == 2 && m->x == 2){
+    double scale = sp_3matrix_get(m,0,0,0)*sp_3matrix_get(m,1,1,0)-sp_3matrix_get(m,0,1,0)*sp_3matrix_get(m,1,0,0);
+    assert(scale != 0);
+    sp_3matrix_set(inv,0,0,0,sp_3matrix_get(m,1,1,0)/scale);
+    sp_3matrix_set(inv,0,1,0,-sp_3matrix_get(m,0,1,0)/scale);
+    sp_3matrix_set(inv,1,0,0,-sp_3matrix_get(m,1,0,0)/scale);
+    sp_3matrix_set(inv,1,1,0,sp_3matrix_get(m,0,0,0)/scale);
+    sp_3matrix_memcpy(m,inv);
+    sp_3matrix_free(inv);
+    return;
+  }
+  sp_3matrix_set_identity(inv);
+  /* triangularize the matrix */
+  /* For every row */
+  for(i = 0;i<m->y;i++){
+    /* set leading element to 1 */
+    assert(sp_3matrix_get(m,i,i,0) != 0);
+    x = 1.0/sp_3matrix_get(m,i,i,0);
+    sp_3matrix_scale_row(m,i,x);
+    sp_3matrix_scale_row(inv,i,x);
+    /* For every row below us*/
+    for(j = i+1;j<m->y;j++){
+      /* set leading element to 0 */
+      x = -sp_3matrix_get(m,j,i,0);
+      sp_3matrix_row_add_row(m,i,j,x);
+      sp_3matrix_row_add_row(inv,i,j,x);
+    }    
+  }
+
+  
+  /* Now from the bottom up */
+  /* triangularize the matrix */
+  /* For every row */
+  for(i = m->y-1;i>=0;i--){
+    /* set leading element to 1 */
+    assert(1.0/sp_3matrix_get(m,i,i,0) != 0);
+    x = 1.0/sp_3matrix_get(m,i,i,0);
+    sp_3matrix_scale_row(m,i,x);
+    sp_3matrix_scale_row(inv,i,x);
+    /* For every row above us*/
+    for(j = i-1;j>=0;j--){
+      /* set leading element to 0 */
+      x = -sp_3matrix_get(m,j,i,0);
+      sp_3matrix_row_add_row(m,i,j,x);
+      sp_3matrix_row_add_row(inv,i,j,x);
+    }    
+  }
+  sp_3matrix_memcpy(m,inv);
+  sp_3matrix_free(inv);
+}
+
 
 void sp_cmatrix_invert(sp_cmatrix * m){
   int i,j;
