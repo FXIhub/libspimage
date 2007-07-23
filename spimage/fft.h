@@ -15,6 +15,8 @@
 #define sp_image_fft(a) sp_image_fftw3(a) 
 #define sp_cmatrix_ifft(a) sp_cmatrix_ifftw3(a)
 #define sp_cmatrix_fft(a) sp_cmatrix_fftw3(a) 
+#define sp_c3matrix_ifft(a) sp_c3matrix_ifftw3(a)
+#define sp_c3matrix_fft(a) sp_c3matrix_fftw3(a)
 
 
 #ifdef DOUBLE

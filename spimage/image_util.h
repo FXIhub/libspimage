@@ -40,6 +40,7 @@
 #define SP_AXIS_XY 0
 #define SP_AXIS_X 1
 #define SP_AXIS_Y 2
+#define SP_ORIGO 3
 
 #define SP_ZERO_PAD_EDGE 1
 #define SP_SYMMETRIC_EDGE 2
@@ -95,7 +96,7 @@ spimage_EXPORT real sp_image_dist(Image * in, int i, int type);
  * output_precision must be 4 or 8 and specifies the number of bytes
  * used for storing each floating point number.
  */
-spimage_EXPORT void sp_image_write(Image * img,const char * filename,int flags);
+spimage_EXPORT void sp_image_write(Image * img,const char * filename, int flags);
 
 
 /*! Reads an image from the specified filename
@@ -309,7 +310,7 @@ spimage_EXPORT void sp_image_dephase(Image *  img);
  */
 static inline void sp_image_to_intensities(Image *  img){
   if(img->scaled){
-    for(int i = 0;i<sp_image_size(img);i++){
+    for(long long i = 0;i<sp_image_size(img);i++){
       img->image->data[i] *= conjr(img->image->data[i]);
     }
     img->scaled = 0;
@@ -323,7 +324,7 @@ static inline void sp_image_to_intensities(Image *  img){
  */
 static inline  void sp_image_to_amplitudes(Image *  img){
   if(!img->scaled){
-    for(int i = 0;i<sp_image_size(img);i++){
+    for(long long i = 0;i<sp_image_size(img);i++){
       img->image->data[i] = sqrt(img->image->data[i]);
     }
     img->scaled = 1;

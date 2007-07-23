@@ -240,7 +240,8 @@ static inline void sp_i3matrix_set (sp_i3matrix * m, unsigned int x, unsigned in
  * x, y and z must lie in the range of 0 to x-1, 0 to y-1 and 0 to z-1.
  */
 static inline void sp_c3matrix_set (sp_c3matrix * m, unsigned int x, unsigned int y, unsigned int z, Complex entry){
-  m->data[z*m->y*m->x+y*m->x+x] = entry;
+  long long index = (long long int)z*(long long int)m->y*(long long int)m->z+(long long int)y*(long long int)m->x+(long long int)x;
+  m->data[index] = entry;
 }
 
 /*! This function returns the (row,col)-th element of a matrix m.
@@ -824,6 +825,14 @@ static inline void sp_matrix_set_identity(sp_matrix * m){
   }
 }
 
+static inline void sp_3matrix_set_identity(sp_3matrix * m){
+  int i;
+  memset(m->data,0,sizeof(real)*m->x*m->y);
+  for(i = 0;i<m->x && i<m->y;i++){
+    sp_3matrix_set(m,i,i,0,1);
+  }
+}
+
 /*! This function sets the diagonal elements of m to 1 and the rest to 0
  *
  */
@@ -1233,6 +1242,25 @@ static inline void sp_matrix_transpose(sp_matrix * a){
   free(tmp);
 }
 
+static inline void sp_3matrix_transpose(sp_3matrix * a){
+  int i,j,k;
+  /* exchange dimensions */
+  sp_3matrix * tmp = sp_3matrix_alloc(a->x,a->y,a->z);
+  for(i = 0;i<a->x;i++){
+    for(j = 0;j<a->y;j++){
+      for(k = 0;k<a->z;k++){
+      sp_3matrix_set(tmp,j,i,k,sp_3matrix_get(a,i,j,k));
+      }
+    }
+  }
+  /* copy from tmp the useful things and discard original array */
+  a->x = tmp->x;
+  a->y = tmp->y;
+  a->z = tmp->z;
+  free(a->data);
+  a->data = tmp->data;
+  free(tmp);
+}
 
 /*! This function transposes matrix a.
  *
@@ -1352,6 +1380,17 @@ static inline sp_vector * sp_matrix_vector_prod(const sp_matrix * m, const sp_ve
   return ret;
 }
 
+static inline sp_vector * sp_3matrix_vector_prod(const sp_3matrix * m, const sp_vector * v){
+  int i,j;
+  sp_vector * ret = sp_vector_alloc(m->y);
+  for(i = 0;i<m->y;i++){
+    for(j = 0;j<m->x;j++){
+      ret->data[i] += sp_3matrix_get(m,j,i,0)*v->data[j];
+    }
+  }
+  return ret;
+}
+
 /*! This function returns the product of Complex matrix m with Complex vector v.
  *
  *  The size of v must be the same as the number of cols in m.
@@ -1388,6 +1427,22 @@ static inline sp_matrix * sp_matrix_mul(const sp_matrix * a, const sp_matrix * b
   return ret;
 }
 
+static inline sp_3matrix * sp_3matrix_mul(const sp_3matrix * a, const sp_3matrix * b){
+  int i,j,k;
+  real tmp;
+  sp_3matrix * ret = sp_3matrix_alloc(a->x,b->y,0);
+  for(i = 0;i<a->x;i++){
+    for(j = 0;j<b->y;j++){
+      tmp = 0;
+      for(k = 0;k<a->y;k++){
+	tmp += sp_3matrix_get(a,k,i,0)*sp_3matrix_get(b,j,k,0);
+      }
+      sp_3matrix_set(ret,i,j,0,tmp);
+    }
+  }
+  return ret;
+}
+
 /*! This function returns the product of Complex matrix a with Complex matrix b.
  *
  *  The size of a must be the same as the size of the transpose of b.
@@ -1408,6 +1463,22 @@ static inline sp_cmatrix * sp_cmatrix_mul(const sp_cmatrix * a, const sp_cmatrix
   return ret;
 }
 
+static inline sp_c3matrix * sp_c3matrix_mul(const sp_c3matrix * a, const sp_c3matrix * b){
+  int i,j,k;
+  real tmp;
+  sp_c3matrix * ret = sp_c3matrix_alloc(a->x,b->y,0);
+  for(i = 0;i<a->x;i++){
+    for(j = 0;j<b->y;j++){
+      tmp = 0;
+      for(k = 0;k<a->y;k++){
+	tmp += sp_c3matrix_get(a,k,i,0)*sp_c3matrix_get(b,j,k,0);
+      }
+      sp_c3matrix_set(ret,i,j,0,tmp);
+    }
+  }
+  return ret;
+}
+
 /*! This function scales all elements of row n of matrix m by x.
  *
  */
@@ -1415,6 +1486,13 @@ static inline void sp_matrix_scale_row(sp_matrix * m, int n, real x){
   int i;
   for(i = 0;i<sp_matrix_cols(m);i++){
     sp_matrix_set(m,n,i,sp_matrix_get(m,n,i)*x);
+  }
+}
+
+static inline void sp_3matrix_scale_row(sp_3matrix * m, int n, real x){
+  int i;
+  for(i = 0;i<sp_3matrix_x(m);i++){
+    sp_3matrix_set(m,n,i,0,sp_3matrix_get(m,n,i,0)*x);
   }
 }
 
@@ -1438,6 +1516,13 @@ static inline void sp_matrix_row_add_row(sp_matrix * m, int from, int to, real f
   }
 }
 
+static inline void sp_3matrix_row_add_row(sp_3matrix * m, int from, int to, real factor){
+  int i;
+  for(i = 0;i<sp_3matrix_x(m);i++){
+    sp_3matrix_set(m,to,i,0,sp_3matrix_get(m,from,i,0)*factor+sp_3matrix_get(m,to,i,0));
+  }
+}
+
 /*! This function add the elements of row from, multiplied by factor, to the elements of row to, of Complex matrix m.
  *
  */
@@ -1452,6 +1537,8 @@ static inline void sp_cmatrix_row_add_row(sp_cmatrix * m, int from, int to, Comp
  *
  */
 spimage_EXPORT void sp_matrix_invert(sp_matrix * a);
+
+spimage_EXPORT void sp_3matrix_invert(sp_3matrix * a);
 
 /*! This functions tries to print the matrix in a human readable way
  */

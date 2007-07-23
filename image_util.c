@@ -29,6 +29,7 @@ static void random_rephase(Image *  img);
 static Image * reflect_xy(Image * in, int in_place);
 static Image * reflect_x(Image * in, int in_place);
 static Image * reflect_y(Image * in, int in_place);
+static Image * reflect_origo(Image * in, int in_place);
 static void write_h5_img(Image * img,const char * filename, int output_precision);
 static void write_h5_img_3d(Image * img,const char * filename, int output_precision);
 static Image * read_imagefile(const char * filename);
@@ -45,7 +46,7 @@ void sp_srand(int i){
 }
 
 real p_drand48(){
-	real ret = ((double)rand())/(double)RAND_MAX;
+  real ret = ((double)rand())/(double)RAND_MAX;
   return (ret);
 }
 
@@ -74,6 +75,8 @@ Image * sp_image_reflect(Image * in, int in_place, int axis){
     return reflect_x(in,in_place);
   }else if(axis == SP_AXIS_Y){
     return reflect_y(in,in_place);
+  }else if(axis == SP_ORIGO){
+    return reflect_origo(in,in_place);
   }
   return NULL;
 }
@@ -115,7 +118,7 @@ static Image * reflect_y(Image * in, int in_place){
   if(in_place){
     out = in;
   }else{
-    out = sp_image_duplicate(in,SP_COPY_DATA|SP_COPY_DATA);
+    out = sp_image_duplicate(in,SP_COPY_DATA|SP_COPY_MASK);
   }
   for(x = 0;x<sp_c3matrix_x(in->image)/2.0;x++){
     x2 = sp_c3matrix_x(in->image)-x-1;
@@ -123,6 +126,27 @@ static Image * reflect_y(Image * in, int in_place){
       tmp = sp_c3matrix_get(in->image,x,y,0);
       sp_c3matrix_set(out->image,x,y,0,sp_c3matrix_get(in->image,x,y,0));
       sp_c3matrix_set(out->image,x,y,0,tmp);
+    }
+  }
+  return out;
+}
+
+static Image * reflect_origo(Image * in, int in_place){
+  Complex tmp;
+  Image * out;
+  int x,y,z;
+  if(in_place){
+    out = in;
+  }else{
+    out = sp_image_duplicate(in,SP_COPY_DATA|SP_COPY_MASK);
+  }
+  for(z = 0;x<sp_c3matrix_z(in->image)/2.0;z++){
+    for(y = 0; y<sp_c3matrix_y(in->image);y++){
+      for(x = 0; x<sp_c3matrix_x(in->image);x++){
+	tmp = sp_c3matrix_get(in->image,x,y,z);
+	sp_c3matrix_set(out->image,x,y,z,sp_c3matrix_get(in->image,sp_c3matrix_x(in->image)-x,sp_c3matrix_y(in->image)-y,sp_c3matrix_z(in->image)-z));
+	sp_c3matrix_set(out->image,sp_c3matrix_x(in->image)-x,sp_c3matrix_y(in->image),sp_c3matrix_z(in->image),tmp);
+      }
     }
   }
   return out;
@@ -901,28 +925,12 @@ void sp_image_write(Image * img, const char * filename, int flags){
   /* select the correct function depending on the buffer extension */
   if(rindex(buffer,'.') && strcmp(rindex(buffer,'.'),".h5") == 0){
     /* we have an h5 file */
-    if(flags == SP_3D){
-      write_h5_img_3d(img,filename,sizeof(real));
-    }else{
-      write_h5_img(img,filename,sizeof(real));
-    }
+    write_h5_img_3d(img,filename,sizeof(real));
   }else if(rindex(buffer,'.') && strcmp(rindex(buffer,'.'),".png") == 0){
-    if(flags == SP_3D){
-      fprintf(stderr,"Cannot export 3D file to png");
-      return;
-    }
     write_png(img,filename,flags);
   }else if(rindex(buffer,'.') && strcmp(rindex(buffer,'.'),".vtk") == 0){
-    if(flags == SP_3D){
-      write_vtk_3d(img,filename);
-    }else{
-      write_vtk(img,filename);
-    }
+    write_vtk_3d(img,filename);
   }else if(rindex(buffer,'.') && (strcmp(rindex(buffer,'.'),".tif") == 0 ||strcmp(rindex(buffer,'.'),".tiff") == 0 )){
-    if(flags == SP_3D){
-      fprintf(stderr,"Cannot export 3D file to tiff");
-      return;
-    }
     write_tiff(img,filename);
   }else if(rindex(buffer,'.') && (strcmp(rindex(buffer,'.'),".csv") == 0)){
     if(flags == SP_3D){
@@ -945,11 +953,14 @@ Image * sp_image_read(const char * filename, int flags){
     /* we have an h5 file */
     return read_imagefile(filename);
   }else if(rindex(buffer,'.') && strcmp(rindex(buffer,'.'),".png") == 0){
+    /* we  have a png file */
     return read_png(filename);
   }else if(rindex(buffer,'.') && strcmp(rindex(buffer,'.'),".vtk") == 0){
+    /* we have a vtk file */
     fprintf(stderr,"Cannot read VTK files!\n");
     return NULL;
   }else if(rindex(buffer,'.') && (strcmp(rindex(buffer,'.'),".tif") == 0 ||strcmp(rindex(buffer,'.'),".tiff") == 0 )){
+    /* we have a tiff file */
     return read_tiff(filename);
   }else{
     fprintf(stderr,"Unsupported file type: %s\n",filename);
