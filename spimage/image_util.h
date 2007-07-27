@@ -368,7 +368,7 @@ spimage_EXPORT real sp_image_interp(Image * img, real v_x, real v_y, real v_z);
  * \f$ f(x,y) = (2 \pi \times radius)^{-0.5} \times \exp{\frac{-(x^2+y^2)}{(2 \times radius^2)}} \f$
  *  The mask will not be blurred.
  */
-spimage_EXPORT Image * gaussian_blur(Image * in, real radius, int type);
+spimage_EXPORT Image * gaussian_blur(Image * in, real radius);
 /*! Multiplies the image with a gaussian centered in the image center of a given radius 
  *
  *   The mask will not be multiplied.

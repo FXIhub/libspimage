@@ -240,8 +240,7 @@ static inline void sp_i3matrix_set (sp_i3matrix * m, unsigned int x, unsigned in
  * x, y and z must lie in the range of 0 to x-1, 0 to y-1 and 0 to z-1.
  */
 static inline void sp_c3matrix_set (sp_c3matrix * m, unsigned int x, unsigned int y, unsigned int z, Complex entry){
-  long long index = (long long int)z*(long long int)m->y*(long long int)m->z+(long long int)y*(long long int)m->x+(long long int)x;
-  m->data[index] = entry;
+  m->data[z*m->y*m->x+y*m->x+x] = entry;
 }
 
 /*! This function returns the (row,col)-th element of a matrix m.

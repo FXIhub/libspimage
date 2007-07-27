@@ -284,10 +284,10 @@ Image * sp_image_shift(Image * img){
   /* fft shift the image */
   out = sp_image_duplicate(img,SP_COPY_DATA|SP_COPY_MASK);
   if(!img->shifted){
-    max_x = sp_max(img->detector->image_center[0],sp_c3matrix_x(img->image)-img->detector->image_center[0]);
-    max_y = sp_max(img->detector->image_center[1],sp_c3matrix_y(img->image)-img->detector->image_center[1]);
-    max_z = sp_max(img->detector->image_center[2],sp_c3matrix_z(img->image)-img->detector->image_center[2]);
-    sp_image_realloc(out,2*max_x,2*max_y,2*max_z);
+    max_x = sp_max(img->detector->image_center[0],sp_c3matrix_x(img->image)-1-img->detector->image_center[0]);
+    max_y = sp_max(img->detector->image_center[1],sp_c3matrix_y(img->image)-1-img->detector->image_center[1]);
+    max_z = sp_max(img->detector->image_center[2],sp_c3matrix_z(img->image)-1-img->detector->image_center[2]);
+    sp_image_realloc(out,2*max_x+1,2*max_y+1,2*max_z+1);
   }
 
 		   
@@ -523,8 +523,10 @@ void sp_image_smooth_edges(Image * img, sp_i3matrix * mask, int flags, real * va
     for(i = 0;i<sp_image_size(tmp);i++){
       tmp->image->data[i] = mask->data[i];
     }
-    Image * blur_mask = gaussian_blur(tmp,*value,SP_3D);
+    printf("img (%i,%i,%i)\n",sp_image_x(img),sp_image_y(img),sp_image_z(img));
+    Image * blur_mask = gaussian_blur(tmp,*value);
 
+    printf("blur_mask (%i,%i,%i)\n",sp_image_x(blur_mask),sp_image_y(blur_mask),sp_image_z(blur_mask));
     /* eat out the edge of the mask*/
     for(i = 0;i<sp_image_size(blur_mask);i++){
       if(creal(blur_mask->image->data[i]) < 0.99){
@@ -534,7 +536,8 @@ void sp_image_smooth_edges(Image * img, sp_i3matrix * mask, int flags, real * va
       
     sp_image_free(tmp);
     tmp = blur_mask;
-    blur_mask = gaussian_blur(tmp,*value,SP_3D);
+    blur_mask = gaussian_blur(tmp,*value);
+    printf("blur_mask (%i,%i,%i)\n",sp_image_x(blur_mask),sp_image_y(blur_mask),sp_image_z(blur_mask));
 
     sp_c3matrix_mul_elements(img->image,blur_mask->image);
   }  
@@ -1754,24 +1757,33 @@ Image * sp_image_convolute(Image * a, Image * b, int * size){
   Image * b_ft;
   Image * tmp;
 
-  if(sp_c3matrix_x(a->image) < sp_c3matrix_x(b->image)){
+  
+  /*if(sp_c3matrix_x(a->image) < sp_c3matrix_x(b->image)){*/
     /* swap */
-    res = a;
+  /*    res = a;
     a = b;
     b = res;
   }
   
   if(!size){
-    x = sp_c3matrix_x(a->image)/*+(sp_cmatrix_cols(b->image)-1)/2*/;
-    y = sp_c3matrix_y(a->image)/*+(sp_cmatrix_rows(b->image)-1)/2*/;
+    x = sp_c3matrix_x(a->image);
+    y = sp_c3matrix_y(a->image);
     z = sp_c3matrix_z(a->image);
   }else{
     x = size[0];
     y = size[1];
     z = size[2];
   }
+  
+  tmp = zero_pad_image(a,x,y,z,1);
+  */
+
+  x = sp_max(sp_image_x(a),sp_image_x(b));
+  y = sp_max(sp_image_y(a),sp_image_y(b));
+  z = sp_max(sp_image_z(a),sp_image_z(b));
 
   tmp = zero_pad_image(a,x,y,z,1);
+
 /*  sp_image_dephase(tmp);*/
   a_ft = sp_image_fft(tmp);
   sp_image_free(tmp);
@@ -1796,6 +1808,15 @@ Image * sp_image_convolute(Image * a, Image * b, int * size){
   res = sp_image_ifft(tmp);
   sp_image_free(tmp);
 
+  /*crop to make the image the original size*/
+  cube_crop(res,
+		     (sp_image_x(res)-sp_image_x(a))/2,
+		     (sp_image_y(res)-sp_image_y(a))/2,
+		     (sp_image_z(res)-sp_image_z(a))/2,
+		     (sp_image_x(res)+sp_image_x(a))/2-1,
+		     (sp_image_y(res)+sp_image_y(a))/2-1,
+		     (sp_image_z(res)+sp_image_z(a))/2-1);
+
 /*  sp_image_dephase(res);*/
   /* should be all real */
   for(i = 0;i<sp_image_size(res);i++){
@@ -1810,23 +1831,19 @@ Image * sp_image_convolute(Image * a, Image * b, int * size){
  The filter function is given by:
 
 f(x,y) = 1/sqrt(2*M_PI*radius) * exp(-(x^2+y^2)/(2*radius^2)) */
-Image * gaussian_blur(Image * in, real radius,int type){
+Image * gaussian_blur(Image * in, real radius){
   /* Lets make this convolution using a fourier transform shallw we... good....*/
   int x,y,z;
   int i,j,k;
   int filter_side = ceil(radius)*3*2+1;
   real total_filter = 0;
   Image * filter_img = sp_image_alloc(filter_side,filter_side,filter_side);
-  filter_img->detector->image_center[2] = (filter_side-1)/2.0;
-  if(type == SP_2D){
-    sp_image_realloc(filter_img,filter_side,filter_side,1);
-    filter_img->detector->image_center[2] = 0;
-  }
   Image * centered_filter;
   Image * res;
   Image * tmp;
   filter_img->detector->image_center[0] = (filter_side-1)/2.0;
   filter_img->detector->image_center[1] = (filter_side-1)/2.0;
+  filter_img->detector->image_center[2] = (filter_side-1)/2.0;
   
   sp_image_dephase(filter_img);
   for(x = -ceil(radius)*3;x<=ceil(radius)*3;x++){
@@ -1834,11 +1851,7 @@ Image * gaussian_blur(Image * in, real radius,int type){
     for(y = -ceil(radius)*3;y<=ceil(radius)*3;y++){
       j = y+ceil(radius)*3;
       for(z = -ceil(radius)*3;z<=ceil(radius)*3;z++){
-	if(type == SP_3D){
-	  k = z+ceil(radius)*3;
-	}else{
-	  k = 0;
-	}
+	k = z+ceil(radius)*3;
 	filter_img->image->data[k*filter_side*filter_side+j*filter_side+i] = 1/sqrt(2*M_PI*radius) * exp(-(x*x+y*y+z*z)/(2*radius*radius));
 	/* Make the filter symmetric in the imaginary part */
 	/*      filter_img->image->data[i*filter_side+j] = filter_img->image->data[i*filter_side+j] + filter_img->image->data[i*filter_side+j]*I;*/
@@ -1857,12 +1870,18 @@ Image * gaussian_blur(Image * in, real radius,int type){
   sp_image_free(centered_filter);
   /* we should crop the result if it's bigger than the input */
   if(sp_image_size(res) > sp_image_size(in)){
-    tmp = cube_crop(res, (sp_c3matrix_x(res->image)-sp_c3matrix_x(in->image))/2,
+    /*tmp = cube_crop(res, (sp_c3matrix_x(res->image)-sp_c3matrix_x(in->image))/2,
 		    (sp_c3matrix_y(res->image)-sp_c3matrix_y(in->image))/2,
 		    (sp_c3matrix_z(res->image)-sp_c3matrix_z(in->image))/2,
 		    sp_c3matrix_x(in->image)/2-1+(sp_c3matrix_x(res->image)-sp_c3matrix_x(in->image))/2,
 		    sp_c3matrix_x(in->image)/2-1+(sp_c3matrix_y(res->image)-sp_c3matrix_y(in->image))/2,
-		    sp_c3matrix_x(in->image)/2-1+(sp_c3matrix_z(res->image)-sp_c3matrix_z(in->image))/2);
+		    sp_c3matrix_x(in->image)/2-1+(sp_c3matrix_z(res->image)-sp_c3matrix_z(in->image))/2);*/
+    tmp = cube_crop(res, (sp_c3matrix_x(res->image)-sp_c3matrix_x(in->image))/2,
+		    (sp_c3matrix_y(res->image)-sp_c3matrix_y(in->image))/2,
+		    (sp_c3matrix_z(res->image)-sp_c3matrix_z(in->image))/2,
+		    (sp_c3matrix_x(res->image)+sp_c3matrix_x(in->image))/2-1,
+		    (sp_c3matrix_y(res->image)+sp_c3matrix_y(in->image))/2-1,
+		    (sp_c3matrix_z(res->image)+sp_c3matrix_z(in->image))/2-1);
     sp_image_free(res);
     res = tmp;
   }
@@ -2339,6 +2358,7 @@ Image * zero_pad_shifted_image(Image * a, int newx, int newy, int newz,int pad_m
      newy < sp_c3matrix_y(a->image) ||
      newz < sp_c3matrix_z(a->image)){
     fprintf(stderr,"Negative padding!\n");
+    printf("shifted (%i,%i,%i) - (%i,%i,%i)\n",newx,newz,newy,sp_c3matrix_x(a->image),sp_c3matrix_y(a->image),sp_c3matrix_z(a->image));
     abort();
   }else if(newx == sp_c3matrix_x(a->image) &&
 	   newy == sp_c3matrix_y(a->image) &&
@@ -2417,6 +2437,7 @@ Image * zero_pad_unshifted_image(Image * a, int newx, int newy, int newz, int pa
      newy < sp_c3matrix_y(a->image) ||
      newz < sp_c3matrix_z(a->image)){
     fprintf(stderr,"Negative padding!\n");
+    printf("unshifted (%i,%i,%i) - (%i,%i,%i)\n",newx,newz,newy,sp_c3matrix_x(a->image),sp_c3matrix_y(a->image),sp_c3matrix_z(a->image));
     abort();
   }else if(newx == sp_c3matrix_x(a->image) &&
 	   newy == sp_c3matrix_y(a->image) &&
@@ -2482,14 +2503,18 @@ Center is taken from image_center[]
 */
 Image * shift_center_to_top_left(Image * a){
   Image * out = sp_image_duplicate(a,SP_COPY_DATA|SP_COPY_MASK);
-  int x,y;
+  int x,y,z;
   int destx;
   int desty;
+  int destz;
   for(x = 0;x<sp_c3matrix_x(out->image);x++){
     destx = (int)(x+sp_c3matrix_x(out->image)-out->detector->image_center[0])%sp_c3matrix_x(out->image);
     for(y = 0;y<sp_c3matrix_y(out->image);y++){
       desty = (int)(y+sp_c3matrix_y(out->image)-out->detector->image_center[1])%sp_c3matrix_y(out->image);
-      out->image->data[desty*sp_c3matrix_x(out->image)+destx] = a->image->data[y*sp_c3matrix_x(a->image)+x];
+      for(z = 0;z<sp_c3matrix_z(out->image);z++){
+	destz = (int)(z+sp_c3matrix_z(out->image)-out->detector->image_center[2])%sp_c3matrix_z(out->image);
+	out->image->data[destz*sp_c3matrix_y(out->image)*sp_c3matrix_x(out->image)+desty*sp_c3matrix_x(out->image)+destx] = a->image->data[z*sp_c3matrix_y(a->image)*sp_c3matrix_x(a->image)+y*sp_c3matrix_x(a->image)+x];
+      }
     }
   }
   return out;
@@ -2611,6 +2636,9 @@ Image * rectangle_crop(Image * in, int x1, int y1, int x2, int y2){
   return cropped;
 }
 
+/* Crops the image so that both the plane x1 and x2 is in the cube.
+ * For example cube_crop(a,1,2,3,1,2,3) will return the spot (1,2,3)
+ */
 Image * cube_crop(Image * in, int x1, int y1, int z1, int x2, int y2, int z2){
   Image * cropped;
   int i,j;
