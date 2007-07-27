@@ -3249,12 +3249,14 @@ void sp_image_insert(Image * to, Image * from, int at_x, int at_y, int at_z){
  * type is either SP_2D or SP_3D
  */
 Image * sp_image_edge_extend(Image * a, int radius, int edge_flags, int type){
-  Image * res = sp_image_alloc(sp_c3matrix_x(a->image)+radius*2,sp_c3matrix_y(a->image)+radius*2,sp_c3matrix_z(a->image)+radius*2);
+  Image * res;
   int x,y,z,x0,y0,z0;
   /* first put there the initial image */
   if(type == SP_2D){
-    sp_image_insert(res,a,radius,radius,1);
+    res = sp_image_alloc(sp_c3matrix_x(a->image)+radius*2,sp_c3matrix_y(a->image)+radius*2,1);
+    sp_image_insert(res,a,radius,radius,0);
   }else{
+    res = sp_image_alloc(sp_c3matrix_x(a->image)+radius*2,sp_c3matrix_y(a->image)+radius*2,sp_c3matrix_z(a->image)+radius*2);
     sp_image_insert(res,a,radius,radius,radius);
   }
   /* now fill the edges */
@@ -3405,142 +3407,19 @@ Image * sp_image_edge_extend(Image * a, int radius, int edge_flags, int type){
       }
     }
   }else if(edge_flags == SP_CIRCULAR_EDGE){
-    /* First do the four/eight corners */
-    for(x = 0,x0=x;x<radius;x++){
-      for(y = 0,y0=y,y0=y;y<radius;y++){
-	if(type == SP_2D){
-	sp_image_set(res,x,y,0,sp_image_get(a,sp_image_x(a)-radius+(x-x0),sp_image_y(a)-radius+(y-y0),0));
-	}else{
-	  for(z = 0,z0=z;z<radius;z++){
-	    sp_image_set(res,x,y,z,sp_image_get(a,sp_image_x(a)-radius+(x-x0),sp_image_y(a)-radius+(y-y0),sp_image_z(a)-radius+(z-z0)));
-	  }
-	}
-      }
-    }
-    for(x = radius+sp_image_x(a),x0=x;x<sp_image_x(res);x++){
-      for(y = 0,y0=y;y<radius;y++){
-	if(type == SP_2D){
-	sp_image_set(res,x,y,0,sp_image_get(a,(x-x0),sp_image_y(a)-radius+(y-y0),0));
-	}else{
-	  for(z = 0,z0=z;z<radius;z++){
-	    sp_image_set(res,x,y,z,sp_image_get(a,(x-x0),sp_image_y(a)-radius+(y-y0),sp_image_z(a)-radius+(z-z0)));
-	  }
-	}
-      }
-    }
 
-    for(x = radius+sp_image_x(a),x0=x;x<sp_image_x(res);x++){
-      for(y = radius+sp_image_y(a),y0=y;y<sp_image_y(res);y++){
+    /* Lets make this a bit more simple */
+    for(x = 0;x<sp_image_x(res);x++){
+      /* calculate x on the original image */
+      x0 = (x + sp_image_x(a)-(radius%sp_image_x(a)))%sp_image_x(a);
+      for(y = 0;y<sp_image_y(res);y++){
+	y0 = (y + sp_image_y(a)-(radius%sp_image_y(a)))%sp_image_y(a);
 	if(type == SP_2D){
-	sp_image_set(res,x,y,0,sp_image_get(a,(x-x0),(y-y0),0));
+	  sp_image_set(res,x,y,0,sp_image_get(a,x0,y0,0));
 	}else{
-	  for(z = 0,z0=z;z<radius;z++){
-	    sp_image_set(res,x,y,z,sp_image_get(a,(x-x0),(y-y0),sp_image_z(a)-radius+(z-z0)));
-	  }
-	}
-      }
-    }
-
-    for(x = 0,x0=x;x<radius;x++){
-      for(y = radius+sp_image_y(a),y0=y;y<sp_image_y(res);y++){
-	if(type == SP_2D){
-	sp_image_set(res,x,y,0,sp_image_get(a,sp_image_x(a)-radius+(x-x0),(y-y0),0));
-	}else{
-	  for(z = 0,z0=z;z<radius;z++){
-	    sp_image_set(res,x,y,z,sp_image_get(a,sp_image_x(a)-radius+(x-x0),(y-y0),sp_image_z(a)-radius+(z-z0)));
-	  }
-	}
-      }
-    }
-    if(type != SP_2D){
-      for(x = 0,x0=x;x<radius;x++){
-	for(y = 0,y0=y,y0=y;y<radius;y++){
-	  for(z = radius+sp_image_z(a),z0=z;z<sp_image_z(res);z++){
-	    sp_image_set(res,x,y,z,sp_image_get(a,sp_image_x(a)-radius+(x-x0),sp_image_y(a)-radius+(y-y0),(z-z0)));
-	  }
-	}
-      }
-      for(x = radius+sp_image_x(a),x0=x;x<sp_image_x(res);x++){
-	for(y = 0,y0=y;y<radius;y++){
-	  for(z = radius+sp_image_z(a),z0=z;z<sp_image_z(res);z++){
-	    sp_image_set(res,x,y,z,sp_image_get(a,(x-x0),sp_image_y(a)-radius+(y-y0),(z-z0)));
-	  }
-	}
-      }
-      
-      for(x = radius+sp_image_x(a),x0=x;x<sp_image_x(res);x++){
-	for(y = radius+sp_image_y(a),y0=y;y<sp_image_y(res);y++){
-	  for(z = radius+sp_image_z(a),z0=z;z<sp_image_z(res);z++){
-	    sp_image_set(res,x,y,z,sp_image_get(a,(x-x0),(y-y0),(z-z0)));
-	  }
-	}
-      }
-      
-      for(x = 0,x0=x;x<radius;x++){
-	for(y = radius+sp_image_y(a),y0=y;y<sp_image_y(res);y++){
-	  for(z = radius+sp_image_z(a),z0=z;z<sp_image_z(res);z++){
-	    sp_image_set(res,x,y,z,sp_image_get(a,sp_image_x(a)-radius+(x-x0),(y-y0),(z-z0)));
-	  }
-	}
-      }
-    }
-    /* And now the four/six sides */
-    for(x = radius,x0=x;x<radius+sp_image_x(a);x++){
-      for(y = 0,y0=y;y<radius;y++){
-	if(type == SP_2D){
-	  sp_image_set(res,x,y,0,sp_image_get(a,(x-x0),0,0));
-	}else{
-	  for(z = radius,z0=z;z<radius+sp_image_z(a);z++){
-	    sp_image_set(res,x,y,z,sp_image_get(a,(x-x0),0,(z-z0)));
-	  }
-	}
-      }
-    }
-    for(x = radius,x0=x;x<radius+sp_image_x(a);x++){
-      for(y = radius+sp_image_y(a),y0=y;y<sp_image_y(res);y++){
-	if(type == SP_2D){
-	  sp_image_set(res,x,y,0,sp_image_get(a,(x-x0),sp_image_y(a)-1,0));
-	}else{
-	  for(z = radius,z0=z;z<radius+sp_image_z(a);z++){
-	    sp_image_set(res,x,y,z,sp_image_get(a,(x-x0),sp_image_y(a)-1,(z-z0)));
-	  }
-	}
-      }
-    }
-    for(x = 0,x0=x;x<radius;x++){
-      for(y = radius,y0=y;y<radius+sp_image_y(a);y++){
-	if(type == SP_2D){
-	  sp_image_set(res,x,y,0,sp_image_get(a,0,(y-y0),0));
-	}else{
-	  for(z = radius,z0=z;z<radius+sp_image_z(a);z++){
-	    sp_image_set(res,x,y,z,sp_image_get(a,0,(y-y0),(z-z0)));
-	  }
-	}
-      }
-    }
-    for(x = radius+sp_image_x(a),x0=x;x<sp_image_x(a);x++){
-      for(y = radius,y0=y;y<radius+sp_image_y(a);y++){
-	if(type == SP_2D){
-	  sp_image_set(res,x,y,0,sp_image_get(a,sp_image_x(a)-1,(y-y0),0));
-	}else{
-	  for(z = radius,z0=z;z<radius+sp_image_z(a);z++){
-	    sp_image_set(res,x,y,z,sp_image_get(a,sp_image_x(a)-1,(y-y0),(z-z0)));
-	  }
-	}
-      }
-    }
-    if(type != SP_2D){
-      for(x = radius,x0=x;x<sp_image_x(a);x++){
-	for(y = radius,y0=y;y<sp_image_y(a);y++){
-	  for(z = 0,z0=z;z<radius;z++){
-	    sp_image_set(res,x,y,z,sp_image_get(a,(x-x0),(y-y0),0));
-	  }
-	}
-      }
-      for(x = radius,x0=x;x<sp_image_x(a);x++){
-	for(y = radius,y0=y;y<sp_image_y(a);y++){
-	  for(z = radius+sp_image_z(a),z0=z;z<sp_image_z(a);z++){
-	    sp_image_set(res,x,y,z,sp_image_get(a,(x-x0),(y-y0),sp_image_z(a)-1));
+	  for(z = 0;x<sp_image_z(res);x++){
+	    z0 = (z + sp_image_z(a)-(radius%sp_image_z(a)))%sp_image_z(a);
+	    sp_image_set(res,x,y,z,sp_image_get(a,x0,y0,z0));
 	  }
 	}
       }
@@ -3561,7 +3440,7 @@ Image * sp_image_edge_extend(Image * a, int radius, int edge_flags, int type){
     for(x = radius+sp_image_x(a),x0=x;x<sp_image_x(res);x++){
       for(y = 0,y0=y;y<radius;y++){
 	if(type == SP_2D){
-	sp_image_set(res,x,y,z,sp_image_get(a,sp_image_x(a)-1,0,0));
+	sp_image_set(res,x,y,0,sp_image_get(a,sp_image_x(a)-1,0,0));
 	}else{
 	  for(z = 0,z0=z;z<radius;z++){
 	    sp_image_set(res,x,y,z,sp_image_get(a,sp_image_x(a)-1,0,0));
@@ -3573,7 +3452,7 @@ Image * sp_image_edge_extend(Image * a, int radius, int edge_flags, int type){
     for(x = radius+sp_image_x(a),x0=x;x<sp_image_x(res);x++){
       for(y = radius+sp_image_y(a),y0=y;y<sp_image_y(res);y++){
 	if(type == SP_2D){
-	sp_image_set(res,x,y,z,sp_image_get(a,sp_image_x(a)-1,sp_image_y(a)-1,0));
+	sp_image_set(res,x,y,0,sp_image_get(a,sp_image_x(a)-1,sp_image_y(a)-1,0));
 	}else{
 	  for(z = 0,z0=z;z<radius;z++){
 	    sp_image_set(res,x,y,z,sp_image_get(a,sp_image_x(a)-1,sp_image_y(a)-1,0));
@@ -3585,7 +3464,7 @@ Image * sp_image_edge_extend(Image * a, int radius, int edge_flags, int type){
     for(x = 0,x0=x;x<radius;x++){
       for(y = radius+sp_image_y(a),y0=y;y<sp_image_y(res);y++){
 	if(type == SP_2D){
-	sp_image_set(res,x,y,z,sp_image_get(a,0,sp_image_y(a)-1,0));
+	sp_image_set(res,x,y,0,sp_image_get(a,0,sp_image_y(a)-1,0));
 	}else{
 	  for(z = 0,z0=z;z<radius;z++){
 	    sp_image_set(res,x,y,z,sp_image_get(a,0,sp_image_y(a)-1,0));
@@ -3724,20 +3603,14 @@ void sp_image_median_filter(Image * a,sp_i3matrix * kernel, int edge_flags, int 
     work = sp_image_edge_extend(a,radius,edge_flags,SP_3D);
   }
 
-  for(x = radius;x<radius+sp_image_x(a);x++){
-    for(y = radius;y<radius+sp_image_y(a);y++){
-      for(z = radius;z<radius+sp_image_z(a);z++){
+  if(type == SP_2D){
+    for(x = radius;x<radius+sp_image_x(a);x++){
+      for(y = radius;y<radius+sp_image_y(a);y++){
 	n = 0;
 	for(kx = -kcx;kx<sp_i3matrix_x(kernel)-kcx;kx++){
 	  for(ky = -kcy;ky<sp_i3matrix_y(kernel)-kcy;ky++){
-	    for(kz = -kcz;kz<sp_i3matrix_z(kernel)-kcz;kz++){
-	      for(i = 0;i<sp_i3matrix_get(kernel,ky+kcy,kx+kcx,kz+kcz);i++){
-		if(type == SP_2D){
-		  buffer[n++] = sp_image_get(work,x+kx,y+ky,0);
-		}else{
-		  buffer[n++] = sp_image_get(work,x+kx,y+ky,z+kz);
-		}
-	      }
+	    for(i = 0;i<sp_i3matrix_get(kernel,ky+kcy,kx+kcx,0);i++){
+	      buffer[n++] = sp_image_get(work,x+kx,y+ky,0);
 	    }
 	  }
 	}
@@ -3751,17 +3624,45 @@ void sp_image_median_filter(Image * a,sp_i3matrix * kernel, int edge_flags, int 
 	  }
 	}else{
 	  /* even n take the average */
-	  if(type == SP_2D){
-	    sp_image_set(a,x-radius,y-radius,0,(buffer[n/2]+buffer[n/2-1])/2);
+	  sp_image_set(a,x-radius,y-radius,0,(buffer[n/2]+buffer[n/2-1])/2);
+	}
+      }
+    }
+  }else{
+    for(x = radius;x<radius+sp_image_x(a);x++){
+      for(y = radius;y<radius+sp_image_y(a);y++){
+	for(z = radius;z<radius+sp_image_z(a);z++){
+	  n = 0;
+	  for(kx = -kcx;kx<sp_i3matrix_x(kernel)-kcx;kx++){
+	    for(ky = -kcy;ky<sp_i3matrix_y(kernel)-kcy;ky++){
+	      for(kz = -kcz;kz<sp_i3matrix_z(kernel)-kcz;kz++){
+		for(i = 0;i<sp_i3matrix_get(kernel,ky+kcy,kx+kcx,kz+kcz);i++){
+		  buffer[n++] = sp_image_get(work,x+kx,y+ky,z+kz);
+		}
+	      }
+	    }
+	  }
+	  sp_bubble_sort(buffer,n);
+	  if(n%2){
+	    /* odd n take the middle one */
+	    if(type == SP_2D){
+	      sp_image_set(a,x-radius,y-radius,0,buffer[n/2]);
+	    }else{
+	      sp_image_set(a,x-radius,y-radius,z-radius,buffer[n/2]);
+	    }
 	  }else{
-	    sp_image_set(a,x-radius,y-radius,z-radius,(buffer[n/2]+buffer[n/2-1])/2);
+	    /* even n take the average */
+	    if(type == SP_2D){
+	      sp_image_set(a,x-radius,y-radius,0,(buffer[n/2]+buffer[n/2-1])/2);
+	    }else{
+	      sp_image_set(a,x-radius,y-radius,z-radius,(buffer[n/2]+buffer[n/2-1])/2);
+	    }
 	  }
 	}
       }
     }
   }
 }
- 
 
 /*! Contrast stretches an image
  *

@@ -17,9 +17,13 @@
  * CuString Test
  *-------------------------------------------------------------------------*/
 
-static inline void CuAssertComplexEquals(CuTest * tc,complex a, complex b, real delta){
-  CuAssertTrue(tc,fabs(creal(a - b)) < delta && fabs(cimag(a - b)) < delta);
-}
+/* FM: I changed from a function to a macro so that the line number would be reported accurately */
+
+#define CuAssertComplexEquals(__tc,___a,___b,__delta) do{\
+    Complex __a = ___a;\
+    Complex __b = ___b;\
+    CuAssertTrue(__tc,fabs(creal(__a - __b)) < __delta && fabs(cimag(__a - __b)) < __delta);\
+  }while(0)
 
 void test_sp_min(CuTest* tc)
 {
@@ -1138,6 +1142,7 @@ void test_sp_cmatrix_invert(CuTest * tc){
   sp_cmatrix_free(id);
 }
 
+
 CuSuite* linear_alg_get_suite(void)
 {
   CuSuite* suite = CuSuiteNew();
@@ -1210,6 +1215,7 @@ CuSuite* linear_alg_get_suite(void)
 
   SUITE_ADD_TEST(suite, test_sp_matrix_invert);
   SUITE_ADD_TEST(suite, test_sp_cmatrix_invert);
+
   return suite;
 }
 
@@ -1252,16 +1258,34 @@ void test_sp_bubble_sort(CuTest * tc){
 
 
 void test_sp_image_median_filter(CuTest * tc){
-  Image * a = sp_image_alloc(2,2,0);
+  Image * a = sp_image_alloc(2,2,1);
   sp_image_set(a,0,0,0,1);
   sp_image_set(a,1,0,0,2);
   sp_image_set(a,0,1,0,3);
   sp_image_set(a,1,1,0,4);
-  sp_i3matrix * kernel = sp_i3matrix_alloc(2,2,0);
+  sp_i3matrix * kernel = sp_i3matrix_alloc(2,2,1);
   sp_i3matrix_add_constant(kernel,2);
   sp_image_median_filter(a,kernel,SP_ZERO_PAD_EDGE,SP_2D);
   CuAssertDblEquals(tc,sp_image_get(a,0,0,0),0,cabs(REAL_EPSILON*(0)+REAL_EPSILON));
   CuAssertDblEquals(tc,sp_image_get(a,1,1,0),2.5,cabs(REAL_EPSILON*(2.5)+REAL_EPSILON));
+}
+
+void test_sp_image_max(CuTest * tc){
+  int x = 5;
+  int y = 5;
+  int z = 5;
+  Image * img = sp_image_alloc(x,y,z);
+  for(long long i = 0;i<sp_image_size(img);i++){
+    img->image->data[i] = 0;
+  }
+  real max = sp_image_max(img,NULL,NULL,NULL,NULL);
+  CuAssertDblEquals(tc,max,0,(0+1)*fabs(REAL_EPSILON));
+  long long ind = rand()%sp_image_size(img);
+  img->image->data[ind] = 1;
+  long long ind2;
+  max = sp_image_max(img,&ind2,NULL,NULL,NULL);
+  CuAssertDblEquals(tc,max,1,(1+1)*fabs(REAL_EPSILON));
+  CuAssertIntEquals(tc,ind,ind2);
 }
 
 
@@ -1272,6 +1296,7 @@ CuSuite* image_get_suite(void)
   SUITE_ADD_TEST(suite, test_sp_image_edge_extend);
   SUITE_ADD_TEST(suite, test_sp_bubble_sort);
   SUITE_ADD_TEST(suite, test_sp_image_median_filter);
+  SUITE_ADD_TEST(suite, test_sp_image_max);
   return suite;
 }
 
