@@ -34,6 +34,8 @@ typedef _Complex float Complex;
 #define spimage_EXPORT
 #endif
 
+typedef enum{SP_1D=1,SP_2D=2,SP_3D=3} Dimensions;
+
 #include "linear_alg.h"
 
 /*! Structure that keeps all the information about the Detector type.
@@ -71,6 +73,7 @@ typedef struct{
      (in FFTW format, center on the corners) or not*/
   int shifted;
   sp_3matrix * rec_coords;
+  Dimensions num_dimensions;
 
 }Image;
 

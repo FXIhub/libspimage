@@ -426,7 +426,7 @@ Image * sp_image_low_pass(Image * img, int resolution, int type){
   if(img->shifted == 0){
     fprintf(stderr,"Error: Trying to limit resolution on an unshifted image\n");
   }
-  if(type == SP_2D){
+  if(img->num_dimensions == SP_2D){
     if(resolution*2 > sp_c3matrix_x(res->image) || resolution*2 > sp_c3matrix_y(res->image)){
       return sp_image_duplicate(img,SP_COPY_DATA|SP_COPY_MASK);
     }  
@@ -750,6 +750,12 @@ void sp_image_sub(Image * a, Image * b){
 }
 
 
+void sp_image_fill(Image * a, Complex value){
+  for(int i = 0;i<sp_image_size(a);i++){
+    a->image->data[i] = value;
+  }
+}
+
 /* mean m, standard deviation s */
 /* gaussian distribution generator */
 real sp_box_muller(real m, real s){        
@@ -821,7 +827,7 @@ void sp_image_high_pass(Image * in, real radius, int type){
 	}
       }
     }
-  }else if(type == SP_2D){
+  }else if(in->num_dimensions == SP_2D){
     for(x = 0;x<sp_c3matrix_x(in->image);x++){
       for(y = 0;y<sp_c3matrix_y(in->image);y++){
 	if(x > sp_c3matrix_x(in->image)/2.0){
@@ -914,6 +920,16 @@ Image * sp_image_alloc(int x, int y, int z){
     abort();
   }  
   res->phased = 0;
+
+  if(z == 1){
+    /*assume we have a 2D image */
+    res->num_dimensions = SP_2D;
+  }else if(z > 1){
+    res->num_dimensions = SP_3D;
+  }else{
+    perror("Dimensions must be positive integers");
+    abort();
+  }
   return res;
 }
 
@@ -1836,22 +1852,29 @@ Image * gaussian_blur(Image * in, real radius){
   int x,y,z;
   int i,j,k;
   int filter_side = ceil(radius)*3*2+1;
+  real radius_z;
+  if(in->num_dimensions == SP_2D){
+    radius_z = 0;
+  }else if(in->num_dimensions == SP_3D){
+    radius_z = radius;
+  }
   real total_filter = 0;
-  Image * filter_img = sp_image_alloc(filter_side,filter_side,filter_side);
+  Image * filter_img = sp_image_alloc(filter_side,filter_side, ceil(radius_z)*3*2+1);
+
   Image * centered_filter;
   Image * res;
   Image * tmp;
-  filter_img->detector->image_center[0] = (filter_side-1)/2.0;
-  filter_img->detector->image_center[1] = (filter_side-1)/2.0;
-  filter_img->detector->image_center[2] = (filter_side-1)/2.0;
+  filter_img->detector->image_center[0] = (sp_image_x(filter_img)-1)/2.0;
+  filter_img->detector->image_center[1] = (sp_image_y(filter_img)-1)/2.0;
+  filter_img->detector->image_center[2] = (sp_image_z(filter_img)-1)/2.0;
   
   sp_image_dephase(filter_img);
   for(x = -ceil(radius)*3;x<=ceil(radius)*3;x++){
     i = x+ceil(radius)*3;
     for(y = -ceil(radius)*3;y<=ceil(radius)*3;y++){
       j = y+ceil(radius)*3;
-      for(z = -ceil(radius)*3;z<=ceil(radius)*3;z++){
-	k = z+ceil(radius)*3;
+      for(z = -ceil(radius_z)*3;z<=ceil(radius_z)*3;z++){
+	k = z+ceil(radius_z)*3;
 	filter_img->image->data[k*filter_side*filter_side+j*filter_side+i] = 1/sqrt(2*M_PI*radius) * exp(-(x*x+y*y+z*z)/(2*radius*radius));
 	/* Make the filter symmetric in the imaginary part */
 	/*      filter_img->image->data[i*filter_side+j] = filter_img->image->data[i*filter_side+j] + filter_img->image->data[i*filter_side+j]*I;*/
@@ -1899,9 +1922,9 @@ Image * square_blur(Image * in, real radius, int type){
   int i,j,k;
   int filter_side = ceil(radius)*3*2+1;
   Image * filter_img = sp_image_duplicate(in,SP_COPY_DETECTOR);
-  sp_c3matrix * filter = sp_c3matrix_alloc(filter_side,filter_side,(type == SP_2D)? 1:filter_side);
+  sp_c3matrix * filter = sp_c3matrix_alloc(filter_side,filter_side,(in->num_dimensions == SP_2D)? 1:filter_side);
   filter_img->detector->image_center[2] = (filter_side-1)/2.0;
-  if(type == SP_2D){
+  if(in->num_dimensions == SP_2D){
     filter_img->detector->image_center[2] = 0;
   }
   real total_filter = 0;
@@ -3280,11 +3303,11 @@ Image * sp_image_edge_extend(Image * a, int radius, int edge_flags, int type){
   Image * res;
   int x,y,z,x0,y0,z0;
   /* first put there the initial image */
-  if(type == SP_2D){
+  if(a->num_dimensions == SP_2D){
     res = sp_image_alloc(sp_c3matrix_x(a->image)+radius*2,sp_c3matrix_y(a->image)+radius*2,1);
     memset(res->image->data,0,sp_image_size(res)*sizeof(Complex));
     sp_image_insert(res,a,radius,radius,0);
-  }else{
+  }else if(a->num_dimensions == SP_3D){
     res = sp_image_alloc(sp_c3matrix_x(a->image)+radius*2,sp_c3matrix_y(a->image)+radius*2,sp_c3matrix_z(a->image)+radius*2);
     sp_image_insert(res,a,radius,radius,radius);
   }
@@ -3295,9 +3318,9 @@ Image * sp_image_edge_extend(Image * a, int radius, int edge_flags, int type){
     /* First do the four/eight corners */
     for(x = 0,x0=x;x<radius;x++){
       for(y = 0,y0=y;y<radius;y++){
-	if(type == SP_2D){
+	if(a->num_dimensions == SP_2D){
 	  sp_image_set(res,x,y,0,sp_image_get(a,radius-x-1,radius-y-1,0));
-	}else{
+	}else if(a->num_dimensions == SP_3D){
 	  for(z = 0,z0=z;z<radius;z++){
 	    sp_image_set(res,x,y,z,sp_image_get(a,radius-x-1,radius-y-1,
 						radius-z-1));
@@ -3307,10 +3330,10 @@ Image * sp_image_edge_extend(Image * a, int radius, int edge_flags, int type){
     }
     for(x = radius+sp_image_x(a),x0=x;x<sp_image_x(res);x++){
       for(y = 0,y0=y;y<radius;y++){
-	if(type == SP_2D){
+	if(a->num_dimensions == SP_2D){
 	  sp_image_set(res,x,y,0,sp_image_get(a,sp_image_x(a)-(x-x0)-1,radius-y-1,
 					      0));
-	}else{
+	}else if(a->num_dimensions == SP_3D){
 	  for(z = 0, z0=z;z<radius;z++){
 	    sp_image_set(res,x,y,z,sp_image_get(a,sp_image_x(a)-(x-x0)-1,
 						radius-y-1,radius-z-1));
@@ -3321,9 +3344,9 @@ Image * sp_image_edge_extend(Image * a, int radius, int edge_flags, int type){
     
     for(x = radius+sp_image_x(a),x0=x;x<sp_image_x(res);x++){
       for(y = radius+sp_image_y(a),y0=y;y<sp_image_y(res);y++){
-	if(type == SP_2D){
+	if(a->num_dimensions == SP_2D){
 	  sp_image_set(res,x,y,0,sp_image_get(a,sp_image_x(a)-(x-x0)-1,sp_image_y(a)-(y-y0)-1,0));
-	}else{
+	}else if(a->num_dimensions == SP_3D){
 	  for(z = 0,z0=z;z<radius;z++){
 	    sp_image_set(res,x,y,z,sp_image_get(a,sp_image_x(a)-(x-x0)-1,sp_image_y(a)-(y-y0)-1,radius-z-1));
 	  }
@@ -3333,16 +3356,16 @@ Image * sp_image_edge_extend(Image * a, int radius, int edge_flags, int type){
     
     for(x = 0,x0=x;x<radius;x++){
       for(y = radius+sp_image_y(a),y0=y;y<sp_image_y(res);y++){
-	if(type == SP_2D){
+	if(a->num_dimensions == SP_2D){
 	  sp_image_set(res,x,y,0,sp_image_get(a,radius-(x-x0)-1,sp_image_y(a)-(y-y0)-1,0));
-	}else{
+	}else if(a->num_dimensions == SP_3D){
 	  for(z = 0,z0=z;z<radius;z++){
 	    sp_image_set(res,x,y,z,sp_image_get(a,radius-(x-x0)-1,sp_image_y(a)-(y-y0)-1,radius-z-1));
 	  }
 	}
       }
     }
-    if(type != SP_2D){
+    if(a->num_dimensions  == SP_3D){
       for(x = 0,x0=x;x<radius;x++){
 	for(y = 0,y0=y;y<radius;y++){
 	  for(z = radius+sp_image_z(a),z0=z;z<sp_image_z(res);z++){
@@ -3377,9 +3400,9 @@ Image * sp_image_edge_extend(Image * a, int radius, int edge_flags, int type){
     /* And now the four/six sides */
     for(x = radius,x0=x;x<radius+sp_image_x(a);x++){
       for(y = 0,y0=y;y<radius;y++){
-	if(type == SP_2D){
+	if(a->num_dimensions == SP_2D){
 	  sp_image_set(res,x,y,0,sp_image_get(a,(x-x0),radius-(y-y0)-1,0));
-	}else{
+	}else if(a->num_dimensions == SP_3D){
 	  for(z = radius,z0=z;z<radius+sp_image_z(a);z++){
 	    sp_image_set(res,x,y,z,sp_image_get(a,(x-x0),radius-(y-y0)-1,(z-z0)));
 	  }
@@ -3388,9 +3411,9 @@ Image * sp_image_edge_extend(Image * a, int radius, int edge_flags, int type){
     }
     for(x = radius,x0=x;x<radius+sp_image_x(a);x++){
       for(y = radius+sp_image_y(a),y0=y;y<sp_image_y(res);y++){
-	if(type == SP_2D){
+	if(a->num_dimensions == SP_2D){
 	  sp_image_set(res,x,y,0,sp_image_get(a,(x-x0),sp_image_y(a)-(y-y0)-1,0));
-	}else{
+	}else if(a->num_dimensions == SP_3D){
 	  for(z = radius,z0=z;z<radius+sp_image_z(a);z++){
 	    sp_image_set(res,x,y,z,sp_image_get(a,(x-x0),sp_image_y(a)-(y-y0)-1,(z-z0)));
 	  }
@@ -3399,9 +3422,9 @@ Image * sp_image_edge_extend(Image * a, int radius, int edge_flags, int type){
     }
     for(x = 0,x0=x;x<radius;x++){
       for(y = radius,y0=y;y<radius+sp_image_y(a);y++){
-	if(type == SP_2D){
+	if(a->num_dimensions == SP_2D){
 	  sp_image_set(res,x,y,0,sp_image_get(a,radius-(x-x0)-1,(y-y0),0));
-	}else{
+	}else if(a->num_dimensions == SP_3D){
 	  for(z = radius,z0=z;z<radius+sp_image_z(a);z++){
 	    sp_image_set(res,x,y,z,sp_image_get(a,radius-(x-x0)-1,(y-y0),(z-z0)));
 	  }
@@ -3410,16 +3433,16 @@ Image * sp_image_edge_extend(Image * a, int radius, int edge_flags, int type){
     }
     for(x = radius+sp_image_x(a),x0=x;x<sp_image_x(a);x++){
       for(y = radius,y0=y;y<radius+sp_image_y(a);y++){
-	if(type == SP_2D){
+	if(a->num_dimensions == SP_2D){
 	  sp_image_set(res,x,y,0,sp_image_get(a,sp_image_x(a)-(x-x0)-1,(y-y0),0));
-	}else{
+	}else if(a->num_dimensions == SP_3D){
 	  for(z = radius,z0=z;z<radius+sp_image_z(a);z++){
 	    sp_image_set(res,x,y,z,sp_image_get(a,sp_image_x(a)-(x-x0)-1,(y-y0),(z-z0)));
 	  }
 	}
       }
     }
-    if(type == SP_2D){
+    if(a->num_dimensions == SP_2D){
       for(x = radius,x0=x;x<radius+sp_image_x(a);x++){
 	for(y = radius,y0=y;y<radius+sp_image_y(a);y++){
 	  for(z = 0,z0=z;z<radius;z++){
@@ -3443,9 +3466,9 @@ Image * sp_image_edge_extend(Image * a, int radius, int edge_flags, int type){
       x0 = (x + sp_image_x(a)-(radius%sp_image_x(a)))%sp_image_x(a);
       for(y = 0;y<sp_image_y(res);y++){
 	y0 = (y + sp_image_y(a)-(radius%sp_image_y(a)))%sp_image_y(a);
-	if(type == SP_2D){
+	if(a->num_dimensions == SP_2D){
 	  sp_image_set(res,x,y,0,sp_image_get(a,x0,y0,0));
-	}else{
+	}else if(a->num_dimensions == SP_3D){
 	  for(z = 0;x<sp_image_z(res);x++){
 	    z0 = (z + sp_image_z(a)-(radius%sp_image_z(a)))%sp_image_z(a);
 	    sp_image_set(res,x,y,z,sp_image_get(a,x0,y0,z0));
@@ -3457,9 +3480,9 @@ Image * sp_image_edge_extend(Image * a, int radius, int edge_flags, int type){
     /* First do the four/eight corners */
     for(x = 0,x0=x;x<radius;x++){
       for(y = 0,y0=y,y0=y;y<radius;y++){
-	if(type == SP_2D){
+	if(a->num_dimensions == SP_2D){
 	  sp_image_set(res,x,y,0,sp_image_get(a,0,0,0));
-	}else{
+	}else if(a->num_dimensions == SP_3D){
 	  for(z = 0,z0=z;z<radius;z++){
 	    sp_image_set(res,x,y,z,sp_image_get(a,0,0,0));
 	  }
@@ -3468,9 +3491,9 @@ Image * sp_image_edge_extend(Image * a, int radius, int edge_flags, int type){
     }
     for(x = radius+sp_image_x(a),x0=x;x<sp_image_x(res);x++){
       for(y = 0,y0=y;y<radius;y++){
-	if(type == SP_2D){
+	if(a->num_dimensions == SP_2D){
 	sp_image_set(res,x,y,0,sp_image_get(a,sp_image_x(a)-1,0,0));
-	}else{
+	}else if(a->num_dimensions == SP_3D){
 	  for(z = 0,z0=z;z<radius;z++){
 	    sp_image_set(res,x,y,z,sp_image_get(a,sp_image_x(a)-1,0,0));
 	  }
@@ -3536,7 +3559,7 @@ Image * sp_image_edge_extend(Image * a, int radius, int edge_flags, int type){
     /* And now the four/six sides */
     for(x = radius,x0=x;x<radius+sp_image_x(a);x++){
       for(y = 0,y0=y;y<radius;y++){
-	if(type == SP_2D){
+	if(a->num_dimensions == SP_2D){
 	  sp_image_set(res,x,y,0,sp_image_get(a,(x-x0),0,0));
 	}else{
 	  for(z = radius,z0=z;z<radius+sp_image_z(a);z++){
@@ -3547,7 +3570,7 @@ Image * sp_image_edge_extend(Image * a, int radius, int edge_flags, int type){
     }
     for(x = radius,x0=x;x<radius+sp_image_x(a);x++){
       for(y = radius+sp_image_y(a),y0=y;y<sp_image_y(res);y++){
-	if(type == SP_2D){
+	if(a->num_dimensions == SP_2D){
 	  sp_image_set(res,x,y,0,sp_image_get(a,(x-x0),sp_image_y(a),0));
 	}else{
 	  for(z = radius,z0=z;z<radius+sp_image_z(a);z++){
@@ -3558,7 +3581,7 @@ Image * sp_image_edge_extend(Image * a, int radius, int edge_flags, int type){
     }
     for(x = 0,x0=x;x<radius;x++){
       for(y = radius,y0=y;y<radius+sp_image_y(a);y++){
-	if(type == SP_2D){
+	if(a->num_dimensions == SP_2D){
 	  sp_image_set(res,x,y,0,sp_image_get(a,sp_image_x(a)-radius+(x-x0),(y-y0),0));
 	}else{
 	  for(z = radius,z0=z;z<radius+sp_image_z(a);z++){
@@ -3569,7 +3592,7 @@ Image * sp_image_edge_extend(Image * a, int radius, int edge_flags, int type){
     }
     for(x = radius+sp_image_x(a),x0=x;x<sp_image_x(res);x++){
       for(y = radius,y0=y;y<radius+sp_image_y(a);y++){
-	if(type == SP_2D){
+	if(a->num_dimensions == SP_2D){
 	  sp_image_set(res,x,y,0,sp_image_get(a,(x-x0),(y-y0),0));
 	}else{
 	  for(z = radius,z0=z;z<radius+sp_image_z(a);z++){
@@ -3618,7 +3641,7 @@ void sp_image_median_filter(Image * a,sp_i3matrix * kernel, int edge_flags, int 
     integral += kernel->data[i];
   }
   real * buffer = malloc(sizeof(real)*integral);
-  if(type == SP_2D){
+  if(a->num_dimensions == SP_2D){
     radius = sp_max((sp_i3matrix_x(kernel)+1)/2,
 			(sp_i3matrix_y(kernel)+1)/2);
   }else{
@@ -3626,13 +3649,13 @@ void sp_image_median_filter(Image * a,sp_i3matrix * kernel, int edge_flags, int 
 			sp_max((sp_i3matrix_y(kernel)+1)/2,
 			       (sp_i3matrix_z(kernel)+1)/2));
   }
-  if(type == SP_2D){
+  if(a->num_dimensions == SP_2D){
     work = sp_image_edge_extend(a,radius,edge_flags,SP_2D);
   }else{
     work = sp_image_edge_extend(a,radius,edge_flags,SP_3D);
   }
 
-  if(type == SP_2D){
+  if(a->num_dimensions == SP_2D){
     for(x = radius;x<radius+sp_image_x(a);x++){
       for(y = radius;y<radius+sp_image_y(a);y++){
 	n = 0;
@@ -3646,7 +3669,7 @@ void sp_image_median_filter(Image * a,sp_i3matrix * kernel, int edge_flags, int 
 	sp_bubble_sort(buffer,n);
 	if(n%2){
 	  /* odd n take the middle one */
-	  if(type == SP_2D){
+	  if(a->num_dimensions == SP_2D){
 	    sp_image_set(a,x-radius,y-radius,0,buffer[n/2]);
 	  }else{
 	    sp_image_set(a,x-radius,y-radius,z-radius,buffer[n/2]);
@@ -3674,14 +3697,14 @@ void sp_image_median_filter(Image * a,sp_i3matrix * kernel, int edge_flags, int 
 	  sp_bubble_sort(buffer,n);
 	  if(n%2){
 	    /* odd n take the middle one */
-	    if(type == SP_2D){
+	    if(a->num_dimensions == SP_2D){
 	      sp_image_set(a,x-radius,y-radius,0,buffer[n/2]);
 	    }else{
 	      sp_image_set(a,x-radius,y-radius,z-radius,buffer[n/2]);
 	    }
 	  }else{
 	    /* even n take the average */
-	    if(type == SP_2D){
+	    if(a->num_dimensions == SP_2D){
 	      sp_image_set(a,x-radius,y-radius,0,(buffer[n/2]+buffer[n/2-1])/2);
 	    }else{
 	      sp_image_set(a,x-radius,y-radius,z-radius,(buffer[n/2]+buffer[n/2-1])/2);

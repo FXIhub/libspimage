@@ -1538,6 +1538,51 @@ void test_sp_image_max(CuTest * tc){
   CuAssertIntEquals(tc,ind,ind2);
 }
 
+void test_sp_image_gaussian_blur(CuTest * tc){
+  Image * a = sp_image_alloc(11,11,1);
+  sp_image_fill(a,0);
+  sp_image_set(a,5,5,0,1);
+  Image * b = gaussian_blur(a,1);
+  /* Check if integral over image is mantained */
+  Complex a_sum = 0;
+  Complex b_sum = 0;
+  for(int i = 0;i<sp_image_size(a);i++){
+    a_sum += a->image->data[i];
+    b_sum += b->image->data[i];
+  }
+  /* the 0.00015 follows from the fact that 99.7% of the gaussian is within 3
+     standard deviation and the gaussian blur only calculates 3 standard deviations. */
+  CuAssertComplexEquals(tc,a_sum,b_sum,cabs(0.00015*(a_sum)));
+  long long ind1;
+  long long ind2;
+  /* Image maximum must remain in the same place */
+  sp_image_max(a,&ind1,NULL,NULL,NULL);
+  sp_image_max(b,&ind2,NULL,NULL,NULL);
+  CuAssertIntEquals(tc,ind1,ind2);
+  sp_image_free(a);
+  sp_image_free(b);
+  a = sp_image_alloc(11,11,11);
+  sp_image_fill(a,0);
+  sp_image_set(a,5,5,5,1);
+  b = gaussian_blur(a,1);
+  /* Check if integral over image is mantained */
+  a_sum = 0;
+  b_sum = 0;
+  for(int i = 0;i<sp_image_size(a);i++){
+    a_sum += a->image->data[i];
+    b_sum += b->image->data[i];
+  }
+  /* the 0.00015 follows from the fact that 99.7% of the gaussian is within 3
+     standard deviation and the gaussian blur only calculates 3 standard deviations. */
+  CuAssertComplexEquals(tc,a_sum,b_sum,cabs(0.00015*(a_sum)));
+  ind1;
+  ind2;
+  /* Image maximum must remain in the same place */
+  sp_image_max(a,&ind1,NULL,NULL,NULL);
+  sp_image_max(b,&ind2,NULL,NULL,NULL);
+  CuAssertIntEquals(tc,ind1,ind2);
+  
+}
 
 CuSuite* image_get_suite(void)
 {
@@ -1547,6 +1592,7 @@ CuSuite* image_get_suite(void)
   SUITE_ADD_TEST(suite, test_sp_bubble_sort);
   SUITE_ADD_TEST(suite, test_sp_image_median_filter);
   SUITE_ADD_TEST(suite, test_sp_image_max);
+  SUITE_ADD_TEST(suite,test_sp_image_gaussian_blur);
   return suite;
 }
 

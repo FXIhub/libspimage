@@ -47,8 +47,6 @@
 #define SP_REPLICATE_EDGE 3
 #define SP_CIRCULAR_EDGE 4
 
-#define SP_2D 0
-#define SP_3D 1
 
 /** @defgroup Distance
  *  Calculates several kinds of distances in an image
@@ -256,6 +254,10 @@ static inline  long long sp_image_get_index(const Image * a, int x, int y, int z
   return sp_c3matrix_get_index(a->image,x,y,z);
 }
 
+
+/*! Fill the entire image with value
+ */
+spimage_EXPORT void sp_image_fill(Image * a, Complex value);
 
 /*! Add Image b to Image a
  */
