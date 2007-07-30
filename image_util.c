@@ -3282,6 +3282,7 @@ Image * sp_image_edge_extend(Image * a, int radius, int edge_flags, int type){
   /* first put there the initial image */
   if(type == SP_2D){
     res = sp_image_alloc(sp_c3matrix_x(a->image)+radius*2,sp_c3matrix_y(a->image)+radius*2,1);
+    memset(res->image->data,0,sp_image_size(res)*sizeof(Complex));
     sp_image_insert(res,a,radius,radius,0);
   }else{
     res = sp_image_alloc(sp_c3matrix_x(a->image)+radius*2,sp_c3matrix_y(a->image)+radius*2,sp_c3matrix_z(a->image)+radius*2);

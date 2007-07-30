@@ -1613,7 +1613,7 @@ static inline int sp_cmatrix_get_index(const sp_cmatrix * m, const int row, cons
  *
  */
 static inline long long sp_3matrix_get_index(const sp_3matrix * m, const int x, const int y, const int z){
-  return x*m->y*m->z+y*m->z+z;
+  return z*m->y*m->x+y*m->x+x;
 }
 
 
@@ -1621,14 +1621,14 @@ static inline long long sp_3matrix_get_index(const sp_3matrix * m, const int x, 
  *
  */
 static inline long long sp_i3matrix_get_index(const sp_i3matrix * m, const int x, const int y, const int z){
-  return x*m->y*m->z+y*m->z+z;
+  return z*m->y*m->x+y*m->x+x;
 }
 
 /*! This function returns the index of a given row and column combination
  *
  */
 static inline long long sp_c3matrix_get_index(const sp_c3matrix * m, const int x, const int y, const int z){
-  return x*m->y*m->z+y*m->z+z;
+  return z*m->y*m->x+y*m->x+x;
 }
 
 /*! This function changes m to it's complex conjugate
