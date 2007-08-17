@@ -141,9 +141,12 @@ Image * sp_image_fftw3(Image * img){
   fftwr_execute(plan);
   fftwr_destroy_plan(plan);
   res->shifted = 1;
-  res->detector->image_center[0] = (sp_c3matrix_x(res->image)-1)/2.0;
-  res->detector->image_center[1] = (sp_c3matrix_y(res->image)-1)/2.0;
-  res->detector->image_center[2] = (sp_c3matrix_z(res->image)-1)/2.0;
+  /*changed from
+    res->detector->image_center[0] = (sp_c3matrix_x(res->image)-1)/2.0;
+   */
+  res->detector->image_center[0] = (sp_c3matrix_x(res->image))/2.0;
+  res->detector->image_center[1] = (sp_c3matrix_y(res->image))/2.0;
+  res->detector->image_center[2] = (sp_c3matrix_z(res->image))/2.0;
   return res;
 }
 

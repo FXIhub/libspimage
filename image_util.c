@@ -279,7 +279,7 @@ Image * sp_image_shift(Image * img){
   int index1,index2;
   int x,y,z;
   int newx,newy,newz;
-  int max_x,max_y,max_z;
+  real max_x,max_y,max_z;//changed from int
 
   /* fft shift the image */
   out = sp_image_duplicate(img,SP_COPY_DATA|SP_COPY_MASK);
@@ -287,7 +287,8 @@ Image * sp_image_shift(Image * img){
     max_x = sp_max(img->detector->image_center[0],sp_c3matrix_x(img->image)-1-img->detector->image_center[0]);
     max_y = sp_max(img->detector->image_center[1],sp_c3matrix_y(img->image)-1-img->detector->image_center[1]);
     max_z = sp_max(img->detector->image_center[2],sp_c3matrix_z(img->image)-1-img->detector->image_center[2]);
-    sp_image_realloc(out,2*max_x+1,2*max_y+1,2*max_z+1);
+    //was 2*max_x+1 before (other way of defining center)
+    sp_image_realloc(out,2*max_x,2*max_y,2*max_z);
   }
 
 		   
@@ -295,6 +296,10 @@ Image * sp_image_shift(Image * img){
     out->image->data[i] = 0;
     out->mask->data[i] = 0;
   }
+  //doesn't work for shifted images with z=1. Could be helped by adding
+  //a -1 when seting the center.
+  //also a problem with different output size for shifted (i-1) and
+  //unshifted(i) images (i is input side length). (even for 3D)
   if(img->shifted){
     out->detector->image_center[0] = (sp_c3matrix_x(img->image))/2.0;
     out->detector->image_center[1] = (sp_c3matrix_y(img->image))/2.0;
@@ -307,6 +312,7 @@ Image * sp_image_shift(Image * img){
     out->detector->image_center[1] = 0;
     out->detector->image_center[2] = 0;
   }
+
   out->shifted = !out->shifted;
   /* shift quadrants */
   for(x = 0;x<sp_c3matrix_x(img->image);x++){
@@ -321,18 +327,18 @@ Image * sp_image_shift(Image * img){
 	      newx = sp_c3matrix_x(out->image)-(img->detector->image_center[0]-x);
 	      newy = sp_c3matrix_y(out->image)-(img->detector->image_center[1]-y);
 	      newz = sp_c3matrix_z(out->image)-(img->detector->image_center[2]-z);
-	      if(newx < sp_c3matrix_x(img->image)/2.0 ||
-		 newy < sp_c3matrix_y(img->image)/2.0 ||
-		 newz < sp_c3matrix_z(img->image)/2.0){
+	      if(newx < sp_c3matrix_x(img->image)/2 ||
+		 newy < sp_c3matrix_y(img->image)/2 ||
+		 newz < sp_c3matrix_z(img->image)/2){
 		index2 = -1;
 	      }
 	    }else{
 	      newx = x-img->detector->image_center[0];
 	      newy = sp_c3matrix_y(out->image)-(img->detector->image_center[1]-y);
 	      newz = sp_c3matrix_z(out->image)-(img->detector->image_center[2]-z);
-	      if(newx >= sp_c3matrix_x(img->image)/2.0 ||
-		 newy < sp_c3matrix_y(img->image)/2.0 ||
-		 newz < sp_c3matrix_z(img->image)/2.0){
+	      if(newx >= sp_c3matrix_x(img->image)/2 ||
+		 newy < sp_c3matrix_y(img->image)/2 ||
+		 newz < sp_c3matrix_z(img->image)/2){
 		index2 = -1;
 	      }
 	    }
@@ -341,18 +347,18 @@ Image * sp_image_shift(Image * img){
 	      newx = sp_c3matrix_x(out->image)-(img->detector->image_center[0]-x);
 	      newy = y-img->detector->image_center[1];
 	      newz = sp_c3matrix_z(out->image)-(img->detector->image_center[2]-z);
-	      if(newx < sp_c3matrix_x(img->image)/2.0 ||
-		 newy >= sp_c3matrix_y(img->image)/2.0 ||
-		 newz < sp_c3matrix_z(img->image)/2.0){
+	      if(newx < sp_c3matrix_x(img->image)/2 ||
+		 newy >= sp_c3matrix_y(img->image)/2 ||
+		 newz < sp_c3matrix_z(img->image)/2){
 		   index2 = -1;
 		 }
 	    }else{
 	      newx = x-img->detector->image_center[0];
 	      newy = y-img->detector->image_center[1];
 	      newz = sp_c3matrix_z(out->image)-(img->detector->image_center[2]-z);
-		if(newx >= sp_c3matrix_x(img->image)/2.0 ||
-		   newy >= sp_c3matrix_y(img->image)/2.0 ||
-		   newz < sp_c3matrix_z(img->image)/2.0){
+		if(newx >= sp_c3matrix_x(img->image)/2 ||
+		   newy >= sp_c3matrix_y(img->image)/2 ||
+		   newz < sp_c3matrix_z(img->image)/2){
 		     index2 = -1;
 		   }	      
 	    }
@@ -363,18 +369,18 @@ Image * sp_image_shift(Image * img){
 	      newx = sp_c3matrix_x(out->image)-(img->detector->image_center[0]-x);
 	      newy = sp_c3matrix_y(out->image)-(img->detector->image_center[1]-y);
 	      newz = z-img->detector->image_center[2];
-	      if(newx < sp_c3matrix_x(img->image)/2.0 ||
-		 newy < sp_c3matrix_y(img->image)/2.0 ||
-		 newz >= sp_c3matrix_z(img->image)/2.0){
+	      if(newx < sp_c3matrix_x(img->image)/2 ||
+		 newy < sp_c3matrix_y(img->image)/2 ||
+		 newz >= sp_c3matrix_z(img->image)/2){
 		index2 = -1;
 	      }
 	    }else{
 	      newx = x-img->detector->image_center[0];
 	      newy = sp_c3matrix_y(out->image)-(img->detector->image_center[1]-y);
 	      newz = z-img->detector->image_center[2];
-	      if(newx >= sp_c3matrix_x(img->image)/2.0 ||
-		 newy < sp_c3matrix_y(img->image)/2.0 ||
-		 newz >= sp_c3matrix_z(img->image)/2.0){
+	      if(newx >= sp_c3matrix_x(img->image)/2 ||
+		 newy < sp_c3matrix_y(img->image)/2 ||
+		 newz >= sp_c3matrix_z(img->image)/2){
 		index2 = -1;
 	      }
 	    }
@@ -383,18 +389,18 @@ Image * sp_image_shift(Image * img){
 	      newx = sp_c3matrix_x(out->image)-(img->detector->image_center[0]-x);
 	      newy = y-img->detector->image_center[1];
 	      newz = z-img->detector->image_center[2];
-	      if(newx < sp_c3matrix_x(img->image)/2.0 ||
-		 newy >= sp_c3matrix_y(img->image)/2.0 ||
-		 newz >= sp_c3matrix_z(img->image)/2.0){
+	      if(newx < sp_c3matrix_x(img->image)/2 ||
+		 newy >= sp_c3matrix_y(img->image)/2 ||
+		 newz >= sp_c3matrix_z(img->image)/2){
 		index2 = -1;
 	      }
 	    }else{
 	      newx = x-img->detector->image_center[0];
 	      newy = y-img->detector->image_center[1];
 	      newz = z-img->detector->image_center[2];
-	      if(newx >= sp_c3matrix_x(img->image)/2.0 ||
-		 newy >= sp_c3matrix_y(img->image)/2.0 ||
-		 newz >= sp_c3matrix_z(img->image)/2.0){
+	      if(newx >= sp_c3matrix_x(img->image)/2 ||
+		 newy >= sp_c3matrix_y(img->image)/2 ||
+		 newz >= sp_c3matrix_z(img->image)/2){
 		index2 = -1;
 	      }	      
 	    }
@@ -901,9 +907,9 @@ Image * sp_image_alloc(int x, int y, int z){
     abort();
   }
   res->detector = malloc(sizeof(Detector));
-  res->detector->image_center[0] = x/2;
-  res->detector->image_center[1] = y/2;
-  res->detector->image_center[2] = z/2;
+  res->detector->image_center[0] = x/2.0;
+  res->detector->image_center[1] = y/2.0;
+  res->detector->image_center[2] = z/2.0;
   if(!res->detector){
     perror("Out of memory!\n");
     abort();
@@ -1248,6 +1254,13 @@ static void write_h5_img_3d(Image * img,const char * filename, int output_precis
 		    H5P_DEFAULT, values);
   status = H5Dclose(dataset_id);
 
+  values[0] = img->num_dimensions;
+  dataset_id = H5Dcreate(file_id, "/num_dimensions", out_type_id,
+			 dataspace_id, H5P_DEFAULT);
+  status = H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
+		    H5P_DEFAULT, values);
+  status = H5Dclose(dataset_id);
+
   values[0] = img->detector->detector_distance;
   dataset_id = H5Dcreate(file_id, "/detector_distance", out_type_id,
 			 dataspace_id, H5P_DEFAULT);
@@ -1261,6 +1274,7 @@ static void write_h5_img_3d(Image * img,const char * filename, int output_precis
   status = H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		    H5P_DEFAULT, values);
   status = H5Dclose(dataset_id);
+
 
 
   version = 2;
@@ -1378,6 +1392,11 @@ Image * read_imagefile(const char * filename){
       res->detector->pixel_size[1] = values[1];
       res->detector->pixel_size[2] = values[2];
       
+      dataset_id = H5Dopen(file_id, "/num_dimensions");
+      status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
+		       H5P_DEFAULT, values);
+      status = H5Dclose(dataset_id);
+      res->num_dimensions = values[0];
       
       if(res->phased){
 	tmp = sp_3matrix_alloc(sp_i3matrix_x(res->mask),
@@ -1478,7 +1497,12 @@ Image * read_imagefile(const char * filename){
     res->detector->pixel_size[0] = values[0];
     res->detector->pixel_size[1] = values[0];
     res->detector->pixel_size[2] = values[0];
-    
+
+    dataset_id = H5Dopen(file_id, "/num_dimensions");
+    status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
+		     H5P_DEFAULT, values);
+    status = H5Dclose(dataset_id);
+    res->num_dimensions = values[0];
     
     if(res->phased){
       tmp = sp_3matrix_alloc(sp_i3matrix_x(res->mask),sp_i3matrix_y(res->mask),

@@ -1086,6 +1086,13 @@ static inline void sp_matrix_div_elements(sp_matrix * a, const sp_matrix * b){
   }
 }
 
+static inline void sp_3matrix_div_elements(sp_3matrix * a, const sp_3matrix * b){
+  int i;
+  for(i = 0;i<sp_3matrix_size(b);i++){
+    a->data[i] /= b->data[i];
+  }
+}
+
 /*! This function divides the elements of integer matrix a with the elements of integer matrix b, a'_ij = a_ij / b_ij. 
  *
  * The two matrices must have the same dimensions.
@@ -1097,6 +1104,13 @@ static inline void sp_imatrix_div_elements(sp_imatrix * a, const sp_imatrix * b)
   }
 }
 
+static inline void sp_i3matrix_div_elements(sp_i3matrix * a, const sp_i3matrix * b){
+  int i;
+  for(i = 0;i<sp_i3matrix_size(b);i++){
+    a->data[i] /= b->data[i];
+  }
+}
+
 /*! This function divides the elements of Complex matrix a with the elements of Complex matrix b, a'_ij = a_ij / b_ij. 
  *
  * The two matrices must have the same dimensions.
@@ -1104,6 +1118,14 @@ static inline void sp_imatrix_div_elements(sp_imatrix * a, const sp_imatrix * b)
 static inline void sp_cmatrix_div_elements(sp_cmatrix * a, const sp_cmatrix * b){
   int i;
   for(i = 0;i<sp_cmatrix_size(b);i++){
+    assert(b->data[i] != 0);
+    a->data[i] /= b->data[i];
+  }
+}
+
+static inline void sp_c3matrix_div_elements(sp_c3matrix * a, const sp_c3matrix * b){
+  int i;
+  for(i = 0;i<sp_c3matrix_size(b);i++){
     assert(b->data[i] != 0);
     a->data[i] /= b->data[i];
   }
@@ -1742,46 +1764,32 @@ static inline Complex sp_cmatrix_interp(const sp_cmatrix * m, real frow, real fc
 static inline Complex sp_c3matrix_interp(const sp_c3matrix * m, real fx, real fy, real fz){
   int x = fx;
   int y = fy;
+  int z = fz;
   real u = fx-x;
   real v = fy-y;
+  real w = fz-z;
   Complex res = 0;
-  if(fz == 0){
-    if(x >= sp_c3matrix_x(m)-1){
-      x = sp_c3matrix_y(m)-2;
-      u = 1;
-    }
-    if(y >= sp_c3matrix_y(m)-1){
-      y = sp_c3matrix_y(m)-2;
-      v = 1;
-    }
-    res = sp_c3matrix_get(m,x,y,0)*(1-u)*(1-v)+
-      sp_c3matrix_get(m,x+1,y,0)*(u)*(1-v)+
-      sp_c3matrix_get(m,x,y+1,0)*(1-u)*(v)+
-      sp_c3matrix_get(m,x+1,y+1,0)*(u)*(v);
-  }else{
-    int z = fz;
-    real w = fz-z;
-    if(x >= sp_c3matrix_x(m)-1){
-      x = sp_c3matrix_x(m)-2;
-      u = 1;
-    }
-    if(y >= sp_c3matrix_y(m)-1){
-      y = sp_c3matrix_y(m)-2;
-      v = 1;
-    }
-    if(z >= sp_c3matrix_z(m)-1){
-      z = sp_c3matrix_z(m)-2;
-      w = 1;
-    }
-    res = sp_c3matrix_get(m,x,y,z)*(1-u)*(1-v)*(1-w)+
-      sp_c3matrix_get(m,x+1,y,z)*(u)*(1-v)*(1-w)+
-      sp_c3matrix_get(m,x,y+1,z)*(1-u)*(v)*(1-w)+
-      sp_c3matrix_get(m,x,y,z+1)*(1-u)*(1-v)*(w)+
-      sp_c3matrix_get(m,x+1,y+1,z)*(u)*(v)*(1-w)+
-      sp_c3matrix_get(m,x+1,y,z+1)*(u)*(1-v)*(w)+
-      sp_c3matrix_get(m,x,y+1,z+1)*(1-u)*(v)*(w)+
-      sp_c3matrix_get(m,x+1,y+1,z+1)*(u)*(v)*(w);
+
+  if(x >= sp_c3matrix_x(m)-1){
+    x = sp_c3matrix_x(m)-2;
+    u = 1;
   }
+  if(y >= sp_c3matrix_y(m)-1){
+    y = sp_c3matrix_y(m)-2;
+    v = 1;
+  }
+  if(z >= sp_c3matrix_z(m)-1){
+    z = sp_c3matrix_z(m)-2;
+    w = 1;
+  }
+  res = sp_c3matrix_get(m,x,y,z)*(1-u)*(1-v)*(1-w);
+  if(u){res += sp_c3matrix_get(m,x+1,y,z)*(u)*(1-v)*(1-w);}
+  if(v){res += sp_c3matrix_get(m,x,y+1,z)*(1-u)*(v)*(1-w);}
+  if(w){res += sp_c3matrix_get(m,x,y,z+1)*(1-u)*(1-v)*(w);}
+  if(u && v){res += sp_c3matrix_get(m,x+1,y+1,z)*(u)*(v)*(1-w);}
+  if(u && w){res += sp_c3matrix_get(m,x+1,y,z+1)*(u)*(1-v)*(w);}
+  if(v && w){res += sp_c3matrix_get(m,x,y+1,z+1)*(1-u)*(v)*(w);}
+  if(u && v && w){res += sp_c3matrix_get(m,x+1,y+1,z+1)*(u)*(v)*(w);}
   return res;
 }
 
