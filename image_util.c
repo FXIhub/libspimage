@@ -1565,14 +1565,15 @@ Image * read_tiff(const char * filename){
   int bpp = 4;  
   int datatype = 0;
   int width,height;
-  unsigned char * tmpuc;
   int nstrips;
   int stripsize;
-  int i,x,y;
+  int i;
   unsigned char * img;
   float * tmpf;
-  unsigned short * tmpi;
+  short * tmpi;
   unsigned short * tmpui;
+  unsigned char * tmpuc;
+
   TIFF * tif; 
 
   tif = TIFFOpen(filename, "r");
@@ -1604,40 +1605,33 @@ Image * read_tiff(const char * filename){
   }
   TIFFClose(tif);
   
-  /* Transpose image, because TIFF is saved row by row (which they call strips)
-     unlike Hawk that saves column by column */
-  out->image = sp_c3matrix_alloc(height,width,1);
-  out->mask = sp_i3matrix_alloc(height,width,1);
+  out->image = sp_c3matrix_alloc(width,height,1);
+  out->mask = sp_i3matrix_alloc(width,height,1);
+
   if(datatype == SAMPLEFORMAT_UINT){
     tmpui = (unsigned short *)img;
-    for(x = 0;x<width;x++){
-      for(y = 0;y<height;y++){
-	tmpui = (unsigned short *)(img+y*width*bpp+x*bpp);
-	out->image->data[x*height+y] = *tmpui;
-      }    
+    for(i = 0;i<sp_c3matrix_size(out->image);i++){
+      out->image->data[i] = tmpui[i];
     }
   }else if(datatype == SAMPLEFORMAT_IEEEFP){
-    for(x = 0;x<width;x++){
-      for(y = 0;y<height;y++){
-	tmpf = (float *)(img+y*width*bpp+x*bpp);
-	out->image->data[x*height+y] = *tmpf;
-      }    
+    tmpf = (float *)img;
+    for(i = 0;i<sp_c3matrix_size(out->image);i++){
+      out->image->data[i] = tmpf[i];
     }
   }else if(datatype == SAMPLEFORMAT_VOID){
-    for(x = 0;x<width;x++){
-      for(y = 0;y<height;y++){
-	tmpuc = img+y*width*bpp+x*bpp;
-	out->image->data[x*height+y] = *tmpuc;
-      }    
+    tmpuc = (unsigned char *)img;
+    for(i = 0;i<sp_c3matrix_size(out->image);i++){
+      out->image->data[i] = tmpuc[i];
     }
   }else if(datatype == SAMPLEFORMAT_INT){
-    for(x = 0;x<width;x++){
-      for(y = 0;y<height;y++){
-	tmpi = (unsigned short *)(img+y*width*bpp+x*bpp);
-	out->image->data[x*height+y] = (*tmpi);
-      }    
+    tmpi = (short *)(img);
+    for(i = 0;i<sp_c3matrix_size(out->image);i++){
+      out->image->data[i] = tmpi[i];
     }
   }
+
+
+
   for(i = 0;i<sp_c3matrix_size(out->image);i++){
     out->mask->data[i] = 1;
   }
@@ -1647,6 +1641,7 @@ Image * read_tiff(const char * filename){
   out->shifted = 0;
   out->detector->image_center[0] = width/2;
   out->detector->image_center[1] = height/2;
+  out->num_dimensions = SP_2D;
   return out;
 }
 
@@ -2072,8 +2067,8 @@ Image * read_png(const char * filename){
  res = sp_image_alloc(width,height,1);
  for(i = 0;i<height;i++){
    for(j = 0;j<width;j++){
-     res->image->data[j*width+i] = row_pointers[i][(int)(j*bit_depth/8)];
-     res->mask->data[j*width+i] = 1;
+     res->image->data[i*width+j] = row_pointers[i][(int)(j*bit_depth/8)];
+     res->mask->data[i*width+j] = 1;
    }
  }
  return res;
@@ -2083,6 +2078,11 @@ Image * read_png(const char * filename){
 
 
 int write_png(Image * img,const char * filename, int color){
+
+  if(img->num_dimensions != SP_2D){
+    fprintf(stderr,"Can only write png of 2D images in write_png!\n");
+    abort();
+  }
 
   FILE *fp = fopen(filename, "wb");
   
@@ -2219,8 +2219,8 @@ int write_png(Image * img,const char * filename, int color){
   i = 0;
   log_of_2 = log(2.0);
   /* this is a special kind of color */
-  for(x = 0;x<sp_c3matrix_x(img->image);x++){
-    for(y = 0;y<sp_c3matrix_y(img->image);y++){
+  for(y = 0;y<sp_c3matrix_y(img->image);y++){
+    for(x = 0;x<sp_c3matrix_x(img->image);x++){
       /* traditional color scale taken from gnuplot manual */
       if(color & LOG_SCALE){
 	value = log((cabs(img->image->data[i])-offset)*scale+1)/log_of_2;
