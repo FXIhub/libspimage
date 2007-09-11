@@ -4,6 +4,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#ifdef _USE_DMALLOC
+#include <dmalloc.h>
+#endif
 
 #include "CuTest.h"
 

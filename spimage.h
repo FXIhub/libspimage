@@ -8,5 +8,6 @@
 #include "spimage/fft.h"
 #include "spimage/image_util.h"
 #include "spimage/linear_alg.h"
+#include "spimage/mem_util.h"
 #endif
 

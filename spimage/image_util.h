@@ -124,7 +124,8 @@ spimage_EXPORT int write_mask_to_png(Image * img, char * filename, int color);
 
 /*! Allocates an image of width x and height y
  */
-spimage_EXPORT Image * sp_image_alloc(int x, int y, int z);
+spimage_EXPORT Image * _sp_image_alloc(int x, int y, int z, char * file, int line);
+#define sp_image_alloc(x,y,z) _sp_image_alloc(x,y,z,__FILE__,__LINE__)
 
 /*! Create a copy of Image in
  *
@@ -133,11 +134,13 @@ spimage_EXPORT Image * sp_image_alloc(int x, int y, int z);
  * SP_COPY_DATA - memcpy the image data from in to the newly created image
  * SP_COPY_MASK - memcpy the mask from in to the newly created image
  */
-spimage_EXPORT Image * sp_image_duplicate(Image * in,int flags);
+spimage_EXPORT Image * _sp_image_duplicate(Image * in,int flags, char * file, int line);
+#define sp_image_duplicate(in, flags) _sp_image_duplicate(in,flags,__FILE__,__LINE__)
 
 /*! Delete image Image in
  */
-spimage_EXPORT void sp_image_free(Image * in);
+spimage_EXPORT void _sp_image_free(Image * in, char * file, int line);
+#define sp_image_free(in) _sp_image_free(in,__FILE__,__LINE__)
 
 /*! Copies the contents of src to dst.
  *
@@ -501,7 +504,8 @@ spimage_EXPORT real p_drand48();
 /*! Resizes the input image to the desired size. It's content is discarded
  *
  */
-spimage_EXPORT void sp_image_realloc(Image * img, int new_x, int new_y, int new_z);
+spimage_EXPORT void _sp_image_realloc(Image * img, int new_x, int new_y, int new_z, char * file, int line);
+#define sp_image_realloc(img,x,y,z) _sp_image_realloc(img,x,y,z,__FILE__,__LINE__)
 
 /*! Filters the input image with a median filter
  *

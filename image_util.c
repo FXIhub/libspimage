@@ -16,6 +16,10 @@ typedef long off_t;
 #include <float.h>
 #include <ctype.h>
 #include <strings.h>
+#ifdef _USE_DMALLOC
+#include <dmalloc.h>
+#endif
+
 #include "spimage.h"
 
 
@@ -40,6 +44,7 @@ static Image * read_png(const char * filename);
 static int write_png(Image * img,const char * filename, int color);
 static int write_vtk(Image * img,const char * filename);
 static int write_vtk_3d(Image * img, const char * filename);
+
 
 void sp_srand(int i){
   srand(i);
@@ -856,29 +861,29 @@ void sp_image_high_pass(Image * in, real radius, int type){
   }
 }
 
-void sp_image_free(Image * in){
-  free(in->detector);
-  sp_c3matrix_free(in->image);
-  sp_i3matrix_free(in->mask);
-  free(in);
+void _sp_image_free(Image * in, char * file, int line){
+  _sp_free(in->detector,file,line);
+  _sp_c3matrix_free(in->image,file,line);
+  _sp_i3matrix_free(in->mask,file,line);
+  _sp_free(in,file,line);
 }
 
-Image * sp_image_duplicate(Image * in, int flags){
-  Image  *res = malloc(sizeof(Image));
+Image * _sp_image_duplicate(Image * in, int flags,char * file, int line){
+  Image  *res = _sp_malloc(sizeof(Image),file,line);
   if(!res){
     perror("Out of memory!\n");
     abort();
   }
   memcpy(res,in,sizeof(Image));
-  res->detector = malloc(sizeof(Detector));
+  res->detector = _sp_malloc(sizeof(Detector),file,line);
   if(!res->detector){
     perror("Out of memory!\n");
     abort();
   }
 
   memcpy(res->detector,in->detector,sizeof(Detector));
-  res->image = sp_c3matrix_alloc(sp_c3matrix_x(in->image),sp_c3matrix_y(in->image),
-				 sp_c3matrix_z(in->image));
+  res->image = _sp_c3matrix_alloc(sp_c3matrix_x(in->image),sp_c3matrix_y(in->image),
+				 sp_c3matrix_z(in->image),file,line);
   if(!res->image){
     perror("Out of memory!\n");
     abort();
@@ -887,8 +892,8 @@ Image * sp_image_duplicate(Image * in, int flags){
     sp_c3matrix_memcpy(res->image,in->image);
   }
 
-  res->mask = sp_i3matrix_alloc(sp_c3matrix_x(in->image),sp_c3matrix_y(in->image),
-				sp_c3matrix_z(in->image));
+  res->mask = _sp_i3matrix_alloc(sp_c3matrix_x(in->image),sp_c3matrix_y(in->image),
+				 sp_c3matrix_z(in->image),file,line);
   if(!res->mask){
     perror("Out of memory!\n");
     abort();
@@ -900,31 +905,19 @@ Image * sp_image_duplicate(Image * in, int flags){
 }
 
 
-Image * sp_image_alloc(int x, int y, int z){
-  Image  *res = malloc(sizeof(Image));
+Image * _sp_image_alloc(int x, int y, int z,char * file, int line){
+  Image  *res = _sp_malloc(sizeof(Image),file,line);
   if(!res){
     perror("Out of memory!\n");
     abort();
   }
-  res->detector = malloc(sizeof(Detector));
+  res->detector = _sp_malloc(sizeof(Detector),file,line);
   res->detector->image_center[0] = x/2.0;
   res->detector->image_center[1] = y/2.0;
   res->detector->image_center[2] = z/2.0;
-  if(!res->detector){
-    perror("Out of memory!\n");
-    abort();
-  }
-  res->mask = sp_i3matrix_alloc(x,y,z);
-  if(!res->mask){
-    perror("Out of memory!\n");
-    abort();
-  }  
+  res->mask = _sp_i3matrix_alloc(x,y,z,file,line);
   res->scaled = 0;
-  res->image = sp_c3matrix_alloc(x,y,z);
-  if(!res->image){
-    perror("Out of memory!\n");
-    abort();
-  }  
+  res->image = _sp_c3matrix_alloc(x,y,z,file,line);
   res->phased = 0;
 
   if(z == 1){
@@ -1293,7 +1286,7 @@ static void write_h5_img_3d(Image * img,const char * filename, int output_precis
 
 
 Image * read_imagefile(const char * filename){
-  Image * res = malloc(sizeof(Image));
+  Image * res = sp_malloc(sizeof(Image));
   int file_id,dataset_id,space;
   int status,i;
   int version;
@@ -1313,7 +1306,7 @@ Image * read_imagefile(const char * filename){
   
   
   
-  res->detector = malloc(sizeof(Detector));
+  res->detector = sp_malloc(sizeof(Detector));
   
   
   file_id = H5Fopen(filename,H5F_ACC_RDONLY,H5P_DEFAULT);
@@ -1392,11 +1385,30 @@ Image * read_imagefile(const char * filename){
       res->detector->pixel_size[1] = values[1];
       res->detector->pixel_size[2] = values[2];
       
+
+      H5Eget_auto(&func,&client_data);
+      /* turn off warning to check num_dimensions because it might not exist */
+      H5Eset_auto(NULL,NULL);
       dataset_id = H5Dopen(file_id, "/num_dimensions");
-      status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
-		       H5P_DEFAULT, values);
-      status = H5Dclose(dataset_id);
-      res->num_dimensions = values[0];
+      H5Eset_auto(func,client_data);
+      if(dataset_id>=0){
+	status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
+			 H5P_DEFAULT, values);
+	status = H5Dclose(dataset_id);
+	res->num_dimensions = values[0];
+      }else{
+	/* we'll try to guess the dimensions */
+	res->num_dimensions = 0;
+	if(sp_image_x(res) > 1){
+	  res->num_dimensions++;
+	}
+	if(sp_image_y(res) > 1){
+	  res->num_dimensions++;
+	}
+	if(sp_image_z(res) > 1){
+	  res->num_dimensions++;
+	}	  
+      }
       
       if(res->phased){
 	tmp = sp_3matrix_alloc(sp_i3matrix_x(res->mask),
@@ -1560,8 +1572,8 @@ Image * read_imagefile(const char * filename){
 
 
 Image * read_tiff(const char * filename){
-  Image * out = malloc(sizeof(Image));
-  out->detector = malloc(sizeof(Detector));
+  Image * out = sp_malloc(sizeof(Image));
+  out->detector = sp_malloc(sizeof(Detector));
   int bpp = 4;  
   int datatype = 0;
   int width,height;
@@ -1599,7 +1611,7 @@ Image * read_tiff(const char * filename){
   
   nstrips = TIFFNumberOfStrips(tif);
   stripsize = TIFFStripSize(tif);
-  img = malloc(nstrips*stripsize);
+  img = sp_malloc(nstrips*stripsize);
   for(i = 0;i<nstrips;i++){
     TIFFReadEncodedStrip(tif,i,img+i*stripsize,stripsize);
   }
@@ -1635,7 +1647,7 @@ Image * read_tiff(const char * filename){
   for(i = 0;i<sp_c3matrix_size(out->image);i++){
     out->mask->data[i] = 1;
   }
-  free(img);
+  sp_free(img);
   out->scaled = 0;
   out->phased = 0;
   out->shifted = 0;
@@ -1668,7 +1680,7 @@ void write_tiff(Image * img,const char * filename){
   TIFFSetField(tif, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK);
   TIFFSetField(tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
   TIFFSetField(tif, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_IEEEFP);
-  data = malloc(nstrips*stripsize);
+  data = sp_malloc(nstrips*stripsize);
   for(y = 0;y<sp_image_x(img);y++){
     for(x = 0;x<sp_image_y(img);x++){
       data[x] =cabsr(sp_image_get(img,x,y,0));      
@@ -1680,7 +1692,7 @@ void write_tiff(Image * img,const char * filename){
     TIFFWriteEncodedStrip(tif,i,&(data[i*stripsize/4]),stripsize);
     }*/
   TIFFClose(tif);
-  free(data);
+  sp_free(data);
 }
 
 
@@ -1844,13 +1856,16 @@ Image * sp_image_convolute(Image * a, Image * b, int * size){
   sp_image_free(tmp);
 
   /*crop to make the image the original size*/
-  cube_crop(res,
+/*  tmp = cube_crop(res,
 		     (sp_image_x(res)-sp_image_x(a))/2,
 		     (sp_image_y(res)-sp_image_y(a))/2,
 		     (sp_image_z(res)-sp_image_z(a))/2,
 		     (sp_image_x(res)+sp_image_x(a))/2-1,
 		     (sp_image_y(res)+sp_image_y(a))/2-1,
 		     (sp_image_z(res)+sp_image_z(a))/2-1);
+
+  sp_image_free(res);
+  res = tmp;*/
 
 /*  sp_image_dephase(res);*/
   /* should be all real */
@@ -1981,6 +1996,7 @@ int write_mask_to_png(Image * img, char * filename, int color){
   int ret;
   int i;
   if(sp_i3matrix_z(img->mask) != 1){
+    sp_image_free(res);
     fprintf(stderr,"Can't write 3D mask to png");
   }else{
     for(i = 0;i<sp_image_size(img);i++){
@@ -2059,9 +2075,9 @@ Image * read_png(const char * filename){
  }else if(color_type == 2){
    bit_depth *= 3;
  }
- row_pointers = malloc(sizeof(png_byte *)*height);
+ row_pointers = sp_malloc(sizeof(png_byte *)*height);
  for(i = 0;i<height;i++){
-   row_pointers[i] = malloc(sizeof(png_byte)*width*bit_depth/8);
+   row_pointers[i] = sp_malloc(sizeof(png_byte)*width*bit_depth/8);
  }
  png_read_image(png_ptr, row_pointers);
  res = sp_image_alloc(width,height,1);
@@ -2853,9 +2869,9 @@ real sp_image_max(Image * img, long long * index,int * x, int * y, int * z){
 }
 
 
-void sp_image_realloc(Image * img, int new_x, int new_y, int new_z){
-  sp_c3matrix_realloc(img->image,new_x,new_y,new_z);
-  sp_i3matrix_realloc(img->mask,new_x,new_y,new_z);
+void _sp_image_realloc(Image * img, int new_x, int new_y, int new_z, char * file, int line){
+  _sp_c3matrix_realloc(img->image,new_x,new_y,new_z,file,line);
+  _sp_i3matrix_realloc(img->mask,new_x,new_y,new_z,file,line);
 }
 
 Image * rectangular_window(int image_x, int image_y, int width, int height, int shifted){
@@ -3664,7 +3680,7 @@ void sp_image_median_filter(Image * a,sp_i3matrix * kernel, int edge_flags, int 
   for(i =0 ;i<sp_i3matrix_size(kernel);i++){
     integral += kernel->data[i];
   }
-  real * buffer = malloc(sizeof(real)*integral);
+  real * buffer = sp_malloc(sizeof(real)*integral);
   if(a->num_dimensions == SP_2D){
     radius = sp_max((sp_i3matrix_x(kernel)+1)/2,
 			(sp_i3matrix_y(kernel)+1)/2);
@@ -3738,6 +3754,8 @@ void sp_image_median_filter(Image * a,sp_i3matrix * kernel, int edge_flags, int 
       }
     }
   }
+  sp_free(buffer);
+  sp_image_free(work);
 }
 
 /*! Contrast stretches an image

@@ -8,6 +8,8 @@
 #include <math.h>
 #include <assert.h>
 
+#include "mem_util.h"
+
 typedef struct{
   unsigned int size;
   real * data;
@@ -79,77 +81,88 @@ static inline real sp_max(real a,real b){
 /*! This function allocates memory for a 3matrix of size nrows rows by ncols columns and initializes all the elements of the matrix to zero.
  *
  */
-spimage_EXPORT sp_3matrix * sp_3matrix_alloc(unsigned int nx, unsigned int ny, unsigned int nz);
+spimage_EXPORT sp_3matrix * _sp_3matrix_alloc(unsigned int nx, unsigned int ny, unsigned int nz,char * file, int line);
+#define sp_3matrix_alloc(nx,ny,nz) _sp_3matrix_alloc(nx,ny,nz,__FILE__,__LINE__)
 
 /*! This function allocates memory for a i3matrix of size nrows rows by ncols columns and initializes all the elements of the matrix to zero.
  *
  */
-spimage_EXPORT sp_i3matrix * sp_i3matrix_alloc(unsigned int nx, unsigned int ny, unsigned int nz);
+spimage_EXPORT sp_i3matrix * _sp_i3matrix_alloc(unsigned int nx, unsigned int ny, unsigned int nz,char * file,int line);
+#define sp_i3matrix_alloc(nx,ny,nz) _sp_i3matrix_alloc(nx,ny,nz,__FILE__,__LINE__)
 
 /*! This function allocates memory for a Complex 3matrix of size nrows rows by ncols columns and initializes all the elements of the matrix to zero.
  *
  */
-spimage_EXPORT sp_c3matrix * sp_c3matrix_alloc(unsigned int nx, unsigned int ny, unsigned int nz);
-
+spimage_EXPORT sp_c3matrix * _sp_c3matrix_alloc(unsigned int nx, unsigned int ny, unsigned int nz, char * file, int line);
+#define sp_c3matrix_alloc(nx,ny,nz) _sp_c3matrix_alloc(nx,ny,nz,__FILE__,__LINE__)
 
 /*! This function creates a duplicate of it's argument and returns a pointer to it
  *
  */
-spimage_EXPORT sp_c3matrix * sp_c3matrix_duplicate(sp_c3matrix * m);
+spimage_EXPORT sp_c3matrix * _sp_c3matrix_duplicate(sp_c3matrix * m, char * file, int line);
+#define sp_c3matrix_duplicate(m) _sp_c3matrix_duplicate(m,__FILE__,__LINE__)
 
 /*! This function frees a previously allocated matrix m
  *
  */
-spimage_EXPORT void sp_3matrix_free(sp_3matrix * m);
+spimage_EXPORT void _sp_3matrix_free(sp_3matrix * m, char * file, int line);
+#define sp_3matrix_free(m) _sp_3matrix_free(m,__FILE__,__LINE__)
 
 /*! This function frees a previously allocated matrix m
  *
  */
-spimage_EXPORT void sp_i3matrix_free(sp_i3matrix * m);
+spimage_EXPORT void _sp_i3matrix_free(sp_i3matrix * m, char * file, int line);
+#define sp_i3matrix_free(m) _sp_i3matrix_free(m,__FILE__,__LINE__)
 
 /*! This function frees a previously allocated Complex matrix m
  *
  */
-spimage_EXPORT void sp_c3matrix_free(sp_c3matrix * m);
-
+spimage_EXPORT void _sp_c3matrix_free(sp_c3matrix * m, char * file, int line);
+#define sp_c3matrix_free(m) _sp_c3matrix_free(m,__FILE__,__LINE__)
 
 
 
 /*! This function allocates memory for a matrix of size nrows rows by ncols columns and initializes all the elements of the matrix to zero.
  *
  */
-spimage_EXPORT sp_matrix * sp_matrix_alloc(unsigned int nrows, unsigned int ncols);
+spimage_EXPORT sp_matrix * _sp_matrix_alloc(unsigned int nrows, unsigned int ncols, char * file, int line);
+#define sp_matrix_alloc(nrows,ncols) _sp_matrix_alloc(nrows,ncols,__FILE__,__LINE__)
 
 /*! This function allocates memory for a Complex matrix of size nrows rows by ncols columns and initializes all the elements of the matrix to zero.
  *
  */
-spimage_EXPORT sp_cmatrix * sp_cmatrix_alloc(unsigned int nrows, unsigned int ncols);
-
+spimage_EXPORT sp_cmatrix * _sp_cmatrix_alloc(unsigned int nrows, unsigned int ncols, char * file, int line);
+#define sp_cmatrix_alloc(nrows,ncols) _sp_cmatrix_alloc(nrows,ncols,__FILE__,__LINE__)
 
 /*! This function creates a duplicate of it's argument and returns a pointer to it
  *
  */
-spimage_EXPORT sp_cmatrix * sp_cmatrix_duplicate(sp_cmatrix * m);
+spimage_EXPORT sp_cmatrix * _sp_cmatrix_duplicate(sp_cmatrix * m, char * file, int line);
+#define sp_cmatrix_duplicate(m) _sp_cmatrix_duplicate(m,__FILE__,__LINE__)
 
 /*! This function allocates memory for an Integer matrix of size nrows rows by ncols columns and initializes all the elements of the matrix to zero.
  *
  */
-spimage_EXPORT sp_imatrix * sp_imatrix_alloc(unsigned int nrows, unsigned int ncols);
+spimage_EXPORT sp_imatrix * _sp_imatrix_alloc(unsigned int nrows, unsigned int ncols, char * file, int line);
+#define sp_imatrix_alloc(nrows,ncols) _sp_imatrix_alloc(nrows,ncols,__FILE__,__LINE__)
 
 /*! This function frees a previously allocated matrix m
  *
  */
-spimage_EXPORT void sp_matrix_free(sp_matrix * m);
+spimage_EXPORT void _sp_matrix_free(sp_matrix * m, char * file, int line);
+#define sp_matrix_free(m) _sp_matrix_free(m,__FILE__,__LINE__)
 
 /*! This function frees a previously allocated Complex matrix m
  *
  */
-spimage_EXPORT void sp_cmatrix_free(sp_cmatrix * m);
+spimage_EXPORT void _sp_cmatrix_free(sp_cmatrix * m, char * file, int line);
+#define sp_cmatrix_free(m) _sp_cmatrix_free(m,__FILE__,__LINE__)
 
 /*! This function frees a previously allocated Complex matrix m
  *
  */
-spimage_EXPORT void sp_imatrix_free(sp_imatrix * m);
+spimage_EXPORT void _sp_imatrix_free(sp_imatrix * m, char * file, int line);
+#define sp_imatrix_free(m) _sp_imatrix_free(m,__FILE__,__LINE__)
 
 
 /*! Creates an empty zero initialized vector of the desired size.
@@ -158,7 +171,8 @@ spimage_EXPORT void sp_imatrix_free(sp_imatrix * m);
  * to a newly initialized vector struct. All vector elements are set
  * to 0.
  */
-spimage_EXPORT sp_vector * sp_vector_alloc(const int size);
+spimage_EXPORT sp_vector * _sp_vector_alloc(const int size, char * file, int line);
+#define sp_vector_alloc(size) _sp_vector_alloc(size,__FILE__,__LINE__)
 
 /*! Creates an empty zero initialized Complex vector of the desired size.
  *
@@ -166,18 +180,20 @@ spimage_EXPORT sp_vector * sp_vector_alloc(const int size);
  * to a newly initialized vector struct. All vector elements are set
  * to 0.
  */
-spimage_EXPORT sp_cvector * sp_cvector_alloc(const int size);
-
+spimage_EXPORT sp_cvector * _sp_cvector_alloc(const int size, char * file, int line);
+#define sp_cvector_alloc(size) _sp_cvector_alloc(size,__FILE__,__LINE__)
+ 
 /*! Frees a previously allocated vector.
  *
  */
-spimage_EXPORT void sp_vector_free(sp_vector * v);
+spimage_EXPORT void _sp_vector_free(sp_vector * v, char * file, int line);
+#define sp_vector_free(v) _sp_vector_free(v,__FILE__,__LINE__)
 
 /*! Frees a previously allocated Complex vector.
  *
  */
-spimage_EXPORT void sp_cvector_free(sp_cvector * v);
-
+spimage_EXPORT void _sp_cvector_free(sp_cvector * v, char * file, int line);
+#define sp_cvector_free(v) _sp_cvector_free(v,__FILE__,__LINE__)
 
 /*! This function returns the size of the vector v
  *
@@ -1258,9 +1274,9 @@ static inline void sp_matrix_transpose(sp_matrix * a){
   /* copy from tmp the useful things and discard original array */
   a->cols = tmp->cols;
   a->rows = tmp->rows;
-  free(a->data);
+  sp_free(a->data);
   a->data = tmp->data;
-  free(tmp);
+  sp_free(tmp);
 }
 
 static inline void sp_3matrix_transpose(sp_3matrix * a){
@@ -1278,9 +1294,9 @@ static inline void sp_3matrix_transpose(sp_3matrix * a){
   a->x = tmp->x;
   a->y = tmp->y;
   a->z = tmp->z;
-  free(a->data);
+  sp_free(a->data);
   a->data = tmp->data;
-  free(tmp);
+  sp_free(tmp);
 }
 
 /*! This function transposes matrix a.
@@ -1298,9 +1314,9 @@ static inline void sp_imatrix_transpose(sp_imatrix * a){
   /* copy from tmp the useful things and discard original array */
   a->cols = tmp->cols;
   a->rows = tmp->rows;
-  free(a->data);
+  sp_free(a->data);
   a->data = tmp->data;
-  free(tmp);
+  sp_free(tmp);
 }
 
 static inline void sp_i3matrix_transpose(sp_i3matrix * a){
@@ -1318,9 +1334,9 @@ static inline void sp_i3matrix_transpose(sp_i3matrix * a){
   a->x = tmp->x;
   a->y = tmp->y;
   a->z = tmp->z;
-  free(a->data);
+  sp_free(a->data);
   a->data = tmp->data;
-  free(tmp);
+  sp_free(tmp);
 }
 
 
@@ -1340,9 +1356,9 @@ static inline void sp_cmatrix_transpose(sp_cmatrix * a){
   /* copy from tmp the useful things and discard original array */
   a->cols = tmp->cols;
   a->rows = tmp->rows;
-  free(a->data);
+  sp_free(a->data);
   a->data = tmp->data;
-  free(tmp);
+  sp_free(tmp);
 }
 
 static inline void sp_c3matrix_transpose_xy(sp_c3matrix * a){
@@ -1360,9 +1376,9 @@ static inline void sp_c3matrix_transpose_xy(sp_c3matrix * a){
   a->x = tmp->x;
   a->y = tmp->y;
   a->z = tmp->z;
-  free(a->data);
+  sp_free(a->data);
   a->data = tmp->data;
-  free(tmp);
+  sp_free(tmp);
 }
 
 static inline void sp_i3matrix_transpose_xy(sp_i3matrix * a){
@@ -1380,9 +1396,9 @@ static inline void sp_i3matrix_transpose_xy(sp_i3matrix * a){
   a->x = tmp->x;
   a->y = tmp->y;
   a->z = tmp->z;
-  free(a->data);
+  sp_free(a->data);
   a->data = tmp->data;
-  free(tmp);
+  sp_free(tmp);
 }
 
 
@@ -1938,48 +1954,48 @@ static inline int sp_i3matrix_interp(const sp_i3matrix * m, real fx, real fy, re
  *
  *  The content of the matrix will be destroyed.
  */
-static inline void sp_cmatrix_realloc(sp_cmatrix * m, int row, int col){
+static inline void _sp_cmatrix_realloc(sp_cmatrix * m, int row, int col, char * file, int line){
   m->rows = row;
   m->cols = col;
-  m->data = realloc(m->data,sizeof(Complex)*sp_cmatrix_size(m));
+  m->data = _sp_realloc(m->data,sizeof(Complex)*sp_cmatrix_size(m), file, line);
 }
-static inline void sp_c3matrix_realloc(sp_c3matrix * m, int x, int y, int z){
+static inline void _sp_c3matrix_realloc(sp_c3matrix * m, int x, int y, int z, char * file, int line){
   m->x = x;
   m->y = y;
   m->z = z;
-  m->data = realloc(m->data,sizeof(Complex)*sp_c3matrix_size(m));
+  m->data = _sp_realloc(m->data,sizeof(Complex)*sp_c3matrix_size(m),file,line);
 }
 
 /*! Resizes integer matrix m to the desired size. 
  *
  *  The content of the matrix will be destroyed.
  */
-static inline void sp_imatrix_realloc(sp_imatrix * m, int row, int col){
+static inline void _sp_imatrix_realloc(sp_imatrix * m, int row, int col, char * file, int line){
   m->rows = row;
   m->cols = col;
-  m->data = realloc(m->data,sizeof(int)*sp_imatrix_size(m));
+  m->data = _sp_realloc(m->data,sizeof(int)*sp_imatrix_size(m),file,line);
 }
-static inline void sp_i3matrix_realloc(sp_i3matrix * m, int x, int y, int z){
+static inline void _sp_i3matrix_realloc(sp_i3matrix * m, int x, int y, int z,char * file, int line){
   m->x = x;
   m->y = y;
   m->z = z;
-  m->data = realloc(m->data,sizeof(Complex)*sp_i3matrix_size(m));
+  m->data = _sp_realloc(m->data,sizeof(Complex)*sp_i3matrix_size(m),file,line);
 }
 
 /*! Resizes matrix m to the desired size. 
  *
  *  The content of the matrix will be destroyed.
  */
-static inline void sp_matrix_realloc(sp_matrix * m, int row, int col){
+static inline void _sp_matrix_realloc(sp_matrix * m, int row, int col,char * file, int line){
   m->rows = row;
   m->cols = col;
-  m->data = realloc(m->data,sizeof(real)*sp_matrix_size(m));
+  m->data = _sp_realloc(m->data,sizeof(real)*sp_matrix_size(m),file,line);
 }
-static inline void sp_3matrix_realloc(sp_3matrix * m, int x, int y, int z){
+static inline void _sp_3matrix_realloc(sp_3matrix * m, int x, int y, int z, char * file, int line){
   m->x = x;
   m->y = y;
   m->z = z;
-  m->data = realloc(m->data,sizeof(Complex)*sp_3matrix_size(m));
+  m->data = _sp_realloc(m->data,sizeof(Complex)*sp_3matrix_size(m),file,line);
 }
 
 

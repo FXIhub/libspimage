@@ -1,133 +1,136 @@
 #include <stdlib.h>
 #include <string.h>
+#ifdef _USE_DMALLOC
+#include <dmalloc.h>
+#endif
 #include "spimage.h"
 
-sp_vector * sp_vector_alloc(const int size){
-  sp_vector * ret = malloc(sizeof(sp_vector));
+sp_vector * _sp_vector_alloc(const int size,char * file, int line){
+  sp_vector * ret = _sp_malloc(sizeof(sp_vector),file,line);
   ret->size = size;
-  ret->data = calloc(size,sizeof(real));
+  ret->data = _sp_calloc(size,sizeof(real),file,line);
   return ret;
 }
 
 
-sp_cvector * sp_cvector_alloc(const int size){
-  sp_cvector * ret = malloc(sizeof(sp_cvector));
+sp_cvector * _sp_cvector_alloc(const int size,char * file, int line){
+  sp_cvector * ret = _sp_malloc(sizeof(sp_cvector),file,line);
   ret->size = size;
-  ret->data = calloc(size,sizeof(Complex));
+  ret->data = _sp_calloc(size,sizeof(Complex),file,line);
   return ret;
 }
 
-void sp_vector_free(sp_vector * v){
-  free(v->data);
-  free(v);
+void _sp_vector_free(sp_vector * v,char * file,int line){
+  _sp_free(v->data,file,line);
+  _sp_free(v,file,line);
 }
 
-void sp_cvector_free(sp_cvector * v){
-  free(v->data);
-  free(v);
+void _sp_cvector_free(sp_cvector * v,char * file, int line){
+  _sp_free(v->data,file,line);
+  _sp_free(v,file,line);
 }
 
 
 
 
-sp_matrix * sp_matrix_alloc(unsigned int nrows, unsigned int ncols){
-  sp_matrix * res = malloc(sizeof(sp_matrix));
+sp_matrix * _sp_matrix_alloc(unsigned int nrows, unsigned int ncols,char * file, int line){
+  sp_matrix * res = _sp_malloc(sizeof(sp_matrix),file,line);
   res->rows = nrows;
   res->cols = ncols;
-  res->data = calloc(nrows*ncols,sizeof(real));
+  res->data = _sp_calloc(nrows*ncols,sizeof(real),file,line);
   return res;
 }
 
-sp_imatrix * sp_imatrix_alloc(unsigned int nrows, unsigned int ncols){
-  sp_imatrix * res = malloc(sizeof(sp_imatrix));
+sp_imatrix * _sp_imatrix_alloc(unsigned int nrows, unsigned int ncols,char * file,int line){
+  sp_imatrix * res = _sp_malloc(sizeof(sp_imatrix),file,line);
   res->rows = nrows;
   res->cols = ncols;
-  res->data = calloc(nrows*ncols,sizeof(int));
-  return res;
-}
-
-
-sp_cmatrix * sp_cmatrix_alloc(unsigned int nrows, unsigned int ncols){
-  sp_cmatrix * res = malloc(sizeof(sp_cmatrix));
-  res->rows = nrows;
-  res->cols = ncols;
-  res->data = calloc(nrows*ncols,sizeof(Complex));
+  res->data = _sp_calloc(nrows*ncols,sizeof(int),file,line);
   return res;
 }
 
 
-sp_cmatrix * sp_cmatrix_duplicate(sp_cmatrix * m){
-  sp_cmatrix * res = sp_cmatrix_alloc(sp_cmatrix_rows(m),sp_cmatrix_cols(m));
+sp_cmatrix * _sp_cmatrix_alloc(unsigned int nrows, unsigned int ncols,char * file,int line){
+  sp_cmatrix * res = _sp_malloc(sizeof(sp_cmatrix),file,line);
+  res->rows = nrows;
+  res->cols = ncols;
+  res->data = _sp_calloc(nrows*ncols,sizeof(Complex),file,line);
+  return res;
+}
+
+
+sp_cmatrix * _sp_cmatrix_duplicate(sp_cmatrix * m,char * file, int line){
+  sp_cmatrix * res = _sp_cmatrix_alloc(sp_cmatrix_rows(m),sp_cmatrix_cols(m),file,line);
   sp_cmatrix_memcpy(res,m);
   return res;
 }
 
-void sp_matrix_free(sp_matrix * a){
-  free(a->data);
-  free(a);
+void _sp_matrix_free(sp_matrix * a,char * file, int line){
+  _sp_free(a->data,file,line);
+  _sp_free(a,file,line);
 }
 
 
-void sp_imatrix_free(sp_imatrix * a){
-  free(a->data);
-  free(a);
+void _sp_imatrix_free(sp_imatrix * a,char * file, int line){
+  _sp_free(a->data,file,line);
+  _sp_free(a,file,line);
 }
 
 
-void sp_cmatrix_free(sp_cmatrix * a){
-  free(a->data);
-  free(a);
+void _sp_cmatrix_free(sp_cmatrix * a,char * file, int line){
+  _sp_free(a->data,file,line);
+  _sp_free(a,file,line);
 }
 
 
 
-sp_3matrix * sp_3matrix_alloc(unsigned int nx, unsigned int ny, unsigned int nz){
-  sp_3matrix * res = malloc(sizeof(sp_3matrix));
+sp_3matrix * _sp_3matrix_alloc(unsigned int nx, unsigned int ny, unsigned int nz,char * file,int line){
+  sp_3matrix * res = _sp_malloc(sizeof(sp_3matrix),file,line);
   res->x = nx;
   res->y = ny;
   res->z = nz;
-  res->data = calloc(nx*ny*nz,sizeof(real));
+  res->data = _sp_calloc(nx*ny*nz,sizeof(real),file,line);
   return res;
 }
 
-sp_i3matrix * sp_i3matrix_alloc(unsigned int nx, unsigned int ny, unsigned int nz){
-  sp_i3matrix * res = malloc(sizeof(sp_i3matrix));
+sp_i3matrix * _sp_i3matrix_alloc(unsigned int nx, unsigned int ny, unsigned int nz,char * file, int line){
+  sp_i3matrix * res = _sp_malloc(sizeof(sp_i3matrix),file,line);
   res->x = nx;
   res->y = ny;
   res->z = nz;
-  res->data = calloc(nx*ny*nz,sizeof(int));
+  res->data = _sp_calloc(nx*ny*nz,sizeof(int),file,line);
   return res;
 }
 
-sp_c3matrix * sp_c3matrix_alloc(unsigned int nx, unsigned int ny, unsigned int nz){
-  sp_c3matrix * res = malloc(sizeof(sp_c3matrix));
+sp_c3matrix * _sp_c3matrix_alloc(unsigned int nx, unsigned int ny, unsigned int nz,char * file, int line){
+  sp_c3matrix * res = _sp_malloc(sizeof(sp_c3matrix),file,line);
   res->x = nx;
   res->y = ny;
   res->z = nz;
-  res->data = calloc(nx*ny*nz,sizeof(Complex));
+  res->data = _sp_calloc(nx*ny*nz,sizeof(Complex),file,line);
   return res;
 }
 
 
-sp_c3matrix * sp_c3matrix_duplicate(sp_c3matrix * m){
-  sp_c3matrix * res = sp_c3matrix_alloc(sp_c3matrix_x(m),sp_c3matrix_y(m),sp_c3matrix_z(m));
+sp_c3matrix * _sp_c3matrix_duplicate(sp_c3matrix * m, char * file, int line){
+  sp_c3matrix * res = _sp_c3matrix_alloc(sp_c3matrix_x(m),sp_c3matrix_y(m),sp_c3matrix_z(m),file,line);
   sp_c3matrix_memcpy(res,m);
   return res;
 }
 
-void sp_3matrix_free(sp_3matrix * a){
-  free(a->data);
-  free(a);
+void _sp_3matrix_free(sp_3matrix * a,char * file, int line){
+  _sp_free(a->data,file,line);
+  _sp_free(a,file,line);
 }
 
-void sp_i3matrix_free(sp_i3matrix * a){
-  free(a->data);
-  free(a);
+void _sp_i3matrix_free(sp_i3matrix * a,char * file, int line){
+  _sp_free(a->data,file,line);
+  _sp_free(a,file,line);
 }
 
-void sp_c3matrix_free(sp_c3matrix * a){
-  free(a->data);
-  free(a);
+void _sp_c3matrix_free(sp_c3matrix * a,char * file, int line){
+  _sp_free(a->data,file,line);
+  _sp_free(a,file,line);
 }
 
 

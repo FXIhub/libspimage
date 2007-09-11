@@ -2,6 +2,10 @@
 /* #include <sys/time.h>*/
 #include <time.h>
 #include <limits.h>
+#ifdef _USE_DMALLOC
+#include <dmalloc.h>
+#endif
+
 #include "spimage.h"
 
 
@@ -12,7 +16,7 @@ real * sp_image_fft_shift(real * fftout, Image * a){
   int ny = sp_c3matrix_y(a->image);
   int nz = sp_c3matrix_z(a->image);
   
-  real * img_d = malloc(sizeof(real)*(nx/2+1)*ny*nz);
+  real * img_d = sp_malloc(sizeof(real)*(nx/2+1)*ny*nz);
   for(x = 0;x<nx;x++){
     for(y = 0;y<ny;y++){
       for(z = 0;z<nz;z++){

@@ -7,6 +7,9 @@
 
 #include "CuTest.h"
 #include <complex.h>
+#ifdef _USE_DMALLOC
+#include <dmalloc.h>
+#endif
 
 /*-------------------------------------------------------------------------*
  * Helper functions
@@ -1520,7 +1523,7 @@ void test_sp_cmatrix_invert(CuTest * tc){
   
   for(i = 0;i<sp_cmatrix_rows(m);i++){
     for(j = 0;j<sp_cmatrix_cols(m);j++){
-      CuAssertComplexEquals(tc,sp_cmatrix_get(m,i,j),sp_cmatrix_get(id,i,j),cabs(REAL_EPSILON*(sp_cmatrix_get(m,i,j))+REAL_EPSILON));
+      CuAssertComplexEquals(tc,sp_cmatrix_get(m,i,j),sp_cmatrix_get(id,i,j),cabs(REAL_EPSILON*(sp_cmatrix_get(m,i,j))+REAL_EPSILON*2*2));
     }
   }
   sp_cmatrix_free(m);
@@ -1650,9 +1653,12 @@ void test_sp_image_edge_extend(CuTest * tc){
   b = sp_image_edge_extend(a,1,SP_REPLICATE_EDGE,SP_2D);
   CuAssertComplexEquals(tc,sp_image_get(b,0,0,0),sp_image_get(a,0,0,0),cabs(REAL_EPSILON*(sp_image_get(b,0,0,0))+REAL_EPSILON));
   CuAssertComplexEquals(tc,sp_image_get(b,2,0,0),sp_image_get(a,1,0,0),cabs(REAL_EPSILON*(sp_image_get(b,2,0,0))+REAL_EPSILON));
+  sp_image_free(b);
   b = sp_image_edge_extend(a,1,SP_CIRCULAR_EDGE,SP_2D);
   CuAssertComplexEquals(tc,sp_image_get(b,0,0,0),sp_image_get(a,1,1,0),cabs(REAL_EPSILON*(sp_image_get(b,0,0,0))+REAL_EPSILON));
   CuAssertComplexEquals(tc,sp_image_get(b,2,0,0),sp_image_get(a,1,1,0),cabs(REAL_EPSILON*(sp_image_get(b,2,0,0))+REAL_EPSILON));
+  sp_image_free(b);
+  sp_image_free(a);
 }
 
 void test_sp_bubble_sort(CuTest * tc){
@@ -1676,6 +1682,8 @@ void test_sp_image_median_filter(CuTest * tc){
   sp_image_median_filter(a,kernel,SP_ZERO_PAD_EDGE,SP_2D);
   CuAssertDblEquals(tc,sp_image_get(a,0,0,0),0.0,cabs(REAL_EPSILON*(0)+REAL_EPSILON));
   CuAssertDblEquals(tc,sp_image_get(a,1,1,0),2.5,cabs(REAL_EPSILON*(2.5)+REAL_EPSILON));
+  sp_image_free(a);
+  sp_i3matrix_free(kernel);
 }
 
 void test_sp_image_max(CuTest * tc){
@@ -1694,6 +1702,7 @@ void test_sp_image_max(CuTest * tc){
   max = sp_image_max(img,&ind2,NULL,NULL,NULL);
   CuAssertDblEquals(tc,max,1,(1+1)*fabs(REAL_EPSILON));
   CuAssertIntEquals(tc,ind,ind2);
+  sp_image_free(img);
 }
 
 void test_sp_image_gaussian_blur(CuTest * tc){
@@ -1739,6 +1748,8 @@ void test_sp_image_gaussian_blur(CuTest * tc){
   sp_image_max(a,&ind1,NULL,NULL,NULL);
   sp_image_max(b,&ind2,NULL,NULL,NULL);
   CuAssertIntEquals(tc,ind1,ind2);
+  sp_image_free(a);
+  sp_image_free(b);
   
 }
 
