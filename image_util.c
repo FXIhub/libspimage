@@ -1794,6 +1794,8 @@ Image * sp_image_cross_correlate(Image * a, Image * b, int * size){
    A size smaller than the size of a+b will results in wrap around effects.
    If size is NULL the size of a will be used (resulting in wrap around effects).
 */
+
+/* FM: BUG! THIS FUNCTION IS BADLY CODED AND NEEDS TO BE REDONE! */
 Image * sp_image_convolute(Image * a, Image * b, int * size){
   int x;
   int y;  
