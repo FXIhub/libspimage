@@ -4,7 +4,7 @@
 #include <float.h>
 #include <complex.h>
 
-#ifdef DOUBLE
+#ifdef _SP_DOUBLE_PRECISION
 typedef double real;
 typedef _Complex double Complex;
 #define REAL_MAX DBL_MAX

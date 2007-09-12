@@ -107,7 +107,8 @@ spimage_EXPORT void sp_image_write(Image * img,const char * filename, int flags)
  * .png - Reads a png file
  *
  */
-spimage_EXPORT Image * sp_image_read(const char * filename,int flags);
+spimage_EXPORT Image * _sp_image_read(const char * filename,int flags, char * file, int line );
+#define sp_image_read(filename,flags) _sp_image_read(filename,flags,__FILE__,__LINE__)
 
 /*! Write the mask of the image to a file in png format, using 
   the specified color map

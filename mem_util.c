@@ -1,5 +1,6 @@
 #include "spimage.h"
 
+
 typedef struct sp_malloc_Node{
   struct sp_malloc_Node * previous;
   void * address;
@@ -69,7 +70,7 @@ void * _sp_realloc(void * ptr, size_t size, char * file, int line){
   }    
   sprintf(buffer,"Reallocated %x to %x freeing %d bytes and allocating %d bytes from %s:%d",(unsigned int)p->address,(unsigned int)retval,
 	  p->size,size,file,line);  
-/*  sp_log(buffer);*/
+  sp_log(buffer);
   p->size = size;
   p->address = retval;    
   sprintf(buffer,"%s:%d",file,line);
@@ -94,7 +95,7 @@ void sp_alloc(size_t n, char * file, int line, void * retval){
   mn->address = retval;    
   mn->next = NULL;
   sprintf(buffer,"%d bytes allocated at %x from %s:%d",mn->size,(unsigned int)mn->address,file,line);  
-/*  sp_log(buffer);*/
+  sp_log(buffer);
   sprintf(buffer,"%s:%d",file,line);
   mn->allocate_from = malloc(sizeof(char)*strlen(buffer));
   strcpy(mn->allocate_from,buffer);
@@ -139,8 +140,11 @@ void _sp_free(void * pointer, char * file, int line){
     p->next->previous = p->previous;
   }
   sprintf(buffer,"%d bytes sp_freed at %x from %s:%d",p->size,(unsigned int)p->address,file,line);
-/*  sp_log(buffer);*/
+  sp_log(buffer);
   free(p->allocate_from);
-  free(p);
+  free(p);  
+  free(pointer);
 }
+
+
 

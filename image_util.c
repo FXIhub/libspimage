@@ -36,7 +36,7 @@ static Image * reflect_y(Image * in, int in_place);
 static Image * reflect_origo(Image * in, int in_place);
 static void write_h5_img(Image * img,const char * filename, int output_precision);
 static void write_h5_img_3d(Image * img,const char * filename, int output_precision);
-static Image * read_imagefile(const char * filename);
+static Image * _read_imagefile(const char * filename, char * file, int line);
 static Image * read_tiff(const char * filename);
 static  void write_tiff(Image * img,const char * filename);
 static  void write_csv(Image * img,const char * filename);
@@ -293,6 +293,10 @@ Image * sp_image_shift(Image * img){
     max_y = sp_max(img->detector->image_center[1],sp_c3matrix_y(img->image)-1-img->detector->image_center[1]);
     max_z = sp_max(img->detector->image_center[2],sp_c3matrix_z(img->image)-1-img->detector->image_center[2]);
     //was 2*max_x+1 before (other way of defining center)
+    /* FM BUG: There was a bug here for 2D images with max_z so I added this hack */
+    if(max_z == 0){
+      max_z = 0.5;
+    }
     sp_image_realloc(out,2*max_x,2*max_y,2*max_z);
   }
 
@@ -960,7 +964,7 @@ void sp_image_write(Image * img, const char * filename, int flags){
   }
 }
 
-Image * sp_image_read(const char * filename, int flags){
+Image * _sp_image_read(const char * filename, int flags, char * file, int line){
   char buffer[1024];
   strcpy(buffer,filename);
   for(int i = 0;i<strlen(buffer);i++){
@@ -969,7 +973,7 @@ Image * sp_image_read(const char * filename, int flags){
   /* select the correct function depending on the filename extension */
   if(rindex(buffer,'.') && strcmp(rindex(buffer,'.'),".h5") == 0){
     /* we have an h5 file */
-    return read_imagefile(filename);
+    return _read_imagefile(filename,file,line);
   }else if(rindex(buffer,'.') && strcmp(rindex(buffer,'.'),".png") == 0){
     /* we  have a png file */
     return read_png(filename);
@@ -1285,8 +1289,8 @@ static void write_h5_img_3d(Image * img,const char * filename, int output_precis
 }
 
 
-Image * read_imagefile(const char * filename){
-  Image * res = sp_malloc(sizeof(Image));
+Image * _read_imagefile(const char * filename, char * file, int line){
+  Image * res = _sp_malloc(sizeof(Image),file, line);
   int file_id,dataset_id,space;
   int status,i;
   int version;
@@ -1306,7 +1310,7 @@ Image * read_imagefile(const char * filename){
   
   
   
-  res->detector = sp_malloc(sizeof(Detector));
+  res->detector = _sp_malloc(sizeof(Detector),file,line);
   
   
   file_id = H5Fopen(filename,H5F_ACC_RDONLY,H5P_DEFAULT);
@@ -1324,11 +1328,11 @@ Image * read_imagefile(const char * filename){
       space = H5Dget_space(dataset_id);
       H5Sget_simple_extent_dims(space,dims,NULL);
       if((int)dims[2]){
-	res->image = sp_c3matrix_alloc(dims[0],dims[1],dims[2]);
-	res->mask = sp_i3matrix_alloc(dims[0],dims[1],dims[2]);
+	res->image = _sp_c3matrix_alloc(dims[0],dims[1],dims[2],file,line);
+	res->mask = _sp_i3matrix_alloc(dims[0],dims[1],dims[2],file,line);
       }else{
-	res->image = sp_c3matrix_alloc(dims[0],dims[1],1);
-	res->mask = sp_i3matrix_alloc(dims[0],dims[1],1);
+	res->image = _sp_c3matrix_alloc(dims[0],dims[1],1,file,line);
+	res->mask = _sp_i3matrix_alloc(dims[0],dims[1],1,file,line);
       }
       
       status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL,
@@ -1411,9 +1415,9 @@ Image * read_imagefile(const char * filename){
       }
       
       if(res->phased){
-	tmp = sp_3matrix_alloc(sp_i3matrix_x(res->mask),
+	tmp = _sp_3matrix_alloc(sp_i3matrix_x(res->mask),
 			       sp_i3matrix_y(res->mask),
-			       sp_i3matrix_z(res->mask));
+			       sp_i3matrix_z(res->mask),file,line);
 	dataset_id = H5Dopen(file_id, "/imag");
 	status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 			 H5P_DEFAULT, tmp->data);
@@ -1424,8 +1428,8 @@ Image * read_imagefile(const char * filename){
 	sp_3matrix_free(tmp);
       }
       
-      tmp = sp_3matrix_alloc(sp_i3matrix_x(res->mask),sp_i3matrix_y(res->mask),
-			     sp_i3matrix_z(res->mask));
+      tmp = _sp_3matrix_alloc(sp_i3matrix_x(res->mask),sp_i3matrix_y(res->mask),
+			     sp_i3matrix_z(res->mask),file,line);
       dataset_id = H5Dopen(file_id, "/real");
       status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		       H5P_DEFAULT, tmp->data);
@@ -1442,14 +1446,14 @@ Image * read_imagefile(const char * filename){
     space = H5Dget_space(dataset_id);
     H5Sget_simple_extent_dims(space,dims,NULL);
     if(dims[2]){
-      res->image = sp_c3matrix_alloc(dims[0],dims[1],dims[2]);
-      res->mask = sp_i3matrix_alloc(dims[0],dims[1],dims[2]);
+      res->image = _sp_c3matrix_alloc(dims[0],dims[1],dims[2],file,line);
+      res->mask = _sp_i3matrix_alloc(dims[0],dims[1],dims[2],file,line);
     }else{
-      res->image = sp_c3matrix_alloc(dims[0],dims[1],1);
-      res->image = sp_c3matrix_alloc(dims[0],dims[1],1);
+      res->image = _sp_c3matrix_alloc(dims[0],dims[1],1,file,line);
+      res->image = _sp_c3matrix_alloc(dims[0],dims[1],1,file,line);
     }
-    tmp = sp_3matrix_alloc(sp_i3matrix_x(res->mask),sp_i3matrix_y(res->mask),
-			   sp_i3matrix_z(res->mask));
+    tmp = _sp_3matrix_alloc(sp_i3matrix_x(res->mask),sp_i3matrix_y(res->mask),
+			   sp_i3matrix_z(res->mask),file,line);
     
     status = H5Dread(dataset_id,mem_type_id , H5S_ALL, H5S_ALL,
 		     H5P_DEFAULT, tmp->data);
@@ -1517,8 +1521,8 @@ Image * read_imagefile(const char * filename){
     res->num_dimensions = values[0];
     
     if(res->phased){
-      tmp = sp_3matrix_alloc(sp_i3matrix_x(res->mask),sp_i3matrix_y(res->mask),
-			     sp_i3matrix_z(res->mask));
+      tmp = _sp_3matrix_alloc(sp_i3matrix_x(res->mask),sp_i3matrix_y(res->mask),
+			     sp_i3matrix_z(res->mask),file,line);
       dataset_id = H5Dopen(file_id, "/complex");
       status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		       H5P_DEFAULT, tmp->data);
@@ -1527,8 +1531,8 @@ Image * read_imagefile(const char * filename){
 	res->image->data[i] = tmp->data[i]*I;
       }
       sp_3matrix_free(tmp);
-      tmp = sp_3matrix_alloc(sp_i3matrix_x(res->mask),sp_i3matrix_y(res->mask),
-			     sp_i3matrix_z(res->mask));
+      tmp = _sp_3matrix_alloc(sp_i3matrix_x(res->mask),sp_i3matrix_y(res->mask),
+			     sp_i3matrix_z(res->mask),file,line);
       dataset_id = H5Dopen(file_id, "/real");
       status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		       H5P_DEFAULT, tmp->data);
@@ -1540,8 +1544,8 @@ Image * read_imagefile(const char * filename){
       
     }else{
       if(!res->scaled){
-	tmp = sp_3matrix_alloc(sp_i3matrix_x(res->mask),sp_i3matrix_y(res->mask),
-			       sp_i3matrix_z(res->mask));
+	tmp = _sp_3matrix_alloc(sp_i3matrix_x(res->mask),sp_i3matrix_y(res->mask),
+			       sp_i3matrix_z(res->mask),file,line);
 	dataset_id = H5Dopen(file_id, "/intensities");
 	status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 			 H5P_DEFAULT, tmp->data);
@@ -1551,8 +1555,8 @@ Image * read_imagefile(const char * filename){
 	}
 	sp_3matrix_free(tmp);
       }else{
-	tmp = sp_3matrix_alloc(sp_i3matrix_x(res->mask),sp_i3matrix_y(res->mask),
-			       sp_i3matrix_z(res->mask));
+	tmp = _sp_3matrix_alloc(sp_i3matrix_x(res->mask),sp_i3matrix_y(res->mask),
+			       sp_i3matrix_z(res->mask),file,line);
 	dataset_id = H5Dopen(file_id, "/amplitudes");
 	status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 			 H5P_DEFAULT, tmp->data);

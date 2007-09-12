@@ -7,7 +7,6 @@
 
 #define FFTW3
 /* #define FFTW2 */
-/* #define DOUBLE */
 
 #ifdef FFTW3
 #include <fftw3.h>
@@ -19,7 +18,7 @@
 #define sp_c3matrix_fft(a) sp_c3matrix_fftw3(a)
 
 
-#ifdef DOUBLE
+#ifdef _SP_DOUBLE_PRECISION
   typedef fftw_complex fftwr_complex;
   typedef fftw_plan fftwr_plan;
   #define fftwr_execute(a) fftw_execute(a)
@@ -51,7 +50,7 @@
 
 #endif
 #ifdef FFTW2
-#ifdef DOUBLE
+#ifdef _SP_DOUBLE_PRECISION
 #include <dfftw.h>
 #else 
 #include <sfftw.h>

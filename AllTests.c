@@ -1742,8 +1742,6 @@ void test_sp_image_gaussian_blur(CuTest * tc){
   /* the 0.00015 follows from the fact that 99.7% of the gaussian is within 3
      standard deviation and the gaussian blur only calculates 3 standard deviations. */
   CuAssertComplexEquals(tc,a_sum,b_sum,cabs(0.00015*(a_sum)));
-  ind1;
-  ind2;
   /* Image maximum must remain in the same place */
   sp_image_max(a,&ind1,NULL,NULL,NULL);
   sp_image_max(b,&ind2,NULL,NULL,NULL);
@@ -1752,6 +1750,18 @@ void test_sp_image_gaussian_blur(CuTest * tc){
   sp_image_free(b);
   
 }
+
+void test_cube_crop(CuTest * tc){
+  Image * a = sp_image_alloc(3,3,3);
+  for(long long i = 0;i<sp_image_size(a);i++){
+    a->image->data[i] = 2;
+  }
+  sp_image_set(a,2,1,1,3);
+  Image *b = cube_crop(a,2,1,1,2,1,1);
+  CuAssertComplexEquals(tc,sp_image_get(b,0,0,0),3,3*fabs(REAL_EPSILON));  
+}
+  
+
 
 CuSuite* image_get_suite(void)
 {
@@ -1762,6 +1772,7 @@ CuSuite* image_get_suite(void)
   SUITE_ADD_TEST(suite, test_sp_image_median_filter);
   SUITE_ADD_TEST(suite, test_sp_image_max);
   SUITE_ADD_TEST(suite,test_sp_image_gaussian_blur);
+  SUITE_ADD_TEST(suite,test_cube_crop);
   return suite;
 }
 
