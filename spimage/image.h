@@ -1,3 +1,18 @@
+/*
+
+A few remarks about coordinate systems.
+
+The top left pixel of a detector is called the pixel (0,0) and the lower right the pixel (max_x,max_y)
+The top left corner of a detector has the following coordinates: (-0.5, -0.5)
+The bottom right corner of a detector has the following coordinates: (max_x+0.5, max_y+0.5)
+This results from the finite size of a pixel.
+
+The coordinate units are pixels.
+
+So it follows that the center of the detector is (max_x/2,max_y/2) and its dimensions are (max_x+1,max_y+1)
+
+*/
+
 #ifndef _CIMAGE_H_
 #define _CIMAGE_H_
 
