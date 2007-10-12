@@ -1,6 +1,12 @@
 #ifndef _MEM_UTIL_H_
 #define _MEM_UTIL_H_ 1
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif /* __cplusplus */
+
+
 
 /*! Function that makes some booking on the memory allocations
  *
@@ -63,5 +69,10 @@ spimage_EXPORT void * _sp_realloc(void * ptr,size_t size, char * file, int line)
  *
  */
 spimage_EXPORT void sp_malloc_finalize();
+
+#ifdef __cplusplus
+}  /* extern "C" */
+#endif /* __cplusplus */
+
 
 #endif 

@@ -97,7 +97,7 @@ void sp_alloc(size_t n, char * file, int line, void * retval){
   sprintf(buffer,"%d bytes allocated at %x from %s:%d",mn->size,(unsigned int)mn->address,file,line);  
   sp_log(buffer);
   sprintf(buffer,"%s:%d",file,line);
-  mn->allocate_from = malloc(sizeof(char)*strlen(buffer));
+  mn->allocate_from = malloc(sizeof(char)*strlen(buffer)+1);
   strcpy(mn->allocate_from,buffer);
 }
 

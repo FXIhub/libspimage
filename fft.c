@@ -70,8 +70,10 @@ Image * sp_image_ifftw3(Image * img){
   in = (fftwr_complex*) fftwr_malloc(sizeof(fftwr_complex) * (sp_cmatrix_rows(img->image))*(sp_cmatrix_cols(img->image)));  
   out = (fftwr_complex*) fftwr_malloc(sizeof(fftwr_complex) * (sp_cmatrix_rows(img->image))*(sp_cmatrix_cols(img->image)));
   */
-  in = img->image->data;
-  out = res->image->data;
+  
+  /* Kinda buggy FM: I'm gonna assume the compiler doesn't make strange things to our structure and everything is binary compatible */
+  in = (fftwr_complex *)img->image->data;
+  out = (fftwr_complex *)res->image->data;
   plan = fftwr_plan_dft_3d(sp_c3matrix_x(img->image),sp_c3matrix_y(img->image),sp_c3matrix_z(img->image),in,out, FFTW_BACKWARD,FFTW_ESTIMATE);
 
   fftwr_execute(plan);
@@ -86,8 +88,8 @@ sp_c3matrix * sp_c3matrix_ifftw3(sp_c3matrix * m){
   fftwr_plan plan;
   sp_c3matrix * res;
   res = sp_c3matrix_alloc(sp_c3matrix_x(m),sp_c3matrix_y(m),sp_c3matrix_z(m));
-  in = m->data;
-  out = res->data;
+  in = (fftwr_complex *)m->data;
+  out = (fftwr_complex *)res->data;
   plan = fftwr_plan_dft_3d(sp_c3matrix_x(m),sp_c3matrix_y(m),sp_c3matrix_z(m),in,out, FFTW_BACKWARD,FFTW_ESTIMATE);
 
   fftwr_execute(plan);
@@ -138,8 +140,8 @@ Image * sp_image_fftw3(Image * img){
 
   sp_image_rephase(res,SP_ZERO_PHASE);
   /* Rely on binary compatibility of the Complex type */
-  in = img->image->data;
-  out = res->image->data;
+  in = (fftwr_complex *)img->image->data;
+  out = (fftwr_complex *)res->image->data;
   plan = fftwr_plan_dft_3d(sp_c3matrix_x(img->image),sp_c3matrix_y(img->image),sp_c3matrix_z(img->image),in,out,FFTW_FORWARD,FFTW_ESTIMATE);
 
   fftwr_execute(plan);
@@ -162,8 +164,8 @@ sp_c3matrix * sp_c3matrix_fftw3(sp_c3matrix * m){
 					sp_c3matrix_z(m));
 
   /* Rely on binary compatibility of the Complex type */
-  in = m->data;
-  out = res->data;
+  in = (fftwr_complex *)m->data;
+  out = (fftwr_complex *)res->data;
   plan = fftwr_plan_dft_3d(sp_c3matrix_x(m),sp_c3matrix_y(m),sp_c3matrix_z(m),in,out,FFTW_FORWARD,FFTW_ESTIMATE);
 
   fftwr_execute(plan);

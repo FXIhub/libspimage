@@ -2,6 +2,13 @@
 #define _IMAGE_UTIL_H_
 
 #include "image.h"
+#include "linear_alg.h"
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif /* __cplusplus */
+
 
 #define TSIZE(a) (a->detector->size[0]*a->detector->size[1])
 
@@ -91,8 +98,25 @@ spimage_EXPORT real sp_image_dist(Image * in, int i, int type);
  *
  * It creates an spimage file with all the informations contained
  * in the Image structure with the specified precision.
- * output_precision must be 4 or 8 and specifies the number of bytes
- * used for storing each floating point number.
+ *
+ * The meaning of the flags depends on the type of file created:
+ * There are only flags for .h5 and .png files, for the others this
+ * value is ignored 
+ * 
+ *   File type    Flag Value          Meaning
+ *
+ *      .h5
+ *              sizeof(float)      Data should be written in single precision
+ *              sizeof(double)     Data should be written in double precision
+ *
+ *      .png
+ *              COLOR_GRAYSCALE    Image will use a grayscale color palete
+ *              COLOR_TRADITIONAL  Image will use the traditional color map
+ *              COLOR_HOT          Image will use the hot color map
+ *              COLOR_RAINBOW      Image will use the rainbow color map
+ *              COLOR_JET          Image will use the jet color map
+ *              LOG_SCALE          Image will be written in log scale
+ *
  */
 spimage_EXPORT void sp_image_write(Image * img,const char * filename, int flags);
 
@@ -105,6 +129,9 @@ spimage_EXPORT void sp_image_write(Image * img,const char * filename, int flags)
  * .h5 - Reads a hdf5 file
  * .tiff or .tif - Reads a TIFF file
  * .png - Reads a png file
+ *
+ *
+ * The flags value is currently ignored.
  *
  */
 spimage_EXPORT Image * _sp_image_read(const char * filename,int flags, char * file, int line );
@@ -317,7 +344,7 @@ spimage_EXPORT void sp_image_dephase(Image *  img);
 static inline void sp_image_to_intensities(Image *  img){
   if(img->scaled){
     for(long long i = 0;i<sp_image_size(img);i++){
-      img->image->data[i] *= conjr(img->image->data[i]);
+      img->image->data[i] = sp_cmul(img->image->data[i],sp_cconj(img->image->data[i]));
     }
     img->scaled = 0;
   }
@@ -331,7 +358,8 @@ static inline void sp_image_to_intensities(Image *  img){
 static inline  void sp_image_to_amplitudes(Image *  img){
   if(!img->scaled){
     for(long long i = 0;i<sp_image_size(img);i++){
-      img->image->data[i] = sqrt(img->image->data[i]);
+      sp_real(img->image->data[i]) = sqrt(sp_real(img->image->data[i]));
+      sp_imag(img->image->data[i]) = 0;
     }
     img->scaled = 1;
   }
@@ -575,5 +603,10 @@ spimage_EXPORT void sp_image_fourier_coords(Image * in, sp_3matrix * k_x, sp_3ma
  *
  */
 spimage_EXPORT void sp_srand(int i);
+
+
+#ifdef __cplusplus
+}  /* extern "C" */
+#endif /* __cplusplus */
 
 #endif

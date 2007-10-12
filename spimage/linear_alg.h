@@ -3,12 +3,37 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <complex.h>
 #include <string.h>
 #include <math.h>
 #include <assert.h>
 
 #include "mem_util.h"
+
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif /* __cplusplus */
+
+
+#ifdef _SP_DOUBLE_PRECISION
+typedef double real;
+typedef struct {
+     double re, im;
+}Complex;
+#define REAL_MAX DBL_MAX
+#define REAL_EPSILON DBL_EPSILON
+#else
+typedef float real;
+#define sp_real(a) (a).re
+#define sp_imag(a) (a).im
+typedef struct {
+     float re, im;
+}Complex;
+#define REAL_MAX FLT_MAX
+#define REAL_EPSILON FLT_EPSILON
+#endif
+
 
 typedef struct{
   unsigned int size;
@@ -77,6 +102,63 @@ static inline real sp_max(real a,real b){
 }
 
 #define sp_swap(a,b,t){ t _temp = a; a = b;b = _temp}
+
+
+/* You have to be careful when using this macro because it can cause unintended side effects! */
+#define sp_cincr(a,b){sp_real(a) += sp_real(b); sp_imag(a) += sp_imag(b);}
+
+static inline Complex sp_cinit(real a, real b){
+  Complex ret = {a,b};
+  return ret;
+}
+
+static inline Complex sp_cconj(Complex a){  
+  sp_imag(a) = -sp_imag(a);
+  return a;
+}
+
+static inline real sp_cabs(Complex a){
+  return sqrt(sp_imag(a)*sp_imag(a)+sp_real(a)*sp_real(a));
+}
+
+
+static inline real sp_carg(Complex a){
+    return atan2(sp_imag(a),sp_real(a));
+}
+
+static inline Complex sp_cadd(Complex a, Complex b){
+  sp_real(a) += sp_real(b);
+  sp_imag(a) += sp_imag(b);
+  return a;
+}
+
+
+static inline Complex sp_csub(Complex a, Complex b){
+  sp_real(a) -= sp_real(b);
+  sp_imag(a) -= sp_imag(b);
+  return a;
+}
+
+
+static inline Complex sp_cscale(Complex a, real b){
+  sp_real(a) *= b;
+  sp_imag(a) *= b;
+  return a;
+}
+
+static inline Complex sp_cmul(Complex a, Complex b){
+  Complex ret;
+  sp_real(ret) = sp_real(a)*sp_real(b)-sp_imag(a)*sp_imag(b);
+  sp_imag(ret) = sp_real(a)*sp_imag(b)+sp_real(b)*sp_imag(a);  
+  return ret;
+}
+
+static inline Complex sp_cdiv(Complex a, Complex b){
+  Complex ret;
+  sp_real(ret) = (sp_real(a)*sp_real(b)+sp_imag(a)*sp_imag(b))/(sp_real(b)*sp_real(b)+sp_imag(b)*sp_imag(b));
+  sp_imag(ret) = (sp_imag(a)*sp_real(b)-sp_real(a)*sp_imag(b))/(sp_real(b)*sp_real(b)+sp_imag(b)*sp_imag(b));
+  return ret;
+}
 
 /*! This function allocates memory for a 3matrix of size nrows rows by ncols columns and initializes all the elements of the matrix to zero.
  *
@@ -308,7 +390,6 @@ static inline void sp_cmatrix_set (sp_cmatrix * m, unsigned int row, unsigned in
   m->data[col*m->rows+row] = x;
 }
 
-
 /*! This function returns the nth element of a vector v.
  *
  * n must be in the range of 0 to size-1.
@@ -340,6 +421,7 @@ static inline void sp_vector_set (const sp_vector * v, unsigned int n, real x){
 static inline void sp_cvector_set (const sp_cvector * v, unsigned int n, Complex x){
   v->data[n] = x;
 }
+
 
 /*! This function copies the elements of the matrix b into the matrix a. 
   *
@@ -460,7 +542,7 @@ static inline void sp_vector_add(sp_vector * a, const sp_vector * b){
 static inline void sp_cvector_add(sp_cvector * a, const sp_cvector * b){
   int i;
   for(i = 0;i<a->size;i++){
-    a->data[i] += b->data[i];
+    a->data[i] = sp_cadd(a->data[i],b->data[i]);
   }
 }
 
@@ -483,7 +565,7 @@ static inline void sp_vector_sub(sp_vector * a, const sp_vector * b){
 static inline void sp_cvector_sub(sp_cvector * a, const sp_cvector * b){
   int i;
   for(i = 0;i<a->size;i++){
-    a->data[i] -= b->data[i];
+    a->data[i] = sp_csub(a->data[i],b->data[i]);
   }
 }
 
@@ -505,7 +587,7 @@ static inline void sp_vector_mul(sp_vector * a, const sp_vector * b){
 static inline void sp_cvector_mul(sp_cvector * a, const sp_cvector * b){
   int i;
   for(i = 0;i<a->size;i++){
-    a->data[i] *= b->data[i];
+    a->data[i] = sp_cmul(a->data[i],b->data[i]);
   }
 }
 
@@ -527,7 +609,7 @@ static inline void sp_vector_div(sp_vector * a, const sp_vector * b){
 static inline void sp_cvector_div(sp_cvector * a, const sp_cvector * b){
   int i;
   for(i = 0;i<a->size;i++){
-    a->data[i] /= b->data[i];
+    a->data[i] = sp_cdiv(a->data[i],b->data[i]);
   }
 }
 
@@ -548,7 +630,7 @@ static inline void sp_vector_scale(sp_vector * a, const real x){
 static inline void sp_cvector_scale(sp_cvector * a, const Complex x){
   int i;
   for(i = 0;i<a->size;i++){
-    a->data[i] *= x;
+    a->data[i] = sp_cmul(a->data[i],x);
   }
 }
 
@@ -569,7 +651,7 @@ static inline void sp_vector_add_constant(sp_vector * a, const real x){
 static inline void sp_cvector_add_constant(sp_cvector * a, const Complex x){
   int i;
   for(i = 0;i<a->size;i++){
-    a->data[i] += x;
+    a->data[i] = sp_cadd(a->data[i],x);
   }
 }
 
@@ -591,11 +673,11 @@ static inline real sp_vector_dot_prod(sp_vector * a, const sp_vector * b){
   *
   * The two vectors must have the same length.
   */
-static inline real sp_cvector_dot_prod(sp_cvector * a, const sp_cvector * b){
+static inline Complex sp_cvector_dot_prod(sp_cvector * a, const sp_cvector * b){
   int i;
-  real ret = 0;
+  Complex ret = {0,0};
   for(i = 0;i<a->size;i++){
-    ret += a->data[i]*b->data[i];
+    ret = sp_cadd(ret,sp_cmul(a->data[i],sp_cconj(b->data[i])));
   }
   return ret;
 }
@@ -635,7 +717,7 @@ static inline real sp_cvector_norm(sp_cvector * a){
   int i;
   real ret = 0;
   for(i = 0;i<a->size;i++){
-    ret += a->data[i]*a->data[i];
+    ret += sp_cabs(a->data[i])*sp_cabs(a->data[i]);
   }
   return sqrt(ret);
 }
@@ -864,9 +946,10 @@ static inline void sp_imatrix_set_identity(sp_imatrix * m){
  */
 static inline void sp_cmatrix_set_identity(sp_cmatrix * m){
   int i;
+  Complex one = {1,0};
   memset(m->data,0,sizeof(Complex)*m->rows*m->cols);
   for(i = 0;i<m->rows && i<m->cols;i++){
-    sp_cmatrix_set(m,i,i,1);
+    sp_cmatrix_set(m,i,i,one);
   }
 }
 
@@ -902,13 +985,13 @@ static inline void sp_imatrix_add(sp_imatrix * a, const sp_imatrix * b){
  */
 static inline void sp_cmatrix_add(sp_cmatrix * a, const sp_cmatrix * b, Complex * x){
   int i;
-  if(x && *x != 1){
+  if(x && ((sp_real(*x) != 1) || (sp_imag(*x) != 0))){
     for(i = 0;i<sp_cmatrix_size(b);i++){
-      a->data[i] += b->data[i]*(*x);
+      a->data[i] = sp_cadd(a->data[i],sp_cmul(b->data[i],(*x)));
     }
   }else{
     for(i = 0;i<sp_cmatrix_size(b);i++){
-      a->data[i] += b->data[i];
+      a->data[i] = sp_cadd(a->data[i],b->data[i]);
     }
   }
 }
@@ -942,13 +1025,13 @@ static inline void sp_i3matrix_add(sp_i3matrix * a, const sp_i3matrix * b){
  */
 static inline void sp_c3matrix_add(sp_c3matrix * a, const sp_c3matrix * b, Complex * x){
   int i;
-  if(x && *x != 1){
+  if(x && ((sp_real(*x) != 1) || (sp_imag(*x) != 0))){
     for(i = 0;i<sp_c3matrix_size(b);i++){
-      a->data[i] += b->data[i]*(*x);
+      a->data[i] = sp_cadd(a->data[i],sp_cmul(b->data[i],(*x)));
     }
   }else{
     for(i = 0;i<sp_c3matrix_size(b);i++){
-      a->data[i] += b->data[i];
+      a->data[i] = sp_cadd(a->data[i],b->data[i]);
     }
   }
 }
@@ -985,7 +1068,7 @@ static inline void sp_imatrix_sub(sp_imatrix * a, const sp_imatrix * b){
 static inline void sp_cmatrix_sub(sp_cmatrix * a, const sp_cmatrix * b){
   int i;
   for(i = 0;i<sp_cmatrix_size(b);i++){
-    a->data[i] -= b->data[i];
+    a->data[i] = sp_csub(a->data[i],b->data[i]);
   }
 }
 
@@ -1020,7 +1103,7 @@ static inline void sp_i3matrix_sub(sp_i3matrix * a, const sp_i3matrix * b){
 static inline void sp_c3matrix_sub(sp_c3matrix * a, const sp_c3matrix * b){
   int i;
   for(i = 0;i<sp_c3matrix_size(b);i++){
-    a->data[i] -= b->data[i];
+    a->data[i] = sp_csub(a->data[i],b->data[i]);
   }
 }
 
@@ -1053,7 +1136,7 @@ static inline void sp_imatrix_mul_elements(sp_imatrix * a, const sp_imatrix * b)
 static inline void sp_cmatrix_mul_elements(sp_cmatrix * a, const sp_cmatrix * b){
   int i;
   for(i = 0;i<sp_cmatrix_size(b);i++){
-    a->data[i] *= b->data[i];
+    a->data[i] = sp_cmul(a->data[i],b->data[i]);
   }
 }
 
@@ -1086,7 +1169,7 @@ static inline void sp_i3matrix_mul_elements(sp_i3matrix * a, const sp_i3matrix *
 static inline void sp_c3matrix_mul_elements(sp_c3matrix * a, const sp_c3matrix * b){
   int i;
   for(i = 0;i<sp_c3matrix_size(b);i++){
-    a->data[i] *= b->data[i];
+    a->data[i] = sp_cmul(a->data[i],b->data[i]);
   }
 }
 
@@ -1134,16 +1217,16 @@ static inline void sp_i3matrix_div_elements(sp_i3matrix * a, const sp_i3matrix *
 static inline void sp_cmatrix_div_elements(sp_cmatrix * a, const sp_cmatrix * b){
   int i;
   for(i = 0;i<sp_cmatrix_size(b);i++){
-    assert(b->data[i] != 0);
-    a->data[i] /= b->data[i];
+    assert(sp_cabs(b->data[i]) != 0);
+    a->data[i] = sp_cdiv(a->data[i],b->data[i]);
   }
 }
 
 static inline void sp_c3matrix_div_elements(sp_c3matrix * a, const sp_c3matrix * b){
   int i;
   for(i = 0;i<sp_c3matrix_size(b);i++){
-    assert(b->data[i] != 0);
-    a->data[i] /= b->data[i];
+    assert(sp_cabs(b->data[i]) != 0);
+    a->data[i] = sp_cdiv(a->data[i],b->data[i]);
   }
 }
 
@@ -1174,7 +1257,7 @@ static inline void sp_imatrix_scale(sp_imatrix * a, const real x){
 static inline void sp_cmatrix_scale(sp_cmatrix * a, const Complex x){
   int i;
   for(i = 0;i<sp_cmatrix_size(a);i++){
-    a->data[i] *= x;
+    a->data[i] = sp_cmul(a->data[i],x);
   }
 }
 
@@ -1205,7 +1288,7 @@ static inline void sp_i3matrix_scale(sp_i3matrix * a, const real x){
 static inline void sp_c3matrix_scale(sp_c3matrix * a, const Complex x){
   int i;
   for(i = 0;i<sp_c3matrix_size(a);i++){
-    a->data[i] *= x;
+    a->data[i] = sp_cmul(a->data[i],x);
   }
 }
 
@@ -1249,13 +1332,13 @@ static inline void sp_i3matrix_add_constant(sp_i3matrix * a, const int x){
 static inline void sp_cmatrix_add_constant(sp_cmatrix * a, const Complex x){
   int i;
   for(i = 0;i<sp_cmatrix_size(a);i++){
-    a->data[i] += x;
+    a->data[i] = sp_cadd(a->data[i],x);
   }
 }
 static inline void sp_c3matrix_add_constant(sp_c3matrix * a, const Complex x){
   int i;
   for(i = 0;i<sp_c3matrix_size(a);i++){
-    a->data[i] += x;
+    a->data[i] = sp_cadd(a->data[i],x);
   }
 }
 
@@ -1437,7 +1520,7 @@ static inline sp_cvector * sp_cmatrix_cvector_prod(const sp_cmatrix * m, const s
   sp_cvector * ret = sp_cvector_alloc(m->rows);
   for(i = 0;i<m->rows;i++){
     for(j = 0;j<m->cols;j++){
-      ret->data[i] += sp_cmatrix_get(m,i,j)*v->data[j];
+      ret->data[i] = sp_cadd(ret->data[i],sp_cmul(sp_cmatrix_get(m,i,j),v->data[j]));
     }
   }
   return ret;
@@ -1486,13 +1569,14 @@ static inline sp_3matrix * sp_3matrix_mul(const sp_3matrix * a, const sp_3matrix
  */
 static inline sp_cmatrix * sp_cmatrix_mul(const sp_cmatrix * a, const sp_cmatrix * b){
   int i,j,k;
-  real tmp;
+  Complex tmp;
   sp_cmatrix * ret = sp_cmatrix_alloc(a->rows,b->cols);
   for(i = 0;i<a->rows;i++){
     for(j = 0;j<b->cols;j++){
-      tmp = 0;
+      sp_real(tmp) = 0;
+      sp_imag(tmp) = 0;
       for(k = 0;k<a->cols;k++){
-	tmp += sp_cmatrix_get(a,i,k)*sp_cmatrix_get(b,k,j);
+	tmp = sp_cadd(tmp,sp_cmul(sp_cmatrix_get(a,i,k),sp_cmatrix_get(b,k,j)));
       }
       sp_cmatrix_set(ret,i,j,tmp);
     }
@@ -1502,13 +1586,14 @@ static inline sp_cmatrix * sp_cmatrix_mul(const sp_cmatrix * a, const sp_cmatrix
 
 static inline sp_c3matrix * sp_c3matrix_mul(const sp_c3matrix * a, const sp_c3matrix * b){
   int i,j,k;
-  real tmp;
+  Complex tmp;
   sp_c3matrix * ret = sp_c3matrix_alloc(a->x,b->y,0);
   for(i = 0;i<a->x;i++){
     for(j = 0;j<b->y;j++){
-      tmp = 0;
+      sp_real(tmp) = 0;
+      sp_imag(tmp) = 0;
       for(k = 0;k<a->y;k++){
-	tmp += sp_c3matrix_get(a,k,i,0)*sp_c3matrix_get(b,j,k,0);
+	tmp = sp_cadd(tmp,sp_cmul(sp_c3matrix_get(a,k,i,0),sp_c3matrix_get(b,j,k,0)));
       }
       sp_c3matrix_set(ret,i,j,0,tmp);
     }
@@ -1539,7 +1624,7 @@ static inline void sp_3matrix_scale_row(sp_3matrix * m, int n, real x){
 static inline void sp_cmatrix_scale_row(sp_cmatrix * m, int n, Complex x){
   int i;
   for(i = 0;i<sp_cmatrix_cols(m);i++){
-    sp_cmatrix_set(m,n,i,sp_cmatrix_get(m,n,i)*x);
+    sp_cmatrix_set(m,n,i,sp_cmul(sp_cmatrix_get(m,n,i),x));
   }
 }
 
@@ -1566,7 +1651,7 @@ static inline void sp_3matrix_row_add_row(sp_3matrix * m, int from, int to, real
 static inline void sp_cmatrix_row_add_row(sp_cmatrix * m, int from, int to, Complex factor){
   int i;
   for(i = 0;i<sp_cmatrix_cols(m);i++){
-    sp_cmatrix_set(m,to,i,sp_cmatrix_get(m,from,i)*factor+sp_cmatrix_get(m,to,i));
+    sp_cmatrix_set(m,to,i,sp_cadd(sp_cmul(sp_cmatrix_get(m,from,i),factor),sp_cmatrix_get(m,to,i)));
   }
 }
 
@@ -1601,7 +1686,8 @@ static inline sp_cvector * sp_vector_to_cvector(const sp_vector * v){
   int size = sp_vector_size(v);
   sp_cvector * ret = sp_cvector_alloc(size);
   for(i = 0;i<size;i++){
-    ret->data[i] = v->data[i];
+    sp_real(ret->data[i]) = v->data[i];
+    sp_imag(ret->data[i]) = 0;
   }
   return ret;
 }
@@ -1617,7 +1703,8 @@ static inline sp_cmatrix * sp_matrix_to_cmatrix(const sp_matrix * m){
   sp_cmatrix * ret = sp_cmatrix_alloc(rows,cols);
   for(i = 0;i<rows;i++){
     for(j = 0;j<cols;j++){
-      sp_cmatrix_set(ret,i,j,sp_matrix_get(m,i,j));
+      Complex tmp = {sp_matrix_get(m,i,j),0};
+      sp_cmatrix_set(ret,i,j,tmp);
     }
   }
   return ret;
@@ -1675,14 +1762,14 @@ static inline long long sp_c3matrix_get_index(const sp_c3matrix * m, const int x
 static inline void sp_cmatrix_conj(sp_cmatrix * m){
   int i;
   for(i = 0;i<sp_cmatrix_size(m);i++){
-    m->data[i] = conjr(m->data[i]);
+    m->data[i] = sp_cconj(m->data[i]);
   }
 }
 
 static inline void sp_c3matrix_conj(sp_c3matrix * m){
   int i;
   for(i = 0;i<sp_c3matrix_size(m);i++){
-    m->data[i] = conjr(m->data[i]);
+    m->data[i] = sp_cconj(m->data[i]);
   }
 }
 
@@ -1690,11 +1777,11 @@ static inline void sp_c3matrix_conj(sp_c3matrix * m){
  *
  */
 static inline real sp_cmatrix_min(const sp_cmatrix * m, int * index){
-  real min = cabsr(m->data[0]);
+  real min = sp_cabs(m->data[0]);
   int i,ii;
   for(i = 1;i<sp_cmatrix_size(m);i++){
-    if(cabsr(m->data[i]) < min){
-      min = cabsr(m->data[i]);
+    if(sp_cabs(m->data[i]) < min){
+      min = sp_cabs(m->data[i]);
       ii = i;
     }
   }
@@ -1705,11 +1792,11 @@ static inline real sp_cmatrix_min(const sp_cmatrix * m, int * index){
 }
 
 static inline real sp_c3matrix_min(const sp_c3matrix * m, long long * index){
-  real min = cabsr(m->data[0]);
+  real min = sp_cabs(m->data[0]);
   int i,ii;
   for(i = 1;i<sp_c3matrix_size(m);i++){
-    if(cabsr(m->data[i]) < min){
-      min = cabsr(m->data[i]);
+    if(sp_cabs(m->data[i]) < min){
+      min = sp_cabs(m->data[i]);
       ii = i;
     }
   }
@@ -1723,12 +1810,12 @@ static inline real sp_c3matrix_min(const sp_c3matrix * m, long long * index){
  *
  */
 static inline real sp_cmatrix_max(const sp_cmatrix * m, int * index){
-  real max = cabsr(m->data[0]);
+  real max = sp_cabs(m->data[0]);
   int i;
   int i_max = 0;
   for(i = 1;i<sp_cmatrix_size(m);i++){
-    if(cabsr(m->data[i]) > max){
-      max = cabsr(m->data[i]);
+    if(sp_cabs(m->data[i]) > max){
+      max = sp_cabs(m->data[i]);
       i_max = i;
     }
   }
@@ -1738,12 +1825,12 @@ static inline real sp_cmatrix_max(const sp_cmatrix * m, int * index){
   return max;
 }
 static inline real sp_c3matrix_max(const sp_c3matrix * m, long long * index){
-  real max = cabsr(m->data[0]);
+  real max = sp_cabs(m->data[0]);
   long long i;
   long long i_max = 0;
   for(i = 1;i<sp_c3matrix_size(m);i++){
-    if(cabsr(m->data[i]) > max){
-      max = cabsr(m->data[i]);
+    if(sp_cabs(m->data[i]) > max){
+      max = sp_cabs(m->data[i]);
       i_max = i;
     }
   }
@@ -1761,7 +1848,7 @@ static inline Complex sp_cmatrix_interp(const sp_cmatrix * m, real frow, real fc
   int y = frow;
   real u = fcol-x;
   real v = frow-y;
-  Complex res = 0;
+  Complex res = {0,0};
   if(x >= sp_cmatrix_cols(m)-1){
     x = sp_cmatrix_cols(m)-2;
     u = 1;
@@ -1770,10 +1857,10 @@ static inline Complex sp_cmatrix_interp(const sp_cmatrix * m, real frow, real fc
     y = sp_cmatrix_rows(m)-2;
     v = 1;
   }
-  res = sp_cmatrix_get(m,y,x)*(1-u)*(1-v)+
-    sp_cmatrix_get(m,y,x+1)*(u)*(1-v)+
-    sp_cmatrix_get(m,y+1,x)*(1-u)*(v)+
-    sp_cmatrix_get(m,y+1,x+1)*(u)*(v);
+  res = sp_cadd(sp_cadd(sp_cadd(sp_cscale(sp_cscale(sp_cmatrix_get(m,y,x),(1-u)),(1-v)),
+			sp_cscale(sp_cscale(sp_cmatrix_get(m,y,x+1),(u)),(1-v))),
+			sp_cscale(sp_cscale(sp_cmatrix_get(m,y+1,x),(1-u)),(v))),
+		sp_cscale(sp_cscale(sp_cmatrix_get(m,y+1,x+1),(u)),(v)));
   return res;
 }
 
@@ -1784,7 +1871,7 @@ static inline Complex sp_c3matrix_interp(const sp_c3matrix * m, real fx, real fy
   real u = fx-x;
   real v = fy-y;
   real w = fz-z;
-  Complex res = 0;
+  Complex res = {0,0};
 
   if(x >= sp_c3matrix_x(m)-1){
     x = sp_c3matrix_x(m)-2;
@@ -1798,14 +1885,14 @@ static inline Complex sp_c3matrix_interp(const sp_c3matrix * m, real fx, real fy
     z = sp_c3matrix_z(m)-2;
     w = 1;
   }
-  res = sp_c3matrix_get(m,x,y,z)*(1-u)*(1-v)*(1-w);
-  if(u){res += sp_c3matrix_get(m,x+1,y,z)*(u)*(1-v)*(1-w);}
-  if(v){res += sp_c3matrix_get(m,x,y+1,z)*(1-u)*(v)*(1-w);}
-  if(w){res += sp_c3matrix_get(m,x,y,z+1)*(1-u)*(1-v)*(w);}
-  if(u && v){res += sp_c3matrix_get(m,x+1,y+1,z)*(u)*(v)*(1-w);}
-  if(u && w){res += sp_c3matrix_get(m,x+1,y,z+1)*(u)*(1-v)*(w);}
-  if(v && w){res += sp_c3matrix_get(m,x,y+1,z+1)*(1-u)*(v)*(w);}
-  if(u && v && w){res += sp_c3matrix_get(m,x+1,y+1,z+1)*(u)*(v)*(w);}
+  res = sp_cscale(sp_cscale(sp_cscale(sp_c3matrix_get(m,x,y,z),(1-u)),(1-v)),(1-w));
+  if(u){res = sp_cadd(res,sp_cscale(sp_cscale(sp_cscale(sp_c3matrix_get(m,x+1,y,z),(u)),(1-v)),(1-w)));}
+  if(v){res = sp_cadd(res,sp_cscale(sp_cscale(sp_cscale(sp_c3matrix_get(m,x,y+1,z),(1-u)),(v)),(1-w)));}
+  if(w){res = sp_cadd(res,sp_cscale(sp_cscale(sp_cscale(sp_c3matrix_get(m,x,y,z+1),(1-u)),(1-v)),(w)));}
+  if(u && v){res = sp_cadd(res,sp_cscale(sp_cscale(sp_cscale(sp_c3matrix_get(m,x+1,y+1,z),(u)),(v)),(1-w)));}
+  if(u && w){res = sp_cadd(res,sp_cscale(sp_cscale(sp_cscale(sp_c3matrix_get(m,x+1,y,z+1),(u)),(1-v)),(w)));}
+  if(v && w){res = sp_cadd(res,sp_cscale(sp_cscale(sp_cscale(sp_c3matrix_get(m,x,y+1,z+1),(1-u)),(v)),(w)));}
+  if(u && v && w){res = sp_cadd(res,sp_cscale(sp_cscale(sp_cscale(sp_c3matrix_get(m,x+1,y+1,z+1),(u)),(v)),(w)));}
   return res;
 }
 
@@ -2020,7 +2107,8 @@ static inline void sp_c3matrix_get_xyz(const sp_c3matrix * m, long long index, i
 static inline void sp_cmatrix_to_real(const sp_cmatrix * m){
   int i;
   for(i = 0;i<sp_cmatrix_size(m);i++){
-    m->data[i] = cabsr(m->data[i]);
+    sp_real(m->data[i]) = sp_cabs(m->data[i]);
+    sp_imag(m->data[i]) = 0;
   }
 }
 
@@ -2033,21 +2121,29 @@ static inline void sp_cmatrix_to_real(const sp_cmatrix * m){
  */
 
 static inline Complex sp_cmatrix_froenius_prod(const sp_cmatrix * a, const sp_cmatrix * b){
-  Complex ret = 0; 
+  Complex ret = {0,0}; 
   int i;
   for(i = 0;i<sp_cmatrix_size(a);i++){
-    ret += a->data[i]*conjr(b->data[i]);
+    ret = sp_cadd(ret,sp_cmul(a->data[i],sp_cconj(b->data[i])));
   }
   return ret;
 }
 
 static inline Complex sp_c3matrix_froenius_prod(const sp_c3matrix * a, const sp_c3matrix * b){
-  Complex ret = 0; 
+  Complex ret = {0,0};
   int i;
   for(i = 0;i<sp_c3matrix_size(a);i++){
-    ret += a->data[i]*conjr(b->data[i]);
+    ret = sp_cadd(ret,sp_cmul(a->data[i],sp_cconj(b->data[i])));
   }
   return ret;
 }
 
+
+
+
+#ifdef __cplusplus
+}  /* extern "C" */
+#endif /* __cplusplus */
+
+  
 #endif

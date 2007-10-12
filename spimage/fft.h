@@ -1,6 +1,12 @@
 #ifndef _FFT_H_
 #define _FFT_H_
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif /* __cplusplus */
+
+
 #ifndef M_PI
 #define M_PI 3.1415926535897932846
 #endif
@@ -88,5 +94,9 @@ spimage_EXPORT sp_c3matrix * sp_c3matrix_ifft(sp_c3matrix * img);
  *   nthreads threads
  */
 spimage_EXPORT int sp_init_fft(int nthreads);
+
+#ifdef __cplusplus
+}  /* extern "C" */
+#endif /* __cplusplus */
 
 #endif

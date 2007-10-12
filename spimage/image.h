@@ -13,29 +13,15 @@ So it follows that the center of the detector is (max_x/2,max_y/2) and its dimen
 
 */
 
-#ifndef _CIMAGE_H_
-#define _CIMAGE_H_
+#ifndef _IMAGE_H_
+#define _IMAGE_H_ 1
 
 #include <float.h>
-#include <complex.h>
 
-#ifdef _SP_DOUBLE_PRECISION
-typedef double real;
-typedef _Complex double Complex;
-#define REAL_MAX DBL_MAX
-#define REAL_EPSILON DBL_EPSILON
-#define conjr(a) conj(a)
-#define cabsr(a) cabs(a)
-#define cargr(a) carg(a)
-#else
-typedef float real;
-typedef _Complex float Complex;
-#define REAL_MAX FLT_MAX
-#define REAL_EPSILON FLT_EPSILON
-#define cabsr(a) cabsf(a)
-#define conjr(a) conjf(a)
-#define cargr(a) cargf(a)
-#endif
+#ifdef __cplusplus
+extern "C"
+{
+#endif /* __cplusplus */
 
 
 #if defined(_WIN32) || defined(WIN32) /* Win32 version */
@@ -56,7 +42,6 @@ typedef enum{SP_1D=1,SP_2D=2,SP_3D=3} Dimensions;
 /*! Structure that keeps all the information about the Detector type.
 
 */
-
 typedef struct{
   real image_center[3];
   real pixel_size[3];
@@ -68,8 +53,6 @@ typedef struct{
 /*! Main structure that keeps all the information about an image.
 
 */
-
-
 typedef struct{
   /* this flag tell us whether we should try to access
    the real and complex part of the image seperately or
@@ -91,5 +74,10 @@ typedef struct{
   Dimensions num_dimensions;
 
 }Image;
+
+#ifdef __cplusplus
+}  /* extern "C" */
+#endif /* __cplusplus */
+
 
 #endif

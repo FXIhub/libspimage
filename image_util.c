@@ -35,7 +35,6 @@ static Image * reflect_x(Image * in, int in_place);
 static Image * reflect_y(Image * in, int in_place);
 static Image * reflect_origo(Image * in, int in_place);
 static void write_h5_img(Image * img,const char * filename, int output_precision);
-static void write_h5_img_3d(Image * img,const char * filename, int output_precision);
 static Image * _read_imagefile(const char * filename, char * file, int line);
 static Image * read_tiff(const char * filename);
 static  void write_tiff(Image * img,const char * filename);
@@ -43,7 +42,6 @@ static  void write_csv(Image * img,const char * filename);
 static Image * read_png(const char * filename);
 static int write_png(Image * img,const char * filename, int color);
 static int write_vtk(Image * img,const char * filename);
-static int write_vtk_3d(Image * img, const char * filename);
 
 
 void sp_srand(int i){
@@ -182,13 +180,13 @@ Image * sp_average_centrosymetry(Image * in){
       ind1 = sp_c3matrix_get_index(in->image,sp_c3matrix_y(in->image)-1-y,sp_c3matrix_x(in->image)-1-x,0);
       ind2= sp_c3matrix_get_index(in->image,x,y,0);
       if(dist_to_corner(x*sp_c3matrix_y(in->image)+y,in) < 1500){
-	if((in->image->data[ind1] + in->image->data[ind2]) && in->mask->data[ind1] && in->mask->data[ind2]){
-	  noise += cabs(in->image->data[ind1] - in->image->data[ind2])/
- 	  ((in->image->data[ind1] + in->image->data[ind2])/2);
+	if(sp_cabs(sp_cadd(in->image->data[ind1],in->image->data[ind2])) && in->mask->data[ind1] && in->mask->data[ind2]){
+	  noise += sp_cabs(sp_csub(in->image->data[ind1],in->image->data[ind2]))/(sp_cabs(sp_cscale(sp_cadd(in->image->data[ind1],in->image->data[ind2]),0.5)));
 	  k++;
-	  out->image->data[ind2] = (in->image->data[ind1] + in->image->data[ind2])/2;
+	  out->image->data[ind2] = sp_cscale(sp_cadd(in->image->data[ind1],in->image->data[ind2]),0.5);
 	}else{
-	  out->image->data[ind2] = 0;
+	  sp_real(out->image->data[ind2]) = 0;
+	  sp_imag(out->image->data[ind2]) = 0;
 	}
       }
     }
@@ -302,7 +300,8 @@ Image * sp_image_shift(Image * img){
 
 		   
   for(i = 0;i<sp_image_size(out);i++){
-    out->image->data[i] = 0;
+    sp_real(out->image->data[i]) = 0;
+    sp_imag(out->image->data[i]) = 0;
     out->mask->data[i] = 0;
   }
   //doesn't work for shifted images with z=1. Could be helped by adding
@@ -536,7 +535,8 @@ void sp_image_smooth_edges(Image * img, sp_i3matrix * mask, int flags, real * va
   Image * tmp = sp_image_duplicate(img,SP_COPY_DATA|SP_COPY_MASK);
   if(flags & SP_GAUSSIAN){
     for(i = 0;i<sp_image_size(tmp);i++){
-      tmp->image->data[i] = mask->data[i];
+      sp_real(tmp->image->data[i]) = mask->data[i];
+      sp_imag(tmp->image->data[i]) = 0;
     }
     printf("img (%i,%i,%i)\n",sp_image_x(img),sp_image_y(img),sp_image_z(img));
     Image * blur_mask = gaussian_blur(tmp,*value);
@@ -544,8 +544,9 @@ void sp_image_smooth_edges(Image * img, sp_i3matrix * mask, int flags, real * va
     printf("blur_mask (%i,%i,%i)\n",sp_image_x(blur_mask),sp_image_y(blur_mask),sp_image_z(blur_mask));
     /* eat out the edge of the mask*/
     for(i = 0;i<sp_image_size(blur_mask);i++){
-      if(creal(blur_mask->image->data[i]) < 0.99){
-	blur_mask->image->data[i] = 0;
+      if(sp_real(blur_mask->image->data[i]) < 0.99){
+	sp_real(blur_mask->image->data[i]) = 0;
+	sp_imag(blur_mask->image->data[i]) = 0;
       }
     }
       
@@ -601,12 +602,16 @@ Image * sp_centro_sym_correlation(Image  * img){
     for(y = 0;y<sp_c3matrix_y(img->image);y++){
       for(z = 0;z<sp_c3matrix_z(img->image);z++){
 	csvalue = sp_centro_sym_value(index,img);
-	if(!img->mask->data[index] || csvalue == -1 || cabs(img->image->data[index])+fabs(csvalue) < 1){
-	  res->image->data[index] = 1.0;
+	if(!img->mask->data[index] || csvalue == -1 || sp_cabs(img->image->data[index])+fabs(csvalue) < 1){
+	  sp_real(res->image->data[index]) = 1.0;
+	  sp_imag(res->image->data[index]) = 0;
 	}else{
-	  res->image->data[index] = 1.0 - cabs(img->image->data[index]-csvalue)/(cabs(img->image->data[index])+fabs(csvalue));      
+	  Complex tmp = img->image->data[index];
+	  sp_real(tmp) -= csvalue;
+	  sp_real(res->image->data[index]) = 1.0 - sp_cabs(tmp)/(sp_cabs(img->image->data[index])+fabs(csvalue));      
+	  sp_imag(res->image->data[index]) = 0;
 	}
-	if(creal(res->image->data[index]) < 0 || creal(res->image->data[index]) > 1){
+	if(sp_real(res->image->data[index]) < 0 || sp_real(res->image->data[index]) > 1){
 	  /* Houston we have a problem */
 	  exit(1);
 	}
@@ -713,7 +718,8 @@ void sp_image_dephase(Image *  img){
   int i = 0;
   img->phased = 0;    
   for(i = 0;i<sp_image_size(img);i++){
-    img->image->data[i] = cabs(img->image->data[i]);
+    sp_real(img->image->data[i]) = sp_cabs(img->image->data[i]);
+    sp_imag(img->image->data[i]) = 0;
   }
 }
 
@@ -731,7 +737,8 @@ static void random_rephase(Image *  img){
   real phase;
   for(i = 0;i<sp_image_size(img);i++){
     phase = p_drand48()*M_PI*2;
-    img->image->data[i] = cos(phase)*img->image->data[i]+ sin(phase)*img->image->data[i]*I;
+    sp_real(img->image->data[i]) = cos(phase)*sp_cabs(img->image->data[i]);
+    sp_imag(img->image->data[i]) = sin(phase)*sp_cabs(img->image->data[i]);
   }
   img->phased = 1;    
 }
@@ -747,7 +754,8 @@ Image * sp_image_get_phases(Image * img){
   res = sp_image_duplicate(img,SP_COPY_DETECTOR);
   sp_image_dephase(res);
   for(i = 0;i<sp_image_size(res);i++){
-    res->image->data[i] = carg(img->image->data[i]);
+    sp_real(res->image->data[i]) = sp_carg(img->image->data[i]);
+    sp_imag(res->image->data[i]) = 0;
   }
   return res;
 }
@@ -804,7 +812,8 @@ void sp_add_noise(Image * in, real level, int type){
       return;
     }
     for(i = 0;i<sp_image_size(in);i++){
-      in->image->data[i] = (1.0+sp_box_muller(0,level))*creal(in->image->data[i])+(1.0+sp_box_muller(0,level))*cimag(in->image->data[i])*I;
+      sp_real(in->image->data[i]) = (1.0+sp_box_muller(0,level))*sp_real(in->image->data[i]);
+      sp_imag(in->image->data[i]) = (1.0+sp_box_muller(0,level))*sp_imag(in->image->data[i]);
     }
   }
 }
@@ -836,8 +845,10 @@ void sp_image_high_pass(Image * in, real radius, int type){
 	  if(dist <= radius){
 	    in->mask->data[z*sp_c3matrix_x(in->image)*sp_c3matrix_y(in->image)+
 			   y*sp_c3matrix_x(in->image)+x] = 0;
-	    in->image->data[z*sp_c3matrix_x(in->image)*sp_c3matrix_y(in->image)+
-			    y*sp_c3matrix_x(in->image)+y] = 0;
+	    sp_real(in->image->data[z*sp_c3matrix_x(in->image)*sp_c3matrix_y(in->image)+
+				    y*sp_c3matrix_x(in->image)+y]) = 0;
+	    sp_imag(in->image->data[z*sp_c3matrix_x(in->image)*sp_c3matrix_y(in->image)+
+				    y*sp_c3matrix_x(in->image)+y]) = 0;
 	  }
 	}
       }
@@ -858,7 +869,8 @@ void sp_image_high_pass(Image * in, real radius, int type){
 	dist = sqrt(dx*dx+dy*dy);
 	if(dist <= radius){
 	  in->mask->data[y*sp_c3matrix_x(in->image)+x] = 0;
-	  in->image->data[y*sp_c3matrix_x(in->image)+x] = 0;
+	  sp_real(in->image->data[y*sp_c3matrix_x(in->image)+x]) = 0;
+	  sp_imag(in->image->data[y*sp_c3matrix_x(in->image)+x]) = 0;
 	}
       }
     }
@@ -947,15 +959,15 @@ void sp_image_write(Image * img, const char * filename, int flags){
   /* select the correct function depending on the buffer extension */
   if(rindex(buffer,'.') && strcmp(rindex(buffer,'.'),".h5") == 0){
     /* we have an h5 file */
-    write_h5_img_3d(img,filename,sizeof(real));
+    write_h5_img(img,filename,sizeof(real));
   }else if(rindex(buffer,'.') && strcmp(rindex(buffer,'.'),".png") == 0){
     write_png(img,filename,flags);
   }else if(rindex(buffer,'.') && strcmp(rindex(buffer,'.'),".vtk") == 0){
-    write_vtk_3d(img,filename);
+    write_vtk(img,filename);
   }else if(rindex(buffer,'.') && (strcmp(rindex(buffer,'.'),".tif") == 0 ||strcmp(rindex(buffer,'.'),".tiff") == 0 )){
     write_tiff(img,filename);
   }else if(rindex(buffer,'.') && (strcmp(rindex(buffer,'.'),".csv") == 0)){
-    if(flags == SP_3D){
+    if(img->num_dimensions == SP_3D){
       fprintf(stderr,"Cannot export 3D file to csv");
     }
     write_csv(img,filename);
@@ -991,6 +1003,8 @@ Image * _sp_image_read(const char * filename, int flags, char * file, int line){
 }
 
 
+/* superseeded by the new one. Just leave it here in case strange bugs show up in the new one */
+/*
 static void write_h5_img(Image * img,const char * filename, int output_precision){
   hid_t dataspace_id;
   hid_t dataset_id;
@@ -1037,7 +1051,7 @@ static void write_h5_img(Image * img,const char * filename, int output_precision
 
   tmp = sp_3matrix_alloc(sp_c3matrix_x(img->image),sp_c3matrix_y(img->image),1);
   for(i = 0;i<sp_image_size(img);i++){
-    tmp->data[i] = creal(img->image->data[i]);
+    tmp->data[i] = sp_real(img->image->data[i]);
   }
 
   dataset_id = H5Dcreate(file_id, "/real", out_type_id,
@@ -1050,7 +1064,7 @@ static void write_h5_img(Image * img,const char * filename, int output_precision
   if(img->phased){
     tmp = sp_3matrix_alloc(sp_c3matrix_x(img->image),sp_c3matrix_y(img->image),1);
     for(i = 0;i<sp_image_size(img);i++){
-      tmp->data[i] = cimag(img->image->data[i]);
+      tmp->data[i] = sp_imag(img->image->data[i]);
     }
 
     dataset_id = H5Dcreate(file_id, "/imag",out_type_id,
@@ -1132,9 +1146,9 @@ static void write_h5_img(Image * img,const char * filename, int output_precision
 
   status = H5Fclose(file_id);
 }
+*/
 
-
-static void write_h5_img_3d(Image * img,const char * filename, int output_precision){
+static void write_h5_img(Image * img,const char * filename, int output_precision){
   hid_t dataspace_id;
   hid_t dataset_id;
   hid_t file_id;
@@ -1182,7 +1196,7 @@ static void write_h5_img_3d(Image * img,const char * filename, int output_precis
   tmp = sp_3matrix_alloc(sp_c3matrix_x(img->image),sp_c3matrix_y(img->image),
 			 sp_c3matrix_z(img->image));
   for(i = 0;i<sp_image_size(img);i++){
-    tmp->data[i] = creal(img->image->data[i]);
+    tmp->data[i] = sp_real(img->image->data[i]);
   }
 
   dataset_id = H5Dcreate(file_id, "/real", out_type_id,
@@ -1196,7 +1210,7 @@ static void write_h5_img_3d(Image * img,const char * filename, int output_precis
     tmp = sp_3matrix_alloc(sp_c3matrix_x(img->image),sp_c3matrix_y(img->image),
 			   sp_c3matrix_z(img->image));
     for(i = 0;i<sp_image_size(img);i++){
-      tmp->data[i] = cimag(img->image->data[i]);
+      tmp->data[i] = sp_imag(img->image->data[i]);
     }
 
     dataset_id = H5Dcreate(file_id, "/imag",out_type_id,
@@ -1423,7 +1437,8 @@ Image * _read_imagefile(const char * filename, char * file, int line){
 			 H5P_DEFAULT, tmp->data);
 	status = H5Dclose(dataset_id);
 	for(i = 0;i<sp_3matrix_size(tmp);i++){
-	  res->image->data[i] = tmp->data[i]*I;
+	  sp_imag(res->image->data[i]) = tmp->data[i];
+	  sp_real(res->image->data[i]) = 0;
 	}
 	sp_3matrix_free(tmp);
       }
@@ -1435,7 +1450,7 @@ Image * _read_imagefile(const char * filename, char * file, int line){
 		       H5P_DEFAULT, tmp->data);
       status = H5Dclose(dataset_id);
       for(i = 0;i<sp_3matrix_size(tmp);i++){
-	res->image->data[i] += tmp->data[i];
+	sp_real(res->image->data[i]) += tmp->data[i];
       }
       sp_3matrix_free(tmp);
       
@@ -1528,7 +1543,8 @@ Image * _read_imagefile(const char * filename, char * file, int line){
 		       H5P_DEFAULT, tmp->data);
       status = H5Dclose(dataset_id);
       for(i = 0;i<sp_3matrix_size(tmp);i++){
-	res->image->data[i] = tmp->data[i]*I;
+	sp_imag(res->image->data[i]) = tmp->data[i];
+	sp_real(res->image->data[i]) = 0;
       }
       sp_3matrix_free(tmp);
       tmp = _sp_3matrix_alloc(sp_i3matrix_x(res->mask),sp_i3matrix_y(res->mask),
@@ -1538,7 +1554,7 @@ Image * _read_imagefile(const char * filename, char * file, int line){
 		       H5P_DEFAULT, tmp->data);
       status = H5Dclose(dataset_id);
       for(i = 0;i<sp_3matrix_size(tmp);i++){
-	res->image->data[i] += tmp->data[i];
+	sp_real(res->image->data[i]) += tmp->data[i];
       }
       sp_3matrix_free(tmp);
       
@@ -1551,7 +1567,7 @@ Image * _read_imagefile(const char * filename, char * file, int line){
 			 H5P_DEFAULT, tmp->data);
 	status = H5Dclose(dataset_id);
 	for(i = 0;i<sp_3matrix_size(tmp);i++){
-	  res->image->data[i] += tmp->data[i];
+	  sp_real(res->image->data[i]) += tmp->data[i];
 	}
 	sp_3matrix_free(tmp);
       }else{
@@ -1562,7 +1578,7 @@ Image * _read_imagefile(const char * filename, char * file, int line){
 			 H5P_DEFAULT, tmp->data);
 	status = H5Dclose(dataset_id);
 	for(i = 0;i<sp_3matrix_size(tmp);i++){
-	  res->image->data[i] += tmp->data[i];
+	  sp_real(res->image->data[i]) += tmp->data[i];
 	}
 	sp_3matrix_free(tmp);	 
       }
@@ -1627,22 +1643,26 @@ Image * read_tiff(const char * filename){
   if(datatype == SAMPLEFORMAT_UINT){
     tmpui = (unsigned short *)img;
     for(i = 0;i<sp_c3matrix_size(out->image);i++){
-      out->image->data[i] = tmpui[i];
+      sp_real(out->image->data[i])= tmpui[i];
+      sp_imag(out->image->data[i]) = 0;
     }
   }else if(datatype == SAMPLEFORMAT_IEEEFP){
     tmpf = (float *)img;
     for(i = 0;i<sp_c3matrix_size(out->image);i++){
-      out->image->data[i] = tmpf[i];
+      sp_real(out->image->data[i]) = tmpf[i];
+      sp_imag(out->image->data[i]) = 0;
     }
   }else if(datatype == SAMPLEFORMAT_VOID){
     tmpuc = (unsigned char *)img;
     for(i = 0;i<sp_c3matrix_size(out->image);i++){
-      out->image->data[i] = tmpuc[i];
+      sp_real(out->image->data[i]) = tmpuc[i];
+      sp_imag(out->image->data[i]) = 0;
     }
   }else if(datatype == SAMPLEFORMAT_INT){
     tmpi = (short *)(img);
     for(i = 0;i<sp_c3matrix_size(out->image);i++){
-      out->image->data[i] = tmpi[i];
+      sp_real(out->image->data[i]) = tmpi[i];
+      sp_imag(out->image->data[i]) = 0;
     }
   }
 
@@ -1687,7 +1707,7 @@ void write_tiff(Image * img,const char * filename){
   data = sp_malloc(nstrips*stripsize);
   for(y = 0;y<sp_image_x(img);y++){
     for(x = 0;x<sp_image_y(img);x++){
-      data[x] =cabsr(sp_image_get(img,x,y,0));      
+      data[x] =sp_cabs(sp_image_get(img,x,y,0));      
     }
     TIFFWriteEncodedStrip(tif,y,data,stripsize);
   }
@@ -1712,7 +1732,7 @@ void write_csv(Image * img,const char * filename){
   fprintf(f,"x,y,amplitude,phase,real,imaginary\n");
   for(y = 0;y<sp_image_y(img);y++){
     for(x = 0;x<sp_image_x(img);x++){
-      fprintf(f,"%d,%d,%f,%f,%f,%f\n",x,y,cabsr(sp_image_get(img,x,y,0)),carg(sp_image_get(img,x,y,0)),creal(sp_image_get(img,x,y,0)),cimag(sp_image_get(img,x,y,0)));
+      fprintf(f,"%d,%d,%f,%f,%f,%f\n",x,y,sp_cabs(sp_image_get(img,x,y,0)),sp_carg(sp_image_get(img,x,y,0)),sp_real(sp_image_get(img,x,y,0)),sp_imag(sp_image_get(img,x,y,0)));
     }
   }
   fclose(f);
@@ -1772,7 +1792,7 @@ Image * sp_image_cross_correlate(Image * a, Image * b, int * size){
   /* Now do the multiplication in fourier space */
   /* Using the Convolution Theorem */
   for(i = 0;i<x*y*z;i++){
-    tmp->image->data[i] = a_ft->image->data[i]*conj(b_ft->image->data[i]);
+    tmp->image->data[i] = sp_cmul(a_ft->image->data[i],sp_cconj(b_ft->image->data[i]));
   }
 
   sp_image_free(a_ft);
@@ -1783,9 +1803,9 @@ Image * sp_image_cross_correlate(Image * a, Image * b, int * size){
 
   /* should be all real */
   for(i = 0;i<sp_image_size(res);i++){
-    res->image->data[i] /= sp_image_size(res);
+    res->image->data[i] = sp_cscale(res->image->data[i],1.0/sp_image_size(res));
+    
   }
-
   return res;  
 }
 
@@ -1852,7 +1872,7 @@ Image * sp_image_convolute(Image * a, Image * b, int * size){
   /* Now do the multiplication in fourier space */
   /* Using the Convolution Theorem */
   for(i = 0;i<x*y*z;i++){
-    tmp->image->data[i] = a_ft->image->data[i]*b_ft->image->data[i];
+    tmp->image->data[i] = sp_cmul(a_ft->image->data[i],b_ft->image->data[i]);
   }
 
   sp_image_free(a_ft);
@@ -1876,7 +1896,7 @@ Image * sp_image_convolute(Image * a, Image * b, int * size){
 /*  sp_image_dephase(res);*/
   /* should be all real */
   for(i = 0;i<sp_image_size(res);i++){
-    res->image->data[i] /= sp_image_size(res);
+    res->image->data[i] = sp_cscale(res->image->data[i],1.0/sp_image_size(res));
   }
 
   return res;  
@@ -1915,16 +1935,16 @@ Image * gaussian_blur(Image * in, real radius){
       j = y+ceil(radius)*3;
       for(z = -ceil(radius_z)*3;z<=ceil(radius_z)*3;z++){
 	k = z+ceil(radius_z)*3;
-	filter_img->image->data[k*filter_side*filter_side+j*filter_side+i] = 1/sqrt(2*M_PI*radius) * exp(-(x*x+y*y+z*z)/(2*radius*radius));
+	sp_real(filter_img->image->data[k*filter_side*filter_side+j*filter_side+i]) = 1/sqrt(2*M_PI*radius) * exp(-(x*x+y*y+z*z)/(2*radius*radius));
+	sp_imag(filter_img->image->data[k*filter_side*filter_side+j*filter_side+i]) = 0;
 	/* Make the filter symmetric in the imaginary part */
 	/*      filter_img->image->data[i*filter_side+j] = filter_img->image->data[i*filter_side+j] + filter_img->image->data[i*filter_side+j]*I;*/
-	total_filter += filter_img->image->data[k*filter_side*filter_side+
-						j*filter_side+i];
+	total_filter += sp_cabs(filter_img->image->data[k*filter_side*filter_side+j*filter_side+i]);
       }
     }
   }
   for(i = 0;i<sp_image_size(filter_img);i++){
-    filter_img->image->data[i] /= total_filter;
+    filter_img->image->data[i] = sp_cscale(filter_img->image->data[i],1.0/total_filter);
   }
   centered_filter = shift_center_to_top_left(filter_img);
   centered_filter->shifted = 1;
@@ -1981,13 +2001,13 @@ Image * square_blur(Image * in, real radius, int type){
       j = y+ceil(radius)*3;
       for(z = -ceil(radius)*3;z<=ceil(radius)*3;z++){
 	if(type == SP_3D){k = z+ceil(radius)*3;}else{k = 0;}
-	filter->data[k*filter_side*filter_side+j*filter_side+i] = 1.0/((2*radius+1)*(2*radius+1));
-	total_filter += filter->data[k*filter_side*filter_side+j*filter_side+i];
+	filter->data[k*filter_side*filter_side+j*filter_side+i] = sp_cinit(1.0/((2*radius+1)*(2*radius+1)),0);
+	total_filter += sp_real(filter->data[k*filter_side*filter_side+j*filter_side+i]);
       }
     }
   }
   for(i = 0;i<sp_image_size(filter_img);i++){
-    filter_img->image->data[i] /= total_filter;
+    filter_img->image->data[i] = sp_cscale(filter_img->image->data[i],1.0/total_filter);
   }
   centered_filter = shift_center_to_top_left(filter_img);
   sp_image_free(filter_img);
@@ -2006,7 +2026,7 @@ int write_mask_to_png(Image * img, char * filename, int color){
     fprintf(stderr,"Can't write 3D mask to png");
   }else{
     for(i = 0;i<sp_image_size(img);i++){
-      res->image->data[i] = res->mask->data[i];
+      res->image->data[i] = sp_cinit(res->mask->data[i],0);
     }
     ret = write_png(res,filename,color);
     sp_image_free(res);
@@ -2089,7 +2109,7 @@ Image * read_png(const char * filename){
  res = sp_image_alloc(width,height,1);
  for(i = 0;i<height;i++){
    for(j = 0;j<width;j++){
-     res->image->data[i*width+j] = row_pointers[i][(int)(j*bit_depth/8)];
+     res->image->data[i*width+j] = sp_cinit(row_pointers[i][(int)(j*bit_depth/8)],0);
      res->mask->data[i*width+j] = 1;
    }
  }
@@ -2245,12 +2265,12 @@ int write_png(Image * img,const char * filename, int color){
     for(x = 0;x<sp_c3matrix_x(img->image);x++){
       /* traditional color scale taken from gnuplot manual */
       if(color & LOG_SCALE){
-	value = log((cabs(img->image->data[i])-offset)*scale+1)/log_of_2;
+	value = log((sp_cabs(img->image->data[i])-offset)*scale+1)/log_of_2;
       }else{
-	value = ((cabs(img->image->data[i])-offset)*scale);
+	value = ((sp_cabs(img->image->data[i])-offset)*scale);
       }
       if(color & COLOR_PHASE){
-	phase = (256*(cargr(img->image->data[i])+3.1416)/(2*3.1416));
+	phase = (256*(sp_carg(img->image->data[i])+3.1416)/(2*3.1416));
 	row_pointers[y][x*3] =  sqrt(value)*color_table[0][(int)phase];
 	row_pointers[y][x*3+1] = sqrt(value)*color_table[1][(int)phase];
 	row_pointers[y][x*3+2] = sqrt(value)*color_table[2][(int)phase];
@@ -2283,11 +2303,11 @@ real r_factor(Image * fobs, Image *fcalc, real low_intensity_cutoff){
   real num = 0;
   int i;
   for(i = 0;i<sp_image_size(fobs);i++){
-    if(!fobs->mask->data[i] || creal(fobs->image->data[i]) < low_intensity_cutoff){
+    if(!fobs->mask->data[i] || sp_real(fobs->image->data[i]) < low_intensity_cutoff){
       continue;
     }
-    num +=  cabs(fobs->image->data[i]-fcalc->image->data[i]);
-    den += fobs->image->data[i];
+    num +=  sp_cabs(sp_csub(fobs->image->data[i],fcalc->image->data[i]));
+    den += sp_cabs(fobs->image->data[i]);
   }
   return num/den;
 }
@@ -2302,12 +2322,12 @@ Image * low_pass_square_filter(Image * in, int edge_size){
   int i = 0;
   for(i = 0;i<sp_image_size(in);i++){
     if(square_dist_to_center(i,in) > edge_size/2.0){
-      fft_img->image->data[i] = 0;
+      fft_img->image->data[i] = sp_cinit(0,0);
     }
   }
   tmp = sp_image_duplicate(fft_img,SP_COPY_DATA|SP_COPY_MASK);
   for(i = 0;i<sp_image_size(tmp);i++){
-    tmp->image->data[i] = log(tmp->image->data[i]+1);
+    tmp->image->data[i] = sp_cinit(log(sp_cabs(tmp->image->data[i])+1),0);
   }
   write_png(tmp,"low_pass.png",COLOR_JET);
   sp_image_free(tmp);
@@ -2315,13 +2335,13 @@ Image * low_pass_square_filter(Image * in, int edge_size){
   res = sp_image_ifft(fft_img);
   /* scale appropriately */
   for(i = 0;i<sp_image_size(res);i++){
-    res->image->data[i] /= sp_image_size(res);
+    res->image->data[i] = sp_cscale(res->image->data[i],sp_image_size(res));
   }
   sp_image_free(fft_img);
   fft_img = sp_image_fft(res);
   tmp = sp_image_duplicate(fft_img,SP_COPY_DATA|SP_COPY_MASK);
   for(i = 0;i<sp_image_size(tmp);i++){
-    tmp->image->data[i] = log(tmp->image->data[i]+1);
+    tmp->image->data[i] = sp_cinit(log(sp_cabs(tmp->image->data[i])+1),0);
   }
   //  write_png(tmp,"after_low_pass.png",COLOR_JET); //not compatible with 3D
   sp_image_free(tmp);
@@ -2341,7 +2361,7 @@ Image * low_pass_gaussian_filter(Image * in, int edge_size){
   sp_image_free(fft_img);
   /* scale appropriately */
   for(i = 0;i<sp_image_size(res);i++){
-    res->image->data[i] /= sp_image_size(res);
+    res->image->data[i] = sp_cscale(res->image->data[i],1.0/sp_image_size(res));
   }
   if(!in->phased){
     sp_image_dephase(res);
@@ -2357,7 +2377,7 @@ Image * low_pass_gaussian_filter(Image * in, int edge_size){
   /* scale appropriately */
   for(i = 0;i<sp_image_size(mask);i++){
     /* if the mask is not really want then we have unkown information and we'll make it 0 */
-    if(cabs(mask->image->data[i]) < sp_image_size(res)-1){
+    if(sp_cabs(mask->image->data[i]) < sp_image_size(res)-1){
       res->mask->data[i] = 0;
     }else{
       res->mask->data[i] = 1;
@@ -2383,7 +2403,7 @@ Image * gaussian_filter(Image * in, real radius,int in_place){
 
   for(i = 0;i<sp_image_size(in);i++){
     scaling = (dist_to_center(i,in)/(radius))*(dist_to_center(i,in)/(radius));
-    res->image->data[i] *= exp(-scaling*scaling_factor);
+    res->image->data[i] = sp_cscale(res->image->data[i],exp(-scaling*scaling_factor));
   }
   return res;
 }
@@ -2467,7 +2487,7 @@ Image * zero_pad_shifted_image(Image * a, int newx, int newy, int newz,int pad_m
 	}
 	if(sourcex == -1 || sourcey == -1 || sourcez == -1){
 	  out->image->data[z*sp_c3matrix_y(out->image)*sp_c3matrix_x(out->image)+
-			   y*sp_c3matrix_x(out->image)+x] = 0;
+			   y*sp_c3matrix_x(out->image)+x] = sp_cinit(0,0);
 	  out->mask->data[z*sp_c3matrix_y(out->image)*sp_c3matrix_x(out->image)+
 			  y*sp_c3matrix_x(out->image)+x] = pad_mask;
 	}else{
@@ -2541,7 +2561,7 @@ Image * zero_pad_unshifted_image(Image * a, int newx, int newy, int newz, int pa
 	}
 	if(sourcey == -1 || sourcex == -1 || sourcez == -1){
 	out->image->data[z*sp_c3matrix_y(out->image)*sp_c3matrix_x(out->image)+
-			 y*sp_c3matrix_x(out->image)+x] = 0;
+			 y*sp_c3matrix_x(out->image)+x] = sp_cinit(0,0);
 	out->mask->data[z*sp_c3matrix_y(out->image)*sp_c3matrix_x(out->image)+
 			y*sp_c3matrix_x(out->image)+x] = pad_mask;
 	}else{
@@ -2596,9 +2616,9 @@ real I_divergenge(Image * a, Image * b){
   double sumb = 0;
   int i;
   for(i = 0;i<sp_image_size(a);i++){
-    suma += a->image->data[i] - b->image->data[i];
-    if(b->image->data[i]){
-      sumb += b->image->data[i] * log(b->image->data[i]/(a->image->data[i]+FLT_EPSILON));
+    suma += sp_cabs(sp_csub(a->image->data[i], b->image->data[i]));
+    if(sp_cabs(b->image->data[i])){
+      sumb += sp_cabs(b->image->data[i]) * log(sp_cabs(b->image->data[i])/(sp_cabs(a->image->data[i])+FLT_EPSILON));
     }
   }
   return suma+sumb;
@@ -2609,11 +2629,13 @@ real integrated_intensity(Image * a){
   double sum = 0;
   int i;
   for(i = 0;i<sp_image_size(a);i++){
-    sum += a->image->data[i];
+    sum += sp_cabs(a->image->data[i]);
   }
   return sum;
 }
 
+/* Superseeded by the new write_vtk */
+/*
 int write_vtk(Image * img, const char * filename){
   FILE * f = fopen(filename,"w");
   int x,y;
@@ -2631,22 +2653,25 @@ int write_vtk(Image * img, const char * filename){
   fprintf(f,"POINT_DATA %lld\n",sp_image_size(img));
   fprintf(f,"SCALARS amplitudes float 1\n");
   fprintf(f,"LOOKUP_TABLE default\n");
-  fprintf(f,"%6g",cabs(img->image->data[0]));
+  fprintf(f,"%6g",sp_cabs(img->image->data[0]));
   for(y = 0;y<sp_c3matrix_y(img->image);y++){
     for(x = 0;x<sp_c3matrix_x(img->image);x++){
-      fprintf(f," %g",cabs(img->image->data[y*sp_c3matrix_x(img->image)+x]));    
+      fprintf(f," %g",sp_cabs(img->image->data[y*sp_c3matrix_x(img->image)+x]));    
     }
   }
+*/
 /*  for(i = 1;i<sp_image_size(img);i++){
     fprintf(f," %g",img->image->data[i]);    
   }*/
+/*
   fprintf(f,"\n");
   fflush(f);
   fclose(f);
   return 0;
 }
+*/
 
-int write_vtk_3d(Image * img, const char * filename){
+int write_vtk(Image * img, const char * filename){
   FILE * f = fopen(filename,"w");
   int x,y,z;
   if(!f){
@@ -2664,11 +2689,11 @@ int write_vtk_3d(Image * img, const char * filename){
   fprintf(f,"POINT_DATA %lld\n",sp_image_size(img));
   fprintf(f,"SCALARS amplitudes float 1\n");
   fprintf(f,"LOOKUP_TABLE default\n");
-  fprintf(f,"%6g",cabs(img->image->data[0]));
+  fprintf(f,"%6g",sp_cabs(img->image->data[0]));
   for(z = 0;z<sp_c3matrix_z(img->image);z++){
     for(y = 0;y<sp_c3matrix_y(img->image);y++){
       for(x = 0;x<sp_c3matrix_x(img->image);x++){
-	fprintf(f," %g",cabs(img->image->data[z*sp_c3matrix_x(img->image)*sp_c3matrix_y(img->image)+y*sp_c3matrix_x(img->image)+x]));
+	fprintf(f," %g",sp_cabs(img->image->data[z*sp_c3matrix_x(img->image)*sp_c3matrix_y(img->image)+y*sp_c3matrix_x(img->image)+x]));
       }
     }
   }
@@ -2804,7 +2829,7 @@ Image * fourier_rescale(Image * img, int new_x, int new_y, int new_z){
   res->detector->image_center[2] = img->detector->image_center[2]*(new_z/sp_c3matrix_z(img->image));
   inv_size = 1.0/sp_image_size(img);
   for(i = 0;i<sp_image_size(res);i++){
-    res->image->data[i] *= inv_size;
+    res->image->data[i] = sp_cscale(res->image->data[i],inv_size);
   }
   return res;
 }
@@ -2849,11 +2874,12 @@ Image * bilinear_rescale(Image * img, int new_x, int new_y, int new_z){
   
 
 real sp_image_interp(Image * img, real v_x, real v_y, real v_z){
-  return creal(sp_c3matrix_interp(img->image,v_x,v_y,v_z));
+  return sp_real(sp_c3matrix_interp(img->image,v_x,v_y,v_z));
 }
 
 void sp_image_scale(Image * img, real value){
-  sp_c3matrix_scale(img->image,value);
+  Complex tmp = {value,0};
+  sp_c3matrix_scale(img->image,tmp);
 }
 
 
@@ -2891,9 +2917,9 @@ Image * rectangular_window(int image_x, int image_y, int width, int height, int 
       for(y = 0;y<image_y;y++){
 	if((fabs(x) < width/2 || fabs(image_x-x) < width/2 )&&
 	   (fabs(y) < height/2 || fabs(image_y-y) < height/2 )){
-	  res->image->data[i] = 1;
+	  res->image->data[i] = sp_cinit(1,0);
 	}else{
-	  res->image->data[i] = 0;
+	  res->image->data[i] = sp_cinit(0,0);
 	}
 	i++;
       }
@@ -2905,9 +2931,9 @@ Image * rectangular_window(int image_x, int image_y, int width, int height, int 
       for(y = 0;y<image_y;y++){
 	if(fabs(x-center[0]) < width/2 &&
 	   fabs(y-center[1]) < height/2){
-	  res->image->data[i] = 1;
+	  res->image->data[i] = sp_cinit(1,0);
 	}else{
-	  res->image->data[i] = 0;
+	  res->image->data[i] = sp_cinit(0,0);
 	}
 	i++;
       }
@@ -2930,9 +2956,9 @@ Image * cube_window(int image_x, int image_y, int image_z, int dx, int dy, int d
 	  if((fabs(x) < dx/2 || fabs(image_x-x) < dx/2 )&&
 	     (fabs(y) < dy/2 || fabs(image_y-y) < dy/2 )&&
 	     (fabs(z) < dz/2 || fabs(image_z-z) < dz/2 )){
-	    res->image->data[i] = 1;
+	    res->image->data[i] = sp_cinit(1,0);
 	  }else{
-	    res->image->data[i] = 0;
+	    res->image->data[i] = sp_cinit(0,0);
 	  }
 	  i++;
 	}
@@ -2948,9 +2974,9 @@ Image * cube_window(int image_x, int image_y, int image_z, int dx, int dy, int d
 	  if(fabs(x-center[0]) < dx/2 &&
 	     fabs(y-center[1]) < dy/2 &&
 	     fabs(z-center[2]) < dz/2){
-	    res->image->data[i] = 1;
+	    res->image->data[i] = sp_cinit(1,0);
 	  }else{
-	    res->image->data[i] = 0;
+	    res->image->data[i] = sp_cinit(0,0);
 	  }
 	  i++;
 	}
@@ -2973,9 +2999,9 @@ Image * circular_window(int x, int y, int radius, int shifted){
   }
   for(i = 0;i<x*y;i++){
     if(dist_to_center(i,res) < radius){
-      res->image->data[i] = 1;
+      res->image->data[i] = sp_cinit(1,0);
     }else{
-      res->image->data[i] = 0;
+      res->image->data[i] = sp_cinit(0,0);
     }
   }
   sp_image_rephase(res,SP_ZERO_PHASE);
@@ -2996,9 +3022,9 @@ Image * spherical_window(int x, int y, int z, int radius, int shifted){
   }
   for(i = 0;i<x*y*z;i++){
     if(dist_to_center(i,res) < radius){
-      res->image->data[i] = 1;
+      res->image->data[i] = sp_cinit(1,0);
     }else{
-      res->image->data[i] = 0;
+      res->image->data[i] = sp_cinit(0,0);
     }
   }
   sp_image_rephase(res,SP_ZERO_PHASE);
@@ -3010,10 +3036,10 @@ void sp_image_normalize(Image * in){
   double integral = 0;
   int i;
   for(i = 0;i<sp_image_size(in);i++){
-    integral += cabs(in->image->data[i]);
+    integral += sp_cabs(in->image->data[i]);
   }
   for(i = 0;i<sp_image_size(in);i++){
-    in->image->data[i] /= integral;
+    in->image->data[i] = sp_cscale(in->image->data[i],1.0/integral);
   }
 }
 
@@ -3022,7 +3048,7 @@ Image * sp_image_get_mask(Image * a){
   Image * res = sp_image_duplicate(a,SP_COPY_DATA|SP_COPY_MASK);
   int i;
   for(i = 0;i<sp_image_size(a);i++){
-    res->image->data[i] = res->mask->data[i];
+    res->image->data[i] = sp_cinit(res->mask->data[i],0);
   }
   return res;
 }
@@ -3061,7 +3087,7 @@ real sp_point_convolute(Image * a, Image * b, int index){
 	}
 	ai = (index_z+z+a->detector->image_center[2])*sp_c3matrix_y(a->image)*sp_c3matrix_x(a->image)+(index_y+y+a->detector->image_center[1])*sp_c3matrix_x(a->image)+(index_x+x+a->detector->image_center[0]);
 	bi = (z+b->detector->image_center[2])*sp_c3matrix_y(b->image)*sp_c3matrix_x(b->image)+(y+b->detector->image_center[1])*sp_c3matrix_x(b->image)+(x+b->detector->image_center[0]);
-	out += a->image->data[ai]*b->image->data[bi];
+	out += sp_cabs(a->image->data[ai])*sp_cabs(b->image->data[bi]);
       }
     }
   }
@@ -3213,11 +3239,11 @@ Image * sp_image_create_from_sector(Image * sector, int * img_size, real * cente
       bin = d;
       u = d-bin;
       if(d+1 < sp_c3matrix_x(sector->image)-1){
-	ret->image->data[y*img_size[0]+x] = (1.0-u)*sector->image->data[bin];
-	ret->image->data[y*img_size[0]+x] += (u)*sector->image->data[bin+1];
+	ret->image->data[y*img_size[0]+x] = sp_cscale(sector->image->data[bin],(1.0-u));
+	ret->image->data[y*img_size[0]+x] = sp_cadd(ret->image->data[y*img_size[0]+x],sp_cscale(sector->image->data[bin+1],u));
 	ret->mask->data[y*img_size[0]+x] = 1;
       }else{
-	ret->image->data[y*img_size[0]+x] = 0;
+	ret->image->data[y*img_size[0]+x] = sp_cinit(0,0);
 	ret->mask->data[y*img_size[0]+x] = 0;
       }
     }
@@ -3239,7 +3265,7 @@ Image * sp_image_local_variance(Image * img, Image * window){
   write_png(ra,"total_averaged.png",COLOR_JET);
   write_png(res,"crop_total_averaged.png",COLOR_JET);*/
   for(i = 0;i<sp_image_size(res);i++){
-    res->image->data[i] = fabs(res->image->data[i]-img->image->data[i]);
+    res->image->data[i] = sp_cinit(sp_cabs(sp_csub(res->image->data[i],img->image->data[i])),0);
   }
   sp_image_free(ra);
   ra = sp_image_convolute(res,norm_window,size);
@@ -3261,7 +3287,7 @@ Image * sp_proj_module(Image * a, Image * b){
   int i;
   for(i = 0;i<sp_image_size(a);i++){
     if(b->mask->data[i]){
-      ret->image->data[i] *= cabs(b->image->data[i])/cabs(a->image->data[i]);
+      ret->image->data[i] = sp_cscale(ret->image->data[i],sp_cabs(b->image->data[i])/sp_cabs(a->image->data[i]));
     }else{
       ret->image->data[i] = a->image->data[i];
     }
@@ -3274,8 +3300,8 @@ Image * sp_proj_support(Image * a, Image * b){
   Image * ret = sp_image_duplicate(a,SP_COPY_DATA|SP_COPY_MASK);
   int i;
   for(i = 0;i<sp_image_size(a);i++){
-    if(!b->image->data[i]){
-      ret->image->data[i] = 0;
+    if(!sp_cabs(b->image->data[i])){
+      ret->image->data[i] = sp_cinit(0,0);
     }
   }
   return ret;
@@ -3285,7 +3311,7 @@ Image * sp_proj_support(Image * a, Image * b){
 int sp_image_invert(Image * a){
   int i;
   for(i = 0;i<sp_image_size(a);i++){
-    a->image->data[i] = 1.0/a->image->data[i];
+    sp_real(a->image->data[i]) = 1.0/sp_real(a->image->data[i]);
   }
   return 0;
 }
@@ -3708,21 +3734,24 @@ void sp_image_median_filter(Image * a,sp_i3matrix * kernel, int edge_flags, int 
 	for(kx = -kcx;kx<sp_i3matrix_x(kernel)-kcx;kx++){
 	  for(ky = -kcy;ky<sp_i3matrix_y(kernel)-kcy;ky++){
 	    for(i = 0;i<sp_i3matrix_get(kernel,ky+kcy,kx+kcx,0);i++){
-	      buffer[n++] = sp_image_get(work,x+kx,y+ky,0);
+	      buffer[n++] = sp_cabs(sp_image_get(work,x+kx,y+ky,0));
 	    }
 	  }
 	}
 	sp_bubble_sort(buffer,n);
-	if(n%2){
+	Complex tmp;
+	if(n%2){	  
 	  /* odd n take the middle one */
+	  sp_real(tmp) = buffer[n/2];
 	  if(a->num_dimensions == SP_2D){
-	    sp_image_set(a,x-radius,y-radius,0,buffer[n/2]);
+	    sp_image_set(a,x-radius,y-radius,0,tmp);
 	  }else{
-	    sp_image_set(a,x-radius,y-radius,z-radius,buffer[n/2]);
+	    sp_image_set(a,x-radius,y-radius,z-radius,tmp);
 	  }
 	}else{
 	  /* even n take the average */
-	  sp_image_set(a,x-radius,y-radius,0,(buffer[n/2]+buffer[n/2-1])/2);
+	  sp_real(tmp) = (buffer[n/2]+buffer[n/2-1])/2;
+	  sp_image_set(a,x-radius,y-radius,0,tmp);
 	}
       }
     }
@@ -3735,25 +3764,28 @@ void sp_image_median_filter(Image * a,sp_i3matrix * kernel, int edge_flags, int 
 	    for(ky = -kcy;ky<sp_i3matrix_y(kernel)-kcy;ky++){
 	      for(kz = -kcz;kz<sp_i3matrix_z(kernel)-kcz;kz++){
 		for(i = 0;i<sp_i3matrix_get(kernel,ky+kcy,kx+kcx,kz+kcz);i++){
-		  buffer[n++] = sp_image_get(work,x+kx,y+ky,z+kz);
+		  buffer[n++] = sp_cabs(sp_image_get(work,x+kx,y+ky,z+kz));
 		}
 	      }
 	    }
 	  }
 	  sp_bubble_sort(buffer,n);
+	  Complex tmp;
 	  if(n%2){
+	    sp_real(tmp) = buffer[n/2];
 	    /* odd n take the middle one */
 	    if(a->num_dimensions == SP_2D){
-	      sp_image_set(a,x-radius,y-radius,0,buffer[n/2]);
+	      sp_image_set(a,x-radius,y-radius,0,tmp);
 	    }else{
-	      sp_image_set(a,x-radius,y-radius,z-radius,buffer[n/2]);
+	      sp_image_set(a,x-radius,y-radius,z-radius,tmp);
 	    }
 	  }else{
+	    sp_real(tmp) =(buffer[n/2]+buffer[n/2-1])/2; 
 	    /* even n take the average */
 	    if(a->num_dimensions == SP_2D){
-	      sp_image_set(a,x-radius,y-radius,0,(buffer[n/2]+buffer[n/2-1])/2);
+	      sp_image_set(a,x-radius,y-radius,0,tmp);
 	    }else{
-	      sp_image_set(a,x-radius,y-radius,z-radius,(buffer[n/2]+buffer[n/2-1])/2);
+	      sp_image_set(a,x-radius,y-radius,z-radius,tmp);
 	    }
 	  }
 	}
@@ -3784,8 +3816,8 @@ void sp_image_adaptative_constrast_stretch(Image * a,int x_div, int y_div){
   Image * work = sp_image_edge_extend(a, radius, SP_SYMMETRIC_EDGE,SP_2D);
   for(dx = 0;dx <x_div;dx++){
     for(dy = 0;dy <y_div;dy++){
-      sp_3matrix_set(div_max,dx,dy,0,sp_image_get(work,radius+dx*x_div_size,radius+dy*y_div_size,0));
-      sp_3matrix_set(div_min,dx,dy,0,sp_image_get(work,radius+dx*x_div_size,radius+dy*y_div_size,0));
+      sp_3matrix_set(div_max,dx,dy,0,sp_cabs(sp_image_get(work,radius+dx*x_div_size,radius+dy*y_div_size,0)));
+      sp_3matrix_set(div_min,dx,dy,0,sp_cabs(sp_image_get(work,radius+dx*x_div_size,radius+dy*y_div_size,0)));
       for(x = radius+dx*x_div_size;x<radius+(dx+1)*x_div_size;x++){	
 	if(x == sp_image_x(work)){
 	  break;
@@ -3795,13 +3827,13 @@ void sp_image_adaptative_constrast_stretch(Image * a,int x_div, int y_div){
 	  if(y == sp_image_y(work)){
 	    break;
 	  }
-	  if(cabs(sp_image_get(work,x,y,0)) < sp_3matrix_get(div_min,dx,dy,0)){
-	    sp_3matrix_set(div_min,dx,dy,0,cabs(sp_image_get(work,x,y,0)));
+	  if(sp_cabs(sp_image_get(work,x,y,0)) < sp_3matrix_get(div_min,dx,dy,0)){
+	    sp_3matrix_set(div_min,dx,dy,0,sp_cabs(sp_image_get(work,x,y,0)));
 	  }
-	  if(cabs(sp_image_get(work,x,y,0)) > sp_3matrix_get(div_max,dx,dy,0)){
-	    sp_3matrix_set(div_max,dx,dy,0,cabs(sp_image_get(work,x,y,0)));
+	  if(sp_cabs(sp_image_get(work,x,y,0)) > sp_3matrix_get(div_max,dx,dy,0)){
+	    sp_3matrix_set(div_max,dx,dy,0,sp_cabs(sp_image_get(work,x,y,0)));
 	  }
-	  sp_3matrix_set(div_mean,dx,dy,0,sp_image_get(work,x,y,0)+sp_3matrix_get(div_mean,dx,dy,0));
+	  sp_3matrix_set(div_mean,dx,dy,0,sp_cabs(sp_image_get(work,x,y,0))+sp_3matrix_get(div_mean,dx,dy,0));
 	}
       }
       sp_3matrix_set(div_mean,dx,dy,0,sp_3matrix_get(div_mean,dx,dy,0)/(x_div_size*y_div_size));
@@ -3816,7 +3848,7 @@ void sp_image_adaptative_constrast_stretch(Image * a,int x_div, int y_div){
 	    break;
 	  }
 	  sp_3matrix_set(div_std_dev,dx,dy,0,sp_3matrix_get(div_std_dev,dx,dy,0)+
-			cabs(sp_image_get(work,x,y,0)*sp_image_get(work,x,y,0)-
+			fabs(sp_cabs(sp_image_get(work,x,y,0))*sp_cabs(sp_image_get(work,x,y,0))-
 			     sp_3matrix_get(div_mean,dx,dy,0)*sp_3matrix_get(div_mean,dx,dy,0)));
 	}
       }
@@ -3834,12 +3866,18 @@ void sp_image_adaptative_constrast_stretch(Image * a,int x_div, int y_div){
   for(x = 0;x<sp_image_x(a);x++){
     for(y = 0;y<sp_image_y(a);y++){
       /* cap extreme values */
-      if(creal(sp_image_get(a,x,y,0)) < -sp_3matrix_get(offsets,x,y,0)-1/sp_3matrix_get(factors,x,y,0)){
-	sp_image_set(a,x,y,0,-sp_3matrix_get(offsets,x,y,0)-1/sp_3matrix_get(factors,x,y,0));
-      }else if(creal(sp_image_get(a,x,y,0)) > -sp_3matrix_get(offsets,x,y,0)+1/sp_3matrix_get(factors,x,y,0)){
-	sp_image_set(a,x,y,0,-sp_3matrix_get(offsets,x,y,0)+1/sp_3matrix_get(factors,x,y,0));
+      Complex tmp;
+      if(sp_real(sp_image_get(a,x,y,0)) < -sp_3matrix_get(offsets,x,y,0)-1/sp_3matrix_get(factors,x,y,0)){	
+	sp_real(tmp) = -sp_3matrix_get(offsets,x,y,0)-1/sp_3matrix_get(factors,x,y,0);
+	sp_image_set(a,x,y,0,tmp);
+      }else if(sp_real(sp_image_get(a,x,y,0)) > -sp_3matrix_get(offsets,x,y,0)+1/sp_3matrix_get(factors,x,y,0)){
+	sp_real(tmp) = -sp_3matrix_get(offsets,x,y,0)+1/sp_3matrix_get(factors,x,y,0);
+	sp_image_set(a,x,y,0,tmp);
       }
-      sp_image_set(a,x,y,0,(sp_image_get(a,x,y,0)+sp_3matrix_get(offsets,x,y,0))*sp_3matrix_get(factors,x,y,0));
+      tmp = sp_image_get(a,x,y,0);
+      sp_real(tmp) += sp_3matrix_get(offsets,x,y,0);
+      tmp = sp_cscale(tmp,sp_3matrix_get(factors,x,y,0));
+      sp_image_set(a,x,y,0,tmp);
     }
   }
   sp_3matrix_free(offsets);

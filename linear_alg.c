@@ -257,14 +257,16 @@ void sp_cmatrix_invert(sp_cmatrix * m){
   /* For every row */
   for(i = 0;i<m->rows;i++){
     /* set leading element to 1 */
-    assert(1.0/sp_cmatrix_get(m,i,i) != 0);
-    x = 1.0/sp_cmatrix_get(m,i,i);
+    assert(sp_real(sp_cmatrix_get(m,i,i)) != 0 && sp_imag(sp_cmatrix_get(m,i,i)) != 0);
+    x = sp_cdiv(sp_cinit(1.0,0.0),sp_cmatrix_get(m,i,i));
     sp_cmatrix_scale_row(m,i,x);
     sp_cmatrix_scale_row(inv,i,x);
     /* For every row below us*/
     for(j = i+1;j<m->rows;j++){
       /* set leading element to 0 */
-      x = -sp_cmatrix_get(m,j,i);
+      x = sp_cmatrix_get(m,j,i);
+      sp_real(x) = -sp_real(x);
+      sp_imag(x) = -sp_imag(x);
       sp_cmatrix_row_add_row(m,i,j,x);
       sp_cmatrix_row_add_row(inv,i,j,x);
     }    
@@ -276,14 +278,16 @@ void sp_cmatrix_invert(sp_cmatrix * m){
   /* For every row */
   for(i = m->rows-1;i>=0;i--){
     /* set leading element to 1 */
-    assert(1.0/sp_cmatrix_get(m,i,i) != 0);
-    x = 1.0/sp_cmatrix_get(m,i,i);
+    assert(sp_cabs(sp_cmatrix_get(m,i,i)));
+    x = sp_cdiv(sp_cinit(1.0,0.0),sp_cmatrix_get(m,i,i));
     sp_cmatrix_scale_row(m,i,x);
     sp_cmatrix_scale_row(inv,i,x);
     /* For every row above us*/
     for(j = i-1;j>=0;j--){
       /* set leading element to 0 */
-      x = -sp_cmatrix_get(m,j,i);
+      x = sp_cmatrix_get(m,j,i);
+      sp_real(x) = -sp_real(x);
+      sp_imag(x) = -sp_imag(x);
       sp_cmatrix_row_add_row(m,i,j,x);
       sp_cmatrix_row_add_row(inv,i,j,x);
     }    
@@ -329,7 +333,7 @@ void sp_cmatrix_print(sp_cmatrix * a,FILE * fp){
   for(i = 0;i<a->rows;i++){
     fprintf(fp,"|");
     for(j = 0;j<a->cols;j++){
-      fprintf(fp,"\t%e %ei",creal(sp_cmatrix_get(a,i,j)),cimag(sp_cmatrix_get(a,i,j)));
+      fprintf(fp,"\t%e %ei",sp_real(sp_cmatrix_get(a,i,j)),sp_imag(sp_cmatrix_get(a,i,j)));
     }
     fprintf(fp,",\t|\n");
   }
