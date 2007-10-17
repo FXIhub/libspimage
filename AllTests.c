@@ -1230,10 +1230,11 @@ void test_sp_cvector_dot_prod(CuTest * tc){
   sp_cvector_free(v);  
 }
 
+
 void test_sp_vector_outer_prod(CuTest * tc){
   sp_vector * v = sp_vector_alloc(2);
   sp_vector * u = sp_vector_alloc(3);
-  sp_matrix * m;
+  sp_3matrix * m;
   sp_vector_set(v,0,1);
   sp_vector_set(v,1,3);
   sp_vector_set(u,0,2);
@@ -1246,15 +1247,15 @@ void test_sp_vector_outer_prod(CuTest * tc){
 */
   m = sp_vector_outer_prod(v,u);
   
-  CuAssertDblEquals(tc,sp_matrix_get(m,0,0),2,fabs(REAL_EPSILON*2));
-  CuAssertDblEquals(tc,sp_matrix_get(m,0,1),4,fabs(REAL_EPSILON*4));
-  CuAssertDblEquals(tc,sp_matrix_get(m,0,2),-1,fabs(REAL_EPSILON*-1));
-  CuAssertDblEquals(tc,sp_matrix_get(m,1,0),6,fabs(REAL_EPSILON*6));
-  CuAssertDblEquals(tc,sp_matrix_get(m,1,1),12,fabs(REAL_EPSILON*12));
-  CuAssertDblEquals(tc,sp_matrix_get(m,1,2),-3,fabs(REAL_EPSILON*-3));
+  CuAssertDblEquals(tc,sp_3matrix_get(m,0,0,0),2,fabs(REAL_EPSILON*2));
+  CuAssertDblEquals(tc,sp_3matrix_get(m,0,1,0),4,fabs(REAL_EPSILON*4));
+  CuAssertDblEquals(tc,sp_3matrix_get(m,0,2,0),-1,fabs(REAL_EPSILON*-1));
+  CuAssertDblEquals(tc,sp_3matrix_get(m,1,0,0),6,fabs(REAL_EPSILON*6));
+  CuAssertDblEquals(tc,sp_3matrix_get(m,1,1,0),12,fabs(REAL_EPSILON*12));
+  CuAssertDblEquals(tc,sp_3matrix_get(m,1,2,0),-3,fabs(REAL_EPSILON*-3));
   sp_vector_free(u);
   sp_vector_free(v);  
-  sp_matrix_free(m);  
+  sp_3matrix_free(m);  
 }
 
 

@@ -686,12 +686,12 @@ static inline Complex sp_cvector_dot_prod(sp_cvector * a, const sp_cvector * b){
 /*! This function calculates the outer product of vector a and b.
   *
   */
-static inline sp_matrix * sp_vector_outer_prod(sp_vector * a, const sp_vector * b){
+static inline sp_3matrix * sp_vector_outer_prod(sp_vector * a, const sp_vector * b){
   int i,j;
-  sp_matrix * ret = sp_matrix_alloc(a->size,b->size);
+  sp_3matrix * ret = sp_3matrix_alloc(a->size,b->size,1);
   for(i = 0;i<a->size;i++){
     for(j = 0;j<b->size;j++){
-      sp_matrix_set(ret,i,j,a->data[i]*b->data[j]);
+      sp_3matrix_set(ret,i,j,a->data[i]*b->data[j],0);
     }
   }
   return ret;
@@ -2044,13 +2044,13 @@ static inline int sp_i3matrix_interp(const sp_i3matrix * m, real fx, real fy, re
 static inline void _sp_cmatrix_realloc(sp_cmatrix * m, int row, int col, char * file, int line){
   m->rows = row;
   m->cols = col;
-  m->data = _sp_realloc(m->data,sizeof(Complex)*sp_cmatrix_size(m), file, line);
+  m->data = (Complex *)_sp_realloc(m->data,sizeof(Complex)*sp_cmatrix_size(m), file, line);
 }
 static inline void _sp_c3matrix_realloc(sp_c3matrix * m, int x, int y, int z, char * file, int line){
   m->x = x;
   m->y = y;
   m->z = z;
-  m->data = _sp_realloc(m->data,sizeof(Complex)*sp_c3matrix_size(m),file,line);
+  m->data = (Complex *)_sp_realloc(m->data,sizeof(Complex)*sp_c3matrix_size(m),file,line);
 }
 
 /*! Resizes integer matrix m to the desired size. 
@@ -2060,13 +2060,13 @@ static inline void _sp_c3matrix_realloc(sp_c3matrix * m, int x, int y, int z, ch
 static inline void _sp_imatrix_realloc(sp_imatrix * m, int row, int col, char * file, int line){
   m->rows = row;
   m->cols = col;
-  m->data = _sp_realloc(m->data,sizeof(int)*sp_imatrix_size(m),file,line);
+  m->data = (int *)_sp_realloc(m->data,sizeof(int)*sp_imatrix_size(m),file,line);
 }
 static inline void _sp_i3matrix_realloc(sp_i3matrix * m, int x, int y, int z,char * file, int line){
   m->x = x;
   m->y = y;
   m->z = z;
-  m->data = _sp_realloc(m->data,sizeof(Complex)*sp_i3matrix_size(m),file,line);
+  m->data = (int *)_sp_realloc(m->data,sizeof(Complex)*sp_i3matrix_size(m),file,line);
 }
 
 /*! Resizes matrix m to the desired size. 
@@ -2076,13 +2076,13 @@ static inline void _sp_i3matrix_realloc(sp_i3matrix * m, int x, int y, int z,cha
 static inline void _sp_matrix_realloc(sp_matrix * m, int row, int col,char * file, int line){
   m->rows = row;
   m->cols = col;
-  m->data = _sp_realloc(m->data,sizeof(real)*sp_matrix_size(m),file,line);
+  m->data = (real *)_sp_realloc(m->data,sizeof(real)*sp_matrix_size(m),file,line);
 }
 static inline void _sp_3matrix_realloc(sp_3matrix * m, int x, int y, int z, char * file, int line){
   m->x = x;
   m->y = y;
   m->z = z;
-  m->data = _sp_realloc(m->data,sizeof(Complex)*sp_3matrix_size(m),file,line);
+  m->data = (real *)_sp_realloc(m->data,sizeof(real)*sp_3matrix_size(m),file,line);
 }
 
 

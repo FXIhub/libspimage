@@ -42,6 +42,7 @@ static  void write_csv(Image * img,const char * filename);
 static Image * read_png(const char * filename);
 static int write_png(Image * img,const char * filename, int color);
 static int write_vtk(Image * img,const char * filename);
+static Image * read_smv(const char * filename);
 
 
 void sp_srand(int i){
@@ -996,6 +997,9 @@ Image * _sp_image_read(const char * filename, int flags, char * file, int line){
   }else if(rindex(buffer,'.') && (strcmp(rindex(buffer,'.'),".tif") == 0 ||strcmp(rindex(buffer,'.'),".tiff") == 0 )){
     /* we have a tiff file */
     return read_tiff(filename);
+  }else if(rindex(buffer,'.') && (strcmp(rindex(buffer,'.'),".smv") == 0 ||strcmp(rindex(buffer,'.'),".SMV") == 0 )){
+    /* we have an smv file */
+    return read_smv(filename);
   }else{
     fprintf(stderr,"Unsupported file type: %s\n",filename);
   }
@@ -3960,4 +3964,44 @@ void sp_image_fourier_coords(Image * in, sp_3matrix * k_x, sp_3matrix * k_y, sp_
       }
     }
   }
+}
+
+
+static Image * read_smv(const char * filename){
+  Image * res = NULL;
+  FILE * fp = fopen(filename,"rb");
+  char buffer[1024];
+  int header_size = 0;
+  int x_size = 0;
+  int y_size = 0;
+  while(fgets(buffer,1024,fp)){
+    /* stop loop when we find a line with original folder */
+    if(strstr(buffer,"OriginalFolder")){
+      break;
+    }
+    char * p;
+    if((p = strstr(buffer,"HEADER_BYTES="))){
+      header_size = atoi(p);
+    }
+    if((p = strstr(buffer,"SIZE1="))){
+      x_size = atoi(p);
+    }
+    if((p = strstr(buffer,"SIZE2="))){
+      y_size = atoi(p);
+    }
+  }
+  if(!x_size || !y_size || !header_size){
+    return NULL;
+  }
+  res = sp_image_alloc(x_size,y_size,1);
+  fseek(fp,header_size,SEEK_SET);
+  unsigned short * data = sp_malloc(sizeof(unsigned short)*x_size*y_size);
+  fread((void *)data,sizeof(unsigned short),x_size*y_size,fp);  
+  for(int x = 0; x < x_size;x++){
+    for(int y = 0; y < y_size;y++){
+      sp_image_set(res,x,y,0,sp_cinit(data[y*x_size+x],0));
+      sp_i3matrix_set(res->mask,x,y,0,1);
+    }
+  }
+  return res;
 }
