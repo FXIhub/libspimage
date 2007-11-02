@@ -1763,6 +1763,23 @@ void test_cube_crop(CuTest * tc){
   Image *b = cube_crop(a,2,1,1,2,1,1);
   CuAssertComplexEquals(tc,sp_image_get(b,0,0,0),sp_cinit(3,0),3*fabs(REAL_EPSILON));  
 }
+
+
+void test_sp_image_low_pass(CuTest * tc){
+  Image * a = sp_image_alloc(3,3,4);
+  Image * b;
+  sp_image_set(a,0,0,0,sp_cinit(3.4,0));
+  a->shifted = 1;
+  b = sp_image_low_pass(a,1,0);  
+  CuAssertComplexEquals(tc,sp_image_get(b,0,0,0),sp_image_get(a,0,0,0),3*fabs(REAL_EPSILON));  
+  sp_image_free(b);
+  sp_image_set(a,0,0,3,sp_cinit(3.1,0));
+  b = sp_image_low_pass(a,2,0);  
+  CuAssertComplexEquals(tc,sp_image_get(b,0,0,2),sp_image_get(a,0,0,3),3*fabs(REAL_EPSILON));  
+  
+  sp_image_free(a);
+  sp_image_free(b);
+}
   
 
 
@@ -1878,6 +1895,7 @@ CuSuite* image_get_suite(void)
   SUITE_ADD_TEST(suite, test_sp_image_max);
   SUITE_ADD_TEST(suite,test_sp_image_gaussian_blur);
   SUITE_ADD_TEST(suite,test_cube_crop);
+  SUITE_ADD_TEST(suite,test_sp_image_low_pass);
   SUITE_ADD_TEST(suite,test_sp_image_h5_read_write);
   return suite;
 }

@@ -442,24 +442,24 @@ Image * sp_image_low_pass(Image * img, int resolution, int type){
     fprintf(stderr,"Error: Trying to limit resolution on an unshifted image\n");
   }
   if(img->num_dimensions == SP_2D){
-    if(resolution*2 > sp_c3matrix_x(res->image) || resolution*2 > sp_c3matrix_y(res->image)){
+    if(resolution*2-1 > sp_c3matrix_x(res->image) || resolution*2-1 > sp_c3matrix_y(res->image)){
       return sp_image_duplicate(img,SP_COPY_DATA|SP_COPY_MASK);
     }  
     sp_c3matrix_free(res->image);
     sp_i3matrix_free(res->mask);
-    res->image = sp_c3matrix_alloc(resolution*2,resolution*2,1);
-    res->mask = sp_i3matrix_alloc(resolution*2,resolution*2,1);
+    res->image = sp_c3matrix_alloc(resolution*2-1,resolution*2-1,1);
+    res->mask = sp_i3matrix_alloc(resolution*2-1,resolution*2-1,1);
     nx = 0;
     ny = 0;
     for(x = 0;x<sp_c3matrix_x(img->image);x++){
       dx = x;
       if(sp_c3matrix_x(img->image)-x-1 < dx){
-      dx = sp_c3matrix_x(img->image)-x-1;
+      dx = sp_c3matrix_x(img->image)-x;
       }
       for(y = 0;y<sp_c3matrix_y(img->image);y++){
 	dy = y;
 	if(sp_c3matrix_y(img->image)-y-1 < dy){
-	  dy = sp_c3matrix_y(img->image)-y-1;
+	  dy = sp_c3matrix_y(img->image)-y;
 	}
 	if(dx < resolution && dy < resolution){
 	  sp_c3matrix_set(res->image,nx,ny,0,sp_c3matrix_get(img->image,x,y,0));
@@ -473,43 +473,43 @@ Image * sp_image_low_pass(Image * img, int resolution, int type){
       }
     }
   }else{
-    if(resolution*2 > sp_c3matrix_x(res->image) ||
-       resolution*2 > sp_c3matrix_y(res->image) ||
-       resolution*2 > sp_c3matrix_z(res->image)){
+    if(resolution*2-1 > sp_c3matrix_x(res->image) ||
+       resolution*2-1 > sp_c3matrix_y(res->image) ||
+       resolution*2-1 > sp_c3matrix_z(res->image)){
       return sp_image_duplicate(img,SP_COPY_DATA|SP_COPY_MASK);
     }
     sp_c3matrix_free(res->image);
     sp_i3matrix_free(res->mask);
-    res->image = sp_c3matrix_alloc(resolution*2,resolution*2,resolution*2);
-    res->mask = sp_i3matrix_alloc(resolution*2,resolution*2,resolution*2);
+    res->image = sp_c3matrix_alloc(resolution*2-1,resolution*2-1,resolution*2-1);
+    res->mask = sp_i3matrix_alloc(resolution*2-1,resolution*2-1,resolution*2-1);
     nx = 0;
     ny = 0;
     nz = 0;
     for(x = 0;x<sp_c3matrix_x(img->image);x++){
       dx = x;
       if(sp_c3matrix_x(img->image)-x-1 < dx){
-	dx = sp_c3matrix_x(img->image)-x-1;
+	dx = sp_c3matrix_x(img->image)-x;
       }
       for(y = 0;y<sp_c3matrix_y(img->image);y++){
 	dy = y;
 	if(sp_c3matrix_y(img->image)-y-1 < dy){
-	  dy = sp_c3matrix_y(img->image);
+	  dy = sp_c3matrix_y(img->image)-y;
 	}
 	for(z = 0;z<sp_c3matrix_z(img->image);z++){
 	  dz = z;
 	  if(sp_c3matrix_z(img->image)-z-1 < dz){
-	    dz = sp_c3matrix_z(img->image);
+	    dz = sp_c3matrix_z(img->image)-z;
 	  }
 	  if(dx < resolution && dy < resolution && dz < resolution){
 	    sp_c3matrix_set(res->image,nx,ny,nz,sp_c3matrix_get(img->image,x,y,z));
 	    sp_i3matrix_set(res->mask,nx,ny,nz,sp_i3matrix_get(img->mask,x,y,z));
-	    nx++;
-	    if(nx == sp_c3matrix_x(res->image)){
+	    nz++;
+	    if(nz == sp_c3matrix_z(res->image)){
 	      ny++;
-	      nx = 0;
+	      nz = 0;
 	      if(ny == sp_c3matrix_y(res->image)){
-		nz++;
-		nz = 0;
+		nx++;
+		ny = 0;
 	      }
 	    }
 	  }
