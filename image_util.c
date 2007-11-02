@@ -936,6 +936,7 @@ Image * _sp_image_alloc(int x, int y, int z,char * file, int line){
   res->scaled = 0;
   res->image = _sp_c3matrix_alloc(x,y,z,file,line);
   res->phased = 0;
+  res->rec_coords = 0;
 
   if(z == 1){
     /*assume we have a 2D image */
@@ -2795,10 +2796,8 @@ void find_center(Image * img, real * center_x, real * center_y, real * center_z)
     bz = (sp_c3matrix_z(img->image))/2.0-(sp_c3matrix_z(img->image)-bz)/2.0;
   }
   printf("Center x - %f y - %f z - %f\n",bx,by,bz);
-  if(sp_c3matrix_z(img->image)){
+  if(a->num_dimensions == SP_2D){
     write_png(a,"centrosym_convolve.png",COLOR_JET|LOG_SCALE);
-  }else{
-    fprintf(stderr,"3D image, cant write centrosym_convolve.png");
   }
   *center_x = bx;
   *center_y = by;
@@ -3980,13 +3979,16 @@ static Image * read_smv(const char * filename){
       break;
     }
     char * p;
-    if((p = strstr(buffer,"HEADER_BYTES="))){
+    if(strstr(buffer,"HEADER_BYTES=")){
+      p = strstr(buffer,"HEADER_BYTES=")+strlen("HEADER_BYTES=");
       header_size = atoi(p);
     }
-    if((p = strstr(buffer,"SIZE1="))){
-      x_size = atoi(p);
+    if(strstr(buffer,"SIZE1=")){
+      p = strstr(buffer,"SIZE1=")+strlen("SIZE1=");
+	x_size = atoi(p);
     }
-    if((p = strstr(buffer,"SIZE2="))){
+    if(strstr(buffer,"SIZE2=")){
+      p = strstr(buffer,"SIZE2=")+strlen("SIZE2=");
       y_size = atoi(p);
     }
   }

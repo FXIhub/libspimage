@@ -691,7 +691,7 @@ static inline sp_3matrix * sp_vector_outer_prod(sp_vector * a, const sp_vector *
   sp_3matrix * ret = sp_3matrix_alloc(a->size,b->size,1);
   for(i = 0;i<a->size;i++){
     for(j = 0;j<b->size;j++){
-      sp_3matrix_set(ret,i,j,a->data[i]*b->data[j],0);
+      sp_3matrix_set(ret,i,j,0,a->data[i]*b->data[j]);
     }
   }
   return ret;
