@@ -18,6 +18,8 @@ extern "C"
 
 #ifdef _SP_DOUBLE_PRECISION
 typedef double real;
+#define sp_real(a) (a).re
+#define sp_imag(a) (a).im
 typedef struct {
      double re, im;
 }Complex;
@@ -2119,7 +2121,6 @@ static inline void sp_cmatrix_to_real(const sp_cmatrix * m){
  * of the matrix elements. It's the basis for the Froenius norm.
  * Both matrices must obviously have the same dimensions.
  */
-
 static inline Complex sp_cmatrix_froenius_prod(const sp_cmatrix * a, const sp_cmatrix * b){
   Complex ret = {0,0}; 
   int i;
@@ -2137,6 +2138,14 @@ static inline Complex sp_c3matrix_froenius_prod(const sp_c3matrix * a, const sp_
   }
   return ret;
 }
+
+
+
+/*! Calculates the center of mass of the c3matrix a.
+ *
+ *  The formula used is R = 1/M * Sum(m_i * r_i) Where m_i is equal to sp_cabs(a->data[i]) and r_i is the position of i
+ */
+spimage_EXPORT sp_vector * sp_c3matrix_center_of_mass(sp_c3matrix * a);
 
 
 

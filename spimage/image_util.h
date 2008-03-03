@@ -54,6 +54,10 @@ extern "C"
 #define SP_REPLICATE_EDGE 3
 #define SP_CIRCULAR_EDGE 4
 
+#define SP_TRANSLATE_WRAP_AROUND 1
+#define SP_TRANSLATE_DISCARD_OUTSIDE 2
+
+#define SP_ENANTIOMORPH 1
 
 /** @defgroup Distance
  *  Calculates several kinds of distances in an image
@@ -604,6 +608,44 @@ spimage_EXPORT void sp_image_fourier_coords(Image * in, sp_3matrix * k_x, sp_3ma
  */
 spimage_EXPORT void sp_srand(int i);
 
+
+/*! Superimposes image b on top of image a 
+ *
+ *  flags is a bitwise combination of the following:
+ *
+ *  SP_ENANTIOMORPH - allow to try to superimpose not only b but also
+ *  the "mirror image" of b [b(-x)].
+ *
+ */
+spimage_EXPORT void sp_image_superimpose(Image * a,Image * b, int flags);
+
+
+/*! Translates an image by x,y,z.
+ * 
+ *  What happens to the data that falls outside of the boundaries of the image depends on the flag.
+ *
+ *  SP_TRANSLATE_WRAP_AROUND - The data is brought back inside the image assuming a periodic image.
+ *  SP_TRANSLATE_DISCARD_OUTSIDE - The data that falls outside is simply discarded.
+ */
+spimage_EXPORT void sp_image_translate(Image * a,int x,int y,int z, int flags);
+
+
+/*! Calculates the Real Space R factor between a and b
+ *
+ *  This routine does not scale or translate the images! This must be done before hand
+ *  
+ *  The formula used is Sum(|Fa|-|Fb|)/Sum(|Fa|+|Fb|)
+ */
+spimage_EXPORT real sp_image_rs_r_factor(Image *a, Image *b);
+
+
+/*! Calculates the correlation coefficient of image a and b
+ * 
+ */
+spimage_EXPORT real sp_image_correlation_coefficient(Image * a,Image * b);
+
+
+spimage_EXPORT sp_vector * sp_image_center_of_mass(Image * a);
 
 #ifdef __cplusplus
 }  /* extern "C" */

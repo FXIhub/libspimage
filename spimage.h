@@ -9,5 +9,6 @@
 #include "spimage/image_util.h"
 #include "spimage/linear_alg.h"
 #include "spimage/mem_util.h"
+#include "spimage/image_sphere.h"
 #endif
 

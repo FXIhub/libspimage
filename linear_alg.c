@@ -338,3 +338,28 @@ void sp_cmatrix_print(sp_cmatrix * a,FILE * fp){
     fprintf(fp,",\t|\n");
   }
 }
+
+
+sp_vector * sp_c3matrix_center_of_mass(sp_c3matrix * a){
+  sp_vector * res = sp_vector_alloc(3);
+  int i = 0;
+  real sum= 0;
+  for(int z = 0;z<sp_c3matrix_z(a);z++){
+    for(int y = 0;y<sp_c3matrix_y(a);y++){
+      for(int x = 0;x<sp_c3matrix_x(a);x++){	
+	real m = sp_cabs(a->data[i]);
+	res->data[0] += m*x;
+	res->data[1] += m*y;
+	res->data[2] += m*z;
+	sum += m;
+	i++;
+      }
+    }
+  }
+  if(sum){
+    res->data[0] /= sum;
+    res->data[1] /= sum;
+    res->data[2] /= sum;
+  }
+  return res;
+}

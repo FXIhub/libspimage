@@ -144,12 +144,12 @@ static Image * reflect_origo(Image * in, int in_place){
   }else{
     out = sp_image_duplicate(in,SP_COPY_DATA|SP_COPY_MASK);
   }
-  for(z = 0;x<sp_c3matrix_z(in->image)/2.0;z++){
+  for(z = 0;z<sp_c3matrix_z(in->image)/2.0;z++){
     for(y = 0; y<sp_c3matrix_y(in->image);y++){
       for(x = 0; x<sp_c3matrix_x(in->image);x++){
 	tmp = sp_c3matrix_get(in->image,x,y,z);
-	sp_c3matrix_set(out->image,x,y,z,sp_c3matrix_get(in->image,sp_c3matrix_x(in->image)-x,sp_c3matrix_y(in->image)-y,sp_c3matrix_z(in->image)-z));
-	sp_c3matrix_set(out->image,sp_c3matrix_x(in->image)-x,sp_c3matrix_y(in->image),sp_c3matrix_z(in->image),tmp);
+	sp_c3matrix_set(out->image,x,y,z,sp_c3matrix_get(in->image,sp_c3matrix_x(in->image)-x-1,sp_c3matrix_y(in->image)-y-1,sp_c3matrix_z(in->image)-z-1));
+	sp_c3matrix_set(out->image,sp_c3matrix_x(in->image)-x-1,sp_c3matrix_y(in->image)-y-1,sp_c3matrix_z(in->image)-z-1,tmp);
       }
     }
   }
@@ -841,6 +841,8 @@ void sp_image_high_pass(Image * in, real radius, int type){
 	  }
 	  if(z > sp_c3matrix_z(in->image)/2.0){
 	    dz = sp_c3matrix_z(in->image)-z;
+	  }else{
+	    dz = z;
 	  }
 	  dist = sqrt(dx*dx+dy*dy+dz*dz);
 	  if(dist <= radius){
@@ -934,6 +936,7 @@ Image * _sp_image_alloc(int x, int y, int z,char * file, int line){
   res->detector->image_center[2] = z/2.0;
   res->mask = _sp_i3matrix_alloc(x,y,z,file,line);
   res->scaled = 0;
+  res->shifted = 0;
   res->image = _sp_c3matrix_alloc(x,y,z,file,line);
   res->phased = 0;
   res->rec_coords = 0;
@@ -1922,6 +1925,9 @@ Image * gaussian_blur(Image * in, real radius){
     radius_z = 0;
   }else if(in->num_dimensions == SP_3D){
     radius_z = radius;
+  }else{
+    radius_z = 0;
+    abort();
   }
   real total_filter = 0;
   Image * filter_img = sp_image_alloc(filter_side,filter_side, ceil(radius_z)*3*2+1);
@@ -2024,7 +2030,7 @@ Image * square_blur(Image * in, real radius, int type){
 
 int write_mask_to_png(Image * img, char * filename, int color){
   Image  * res = sp_image_duplicate(img,SP_COPY_DATA|SP_COPY_MASK);
-  int ret;
+  int ret = 1;
   int i;
   if(sp_i3matrix_z(img->mask) != 1){
     sp_image_free(res);
@@ -3385,6 +3391,9 @@ Image * sp_image_edge_extend(Image * a, int radius, int edge_flags, int type){
   }else if(a->num_dimensions == SP_3D){
     res = sp_image_alloc(sp_c3matrix_x(a->image)+radius*2,sp_c3matrix_y(a->image)+radius*2,sp_c3matrix_z(a->image)+radius*2);
     sp_image_insert(res,a,radius,radius,radius);
+  }else{
+    res = NULL;
+    abort();
   }
   /* now fill the edges */
   if(edge_flags == SP_ZERO_PAD_EDGE){
@@ -3731,6 +3740,7 @@ void sp_image_median_filter(Image * a,sp_i3matrix * kernel, int edge_flags, int 
   }
 
   if(a->num_dimensions == SP_2D){
+    z = 0;
     for(x = radius;x<radius+sp_image_x(a);x++){
       for(y = radius;y<radius+sp_image_y(a);y++){
 	n = 0;
@@ -3742,7 +3752,7 @@ void sp_image_median_filter(Image * a,sp_i3matrix * kernel, int edge_flags, int 
 	  }
 	}
 	sp_bubble_sort(buffer,n);
-	Complex tmp;
+	Complex tmp = sp_cinit(0,0);
 	if(n%2){	  
 	  /* odd n take the middle one */
 	  sp_real(tmp) = buffer[n/2];
@@ -3773,7 +3783,7 @@ void sp_image_median_filter(Image * a,sp_i3matrix * kernel, int edge_flags, int 
 	    }
 	  }
 	  sp_bubble_sort(buffer,n);
-	  Complex tmp;
+	  Complex tmp = sp_cinit(0,0);
 	  if(n%2){
 	    sp_real(tmp) = buffer[n/2];
 	    /* odd n take the middle one */
@@ -3869,7 +3879,7 @@ void sp_image_adaptative_constrast_stretch(Image * a,int x_div, int y_div){
   for(x = 0;x<sp_image_x(a);x++){
     for(y = 0;y<sp_image_y(a);y++){
       /* cap extreme values */
-      Complex tmp;
+      Complex tmp = sp_cinit(0,0);
       if(sp_real(sp_image_get(a,x,y,0)) < -sp_3matrix_get(offsets,x,y,0)-1/sp_3matrix_get(factors,x,y,0)){	
 	sp_real(tmp) = -sp_3matrix_get(offsets,x,y,0)-1/sp_3matrix_get(factors,x,y,0);
 	sp_image_set(a,x,y,0,tmp);
@@ -4006,4 +4016,139 @@ static Image * read_smv(const char * filename){
     }
   }
   return res;
+}
+
+
+
+/*! Superimposes image b on top of image a 
+ *
+ *  flags is a bitwise combination of the following:
+ *
+ *  SP_ENANTIOMORPH - allow to try to superimpose not only b but also
+ *  the "mirror image" of b [b(-x)].
+ *
+*/
+void sp_image_superimpose(Image * a,Image * b, int flags){
+  int x,y,z;
+  long long index;
+  int center_invert = 0;
+  real max;
+  /* check maximum overlap of a and b */
+  Image * direct_overlap = sp_image_cross_correlate(a,b,NULL);
+  max = sp_image_max(direct_overlap,&index,&x,&y,&z);
+  sp_image_free(direct_overlap);
+  if(flags & SP_ENANTIOMORPH){
+    int x2,y2,z2;
+    long long index2;
+    Image * enantio_overlap = sp_image_convolute(a,b,NULL);
+    real max2 = sp_image_max(enantio_overlap,&index2,&x2,&y2,&z2);
+    sp_image_free(enantio_overlap);
+    if(max2 > max){
+      center_invert = 1;
+      max = max2;
+      x = x2+1;
+      y = y2+1;
+      z = z2+1;
+      sp_image_reflect(b,IN_PLACE,SP_ORIGO);
+    }
+  }
+
+  sp_image_translate(b,x,y,z,SP_TRANSLATE_WRAP_AROUND);
+}
+
+void sp_image_translate(Image * a, int x,int y,int z,int flags){
+  int image_z = sp_image_z(a);
+  int image_y = sp_image_y(a);
+  int image_x = sp_image_x(a);
+  Image * tmp = sp_image_alloc(image_x,image_y,image_z);
+  if(flags & SP_TRANSLATE_WRAP_AROUND){
+    for(int pz = 0;pz<image_z;pz++){
+      int nz = pz+z;
+      while(nz < 0){
+	nz += image_z;
+      }
+      nz = nz % image_z;
+      for(int py = 0;py<sp_image_y(a);py++){
+	int ny = py+y;
+	while(ny < 0){
+	  ny += image_y;
+	}
+	ny = ny % image_y;	
+	for(int px = 0;px<sp_image_x(a);px++){
+	  int nx = px+x;
+	  while(nx < 0){
+	    nx += image_x;
+	  }
+	  nx = nx % image_x;	
+	  sp_image_set(tmp,nx,ny,nz,sp_image_get(a,px,py,pz));
+	  sp_i3matrix_set(tmp->mask,nx,ny,nz,sp_i3matrix_get(a->mask,px,py,pz));	  	  
+	}
+      }
+    }
+  }else if(flags & SP_TRANSLATE_DISCARD_OUTSIDE){
+    for(int pz = 0;pz<image_z;pz++){
+      int nz = pz+z;
+      if(nz < 0 || nz >= image_z){
+	continue;
+      }
+      for(int py = 0;py<sp_image_y(a);py++){
+	int ny = py+y;
+	if(ny < 0 || ny >= image_y){
+	  continue;
+	}
+	for(int px = 0;px<sp_image_x(a);px++){
+	  int nx = px+x;
+	  if(nx < 0 || nx >= image_x){
+	    continue;
+	  }
+	  sp_image_set(tmp,nx,ny,nz,sp_image_get(a,px,py,pz));
+	  sp_i3matrix_set(tmp->mask,nx,ny,nz,sp_i3matrix_get(a->mask,px,py,pz));	  	  
+	}
+      }
+    }
+  }
+  sp_c3matrix * tmp2 = a->image;
+  sp_i3matrix * tmp3 = a->mask;
+  a->image = tmp->image;
+  a->mask = tmp->mask;
+  tmp->image = tmp2;
+  tmp->mask = tmp3;
+  sp_image_free(tmp);
+}
+  
+real sp_image_rs_r_factor(Image * a, Image * b){
+  real sum_dif = 0;
+  real sum_sum = 0;
+  for(int i = 0; i < sp_image_size(a);i++){
+    sum_sum += sp_cabs(a->image->data[i])+sp_cabs(b->image->data[i]);
+    sum_dif += fabs(sp_cabs(a->image->data[i])-sp_cabs(b->image->data[i]));
+  }
+  return sum_dif/sum_sum;
+}
+
+real sp_image_correlation_coefficient(Image * a,Image * b){
+  real sum_sq_x = 0;
+  real sum_sq_y = 0;
+  real sum_coproduct = 0;
+  real mean_x = sp_cabs(a->image->data[0]);
+  real mean_y = sp_cabs(b->image->data[0]);
+  for(int i= 1; i < sp_image_size(a);i++){
+    real sweep = i/(i+1.0);
+    real delta_x = sp_cabs(a->image->data[i]) - mean_x;
+    real delta_y = sp_cabs(b->image->data[i]) - mean_y;
+    sum_sq_x += delta_x * delta_x * sweep;
+    sum_sq_y += delta_y * delta_y * sweep;
+    sum_coproduct += delta_x * delta_y * sweep;
+    mean_x += delta_x / i;
+    mean_y += delta_y / i;
+  }
+  real pop_sd_x = sqrt( sum_sq_x / sp_image_size(a) );
+  real  pop_sd_y = sqrt( sum_sq_y / sp_image_size(b) );
+  real cov_x_y = sum_coproduct / sp_image_size(a);
+  real correlation = cov_x_y / (pop_sd_x * pop_sd_y);
+  return correlation;
+}
+
+sp_vector * sp_image_center_of_mass(Image * a){
+  return sp_c3matrix_center_of_mass(a->image);
 }

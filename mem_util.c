@@ -75,8 +75,8 @@ void * _sp_realloc(void * ptr, size_t size, char * file, int line){
   p->address = retval;    
   sprintf(buffer,"%s:%d",file,line);
   free(p->allocate_from);
-  p->allocate_from = malloc(sizeof(char)*strlen(buffer));
-  strcpy(p->allocate_from,buffer);
+  p->allocate_from = malloc(sizeof(char)*(strlen(buffer)+1));
+/*  strcpy(p->allocate_from,buffer);*/
   return retval;
 }
 
@@ -97,8 +97,8 @@ void sp_alloc(size_t n, char * file, int line, void * retval){
   sprintf(buffer,"%d bytes allocated at %x from %s:%d",mn->size,(unsigned int)mn->address,file,line);  
   sp_log(buffer);
   sprintf(buffer,"%s:%d",file,line);
-  mn->allocate_from = malloc(sizeof(char)*strlen(buffer)+1);
-  strcpy(mn->allocate_from,buffer);
+  mn->allocate_from = malloc(sizeof(char)*(strlen(buffer)+1));
+/*  strcpy(mn->allocate_from,buffer);*/
 }
 
 void * _sp_malloc(size_t n, char * file, int line){  
