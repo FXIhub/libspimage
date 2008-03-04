@@ -1883,9 +1883,14 @@ static inline Complex sp_c3matrix_interp(const sp_c3matrix * m, real fx, real fy
     y = sp_c3matrix_y(m)-2;
     v = 1;
   }
-  if(z >= sp_c3matrix_z(m)-1){
-    z = sp_c3matrix_z(m)-2;
-    w = 1;
+  if(sp_c3matrix_z(m) > 1){
+    if(z >= sp_c3matrix_z(m)-1){
+      z = sp_c3matrix_z(m)-2;
+      w = 1;
+    }
+  }else{
+    z = 0;
+    w = 0;
   }
   res = sp_cscale(sp_cscale(sp_cscale(sp_c3matrix_get(m,x,y,z),(1-u)),(1-v)),(1-w));
   if(u){res = sp_cadd(res,sp_cscale(sp_cscale(sp_cscale(sp_c3matrix_get(m,x+1,y,z),(u)),(1-v)),(1-w)));}
