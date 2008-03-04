@@ -2276,7 +2276,7 @@ int write_png(Image * img,const char * filename, int color){
     for(x = 0;x<sp_c3matrix_x(img->image);x++){
       /* traditional color scale taken from gnuplot manual */
       if(color & LOG_SCALE){
-	value = log((sp_cabs(img->image->data[i])-offset)*scale+1)/log_of_2;
+	value = 1-log((sp_cabs(img->image->data[i])-offset)*scale+FLT_EPSILON)/log(FLT_EPSILON);
       }else{
 	value = ((sp_cabs(img->image->data[i])-offset)*scale);
       }
