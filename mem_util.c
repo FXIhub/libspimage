@@ -27,7 +27,7 @@ void sp_malloc_finalize(){
   int leaks = 0;
   /* check all non sp_freed pointers */
   for(Malloc_Node * p = sp_malloc_head.next;p;p = p->next){
-    sprintf(buffer,"%d bytes leaked at %x from %s",p->size,(unsigned int)p->address,p->allocate_from);
+    sprintf(buffer,"%zu bytes leaked at %p from %s",p->size,p->address,p->allocate_from);
     sp_log(buffer);
     leaks++;
   }
@@ -40,6 +40,10 @@ void sp_malloc_finalize(){
 void sp_log(char * str){
   if(!log_file){
     log_file = fopen("spimage_log.txt","w");
+    if(!log_file){
+      perror("Could not open log file for writing");
+      abort();
+    }
     atexit(sp_malloc_finalize);
   }
   fprintf(log_file,"%s\n",str);
@@ -68,7 +72,7 @@ void * _sp_realloc(void * ptr, size_t size, char * file, int line){
     fprintf(stderr,"Could not find pointer in pointer list!");
     abort();
   }    
-  sprintf(buffer,"Reallocated %x to %x freeing %d bytes and allocating %d bytes from %s:%d",(unsigned int)p->address,(unsigned int)retval,
+  sprintf(buffer,"Reallocated %p to %p freeing %zd bytes and allocating %zu bytes from %s:%d",p->address,retval,
 	  p->size,size,file,line);  
   sp_log(buffer);
   p->size = size;
@@ -94,7 +98,7 @@ void sp_alloc(size_t n, char * file, int line, void * retval){
   mn->size = n;
   mn->address = retval;    
   mn->next = NULL;
-  sprintf(buffer,"%d bytes allocated at %x from %s:%d",mn->size,(unsigned int)mn->address,file,line);  
+  sprintf(buffer,"%zu bytes allocated at %p from %s:%d",mn->size,mn->address,file,line);  
   sp_log(buffer);
   sprintf(buffer,"%s:%d",file,line);
   mn->allocate_from = malloc(sizeof(char)*(strlen(buffer)+1));
@@ -139,7 +143,7 @@ void _sp_free(void * pointer, char * file, int line){
   if(p->next){    
     p->next->previous = p->previous;
   }
-  sprintf(buffer,"%d bytes sp_freed at %x from %s:%d",p->size,(unsigned int)p->address,file,line);
+  sprintf(buffer,"%zu bytes sp_freed at %p from %s:%d",p->size,p->address,file,line);
   sp_log(buffer);
   free(p->allocate_from);
   free(p);  
