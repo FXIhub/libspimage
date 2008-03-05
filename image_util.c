@@ -1468,12 +1468,15 @@ Image * _read_imagefile(const char * filename, char * file, int line){
     dataset_id = H5Dopen(file_id, "/mask");
     space = H5Dget_space(dataset_id);
     H5Sget_simple_extent_dims(space,dims,NULL);
-    if(dims[2]){
+    if(H5Sget_simple_extent_ndims(space) == 3){
       res->image = _sp_c3matrix_alloc(dims[0],dims[1],dims[2],file,line);
       res->mask = _sp_i3matrix_alloc(dims[0],dims[1],dims[2],file,line);
+    }else if(H5Sget_simple_extent_ndims(space) == 2){
+      res->image = _sp_c3matrix_alloc(dims[0],dims[1],1,file,line);
+      res->image = _sp_c3matrix_alloc(dims[0],dims[1],1,file,line);
     }else{
-      res->image = _sp_c3matrix_alloc(dims[0],dims[1],1,file,line);
-      res->image = _sp_c3matrix_alloc(dims[0],dims[1],1,file,line);
+      fprintf(stderr,"File has unsupported number of dimensions!\n");
+      abort();
     }
     tmp = _sp_3matrix_alloc(sp_i3matrix_x(res->mask),sp_i3matrix_y(res->mask),
 			   sp_i3matrix_z(res->mask),file,line);
