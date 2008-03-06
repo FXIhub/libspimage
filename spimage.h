@@ -10,5 +10,6 @@
 #include "spimage/linear_alg.h"
 #include "spimage/mem_util.h"
 #include "spimage/image_sphere.h"
+#include "spimage/sperror.h"
 #endif
 

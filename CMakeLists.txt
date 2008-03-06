@@ -77,7 +77,7 @@ SET(FFTW_LIBRARY ${FFTW3_LIBRARY} ${FFTW3F_LIBRARY} ${FFTW3F_THREADS_LIBRARY} ${
 INCLUDE_DIRECTORIES(${FFTW_INCLUDE_DIR} ${PNG_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${HDF5_INCLUDE_DIR})
 
 
-LIST(APPEND OBJECTS  "image_util.c" "fft.c" "linear_alg.c" "mem_util.c" "image_sphere.c" )
+LIST(APPEND OBJECTS  "image_util.c" "fft.c" "linear_alg.c" "mem_util.c" "image_sphere.c" "sperror.c" )
 
 
 
@@ -94,7 +94,7 @@ INSTALL(TARGETS spimage
   RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
   LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib${LIBRARY_SUFFIX}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib${LIBRARY_SUFFIX})
-INSTALL(FILES spimage/fft.h spimage/image_util.h spimage/image.h spimage/linear_alg.h spimage/mem_util.h spimage/image_sphere.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/spimage)
+INSTALL(FILES spimage/fft.h spimage/image_util.h spimage/image.h spimage/linear_alg.h spimage/mem_util.h spimage/image_sphere.h spimage/sperror.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/spimage)
 INSTALL(FILES spimage.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/)
 
 LIST(APPEND TESTS_LIBRARIES  ${TIFF_LIBRARY} ${FFTW_LIBRARY} ${PNG_LIBRARY} ${HDF5_LIBRARY} ${MATH_LIBRARY} ${C_LIBRARY} ${Z_LIBRARY} ${JPEG_LIBRARY})
