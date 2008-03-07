@@ -295,6 +295,7 @@ Image * sp_image_shift(Image * img){
     /* FM BUG: There was a bug here for 2D images with max_z so I added this hack */
     if(max_z == 0){
       max_z = 0.5;
+      img->detector->image_center[2] = 0.5;
     }
     sp_image_realloc(out,2*max_x,2*max_y,2*max_z);
   }
@@ -324,99 +325,47 @@ Image * sp_image_shift(Image * img){
 
   out->shifted = !out->shifted;
   /* shift quadrants */
-  for(x = 0;x<sp_c3matrix_x(img->image);x++){
-    for(y = 0;y<sp_c3matrix_y(img->image);y++){
-      for(z = 0;z<sp_c3matrix_z(img->image);z++){
-	index1 = z*sp_c3matrix_y(img->image)*sp_c3matrix_x(img->image) +
-	  y*sp_c3matrix_x(img->image) + x;
+
+  if(img->num_dimensions == 2){
+    for(x = 0;x<sp_c3matrix_x(img->image);x++){
+      for(y = 0;y<sp_c3matrix_y(img->image);y++){
+	index1 = y*sp_c3matrix_x(img->image) + x;
 	index2 = 0;
-	if(z < img->detector->image_center[2]){
-	  if(y < img->detector->image_center[1]){
-	    if(x < img->detector->image_center[0]){
-	      newx = sp_c3matrix_x(out->image)-(img->detector->image_center[0]-x);
-	      newy = sp_c3matrix_y(out->image)-(img->detector->image_center[1]-y);
-	      newz = sp_c3matrix_z(out->image)-(img->detector->image_center[2]-z);
-	      if(newx < sp_c3matrix_x(img->image)/2 ||
-		 newy < sp_c3matrix_y(img->image)/2 ||
-		 newz < sp_c3matrix_z(img->image)/2){
-		index2 = -1;
-	      }
-	    }else{
-	      newx = x-img->detector->image_center[0];
-	      newy = sp_c3matrix_y(out->image)-(img->detector->image_center[1]-y);
-	      newz = sp_c3matrix_z(out->image)-(img->detector->image_center[2]-z);
-	      if(newx >= sp_c3matrix_x(img->image)/2 ||
-		 newy < sp_c3matrix_y(img->image)/2 ||
-		 newz < sp_c3matrix_z(img->image)/2){
-		index2 = -1;
-	      }
+	if(y < img->detector->image_center[1]){
+	  if(x < img->detector->image_center[0]){
+	    newx = sp_c3matrix_x(out->image)-(img->detector->image_center[0]-x);
+	    newy = sp_c3matrix_y(out->image)-(img->detector->image_center[1]-y);
+	    if(newx < sp_c3matrix_x(img->image)/2 ||
+	       newy < sp_c3matrix_y(img->image)/2){
+	      index2 = -1;
 	    }
-	  }else{	
-	    if(x < img->detector->image_center[0]){
-	      newx = sp_c3matrix_x(out->image)-(img->detector->image_center[0]-x);
-	      newy = y-img->detector->image_center[1];
-	      newz = sp_c3matrix_z(out->image)-(img->detector->image_center[2]-z);
-	      if(newx < sp_c3matrix_x(img->image)/2 ||
-		 newy >= sp_c3matrix_y(img->image)/2 ||
-		 newz < sp_c3matrix_z(img->image)/2){
-		   index2 = -1;
-		 }
-	    }else{
-	      newx = x-img->detector->image_center[0];
-	      newy = y-img->detector->image_center[1];
-	      newz = sp_c3matrix_z(out->image)-(img->detector->image_center[2]-z);
-		if(newx >= sp_c3matrix_x(img->image)/2 ||
-		   newy >= sp_c3matrix_y(img->image)/2 ||
-		   newz < sp_c3matrix_z(img->image)/2){
-		     index2 = -1;
-		   }	      
+	  }else{
+	    newx = x-img->detector->image_center[0];
+	    newy = sp_c3matrix_y(out->image)-(img->detector->image_center[1]-y);
+	    if(newx >= sp_c3matrix_x(img->image)/2 ||
+	       newy < sp_c3matrix_y(img->image)/2){
+	      index2 = -1;
 	    }
 	  }
-	}else{
-	  if(y < img->detector->image_center[1]){
-	    if(x < img->detector->image_center[0]){
-	      newx = sp_c3matrix_x(out->image)-(img->detector->image_center[0]-x);
-	      newy = sp_c3matrix_y(out->image)-(img->detector->image_center[1]-y);
-	      newz = z-img->detector->image_center[2];
-	      if(newx < sp_c3matrix_x(img->image)/2 ||
-		 newy < sp_c3matrix_y(img->image)/2 ||
-		 newz >= sp_c3matrix_z(img->image)/2){
-		index2 = -1;
-	      }
-	    }else{
-	      newx = x-img->detector->image_center[0];
-	      newy = sp_c3matrix_y(out->image)-(img->detector->image_center[1]-y);
-	      newz = z-img->detector->image_center[2];
-	      if(newx >= sp_c3matrix_x(img->image)/2 ||
-		 newy < sp_c3matrix_y(img->image)/2 ||
-		 newz >= sp_c3matrix_z(img->image)/2){
-		index2 = -1;
-	      }
+	}else{	
+	  if(x < img->detector->image_center[0]){
+	    newx = sp_c3matrix_x(out->image)-(img->detector->image_center[0]-x);
+	    newy = y-img->detector->image_center[1];
+	    if(newx < sp_c3matrix_x(img->image)/2 ||
+	       newy >= sp_c3matrix_y(img->image)/2){
+	      index2 = -1;
 	    }
-	  }else{	
-	    if(x < img->detector->image_center[0]){
-	      newx = sp_c3matrix_x(out->image)-(img->detector->image_center[0]-x);
-	      newy = y-img->detector->image_center[1];
-	      newz = z-img->detector->image_center[2];
-	      if(newx < sp_c3matrix_x(img->image)/2 ||
-		 newy >= sp_c3matrix_y(img->image)/2 ||
-		 newz >= sp_c3matrix_z(img->image)/2){
-		index2 = -1;
-	      }
-	    }else{
-	      newx = x-img->detector->image_center[0];
-	      newy = y-img->detector->image_center[1];
-	      newz = z-img->detector->image_center[2];
-	      if(newx >= sp_c3matrix_x(img->image)/2 ||
-		 newy >= sp_c3matrix_y(img->image)/2 ||
-		 newz >= sp_c3matrix_z(img->image)/2){
-		index2 = -1;
-	      }	      
-	    }
+	  }else{
+	    newx = x-img->detector->image_center[0];
+	    newy = y-img->detector->image_center[1];
+	    if(newx >= sp_c3matrix_x(img->image)/2 ||
+	       newy >= sp_c3matrix_y(img->image)/2){
+	      index2 = -1;
+	    }	      
 	  }
 	}
 	if(index2 != -1){
-	  index2 = sp_c3matrix_get_index(out->image,newx,newy,newz);
+	  index2 = sp_c3matrix_get_index(out->image,newx,newy,0);
 	}
 	
 	if(index2 != -1){
@@ -425,9 +374,110 @@ Image * sp_image_shift(Image * img){
 	}
       }
     }
-  }
-
-  
+  }else if(img->num_dimensions == 3){
+    for(x = 0;x<sp_c3matrix_x(img->image);x++){
+      for(y = 0;y<sp_c3matrix_y(img->image);y++){
+	for(z = 0;z<sp_c3matrix_z(img->image);z++){
+	  index1 = z*sp_c3matrix_y(img->image)*sp_c3matrix_x(img->image) +
+	    y*sp_c3matrix_x(img->image) + x;
+	  index2 = 0;
+	  if(z < img->detector->image_center[2]){
+	    if(y < img->detector->image_center[1]){
+	      if(x < img->detector->image_center[0]){
+		newx = sp_c3matrix_x(out->image)-(img->detector->image_center[0]-x);
+		newy = sp_c3matrix_y(out->image)-(img->detector->image_center[1]-y);
+		newz = sp_c3matrix_z(out->image)-(img->detector->image_center[2]-z);
+		if(newx < sp_c3matrix_x(img->image)/2 ||
+		   newy < sp_c3matrix_y(img->image)/2 ||
+		   newz < sp_c3matrix_z(img->image)/2){
+		  index2 = -1;
+		}
+	      }else{
+		newx = x-img->detector->image_center[0];
+		newy = sp_c3matrix_y(out->image)-(img->detector->image_center[1]-y);
+		newz = sp_c3matrix_z(out->image)-(img->detector->image_center[2]-z);
+		if(newx >= sp_c3matrix_x(img->image)/2 ||
+		   newy < sp_c3matrix_y(img->image)/2 ||
+		   newz < sp_c3matrix_z(img->image)/2){
+		  index2 = -1;
+		}
+	      }
+	    }else{	
+	      if(x < img->detector->image_center[0]){
+		newx = sp_c3matrix_x(out->image)-(img->detector->image_center[0]-x);
+		newy = y-img->detector->image_center[1];
+		newz = sp_c3matrix_z(out->image)-(img->detector->image_center[2]-z);
+		if(newx < sp_c3matrix_x(img->image)/2 ||
+		   newy >= sp_c3matrix_y(img->image)/2 ||
+		   newz < sp_c3matrix_z(img->image)/2){
+		  index2 = -1;
+		}
+	      }else{
+		newx = x-img->detector->image_center[0];
+		newy = y-img->detector->image_center[1];
+		newz = sp_c3matrix_z(out->image)-(img->detector->image_center[2]-z);
+		if(newx >= sp_c3matrix_x(img->image)/2 ||
+		   newy >= sp_c3matrix_y(img->image)/2 ||
+		   newz < sp_c3matrix_z(img->image)/2){
+		  index2 = -1;
+		}	      
+	      }
+	    }
+	  }else{
+	    if(y < img->detector->image_center[1]){
+	      if(x < img->detector->image_center[0]){
+		newx = sp_c3matrix_x(out->image)-(img->detector->image_center[0]-x);
+		newy = sp_c3matrix_y(out->image)-(img->detector->image_center[1]-y);
+		newz = z-img->detector->image_center[2];
+		if(newx < sp_c3matrix_x(img->image)/2 ||
+		   newy < sp_c3matrix_y(img->image)/2 ||
+		   newz >= sp_c3matrix_z(img->image)/2){
+		  index2 = -1;
+		}
+	      }else{
+		newx = x-img->detector->image_center[0];
+		newy = sp_c3matrix_y(out->image)-(img->detector->image_center[1]-y);
+		newz = z-img->detector->image_center[2];
+		if(newx >= sp_c3matrix_x(img->image)/2 ||
+		   newy < sp_c3matrix_y(img->image)/2 ||
+		   newz >= sp_c3matrix_z(img->image)/2){
+		  index2 = -1;
+		}
+	      }
+	    }else{	
+	      if(x < img->detector->image_center[0]){
+		newx = sp_c3matrix_x(out->image)-(img->detector->image_center[0]-x);
+		newy = y-img->detector->image_center[1];
+		newz = z-img->detector->image_center[2];
+		if(newx < sp_c3matrix_x(img->image)/2 ||
+		   newy >= sp_c3matrix_y(img->image)/2 ||
+		   newz >= sp_c3matrix_z(img->image)/2){
+		  index2 = -1;
+		}
+	      }else{
+		newx = x-img->detector->image_center[0];
+		newy = y-img->detector->image_center[1];
+		newz = z-img->detector->image_center[2];
+		if(newx >= sp_c3matrix_x(img->image)/2 ||
+		   newy >= sp_c3matrix_y(img->image)/2 ||
+		   newz >= sp_c3matrix_z(img->image)/2){
+		  index2 = -1;
+		}	      
+	      }
+	    }
+	  }
+	  if(index2 != -1){
+	    index2 = sp_c3matrix_get_index(out->image,newx,newy,newz);
+	  }
+	  
+	  if(index2 != -1){
+	    out->image->data[index2] = img->image->data[index1];
+	    out->mask->data[index2] = img->mask->data[index1];
+	  }
+	}
+      }
+    }
+  }  
   return out;
 }
 
