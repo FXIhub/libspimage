@@ -1890,10 +1890,30 @@ void test_sp_image_h5_read_write(CuTest * tc){
 }
 
 
+void test_sp_image_get_false_color(CuTest * tc){
+  int size = 100;
+  Image * a;
+  a = sp_image_alloc(size,size,1);
+  a->phased = 1;
+  unsigned char * out;
+  for(int z = 0; z<sp_image_z(a);z++){
+    for(int y = 0; y<sp_image_y(a);y++){
+      for(int x = 0; x<sp_image_x(a);x++){
+	sp_image_set(a,x,y,z,sp_cinit(rand()%50,rand()%50));
+      }
+    }
+  }
+  out = sp_image_get_false_color(a,COLOR_JET,0,0);
+  free(out);
+  sp_image_get_false_color(a,COLOR_JET|LOG_SCALE,0,0);
+  free(out);
+  sp_image_get_false_color(a,COLOR_JET|LOG_SCALE,0,25);
+  free(out);
+}
+
 CuSuite* image_get_suite(void)
 {
-  CuSuite* suite = CuSuiteNew();
-  
+  CuSuite* suite = CuSuiteNew();  
   SUITE_ADD_TEST(suite, test_sp_image_edge_extend);
   SUITE_ADD_TEST(suite, test_sp_bubble_sort);
   SUITE_ADD_TEST(suite, test_sp_image_median_filter);
@@ -1902,6 +1922,7 @@ CuSuite* image_get_suite(void)
   SUITE_ADD_TEST(suite,test_cube_crop);
   SUITE_ADD_TEST(suite,test_sp_image_low_pass);
   SUITE_ADD_TEST(suite,test_sp_image_h5_read_write);
+  SUITE_ADD_TEST(suite,test_sp_image_get_false_color);
   return suite;
 }
 

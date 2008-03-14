@@ -931,19 +931,25 @@ void sp_image_high_pass(Image * in, real radius, int type){
 }
 
 void _sp_image_free(Image * in, char * file, int line){
-  _sp_free(in->detector,file,line);
   _sp_c3matrix_free(in->image,file,line);
   _sp_i3matrix_free(in->mask,file,line);
+#ifdef _DEBUG_MEM
+  _sp_free(in->detector,file,line);
   _sp_free(in,file,line);
+#else
+  sp_free(in->detector);
+  sp_free(in);
+#endif
+
 }
 
 Image * _sp_image_duplicate(Image * in, int flags,char * file, int line){
-  Image  *res = _sp_malloc(sizeof(Image),file,line);
+  Image  *res = sp_malloc(sizeof(Image));
   if(!res){
     sp_error_fatal("Out of memory!");
   }
   memcpy(res,in,sizeof(Image));
-  res->detector = _sp_malloc(sizeof(Detector),file,line);
+  res->detector = sp_malloc(sizeof(Detector));
   if(!res->detector){
     sp_error_fatal("Out of memory!");
   }
@@ -971,12 +977,12 @@ Image * _sp_image_duplicate(Image * in, int flags,char * file, int line){
 
 
 Image * _sp_image_alloc(int x, int y, int z,char * file, int line){
-  Image  *res = _sp_malloc(sizeof(Image),file,line);
+  Image  *res = sp_malloc(sizeof(Image));
   if(!res){
     perror("Out of memory!\n");
     abort();
   }
-  res->detector = _sp_malloc(sizeof(Detector),file,line);
+  res->detector = sp_malloc(sizeof(Detector));
   res->detector->image_center[0] = x/2.0;
   res->detector->image_center[1] = y/2.0;
   res->detector->image_center[2] = z/2.0;
@@ -1358,7 +1364,7 @@ static void write_h5_img(Image * img,const char * filename, int output_precision
 
 
 Image * _read_imagefile(const char * filename, char * file, int line){
-  Image * res = _sp_malloc(sizeof(Image),file, line);
+  Image * res = sp_malloc(sizeof(Image));
   int file_id,dataset_id,space;
   int status,i;
   int version;
@@ -1378,7 +1384,7 @@ Image * _read_imagefile(const char * filename, char * file, int line){
   
   
   
-  res->detector = _sp_malloc(sizeof(Detector),file,line);
+  res->detector = sp_malloc(sizeof(Detector));
   
   
   H5Eget_auto(&func,&client_data);
@@ -1850,6 +1856,9 @@ Image * read_tiff(const char * filename){
   TIFF * tif; 
 
   tif = TIFFOpen(filename, "r");
+  if(!tif){
+    return NULL;
+  }
   if(TIFFGetField(tif,TIFFTAG_BITSPERSAMPLE,&bpp)){
     bpp /= 8;
   }
@@ -2540,6 +2549,129 @@ int write_png(Image * img,const char * filename, int color){
   fflush(fp);
   fclose(fp);
   return 0;
+}
+
+
+
+unsigned char * sp_image_get_false_color(Image * img, int color, double min, double max){
+
+  if(img->num_dimensions != SP_2D){
+    fprintf(stderr,"Can only get false colors of 2D images!\n");
+    abort();
+  }
+  int i,x,y;
+  real log_of_scale;
+  real color_table[3][256];
+  real scale,offset,max_v,min_v,value;
+  real phase;
+  unsigned char * out = sp_malloc(sizeof(unsigned char)*sp_image_x(img)*sp_image_y(img)*4);
+
+  /*fclose(fp);
+  return 0;*/
+  max_v = 0;
+  min_v = REAL_MAX;
+
+
+  for(i = 0;i<256;i++){
+    value = i/255.0;
+    if(color & COLOR_GRAYSCALE){       
+      color_table[0][i] = value;
+      color_table[1][i] = value;
+      color_table[2][i] = value;
+    }else if(color & COLOR_TRADITIONAL){       
+      color_table[0][i] = sqrt(value);
+      color_table[1][i] = value*value*value;
+      color_table[2][i] = sin(value*2*M_PI);
+    }else if(color & COLOR_HOT){
+      color_table[0][i] = 3*value;
+      color_table[1][i] = 3*value-1;
+      color_table[2][i] = 3*value-2;
+    }else if(color & COLOR_RAINBOW){
+      color_table[0][i] = fabs(2*value-0.5);
+      color_table[1][i] = sin(value*M_PI);
+     color_table[2][i] = cos(value*M_PI/2);
+    }else if(color & COLOR_JET){
+      if(value < 1/8.0){
+	color_table[0][i] = 0;
+	color_table[1][i] = 0;
+	color_table[2][i] = (value+1.0/8.0)*4;	   
+      }else if(value < 3/8.0){
+	color_table[0][i] = 0;
+	color_table[1][i] = (value-1.0/8.0)*4;
+	color_table[2][i] = 1;
+      }else if(value < 5/8.0){
+	color_table[0][i] = (value-3.0/8.0)*4;
+	color_table[1][i] = 1;
+	color_table[2][i] = 1-(value-3.0/8.0)*4;
+      }else if(value < 7/8.0){
+	color_table[0][i] = 1;
+	color_table[1][i] = 1-(value-5.0/8.0)*4;
+	color_table[2][i] = 0;
+      }else if(value <= 1.01){
+	color_table[0][i] = 1-(value-7.0/8.0)*4;;
+	color_table[1][i] = 0;
+	color_table[2][i] = 0;
+      }
+    }
+    color_table[0][i] = MIN(1,color_table[0][i]);
+    color_table[1][i] = MIN(1,color_table[1][i]);
+    color_table[2][i] = MIN(1,color_table[2][i]);
+    color_table[0][i] *= 255;
+    color_table[1][i] *= 255;
+    color_table[2][i] *= 255;
+  }
+  if(min == max){
+    /* We're gonna scale the image so that it fits on the 8 bits */
+    min_v = sp_c3matrix_min(img->image,NULL);
+    max_v = sp_c3matrix_max(img->image,NULL);
+    if(max_v-min_v){
+      scale = 65535/(max_v-min_v);
+    }else{
+      scale = 1;
+    }
+    offset = min_v;
+  }else{
+    max_v = max;
+    if(min < 0){
+      min_v = sp_c3matrix_min(img->image,NULL);
+    }else{
+      min_v = min;
+    }
+    scale = 65535/(max_v-min_v);
+    offset = min_v;
+  }
+  i = 0;
+  log_of_scale = log(65536);
+  /* this is a special kind of color */
+  for(y = 0;y<sp_c3matrix_y(img->image);y++){
+    for(x = 0;x<sp_c3matrix_x(img->image);x++){
+      /* traditional color scale taken from gnuplot manual */
+      value = sp_min(sp_cabs(img->image->data[i]),max_v);
+      value = sp_max(value,min_v);
+      value -= offset;
+      value *= scale;
+      
+      if(color & LOG_SCALE){
+	value = log(value+1)/log_of_scale;
+      }else{
+	value /= 65535;
+      }
+      if(color & COLOR_PHASE){
+	phase = (256*(sp_carg(img->image->data[i])+3.1416)/(2*3.1416));
+	out[y*sp_image_x(img)*4+x*4+2] =  sqrt(value)*color_table[0][(int)phase];
+	out[y*sp_image_x(img)*4+x*4+1] = sqrt(value)*color_table[1][(int)phase];
+	out[y*sp_image_x(img)*4+x*4] = sqrt(value)*color_table[2][(int)phase];
+      }else{
+	value *= 255;
+	out[y*sp_image_x(img)*4+x*4+2] =  color_table[0][(int)value];
+	out[y*sp_image_x(img)*4+x*4+1] = color_table[1][(int)value];
+	out[y*sp_image_x(img)*4+x*4] = color_table[2][(int)value];
+
+      }
+      i++;
+    }
+  }
+  return out;
 }
 
 real r_factor(Image * fobs, Image *fcalc, real low_intensity_cutoff){

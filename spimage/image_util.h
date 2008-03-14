@@ -346,8 +346,9 @@ spimage_EXPORT void sp_image_dephase(Image *  img);
  * If the image is not scaled it does nothing.
  */
 static inline void sp_image_to_intensities(Image *  img){
+  long long i;
   if(img->scaled){
-    for(long long i = 0;i<sp_image_size(img);i++){
+    for(i = 0;i<sp_image_size(img);i++){
       img->image->data[i] = sp_cmul(img->image->data[i],sp_cconj(img->image->data[i]));
     }
     img->scaled = 0;
@@ -360,8 +361,9 @@ static inline void sp_image_to_intensities(Image *  img){
  * If the image is already scaled it does nothing.
  */
 static inline  void sp_image_to_amplitudes(Image *  img){
+  long long i;
   if(!img->scaled){
-    for(long long i = 0;i<sp_image_size(img);i++){
+    for(i = 0;i<sp_image_size(img);i++){
       sp_real(img->image->data[i]) = sqrt(sp_real(img->image->data[i]));
       sp_imag(img->image->data[i]) = 0;
     }
@@ -646,6 +648,11 @@ spimage_EXPORT real sp_image_correlation_coefficient(Image * a,Image * b);
 
 
 spimage_EXPORT sp_vector * sp_image_center_of_mass(Image * a);
+
+/*! Returns an array that correponds to the RGBA values of the image when transformed with the given colormap
+  using only the values in the range [min,max]
+*/
+spimage_EXPORT unsigned char * sp_image_get_false_color(Image * img, int color, double min, double max);
 
 #ifdef __cplusplus
 }  /* extern "C" */
