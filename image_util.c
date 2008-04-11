@@ -2658,14 +2658,14 @@ unsigned char * sp_image_get_false_color(Image * img, int color, double min, dou
       }
       if(color & COLOR_PHASE){
 	phase = (256*(sp_carg(img->image->data[i])+3.1416)/(2*3.1416));
-	out[y*sp_image_x(img)*4+x*4+2] =  sqrt(value)*color_table[0][(int)phase];
-	out[y*sp_image_x(img)*4+x*4+1] = sqrt(value)*color_table[1][(int)phase];
-	out[y*sp_image_x(img)*4+x*4] = sqrt(value)*color_table[2][(int)phase];
+	out[x*sp_image_y(img)*4+y*4+2] =  sqrt(value)*color_table[0][(int)phase];
+	out[x*sp_image_y(img)*4+y*4+1] = sqrt(value)*color_table[1][(int)phase];
+	out[x*sp_image_y(img)*4+y*4] = sqrt(value)*color_table[2][(int)phase];
       }else{
 	value *= 255;
-	out[y*sp_image_x(img)*4+x*4+2] =  color_table[0][(int)value];
-	out[y*sp_image_x(img)*4+x*4+1] = color_table[1][(int)value];
-	out[y*sp_image_x(img)*4+x*4] = color_table[2][(int)value];
+	out[x*sp_image_y(img)*4+y*4+2] =  color_table[0][(int)value];
+	out[x*sp_image_y(img)*4+y*4+1] = color_table[1][(int)value];
+	out[x*sp_image_y(img)*4+y*4] = color_table[2][(int)value];
 
       }
       i++;
