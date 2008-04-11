@@ -1374,6 +1374,7 @@ Image * _read_imagefile(const char * filename, char * file, int line){
   void * client_data;
   real values[3];
   sp_3matrix * tmp;
+  int flag_num_dimensions = 0;
   if(sizeof(real) == sizeof(float)){
     mem_type_id = H5T_NATIVE_FLOAT;
   }else if(sizeof(real) == sizeof(double)){
@@ -1540,6 +1541,7 @@ Image * _read_imagefile(const char * filename, char * file, int line){
       dataset_id = H5Dopen(file_id, "/num_dimensions");
       H5Eset_auto(func,client_data);
       if(dataset_id>=0){
+	flag_num_dimensions = 1;
 	status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 			 H5P_DEFAULT, values);
 	if(status < 0){
@@ -1832,6 +1834,22 @@ Image * _read_imagefile(const char * filename, char * file, int line){
     status = H5Fclose(file_id);    
   }
   H5Eset_auto(func,client_data);
+
+  /* Due to a dataformat change when there was no change in version
+     we'll have to transpose the data when there is no num_dimensions field detected.
+     This is because when we changed from 2D to 3D the data changed from X changing slowest to X changing fastest
+  */
+  if(!flag_num_dimensions && sp_image_z(res) == 1){
+    Image * tmp_img = sp_image_duplicate(res,SP_COPY_DATA|SP_COPY_MASK);
+    for(int x = 0;x<sp_image_x(res);x++){
+      for(int y = 0;y<sp_image_y(res);y++){
+	sp_image_set(res,x,y,0,tmp_img->image->data[x*sp_image_y(res)+y]);
+	sp_i3matrix_set(res->mask,x,y,0,tmp_img->mask->data[x*sp_image_y(res)+y]);
+		     
+      }
+    }
+    sp_image_free(tmp_img);
+  }
   return res;
   
 }
@@ -2646,7 +2664,7 @@ unsigned char * sp_image_get_false_color(Image * img, int color, double min, dou
   for(y = 0;y<sp_c3matrix_y(img->image);y++){
     for(x = 0;x<sp_c3matrix_x(img->image);x++){
       /* traditional color scale taken from gnuplot manual */
-      value = sp_min(sp_cabs(img->image->data[i]),max_v);
+      value = sp_min(sp_cabs(sp_image_get(img,x,y,0)),max_v);
       value = sp_max(value,min_v);
       value -= offset;
       value *= scale;
@@ -2658,14 +2676,14 @@ unsigned char * sp_image_get_false_color(Image * img, int color, double min, dou
       }
       if(color & COLOR_PHASE){
 	phase = (256*(sp_carg(img->image->data[i])+3.1416)/(2*3.1416));
-	out[x*sp_image_y(img)*4+y*4+2] =  sqrt(value)*color_table[0][(int)phase];
-	out[x*sp_image_y(img)*4+y*4+1] = sqrt(value)*color_table[1][(int)phase];
-	out[x*sp_image_y(img)*4+y*4] = sqrt(value)*color_table[2][(int)phase];
+	out[y*sp_image_x(img)*4+x*4+2] =  sqrt(value)*color_table[0][(int)phase];
+	out[y*sp_image_x(img)*4+x*4+1] = sqrt(value)*color_table[1][(int)phase];
+	out[y*sp_image_x(img)*4+x*4] = sqrt(value)*color_table[2][(int)phase];
       }else{
 	value *= 255;
-	out[x*sp_image_y(img)*4+y*4+2] =  color_table[0][(int)value];
-	out[x*sp_image_y(img)*4+y*4+1] = color_table[1][(int)value];
-	out[x*sp_image_y(img)*4+y*4] = color_table[2][(int)value];
+	out[y*sp_image_x(img)*4+x*4+2] =  color_table[0][(int)value];
+	out[y*sp_image_x(img)*4+x*4+1] = color_table[1][(int)value];
+	out[y*sp_image_x(img)*4+x*4] = color_table[2][(int)value];
 
       }
       i++;
