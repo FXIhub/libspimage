@@ -43,6 +43,7 @@ extern "C"
 #define SP_COPY_DATA 1
 #define SP_COPY_DETECTOR 0
 #define SP_COPY_MASK 2
+#define SP_COPY_ALL 3
 
 #define SP_AXIS_XY 0
 #define SP_AXIS_X 1
@@ -302,6 +303,7 @@ spimage_EXPORT void sp_image_add(Image * a, Image * b);
 spimage_EXPORT void sp_image_sub(Image * a, Image * b);
 
 /*! Mutiplies Image a with Image b element by element
+ *  The result is stored in a.
  */
 spimage_EXPORT void sp_image_mul_elements(Image * a, Image * b);
 
@@ -493,6 +495,17 @@ spimage_EXPORT Image * image_local_variance(Image * img, Image * window);
  */
 spimage_EXPORT Image * sp_proj_module(Image * a, Image * b);
 
+/*! Module Histogram projector
+ *
+ *  Returns an image that combines the phases of a with the amplitudes of b
+ *  Both images are assumed to be in reciprocal space.
+ *  The difference compared to sp_proj_module is that the amplitudes of b
+ *  are not used directly but instead the amplitudes used fluctuate around
+ *  b according to the standard deviation provided. For more information
+ *  please read Pierre's Thiebault PhD thesis, page 70.
+ */
+spimage_EXPORT Image * sp_proj_module_histogram(Image * a, Image * b,Image * std_dev);
+
 /*! Support projector
  *
  *  Sets to zero all regions of the image a for which image b is 0
@@ -653,6 +666,10 @@ spimage_EXPORT sp_vector * sp_image_center_of_mass(Image * a);
   using only the values in the range [min,max]
 */
 spimage_EXPORT unsigned char * sp_image_get_false_color(Image * img, int color, double min, double max);
+
+/*! Calculate a random gaussian distributed number with mean m and standard deviation s 
+*/
+spimage_EXPORT real sp_box_muller(real m, real s);
 
 #ifdef __cplusplus
 }  /* extern "C" */

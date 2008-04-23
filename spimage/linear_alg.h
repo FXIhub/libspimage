@@ -123,6 +123,10 @@ static inline real sp_cabs(Complex a){
   return sqrt(sp_imag(a)*sp_imag(a)+sp_real(a)*sp_real(a));
 }
 
+static inline real sp_cabs2(Complex a){
+  return (sp_imag(a)*sp_imag(a)+sp_real(a)*sp_real(a));
+}
+
 
 static inline real sp_carg(Complex a){
     return atan2(sp_imag(a),sp_real(a));
@@ -161,6 +165,16 @@ static inline Complex sp_cdiv(Complex a, Complex b){
   sp_imag(ret) = (sp_imag(a)*sp_real(b)-sp_real(a)*sp_imag(b))/(sp_real(b)*sp_real(b)+sp_imag(b)*sp_imag(b));
   return ret;
 }
+  
+/*! Compare 2 complex numbers and return 1 if *pa bigger than *pb, 0 if they are equal or -1 otherwise.
+ *  pa and pb should be pointers to a Complex. This function is useful for using qsort(3)
+ */
+spimage_EXPORT int sp_complex_descend_compare(const void * pa,const void * pb);
+
+/*! Compare 2 complex numbers and return -11 if *pa bigger than *pb, 0 if they are equal or 1 otherwise.
+ *  pa and pb should be pointers to a Complex. This function is useful for using qsort(3)
+ */
+spimage_EXPORT int sp_complex_ascend_compare(const void * pa,const void * pb);
 
 /*! This function allocates memory for a 3matrix of size nrows rows by ncols columns and initializes all the elements of the matrix to zero.
  *
@@ -430,7 +444,7 @@ static inline void sp_cvector_set (const sp_cvector * v, unsigned int n, Complex
   * The two matrices must have the same dimensions.
   */
 static inline void sp_matrix_memcpy(sp_matrix * dest, const sp_matrix * src){
-  int i;
+  unsigned int i;
   if(src->rows*src->cols < 1024){
     /* avoid function call and make inline possibly useful */
     for(i = 0;i<src->rows*src->cols;i++){
@@ -447,7 +461,7 @@ static inline void sp_matrix_memcpy(sp_matrix * dest, const sp_matrix * src){
   * The two matrices must have the same dimensions.
   */
 static inline void sp_imatrix_memcpy(sp_imatrix * dest, const sp_imatrix * src){
-  int i;
+  unsigned int i;
   if(src->rows*src->cols < 1024){
     /* avoid function call and make inline possibly useful */
     for(i = 0;i<src->rows*src->cols;i++){
@@ -464,7 +478,7 @@ static inline void sp_imatrix_memcpy(sp_imatrix * dest, const sp_imatrix * src){
   * The two matrices must have the same dimensions.
   */
 static inline void sp_cmatrix_memcpy(sp_cmatrix * dest, const sp_cmatrix * src){
-  int i;
+  unsigned int i;
   if(src->rows*src->cols < 1024){
     /* avoid function call and make inline possibly useful */
     for(i = 0;i<src->rows*src->cols;i++){
@@ -480,7 +494,7 @@ static inline void sp_cmatrix_memcpy(sp_cmatrix * dest, const sp_cmatrix * src){
   * The two matrices must have the same dimensions.
   */
 static inline void sp_3matrix_memcpy(sp_3matrix * dest, const sp_3matrix * src){
-  int i;
+  unsigned int i;
   if(src->x*src->y*src->z < 1024){
     /* avoid function call and make inline possibly useful */
     for(i = 0;i<src->x*src->y*src->z;i++){
@@ -496,7 +510,7 @@ static inline void sp_3matrix_memcpy(sp_3matrix * dest, const sp_3matrix * src){
   * The two matrices must have the same dimensions.
   */
 static inline void sp_i3matrix_memcpy(sp_i3matrix * dest, const sp_i3matrix * src){
-  int i;
+  unsigned int i;
   if(src->x*src->y*src->z < 1024){
     /* avoid function call and make inline possibly useful */
     for(i = 0;i<src->x*src->y*src->z;i++){
@@ -512,7 +526,7 @@ static inline void sp_i3matrix_memcpy(sp_i3matrix * dest, const sp_i3matrix * sr
   * The two matrices must have the same dimensions.
   */
 static inline void sp_c3matrix_memcpy(sp_c3matrix * dest, const sp_c3matrix * src){
-  int i;
+  unsigned int i;
   if(src->x*src->y*src->z < 1024){
     /* avoid function call and make inline possibly useful */
     for(i = 0;i<src->x*src->y*src->z;i++){
@@ -530,7 +544,7 @@ static inline void sp_c3matrix_memcpy(sp_c3matrix * dest, const sp_c3matrix * sr
  * The two vectors must have the same length.
  */
 static inline void sp_vector_add(sp_vector * a, const sp_vector * b){
-  int i;
+  unsigned int i;
   for(i = 0;i<a->size;i++){
     a->data[i] += b->data[i];
   }
@@ -542,7 +556,7 @@ static inline void sp_vector_add(sp_vector * a, const sp_vector * b){
  * The two vectors must have the same length.
  */
 static inline void sp_cvector_add(sp_cvector * a, const sp_cvector * b){
-  int i;
+  unsigned int i;
   for(i = 0;i<a->size;i++){
     a->data[i] = sp_cadd(a->data[i],b->data[i]);
   }
@@ -553,7 +567,7 @@ static inline void sp_cvector_add(sp_cvector * a, const sp_cvector * b){
  * The two vectors must have the same length.
  */
 static inline void sp_vector_sub(sp_vector * a, const sp_vector * b){
-  int i;
+  unsigned int i;
   for(i = 0;i<a->size;i++){
     a->data[i] -= b->data[i];
   }
@@ -565,7 +579,7 @@ static inline void sp_vector_sub(sp_vector * a, const sp_vector * b){
  * The two vectors must have the same length.
  */
 static inline void sp_cvector_sub(sp_cvector * a, const sp_cvector * b){
-  int i;
+  unsigned int i;
   for(i = 0;i<a->size;i++){
     a->data[i] = sp_csub(a->data[i],b->data[i]);
   }
@@ -576,7 +590,7 @@ static inline void sp_cvector_sub(sp_cvector * a, const sp_cvector * b){
  * The two vectors must have the same length.
  */
 static inline void sp_vector_mul(sp_vector * a, const sp_vector * b){
-  int i;
+  unsigned int i;
   for(i = 0;i<a->size;i++){
     a->data[i] *= b->data[i];
   }
@@ -587,7 +601,7 @@ static inline void sp_vector_mul(sp_vector * a, const sp_vector * b){
  * The two vectors must have the same length.
  */
 static inline void sp_cvector_mul(sp_cvector * a, const sp_cvector * b){
-  int i;
+  unsigned int i;
   for(i = 0;i<a->size;i++){
     a->data[i] = sp_cmul(a->data[i],b->data[i]);
   }
@@ -598,7 +612,7 @@ static inline void sp_cvector_mul(sp_cvector * a, const sp_cvector * b){
  * The two vectors must have the same length.
  */
 static inline void sp_vector_div(sp_vector * a, const sp_vector * b){
-  int i;
+  unsigned int i;
   for(i = 0;i<a->size;i++){
     a->data[i] /= b->data[i];
   }
@@ -609,7 +623,7 @@ static inline void sp_vector_div(sp_vector * a, const sp_vector * b){
  * The two vectors must have the same length.
  */
 static inline void sp_cvector_div(sp_cvector * a, const sp_cvector * b){
-  int i;
+  unsigned int i;
   for(i = 0;i<a->size;i++){
     a->data[i] = sp_cdiv(a->data[i],b->data[i]);
   }
@@ -620,7 +634,7 @@ static inline void sp_cvector_div(sp_cvector * a, const sp_cvector * b){
  *
  */
 static inline void sp_vector_scale(sp_vector * a, const real x){
-  int i;
+  unsigned int i;
   for(i = 0;i<a->size;i++){
     a->data[i] *= x;
   }
@@ -630,7 +644,7 @@ static inline void sp_vector_scale(sp_vector * a, const real x){
  *
  */
 static inline void sp_cvector_scale(sp_cvector * a, const Complex x){
-  int i;
+  unsigned int i;
   for(i = 0;i<a->size;i++){
     a->data[i] = sp_cmul(a->data[i],x);
   }
@@ -641,7 +655,7 @@ static inline void sp_cvector_scale(sp_cvector * a, const Complex x){
  *
  */
 static inline void sp_vector_add_constant(sp_vector * a, const real x){
-  int i;
+  unsigned int i;
   for(i = 0;i<a->size;i++){
     a->data[i] += x;
   }
@@ -651,7 +665,7 @@ static inline void sp_vector_add_constant(sp_vector * a, const real x){
  *
  */
 static inline void sp_cvector_add_constant(sp_cvector * a, const Complex x){
-  int i;
+  unsigned int i;
   for(i = 0;i<a->size;i++){
     a->data[i] = sp_cadd(a->data[i],x);
   }
@@ -663,7 +677,7 @@ static inline void sp_cvector_add_constant(sp_cvector * a, const Complex x){
   * The two vectors must have the same length.
   */
 static inline real sp_vector_dot_prod(sp_vector * a, const sp_vector * b){
-  int i;
+  unsigned int i;
   real ret = 0;
   for(i = 0;i<a->size;i++){
     ret += a->data[i]*b->data[i];
@@ -676,7 +690,7 @@ static inline real sp_vector_dot_prod(sp_vector * a, const sp_vector * b){
   * The two vectors must have the same length.
   */
 static inline Complex sp_cvector_dot_prod(sp_cvector * a, const sp_cvector * b){
-  int i;
+  unsigned int i;
   Complex ret = {0,0};
   for(i = 0;i<a->size;i++){
     ret = sp_cadd(ret,sp_cmul(a->data[i],sp_cconj(b->data[i])));
@@ -689,7 +703,7 @@ static inline Complex sp_cvector_dot_prod(sp_cvector * a, const sp_cvector * b){
   *
   */
 static inline sp_3matrix * sp_vector_outer_prod(sp_vector * a, const sp_vector * b){
-  int i,j;
+  unsigned int i,j;
   sp_3matrix * ret = sp_3matrix_alloc(a->size,b->size,1);
   for(i = 0;i<a->size;i++){
     for(j = 0;j<b->size;j++){
@@ -704,7 +718,7 @@ static inline sp_3matrix * sp_vector_outer_prod(sp_vector * a, const sp_vector *
   *
   */
 static inline real sp_vector_norm(sp_vector * a){
-  int i;
+  unsigned int i;
   real ret = 0;
   for(i = 0;i<a->size;i++){
     ret += a->data[i]*a->data[i];
@@ -716,7 +730,7 @@ static inline real sp_vector_norm(sp_vector * a){
   *
   */
 static inline real sp_cvector_norm(sp_cvector * a){
-  int i;
+  unsigned int i;
   real ret = 0;
   for(i = 0;i<a->size;i++){
     ret += sp_cabs(a->data[i])*sp_cabs(a->data[i]);
@@ -730,7 +744,7 @@ static inline real sp_cvector_norm(sp_cvector * a){
   * The two vectors must have the same length.
   */
 static inline void sp_vector_memcpy(sp_vector * dest, const sp_vector * src){
-  int i;
+  unsigned int i;
   if(src->size < 1024){
     for(i = 0;i<src->size;i++){
       dest->data[i] = src->data[i];
@@ -746,7 +760,7 @@ static inline void sp_vector_memcpy(sp_vector * dest, const sp_vector * src){
   * The two vectors must have the same length.
   */
 static inline void sp_cvector_memcpy(sp_cvector * dest, const sp_cvector * src){
-  int i;
+  unsigned int i;
   if(src->size < 1024){
     for(i = 0;i<src->size;i++){
       dest->data[i] = src->data[i];
@@ -917,7 +931,7 @@ static inline long long sp_c3matrix_size (const sp_c3matrix * m){
  *
  */
 static inline void sp_matrix_set_identity(sp_matrix * m){
-  int i;
+  unsigned int i;
   memset(m->data,0,sizeof(real)*m->rows*m->cols);
   for(i = 0;i<m->rows && i<m->cols;i++){
     sp_matrix_set(m,i,i,1);
@@ -925,7 +939,7 @@ static inline void sp_matrix_set_identity(sp_matrix * m){
 }
 
 static inline void sp_3matrix_set_identity(sp_3matrix * m){
-  int i;
+  unsigned int i;
   memset(m->data,0,sizeof(real)*m->x*m->y);
   for(i = 0;i<m->x && i<m->y;i++){
     sp_3matrix_set(m,i,i,0,1);
@@ -936,7 +950,7 @@ static inline void sp_3matrix_set_identity(sp_3matrix * m){
  *
  */
 static inline void sp_imatrix_set_identity(sp_imatrix * m){
-  int i;
+  unsigned int i;
   memset(m->data,0,sizeof(int)*m->rows*m->cols);
   for(i = 0;i<m->rows && i<m->cols;i++){
     sp_imatrix_set(m,i,i,1);
@@ -947,7 +961,7 @@ static inline void sp_imatrix_set_identity(sp_imatrix * m){
  *
  */
 static inline void sp_cmatrix_set_identity(sp_cmatrix * m){
-  int i;
+  unsigned int i;
   Complex one = {1,0};
   memset(m->data,0,sizeof(Complex)*m->rows*m->cols);
   for(i = 0;i<m->rows && i<m->cols;i++){
@@ -1248,7 +1262,7 @@ static inline void sp_matrix_scale(sp_matrix * a, const real x){
 static inline void sp_imatrix_scale(sp_imatrix * a, const real x){
   int i;
   for(i = 0;i<sp_imatrix_size(a);i++){
-    a->data[i] *= x;
+    a->data[i] =  (int)(a->data[i]*x);
   }
 }
 
@@ -1279,7 +1293,7 @@ static inline void sp_3matrix_scale(sp_3matrix * a, const real x){
 static inline void sp_i3matrix_scale(sp_i3matrix * a, const real x){
   int i;
   for(i = 0;i<sp_i3matrix_size(a);i++){
-    a->data[i] *= x;
+    a->data[i] = (int)(a->data[i]*x);
   }
 }
 
@@ -1348,7 +1362,7 @@ static inline void sp_c3matrix_add_constant(sp_c3matrix * a, const Complex x){
  *
  */
 static inline void sp_matrix_transpose(sp_matrix * a){
-  int i,j;
+  unsigned int i,j;
   /* exchange dimensions */
   sp_matrix * tmp = sp_matrix_alloc(a->cols,a->rows);
   for(i = 0;i<a->rows;i++){
@@ -1365,7 +1379,7 @@ static inline void sp_matrix_transpose(sp_matrix * a){
 }
 
 static inline void sp_3matrix_transpose(sp_3matrix * a){
-  int i,j,k;
+  unsigned int i,j,k;
   /* exchange dimensions */
   sp_3matrix * tmp = sp_3matrix_alloc(a->x,a->y,a->z);
   for(i = 0;i<a->x;i++){
@@ -1388,7 +1402,7 @@ static inline void sp_3matrix_transpose(sp_3matrix * a){
  *
  */
 static inline void sp_imatrix_transpose(sp_imatrix * a){
-  int i,j;
+  unsigned int i,j;
   /* exchange dimensions */
   sp_imatrix * tmp = sp_imatrix_alloc(a->cols,a->rows);
   for(i = 0;i<a->rows;i++){
@@ -1405,7 +1419,7 @@ static inline void sp_imatrix_transpose(sp_imatrix * a){
 }
 
 static inline void sp_i3matrix_transpose(sp_i3matrix * a){
-  int i,j,k;
+  unsigned int i,j,k;
   /* exchange dimensions */
   sp_i3matrix * tmp = sp_i3matrix_alloc(a->x,a->y,a->z);
   for(i = 0;i<a->x;i++){
@@ -1430,7 +1444,7 @@ static inline void sp_i3matrix_transpose(sp_i3matrix * a){
  * The Complex conjugate of the cells is not calculated
  */
 static inline void sp_cmatrix_transpose(sp_cmatrix * a){
-  int i,j;
+  unsigned int i,j;
   /* exchange dimensions */
   sp_cmatrix * tmp = sp_cmatrix_alloc(a->cols,a->rows);
   for(i = 0;i<a->rows;i++){
@@ -1447,7 +1461,7 @@ static inline void sp_cmatrix_transpose(sp_cmatrix * a){
 }
 
 static inline void sp_c3matrix_transpose_xy(sp_c3matrix * a){
-  int i,j,k;
+  unsigned int i,j,k;
   /* exchange dimensions */
   sp_c3matrix * tmp = sp_c3matrix_alloc(a->x,a->y,a->z);
   for(i = 0;i<a->x;i++){
@@ -1467,7 +1481,7 @@ static inline void sp_c3matrix_transpose_xy(sp_c3matrix * a){
 }
 
 static inline void sp_i3matrix_transpose_xy(sp_i3matrix * a){
-  int i,j,k;
+  unsigned int i,j,k;
   /* exchange dimensions */
   sp_i3matrix * tmp = sp_i3matrix_alloc(a->x,a->y,a->z);
   for(i = 0;i<a->x;i++){
@@ -1492,7 +1506,7 @@ static inline void sp_i3matrix_transpose_xy(sp_i3matrix * a){
  *  The size of v must be the same as the number of cols in m.
  */
 static inline sp_vector * sp_matrix_vector_prod(const sp_matrix * m, const sp_vector * v){
-  int i,j;
+  unsigned int i,j;
   sp_vector * ret = sp_vector_alloc(m->rows);
   for(i = 0;i<m->rows;i++){
     for(j = 0;j<m->cols;j++){
@@ -1503,7 +1517,7 @@ static inline sp_vector * sp_matrix_vector_prod(const sp_matrix * m, const sp_ve
 }
 
 static inline sp_vector * sp_3matrix_vector_prod(const sp_3matrix * m, const sp_vector * v){
-  int i,j;
+  unsigned int i,j;
   sp_vector * ret = sp_vector_alloc(m->y);
   for(i = 0;i<m->y;i++){
     for(j = 0;j<m->x;j++){
@@ -1518,7 +1532,7 @@ static inline sp_vector * sp_3matrix_vector_prod(const sp_3matrix * m, const sp_
  *  The size of v must be the same as the number of cols in m.
  */
 static inline sp_cvector * sp_cmatrix_cvector_prod(const sp_cmatrix * m, const sp_cvector * v){
-  int i,j;
+  unsigned int i,j;
   sp_cvector * ret = sp_cvector_alloc(m->rows);
   for(i = 0;i<m->rows;i++){
     for(j = 0;j<m->cols;j++){
@@ -1534,7 +1548,7 @@ static inline sp_cvector * sp_cmatrix_cvector_prod(const sp_cmatrix * m, const s
  *  The size of a must be the same as the size of the transpose of b.
  */
 static inline sp_matrix * sp_matrix_mul(const sp_matrix * a, const sp_matrix * b){
-  int i,j,k;
+  unsigned int i,j,k;
   real tmp;
   sp_matrix * ret = sp_matrix_alloc(a->rows,b->cols);
   for(i = 0;i<a->rows;i++){
@@ -1550,7 +1564,7 @@ static inline sp_matrix * sp_matrix_mul(const sp_matrix * a, const sp_matrix * b
 }
 
 static inline sp_3matrix * sp_3matrix_mul(const sp_3matrix * a, const sp_3matrix * b){
-  int i,j,k;
+  unsigned int i,j,k;
   real tmp;
   sp_3matrix * ret = sp_3matrix_alloc(a->x,b->y,0);
   for(i = 0;i<a->x;i++){
@@ -1570,7 +1584,7 @@ static inline sp_3matrix * sp_3matrix_mul(const sp_3matrix * a, const sp_3matrix
  *  The size of a must be the same as the size of the transpose of b.
  */
 static inline sp_cmatrix * sp_cmatrix_mul(const sp_cmatrix * a, const sp_cmatrix * b){
-  int i,j,k;
+  unsigned int i,j,k;
   Complex tmp;
   sp_cmatrix * ret = sp_cmatrix_alloc(a->rows,b->cols);
   for(i = 0;i<a->rows;i++){
@@ -1590,11 +1604,11 @@ static inline sp_c3matrix * sp_c3matrix_mul(const sp_c3matrix * a, const sp_c3ma
   int i,j,k;
   Complex tmp;
   sp_c3matrix * ret = sp_c3matrix_alloc(a->x,b->y,0);
-  for(i = 0;i<a->x;i++){
-    for(j = 0;j<b->y;j++){
+  for(i = 0;i<(int)a->x;i++){
+    for(j = 0;j<(int)b->y;j++){
       sp_real(tmp) = 0;
       sp_imag(tmp) = 0;
-      for(k = 0;k<a->y;k++){
+      for(k = 0;k<(int)a->y;k++){
 	tmp = sp_cadd(tmp,sp_cmul(sp_c3matrix_get(a,k,i,0),sp_c3matrix_get(b,j,k,0)));
       }
       sp_c3matrix_set(ret,i,j,0,tmp);
@@ -1846,8 +1860,8 @@ static inline real sp_c3matrix_max(const sp_c3matrix * m, long long * index){
  *
  */
 static inline Complex sp_cmatrix_interp(const sp_cmatrix * m, real frow, real fcol){
-  int x = fcol;
-  int y = frow;
+  int x = (int)fcol;
+  int y = (int)frow;
   real u = fcol-x;
   real v = frow-y;
   Complex res = {0,0};
@@ -1867,9 +1881,9 @@ static inline Complex sp_cmatrix_interp(const sp_cmatrix * m, real frow, real fc
 }
 
 static inline Complex sp_c3matrix_interp(const sp_c3matrix * m, real fx, real fy, real fz){
-  int x = fx;
-  int y = fy;
-  int z = fz;
+  int x = (int)fx;
+  int y = (int)fy;
+  int z = (int)fz;
   real u = fx-x;
   real v = fy-y;
   real w = fz-z;
@@ -1907,8 +1921,8 @@ static inline Complex sp_c3matrix_interp(const sp_c3matrix * m, real fx, real fy
  *
  */
 static inline real sp_matrix_interp(const sp_matrix * m, real frow, real fcol){
-  int x = fcol;
-  int y = frow;
+  int x = (int)fcol;
+  int y = (int)frow;
   real u = fcol-x;
   real v = frow-y;
   real res = 0;
@@ -1931,12 +1945,12 @@ static inline real sp_matrix_interp(const sp_matrix * m, real frow, real fcol){
 /*! Returns the interpolated value of m at the floating point row frow and column fcol
  *
  */
-static inline int sp_imatrix_interp(const sp_imatrix * m, real frow, real fcol){
-  int x = fcol;
-  int y = frow;
+static inline real sp_imatrix_interp(const sp_imatrix * m, real frow, real fcol){
+  int x = (int)fcol;
+  int y = (int)frow;
   real u = fcol-x;
   real v = frow-y;
-  int res = 0;
+  real res = 0;
   if(x >= sp_imatrix_cols(m)-1){
     x = sp_imatrix_cols(m)-2;
     u = 1;
@@ -1951,9 +1965,10 @@ static inline int sp_imatrix_interp(const sp_imatrix * m, real frow, real fcol){
     sp_imatrix_get(m,y+1,x+1)*(u)*(v) + 0.5;
   return res;
 }
+
 static inline real sp_3matrix_interp(const sp_3matrix * m, real fx, real fy, real fz){
-  int x = fx;
-  int y = fy;
+  int x = (int)fx;
+  int y = (int)fy;
   real u = fx-x;
   real v = fy-y;
   real res = 0;
@@ -1971,7 +1986,7 @@ static inline real sp_3matrix_interp(const sp_3matrix * m, real fx, real fy, rea
       sp_3matrix_get(m,x,y+1,0)*(1-u)*(v)+
       sp_3matrix_get(m,x+1,y+1,0)*(u)*(v);
   }else{
-    int z = fz;
+    int z = (int)fz;
     real w = fz-z;
     if(x >= sp_3matrix_x(m)-1){
       x = sp_3matrix_x(m)-2;
@@ -1997,13 +2012,12 @@ static inline real sp_3matrix_interp(const sp_3matrix * m, real fx, real fy, rea
   return res;
 }
 
-
-static inline int sp_i3matrix_interp(const sp_i3matrix * m, real fx, real fy, real fz){
-  int x = fx;
-  int y = fy;
+static inline real sp_i3matrix_interp(const sp_i3matrix * m, real fx, real fy, real fz){
+  int x = (int)fx;
+  int y = (int)fy;
   real u = fx-x;
   real v = fy-y;
-  int res = 0;
+  real res = 0;
   if(fz == 0){
     if(x >= sp_i3matrix_x(m)-1){
       x = sp_i3matrix_y(m)-2;
@@ -2018,7 +2032,7 @@ static inline int sp_i3matrix_interp(const sp_i3matrix * m, real fx, real fy, re
       sp_i3matrix_get(m,x,y+1,0)*(1-u)*(v)+
       sp_i3matrix_get(m,x+1,y+1,0)*(u)*(v);
   }else{
-    int z = fz;
+    int z = (int)fz;
     real w = fz-z;
     if(x >= sp_i3matrix_x(m)-1){
       x = sp_i3matrix_x(m)-2;

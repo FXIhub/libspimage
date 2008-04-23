@@ -11,5 +11,7 @@
 #include "spimage/mem_util.h"
 #include "spimage/image_sphere.h"
 #include "spimage/sperror.h"
+#include "spimage/statistics.h"
+#include "spimage/image_noise.h"
 #endif
 

@@ -363,3 +363,30 @@ sp_vector * sp_c3matrix_center_of_mass(sp_c3matrix * a){
   }
   return res;
 }
+
+int sp_complex_descend_compare(const void * pa,const void * pb){
+  Complex a,b;
+  a = *((Complex *)pa);
+  b = *((Complex *)pb);
+  if(sp_cabs(a) < sp_cabs(b)){
+    return 1;
+  }else if(sp_cabs(a) == sp_cabs(b)){
+    return 0;
+  }else{
+    return -1;
+  }
+}
+
+int sp_complex_ascend_compare(const void * pa,const void * pb){
+  Complex a,b;
+  a = *((Complex *)pa);
+  b = *((Complex *)pb);
+  if(sp_cabs(a) < sp_cabs(b)){
+    return -1;
+  }else if(sp_cabs(a) == sp_cabs(b)){
+    return 0;
+  }else{
+    return 1;
+  }
+}
+

@@ -45,6 +45,8 @@ static int write_vtk(Image * img,const char * filename);
 static Image * read_smv(const char * filename);
 
 
+
+
 void sp_srand(int i){
   srand(i);
 }
@@ -3699,6 +3701,54 @@ Image * sp_proj_support(Image * a, Image * b){
   return ret;
 }
 
+
+
+typedef struct{
+  real value;
+  int index;    
+}ValueIndexPair;
+
+static int compare_ValueIndexPair(const void * a, const void * b){
+  if((*(ValueIndexPair *)a).value < (*(ValueIndexPair *)b).value){
+    return -1;
+  }else if((*(ValueIndexPair *)a).value == (*(ValueIndexPair *)b).value){
+    return 0;
+  }else{
+    return 1;
+  }  
+}
+
+Image * sp_proj_module_histogram(Image * a, Image * exp, Image * std_dev){
+  ValueIndexPair *  norm_sq_int = sp_malloc(sizeof(ValueIndexPair)*sp_image_size(a));
+  Image * ret = sp_image_duplicate(a,SP_COPY_DATA|SP_COPY_MASK);
+  int valid_points = 0;
+  for(int i = 0;i<sp_image_size(a);i++){
+    if(exp->mask->data[i]){
+      norm_sq_int[valid_points].value = sp_cabs2(a->image->data[i])-sp_cabs2(exp->image->data[i]);
+      norm_sq_int[valid_points].value /= sp_real(std_dev->image->data[i]);
+      norm_sq_int[valid_points].index = i;
+      valid_points++;
+    }
+  }
+  qsort(norm_sq_int,valid_points,sizeof(ValueIndexPair),compare_ValueIndexPair);
+  int vpi = 0;
+  for(int i = 0;i<sp_image_size(a);i++){
+    if(exp->mask->data[i]){
+      int index = norm_sq_int[vpi].index;
+      double sigma = sp_real(std_dev->image->data[index]);      
+      double new_int = embedded_gsl_cdf_gaussian_Pinv((vpi+1.0)/(valid_points+1.0),sigma)+sp_cabs2(exp->image->data[index]);
+      /* If the standard deviation is so big that the projected intensity would be negative we make it 0 */
+      if(new_int < 0){
+	new_int = 0;
+      }
+      ret->image->data[index] = sp_cscale(ret->image->data[index],sqrt(new_int)/sp_cabs(a->image->data[index]));
+      vpi++;
+    }else{
+      ret->image->data[i] = a->image->data[i];
+    }
+  }      
+  return ret;
+}
 
 int sp_image_invert(Image * a){
   int i;
