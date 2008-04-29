@@ -3741,7 +3741,12 @@ Image * sp_proj_module_histogram(Image * a, Image * exp, Image * std_dev){
       if(new_int < 0){
 	new_int = 0;
       }
-      ret->image->data[index] = sp_cscale(ret->image->data[index],sqrt(new_int)/sp_cabs(a->image->data[index]));
+      /* We have to guard against having 0 amplitude*/
+      if(sp_cabs(a->image->data[index])){
+	ret->image->data[index] = sp_cscale(ret->image->data[index],sqrt(new_int)/sp_cabs(a->image->data[index]));
+      }else{
+	ret->image->data[index] = sp_cinit(sqrt(new_int),0);
+      }
       vpi++;
     }else{
       ret->image->data[i] = a->image->data[i];
