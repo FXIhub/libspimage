@@ -3752,6 +3752,7 @@ Image * sp_proj_module_histogram(Image * a, Image * exp, Image * std_dev){
       ret->image->data[i] = a->image->data[i];
     }
   }      
+  sp_free(norm_sq_int);
   return ret;
 }
 
