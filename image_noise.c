@@ -16,6 +16,7 @@
 Image * sp_image_noise_estimate(Image * intensities,Image * autocorrelation_support){
   Image * a = sp_image_duplicate(intensities,SP_COPY_ALL);
   sp_image_to_intensities(a);
+  sp_image_rephase(a,SP_ZERO_PHASE);
   Image * ac = sp_image_ifft(a);
   sp_image_mul_elements(ac,autocorrelation_support);
   Image * filtered_intensities = sp_image_fft(ac);

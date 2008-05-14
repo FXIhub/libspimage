@@ -75,7 +75,6 @@ void test_sp_proj_module_histogram(CuTest* tc)
     variance += (average-sp_real(norm_sq_int->image->data[i]))*(average-sp_real(norm_sq_int->image->data[i]));
   }
   variance /= sp_image_size(a);  
-  printf("v - %f\n",variance);
   CuAssertDblEquals(tc,average,0,1.0/size);
   CuAssertDblEquals(tc,variance,1,1.0/size);
 }

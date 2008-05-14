@@ -58,25 +58,6 @@ void test_sp_image_median_filter(CuTest * tc){
   sp_i3matrix_free(kernel);
 }
 
-void test_sp_image_max(CuTest * tc){
-  int x = 5;
-  int y = 5;
-  int z = 5;
-  Image * img = sp_image_alloc(x,y,z);
-  for(long long i = 0;i<sp_image_size(img);i++){
-    img->image->data[i] = sp_cinit(0,0);
-  }
-  real max = sp_image_max(img,NULL,NULL,NULL,NULL);
-  CuAssertDblEquals(tc,max,0,(0+1)*fabs(REAL_EPSILON));
-  long long ind = rand()%sp_image_size(img);
-  img->image->data[ind] = sp_cinit(1,0);
-  long long ind2;
-  max = sp_image_max(img,&ind2,NULL,NULL,NULL);
-  CuAssertDblEquals(tc,max,1,(1+1)*fabs(REAL_EPSILON));
-  CuAssertIntEquals(tc,ind,ind2);
-  sp_image_free(img);
-}
-
 void test_sp_image_gaussian_blur(CuTest * tc){
   Image * a = sp_image_alloc(11,11,1);
   sp_image_fill(a,sp_cinit(0,0));
@@ -339,19 +320,54 @@ void test_sp_image_noise_estimate(CuTest * tc){
   sp_image_write(noise,"test_noise_noise.vtk",0);
 }
 
+void test_sp_image_dist(CuTest * tc){
+  int size = 100;
+  Image * a;
+  a = sp_image_alloc(size,size,1);
+  /* Images default with the center in the center*/
+  int i = sp_image_get_index(a,5,5,0);
+  real dist = sp_image_dist(a,i,SP_TO_CORNER);
+  CuAssertDblEquals(tc,dist,sqrt(2*5*5),100*dist*REAL_EPSILON);
+   dist = sp_image_dist(a,i,SP_TO_CENTER);
+  CuAssertDblEquals(tc,dist,sqrt(2*44.5*44.5),100*dist*REAL_EPSILON);
+   dist = sp_image_dist(a,i,SP_TO_CENTER2);
+  CuAssertDblEquals(tc,dist,44.5,100*dist*REAL_EPSILON);
+   dist = sp_image_dist(a,i,SP_TO_AXIS);
+  CuAssertDblEquals(tc,dist,0,100*dist*REAL_EPSILON);
+}
+
+void test_sp_image_max(CuTest * tc){
+  int size = 100;
+  Image * a;
+  int x,y,z;
+  long long index;
+  a = sp_image_alloc(size,size,1);
+  for(int i = 0;i<sp_image_size(a);i++){
+    a->image->data[i] = sp_cinit(0,0);
+  }
+  sp_image_set(a,10,4,0,sp_cinit(2,4));
+  sp_image_max(a,&index,&x,&y,&z);
+  CuAssertIntEquals(tc,x,10);
+  CuAssertIntEquals(tc,y,4);
+  CuAssertIntEquals(tc,z,0);
+  CuAssertIntEquals(tc,index,sp_image_get_index(a,x,y,z));
+  sp_image_free(a);
+}
+
 CuSuite* image_get_suite(void)
 {
   CuSuite* suite = CuSuiteNew();  
   SUITE_ADD_TEST(suite, test_sp_image_edge_extend);
   SUITE_ADD_TEST(suite, test_sp_bubble_sort);
   SUITE_ADD_TEST(suite, test_sp_image_median_filter);
-  SUITE_ADD_TEST(suite, test_sp_image_max);
   SUITE_ADD_TEST(suite,test_sp_image_gaussian_blur);
   SUITE_ADD_TEST(suite,test_cube_crop);
   SUITE_ADD_TEST(suite,test_sp_image_low_pass);
   SUITE_ADD_TEST(suite,test_sp_image_h5_read_write);
   SUITE_ADD_TEST(suite,test_sp_image_get_false_color);
-  SUITE_ADD_TEST(suite,test_sp_image_noise_estimate);
+  //  SUITE_ADD_TEST(suite,test_sp_image_noise_estimate);
+  SUITE_ADD_TEST(suite,test_sp_image_dist);
+  SUITE_ADD_TEST(suite,test_sp_image_max);
   return suite;
 }
 

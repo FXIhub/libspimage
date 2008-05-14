@@ -690,9 +690,8 @@ real sp_image_dist(Image * in, int i, int type){
 }
 
 static real dist_to_axis(int i, Image * in){
-  int x = i/sp_c3matrix_y(in->image)/sp_c3matrix_z(in->image);
-  int y = i/sp_c3matrix_z(in->image)%sp_c3matrix_y(in->image);
-  int z = i%sp_c3matrix_z(in->image)%sp_c3matrix_y(in->image);
+  float x,y,z;
+  sp_image_get_coords_from_index(in,i,&x,&y,&z,TopLeftCorner);
   real dx,dy,dz;
   if(in->shifted){
     dx = MIN(x,sp_c3matrix_x(in->image)-x);
@@ -709,9 +708,8 @@ static real dist_to_axis(int i, Image * in){
 
 
 static real dist_to_center(int i, Image * in){
-  int x = i/sp_c3matrix_z(in->image)/sp_c3matrix_y(in->image);
-  int y = i/sp_c3matrix_z(in->image)%sp_c3matrix_y(in->image);
-  int z = i%sp_c3matrix_z(in->image)%sp_c3matrix_y(in->image);
+  float x,y,z;
+  sp_image_get_coords_from_index(in,i,&x,&y,&z,TopLeftCorner);
   real dx,dy,dz;
   if(in->shifted){
     dx = MIN(x,sp_c3matrix_x(in->image)-x);
@@ -726,9 +724,8 @@ static real dist_to_center(int i, Image * in){
 }
 
 static real square_dist_to_center(int i, Image * in){
-  int x = i/sp_c3matrix_z(in->image)/sp_c3matrix_y(in->image);
-  int y = i/sp_c3matrix_z(in->image)%sp_c3matrix_y(in->image);
-  int z = i%sp_c3matrix_z(in->image)%sp_c3matrix_y(in->image);
+  float x,y,z;
+  sp_image_get_coords_from_index(in,i,&x,&y,&z,TopLeftCorner);
   real dx,dy,dz;
   if(in->shifted){
     dx = MIN(x,sp_c3matrix_x(in->image)-x);
@@ -744,9 +741,8 @@ static real square_dist_to_center(int i, Image * in){
 }
 
 static real dist_to_corner(int i, Image * in){
-  int x = i%sp_c3matrix_z(in->image)%sp_c3matrix_y(in->image);
-  int y = i/sp_c3matrix_x(in->image)%sp_c3matrix_z(in->image);
-  int z = i/sp_c3matrix_x(in->image)/sp_c3matrix_y(in->image);
+  float x,y,z;
+  sp_image_get_coords_from_index(in,i,&x,&y,&z,TopLeftCorner);
   real dx,dy,dz;
   if(sp_c3matrix_x(in->image)-1-x < x){
     dx = sp_c3matrix_x(in->image)-1-x;
@@ -985,9 +981,9 @@ Image * _sp_image_alloc(int x, int y, int z,char * file, int line){
     abort();
   }
   res->detector = sp_malloc(sizeof(Detector));
-  res->detector->image_center[0] = x/2.0;
-  res->detector->image_center[1] = y/2.0;
-  res->detector->image_center[2] = z/2.0;
+  res->detector->image_center[0] = (x-1)/2.0;
+  res->detector->image_center[1] = (y-1)/2.0;
+  res->detector->image_center[2] = (z-1)/2.0;
   res->mask = _sp_i3matrix_alloc(x,y,z,file,line);
   res->scaled = 0;
   res->shifted = 0;
@@ -3279,16 +3275,18 @@ void sp_image_scale(Image * img, real value){
 
 real sp_image_max(Image * img, long long * index,int * x, int * y, int * z){
   real ret;
+  float fx,fy,fz;
   ret = sp_c3matrix_max(img->image,index);
   if(index){
+    sp_image_get_coords_from_index(img,*index,&fx,&fy,&fz,TopLeftCorner);
     if(x){
-      *x = *index%sp_image_z(img)%sp_image_y(img);
+      *x = (int)round(fx);
     }
     if(y){
-      *y = *index/sp_image_x(img)%sp_image_z(img);
+      *y = (int)round(fy);
     }
     if(z){
-      *z = *index/sp_image_x(img)/sp_image_y(img);
+      *z = (int)round(fz);
     }
   }
   return ret;
@@ -3448,7 +3446,8 @@ Image * sp_image_get_mask(Image * a){
 }
 
 real sp_point_convolute(Image * a, Image * b, int index){
-  int index_x, index_y, index_z,x,y,z;
+  real index_x, index_y, index_z;
+  int x,y,z;
   double out = 0;
   int ai,bi;
   Image * tmp = NULL;
@@ -3461,12 +3460,13 @@ real sp_point_convolute(Image * a, Image * b, int index){
     fprintf(stderr,"Point convoluting with a shifted function is not currently defined!\n");
     return 0;
   }
-  index_x = index%sp_c3matrix_z(a->image)%sp_c3matrix_y(a->image)-
+  sp_image_get_coords_from_index(a,index,&index_x,&index_y,&index_z,ImageCenter);
+  /*  index_x = index%sp_c3matrix_z(a->image)%sp_c3matrix_y(a->image)-
     a->detector->image_center[0];
   index_y = index/sp_c3matrix_x(a->image)%sp_c3matrix_z(a->image)-
     a->detector->image_center[1];
   index_z = index/sp_c3matrix_x(a->image)/sp_c3matrix_y(a->image)-
-    a->detector->image_center[2];
+  a->detector->image_center[2];*/
   for(x = -b->detector->image_center[0];x<sp_c3matrix_x(b->image)-b->detector->image_center[0];x++){
     for(y = -b->detector->image_center[1];y<sp_c3matrix_y(b->image)-b->detector->image_center[1];y++){
       for(z = -b->detector->image_center[2];z<sp_c3matrix_z(b->image)-b->detector->image_center[2];z++){
@@ -3492,9 +3492,15 @@ real sp_point_convolute(Image * a, Image * b, int index){
   }
 
 int sp_image_shift_index(Image * a, long long index){
-  int x = index%sp_c3matrix_z(a->image)%sp_c3matrix_y(a->image);
+  int x,y,z;
+  real fx,fy,fz;
+  sp_image_get_coords_from_index(a,index,&fx,&fy,&fz,TopLeftCorner);
+  x = (int)round(fx);
+  y = (int)round(fy);
+  z = (int)round(fz);
+  /*  int x = index%sp_c3matrix_z(a->image)%sp_c3matrix_y(a->image);
   int y = index/sp_c3matrix_x(a->image)%sp_c3matrix_z(a->image);
-  int z = index/sp_c3matrix_x(a->image)/sp_c3matrix_y(a->image);
+  int z = index/sp_c3matrix_x(a->image)/sp_c3matrix_y(a->image);*/
   if(a->shifted){
     x = (x+sp_c3matrix_x(a->image)/2)%sp_c3matrix_x(a->image);
     y = (y+sp_c3matrix_y(a->image)/2)%sp_c3matrix_y(a->image);
@@ -4590,4 +4596,29 @@ real sp_image_correlation_coefficient(Image * a,Image * b){
 
 sp_vector * sp_image_center_of_mass(Image * a){
   return sp_c3matrix_center_of_mass(a->image);
+}
+
+
+int sp_image_get_coords_from_index(Image * in,int index,real * x, real * y, real * z, SpOrigin origin){
+  int nx,ny,nz;
+  nx = sp_image_x(in);
+  ny = sp_image_y(in);
+  nz = sp_image_z(in);
+  if(origin == TopLeftCorner){    
+    *z = index/(ny*nx);
+    *y = (index%(ny*nx))/nx;
+    *x = index%(nx);
+    return 0;
+  }else if(origin == ImageCenter){
+    *z = index/(ny*nx);
+    *y = (index%(ny*nx))/nx;
+    *x = index%(nx);
+    *z -= in->detector->image_center[2];
+    *y -= in->detector->image_center[1];
+    *x -= in->detector->image_center[0];
+    return 0;
+  }else{
+    return -1;
+  }
+  return -1;
 }

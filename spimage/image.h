@@ -11,6 +11,7 @@ The coordinate units are pixels.
 
 So it follows that the center of the detector is (max_x/2,max_y/2) and its dimensions are (max_x+1,max_y+1)
 
+Please note that max_x == sp_image_x()-1.
 */
 
 #ifndef _IMAGE_H_

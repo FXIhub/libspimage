@@ -60,6 +60,11 @@ extern "C"
 
 #define SP_ENANTIOMORPH 1
 
+/*! TopLeftCorner means that the Origin considered will be the Top Left Back pixel, or the first in the array 
+   ImageCenter means that the Origin considered will be the image center
+ */
+typedef enum{TopLeftCorner,ImageCenter}SpOrigin;
+
 /** @defgroup Distance
  *  Calculates several kinds of distances in an image
  *  @{
@@ -670,6 +675,12 @@ spimage_EXPORT unsigned char * sp_image_get_false_color(Image * img, int color, 
 /*! Calculate a random gaussian distributed number with mean m and standard deviation s 
 */
 spimage_EXPORT real sp_box_muller(real m, real s);
+
+/*! Calculates the x, y and z location of a given image index. The value returned depends on the origin parameter
+  If the origin is TopLeftCorner then the returned coordinates are the image absolute coordinates with the origin
+  in one corner of the image. If the origin is ImageCenter then the origin will be the image center.
+ */
+spimage_EXPORT int sp_image_get_coords_from_index(Image * in,int index,real * x, real * y, real * z, SpOrigin origin);
 
 #ifdef __cplusplus
 }  /* extern "C" */
