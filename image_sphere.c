@@ -23,26 +23,26 @@ void sp_rot_free(Rotation * rot)
   free(rot);
 }
 
-Rotation * sp_rot_euler(real phi, real theta, real psi)
+Rotation * sp_rot_euler(real a1, real a2, real a3)
 {
   sp_matrix * R1 = sp_matrix_alloc(3,3);
   sp_matrix * R2 = sp_matrix_alloc(3,3);
   sp_matrix * R3 = sp_matrix_alloc(3,3);
-  sp_matrix_set(R1,0,0,cos(phi));
-  sp_matrix_set(R1,1,1,cos(phi));
-  sp_matrix_set(R1,0,1,sin(phi));
-  sp_matrix_set(R1,1,0,-sin(phi));
-  sp_matrix_set(R1,2,2,1);
-  sp_matrix_set(R2,1,1,cos(theta));
-  sp_matrix_set(R2,2,2,cos(theta));
-  sp_matrix_set(R2,1,2,sin(theta));
-  sp_matrix_set(R2,2,1,-sin(theta));
-  sp_matrix_set(R2,0,0,1);
-  sp_matrix_set(R3,0,0,cos(psi));
-  sp_matrix_set(R3,1,1,cos(psi));
-  sp_matrix_set(R3,0,1,sin(psi));
-  sp_matrix_set(R3,1,0,-sin(psi));
-  sp_matrix_set(R3,2,2,1);
+  sp_matrix_set(R1,0,0,cos(a1));
+  sp_matrix_set(R1,1,1,cos(a1));
+  sp_matrix_set(R1,0,1,sin(a1));
+  sp_matrix_set(R1,1,0,-sin(a1));
+  sp_matrix_set(R1,2,2,1.0);
+  sp_matrix_set(R2,1,1,cos(a2));
+  sp_matrix_set(R2,2,2,cos(a2));
+  sp_matrix_set(R2,1,2,sin(a2));
+  sp_matrix_set(R2,2,1,-sin(a2));
+  sp_matrix_set(R2,0,0,1.0);
+  sp_matrix_set(R3,0,0,cos(a3));
+  sp_matrix_set(R3,1,1,cos(a3));
+  sp_matrix_set(R3,0,1,sin(a3));
+  sp_matrix_set(R3,1,0,-sin(a3));
+  sp_matrix_set(R3,2,2,1.0);
   
   Rotation * rot = sp_rot_alloc();
   sp_matrix_free(rot->R);
@@ -58,6 +58,27 @@ Rotation * sp_rot_euler(real phi, real theta, real psi)
   return rot;
 }
 
+
+/* Taken from http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToEuler/index.htm
+ * might not work very well
+ */
+void sp_rot_get_euler(Rotation * rot, real *alpha, real *beta, real *gamma)
+{
+  if (sp_matrix_get(rot->R,2,2) == 1.0) {
+    *beta = M_PI;
+    *alpha = atan2(sp_matrix_get(rot->R,0,1),sp_matrix_get(rot->R,1,1));
+    *gamma = 0;
+  } else if (sp_matrix_get(rot->R,2,2) == -1.0) {
+    *beta = M_PI;
+    *alpha = atan2(sp_matrix_get(rot->R,1,0),sp_matrix_get(rot->R,0,0));
+    *gamma = 0;
+  } else {
+    *alpha = atan2(sp_matrix_get(rot->R,2,0),-sp_matrix_get(rot->R,2,1));
+    *beta = acos(sp_matrix_get(rot->R,2,2));
+    *gamma = atan2(sp_matrix_get(rot->R,0,2),sp_matrix_get(rot->R,1,2));
+  }
+}
+
 Rotation * sp_rot_multiply(Rotation * a, Rotation * b)
 {
   Rotation * rot = sp_rot_alloc();
@@ -65,6 +86,27 @@ Rotation * sp_rot_multiply(Rotation * a, Rotation * b)
   rot->R = sp_matrix_mul(a->R,b->R);
   return rot;
 }
+
+Rotation * sp_rot_transpose(Rotation * a)
+{
+  int i,k;
+  Rotation * b = sp_rot_alloc();
+  for (int i = 0; i < 3; i++)
+    for (int j = 0; j < 3; j++)
+      sp_matrix_set(b->R,i,j,sp_matrix_get(a->R,j,i));
+  return b;
+}
+
+Rotation * sp_rot_inverse()
+{
+  int i;
+  Rotation * rot = sp_rot_alloc();
+  for (i = 0; i < 3; i++) {
+    sp_matrix_set(rot->R,i,i,-1.0);
+  }
+  return rot;
+}
+
 /* Adds a disturbance to a rotation a. The disturbance is described as a small rotation along
  * the two degrees of freedom. They are both normally distributed with a standard deviation
  * of sigma (in radians)
@@ -74,7 +116,7 @@ Rotation * sp_rot_disturb(Rotation * a, real sigma)
   int i;
   real theta = 0; //theta is normally idstributed
   real kappa = 0; //kappa is normally idstributed
-  real phi = p_drand48()*2*3.1415;
+  real phi = p_drand48()*2*M_PI;
   //this loop gives theta and kappa their (approximate) normal distribution
   for (i = 0; i < 12; i++){ theta += p_drand48(); kappa += p_drand48();}
   theta -= 6; theta *= sigma; kappa -= 6; kappa *= sigma;
@@ -101,6 +143,14 @@ Rotation * sp_rot_disturb(Rotation * a, real sigma)
   return rot;
 }
 
+real sp_rot_difference(Rotation * a, Rotation * b)
+{
+  Rotation * diff = sp_rot_multiply(a,sp_rot_transpose(b));
+  real ret = (sp_matrix_get(diff->R,0,0)+sp_matrix_get(diff->R,1,1)+sp_matrix_get(diff->R,2,2))/3.0;
+  sp_rot_free(diff);
+  return ret;
+}
+
 real sp_rot_determinant(Rotation * rot)
 {
   return
@@ -116,19 +166,16 @@ void sp_rot_draw(Rotation * rot)
 {
   printf("%f %f %f\n%f %f %f\n%f %f %f\n",
 	 sp_matrix_get(rot->R,0,0),
-	 sp_matrix_get(rot->R,1,0),
-	 sp_matrix_get(rot->R,2,0),
 	 sp_matrix_get(rot->R,0,1),
-	 sp_matrix_get(rot->R,1,1),
-	 sp_matrix_get(rot->R,2,1),
 	 sp_matrix_get(rot->R,0,2),
+	 sp_matrix_get(rot->R,1,0),
+	 sp_matrix_get(rot->R,1,1),
 	 sp_matrix_get(rot->R,1,2),
+	 sp_matrix_get(rot->R,2,0),
+	 sp_matrix_get(rot->R,2,1),
 	 sp_matrix_get(rot->R,2,2));
 }
 
-/* Uniformly distributed rotation in SO3 according to http://citeseer.ist.psu.edu/arvo92fast.html 
-   Fast Random Rotation Matrices (1992), James Arvo
-*/
 Rotation * sp_rot_uniform()
 {
   real x1, x2, x3;
@@ -138,21 +185,21 @@ Rotation * sp_rot_uniform()
   x2 = p_drand48();
   x3 = p_drand48();
 
-  sp_matrix_set(R,0,0,cos(2*3.14*x1));
-  sp_matrix_set(R,1,1,cos(2*3.14*x1));
-  sp_matrix_set(R,1,0,sin(2*3.14*x1));
-  sp_matrix_set(R,0,1,-sin(2*3.14*x1));
+  sp_matrix_set(R,0,0,cos(2*M_PI*x1));
+  sp_matrix_set(R,1,1,cos(2*M_PI*x1));
+  sp_matrix_set(R,0,1,sin(2*M_PI*x1));
+  sp_matrix_set(R,1,0,-sin(2*M_PI*x1));
   sp_matrix_set(R,2,2,1);
 
-  sp_matrix_set(H,0,0,-1+2*cos(2*3.14*x2)*cos(2*3.14*x2)*x3);
-  sp_matrix_set(H,1,0,2*cos(2*3.14*x2)*sin(2*3.14*x2)*x3);
-  sp_matrix_set(H,2,0,2*cos(2*3.14*x2)*sqrt(x3-x3*x3));
-  sp_matrix_set(H,0,1,2*cos(2*3.14*x2)*sin(2*3.14*x2)*x3);
-  sp_matrix_set(H,1,1,-1+2*sin(2*3.14*x2)*sin(2*3.14*x2)*x3);
-  sp_matrix_set(H,2,1,2*sin(2*3.14*x2)*sqrt(x3-x3*x3));
-  sp_matrix_set(H,0,2,2*cos(2*3.14*x2)*sqrt(x3-x3*x3));
-  sp_matrix_set(H,1,2,2*sin(2*3.14*x2)*sqrt(x3-x3*x3));
-  sp_matrix_set(H,2,2,1-x3);
+  sp_matrix_set(H,0,0,2.0*cos(2.0*M_PI*x2)*cos(2.0*M_PI*x2)*x3 - 1.0);
+  sp_matrix_set(H,0,1,2.0*cos(2.0*M_PI*x2)*sin(2.0*M_PI*x2)*x3);
+  sp_matrix_set(H,0,2,2.0*cos(2.0*M_PI*x2)*sqrt(x3-x3*x3));
+  sp_matrix_set(H,1,0,2.0*cos(2.0*M_PI*x2)*sin(2.0*M_PI*x2)*x3);
+  sp_matrix_set(H,1,1,2.0*sin(2.0*M_PI*x2)*sin(2.0*M_PI*x2)*x3 - 1.0);
+  sp_matrix_set(H,1,2,2.0*sin(2.0*M_PI*x2)*sqrt(x3-x3*x3));
+  sp_matrix_set(H,2,0,2.0*cos(2.0*M_PI*x2)*sqrt(x3-x3*x3));
+  sp_matrix_set(H,2,1,2.0*sin(2.0*M_PI*x2)*sqrt(x3-x3*x3));
+  sp_matrix_set(H,2,2,2.0*(1.0-x3) - 1.0);
   
   Rotation * rot = sp_rot_alloc();
   sp_matrix_free(rot->R);
@@ -175,14 +222,14 @@ sp_3matrix * sp_image_sphere_z(Image * img)
   real D = img->detector->detector_distance;
   real px = img->detector->pixel_size[0];
   real py = img->detector->pixel_size[1];
-  int cx = img->detector->image_center[0];
-  int cy = img->detector->image_center[1];
+  real cx = img->detector->image_center[0];
+  real cy = img->detector->image_center[1];
   printf("z - alloc\n");
   sp_3matrix * z = sp_3matrix_alloc(sp_c3matrix_x(img->image),sp_c3matrix_y(img->image),1);
   printf("z - alloced\n");
   for(x=0; x<sp_3matrix_x(z); x++){
     for(y=0; y<sp_3matrix_y(z); y++){
-      thisz = D-sqrt(D*D-(x-(real)cx)*(x-(real)cx)*px*px-(y-(real)cy)*(y-(real)cy)*py*py);
+      thisz = D-sqrt(D*D-((real)x-cx)*((real)x-cx)*px*px-((real)y-cy)*((real)y-cy)*py*py);
       sp_3matrix_set(z,x,y,0,thisz);
     }
   }
@@ -390,6 +437,7 @@ void sp_image_get_slice(Image * space, Image * slice, sp_3matrix * slice_z, real
 {
   int x,y;
   real nx,ny,nz;
+  Complex tmp;
   sp_c3matrix * local;
   
   real cx = slice->detector->image_center[0];

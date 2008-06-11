@@ -3116,8 +3116,8 @@ Image * rectangle_crop(Image * in, int x1, int y1, int x2, int y2){
 
 
   for(i = y1;i<= y2;i++){
-    memcpy(&cropped->image->data[(i-y1)*sp_c3matrix_x(cropped->image)],&in->image->data[(i)*sp_c3matrix_x(in->image)+x1],sp_c3matrix_x(cropped->image)*sizeof(real));
-    memcpy(&cropped->mask->data[(i-y1)*sp_c3matrix_x(cropped->image)],&in->mask->data[(i)*sp_c3matrix_x(in->image)+x1],sp_c3matrix_x(cropped->image)*sizeof(real));
+    memcpy(&cropped->image->data[(i-y1)*sp_c3matrix_x(cropped->image)],&in->image->data[(i)*sp_c3matrix_x(in->image)+x1],sp_c3matrix_x(cropped->image)*2*sizeof(real));
+    memcpy(&cropped->mask->data[(i-y1)*sp_c3matrix_x(cropped->image)],&in->mask->data[(i)*sp_c3matrix_x(in->image)+x1],sp_c3matrix_x(cropped->image)*sizeof(int));
   }
   return cropped;
 }
@@ -3145,9 +3145,9 @@ Image * cube_crop(Image * in, int x1, int y1, int z1, int x2, int y2, int z2){
   for(i = z1;i<=z2;i++){
     for(j = y1;j<=y2;j++){
       memcpy(&cropped->image->data[(i-z1)*sp_c3matrix_y(cropped->image)*sp_c3matrix_x(cropped->image)+(j-y1)*sp_c3matrix_x(cropped->image)],
-	     &in->image->data[(i)*sp_c3matrix_y(in->image)*sp_c3matrix_x(in->image)+(j)*sp_c3matrix_x(in->image)+x1],sp_c3matrix_x(cropped->image)*sizeof(real));
+	     &in->image->data[(i)*sp_c3matrix_y(in->image)*sp_c3matrix_x(in->image)+(j)*sp_c3matrix_x(in->image)+x1],sp_c3matrix_x(cropped->image)*2*sizeof(real));
       memcpy(&cropped->mask->data[(i-z1)*sp_c3matrix_y(cropped->image)*sp_c3matrix_x(cropped->image)+(j-y1)*sp_c3matrix_x(cropped->image)],
-	     &in->mask->data[(i)*sp_c3matrix_y(in->image)*sp_c3matrix_x(in->image)+(j)*sp_c3matrix_x(in->image)+x1],sp_c3matrix_x(cropped->image)*sizeof(real));
+	     &in->mask->data[(i)*sp_c3matrix_y(in->image)*sp_c3matrix_x(in->image)+(j)*sp_c3matrix_x(in->image)+x1],sp_c3matrix_x(cropped->image)*sizeof(int));
     }
   }
   return cropped;
@@ -3281,12 +3281,14 @@ real sp_image_max(Image * img, long long * index,int * x, int * y, int * z){
     sp_image_get_coords_from_index(img,*index,&fx,&fy,&fz,TopLeftCorner);
     if(x){
       *x = (int)round(fx);
+      *x = *index%(sp_image_z(img)*sp_image_y(img));
     }
     if(y){
       *y = (int)round(fy);
     }
     if(z){
       *z = (int)round(fz);
+      *z = *index%sp_image_x(img)%sp_image_y(img);
     }
   }
   return ret;

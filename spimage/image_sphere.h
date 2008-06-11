@@ -28,28 +28,26 @@ spimage_EXPORT Rotation * sp_rot_alloc();
 
 spimage_EXPORT void sp_rot_free(Rotation * rot);
 
+spimage_EXPORT Rotation * sp_rot_euler(real a1, real a2, real a3);
 
-/*! Returns a rotation matrix created from 3 Euler angles 
- *
- *  The matrix returned corresponds to a rotation by an angle phi about the z-axis, 
- *  the second is by an angle theta about the x-axis, and the third is by an angle psi about the z-axis (again).
- *  This is known as the x-convention
- */
-spimage_EXPORT Rotation * sp_rot_euler(real phi, real theta, real psi);
+spimage_EXPORT void sp_rot_get_euler(Rotation * rot, real *alpha, real *beta, real *gamma);
 
-/*! Returns the resulting matrix of applying rotation b and then applying rotation a
- */
 spimage_EXPORT Rotation * sp_rot_multiply(Rotation * a, Rotation * b);
 
+spimage_EXPORT Rotation * sp_rot_transpose(Rotation * a);
+
+spimage_EXPORT Rotation * sp_rot_inverse();
+
 spimage_EXPORT Rotation * sp_rot_disturb(Rotation * a, real sigma);
+
+spimage_EXPORT real sp_rot_difference(Rotation * a, Rotation * b);
 
 spimage_EXPORT Rotation * sp_rotation_by_axis(real v1, real v2, real v3,real angle);
 
 spimage_EXPORT real sp_rot_determinant(Rotation * rot);
 
 spimage_EXPORT void sp_rot_draw(Rotation * rot);
-/*! Returns a uniformly distributed rotation matrix in SO3 (in the unit sphere)
- */
+
 spimage_EXPORT Rotation * sp_rot_uniform();
 /*@}*/
 
