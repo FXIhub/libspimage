@@ -1402,12 +1402,12 @@ Image * _read_imagefile(const char * filename, char * file, int line){
     status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL,
 		     H5P_DEFAULT, &version);
     if(status < 0){
-      sp_error_fatal("Unable to read dataset");
+      sp_error_fatal("Unable to read dataset from file %s",filename);
     }
     if(version == 2){
       dataset_id = H5Dopen(file_id, "/mask");
       if(dataset_id < 0){
-	sp_error_fatal("Unable to open dataset");
+	sp_error_fatal("Unable to open dataset in file %s",filename);
       }
       space = H5Dget_space(dataset_id);
       H5Sget_simple_extent_dims(space,dims,NULL);
@@ -1422,7 +1422,7 @@ Image * _read_imagefile(const char * filename, char * file, int line){
       status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL,
 		       H5P_DEFAULT, res->mask->data);
       if(status < 0){
-	sp_error_fatal("Unable to read dataset");
+	sp_error_fatal("Unable to read dataset from file %s",filename);
       }
 
 
@@ -1430,12 +1430,12 @@ Image * _read_imagefile(const char * filename, char * file, int line){
       
       dataset_id = H5Dopen(file_id, "/image_center");
       if(dataset_id < 0){
-	sp_error_fatal("Unable to open dataset");
+	sp_error_fatal("Unable to open dataset in file %s",filename);
       }
       status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		       H5P_DEFAULT, values);
       if(status < 0){
-	sp_error_fatal("Unable to read dataset");
+	sp_error_fatal("Unable to read dataset from file %s",filename);
       }
       status = H5Dclose(dataset_id);
       res->detector->image_center[0] = values[0];
@@ -1448,13 +1448,13 @@ Image * _read_imagefile(const char * filename, char * file, int line){
       
       dataset_id = H5Dopen(file_id, "/phased");
       if(dataset_id < 0){
-	sp_error_fatal("Unable to open dataset");
+	sp_error_fatal("Unable to open dataset in file %s",filename);
       }
 
       status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		       H5P_DEFAULT, values);
       if(status < 0){
-	sp_error_fatal("Unable to read dataset");
+	sp_error_fatal("Unable to read dataset from file %s",filename);
       }
 
       status = H5Dclose(dataset_id);
@@ -1462,13 +1462,13 @@ Image * _read_imagefile(const char * filename, char * file, int line){
       
       dataset_id = H5Dopen(file_id, "/shifted");
       if(dataset_id < 0){
-	sp_error_fatal("Unable to open dataset");
+	sp_error_fatal("Unable to open dataset in file %s",filename);
       }
 
       status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		       H5P_DEFAULT, values);
       if(status < 0){
-	sp_error_fatal("Unable to read dataset");
+	sp_error_fatal("Unable to read dataset from file %s",filename);
       }
 
       status = H5Dclose(dataset_id);
@@ -1476,13 +1476,13 @@ Image * _read_imagefile(const char * filename, char * file, int line){
       
       dataset_id = H5Dopen(file_id, "/scaled");
       if(dataset_id < 0){
-	sp_error_fatal("Unable to open dataset");
+	sp_error_fatal("Unable to open dataset in file %s",filename);
       }
 
       status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		       H5P_DEFAULT, values);
       if(status < 0){
-	sp_error_fatal("Unable to read dataset");
+	sp_error_fatal("Unable to read dataset from file %s",filename);
       }
 
       status = H5Dclose(dataset_id);
@@ -1490,13 +1490,13 @@ Image * _read_imagefile(const char * filename, char * file, int line){
       
       dataset_id = H5Dopen(file_id, "/detector_distance");
       if(dataset_id < 0){
-	sp_error_fatal("Unable to open dataset");
+	sp_error_fatal("Unable to open dataset in file %s",filename);
       }
 
       status = H5Dread(dataset_id,  mem_type_id, H5S_ALL, H5S_ALL,
 		       H5P_DEFAULT, values);
       if(status < 0){
-	sp_error_fatal("Unable to read dataset");
+	sp_error_fatal("Unable to read dataset from file %s",filename);
       }
 
       status = H5Dclose(dataset_id);
@@ -1504,13 +1504,13 @@ Image * _read_imagefile(const char * filename, char * file, int line){
       
       dataset_id = H5Dopen(file_id, "/lambda");
       if(dataset_id < 0){
-	sp_error_fatal("Unable to open dataset");
+	sp_error_fatal("Unable to open dataset in file %s",filename);
       }
 
       status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		       H5P_DEFAULT, values);
       if(status < 0){
-	sp_error_fatal("Unable to read dataset");
+	sp_error_fatal("Unable to read dataset from file %s",filename);
       }
 
       status = H5Dclose(dataset_id);
@@ -1518,13 +1518,13 @@ Image * _read_imagefile(const char * filename, char * file, int line){
       
       dataset_id = H5Dopen(file_id, "/pixel_size");
       if(dataset_id < 0){
-	sp_error_fatal("Unable to open dataset");
+	sp_error_fatal("Unable to open dataset in file %s",filename);
       }
 
       status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		       H5P_DEFAULT, values);
       if(status < 0){
-	sp_error_fatal("Unable to read dataset");
+	sp_error_fatal("Unable to read dataset from file %s",filename);
       }
 
       status = H5Dclose(dataset_id);
@@ -1543,7 +1543,7 @@ Image * _read_imagefile(const char * filename, char * file, int line){
 	status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 			 H5P_DEFAULT, values);
 	if(status < 0){
-	  sp_error_fatal("Unable to read dataset");
+	  sp_error_fatal("Unable to read dataset from file %s",filename);
 	}
 
 	status = H5Dclose(dataset_id);
@@ -1568,13 +1568,13 @@ Image * _read_imagefile(const char * filename, char * file, int line){
 			       sp_i3matrix_z(res->mask),file,line);
 	dataset_id = H5Dopen(file_id, "/imag");
 	if(dataset_id < 0){
-	  sp_error_fatal("Unable to open dataset");
+	  sp_error_fatal("Unable to open dataset in file %s",filename);
 	}
 
 	status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 			 H5P_DEFAULT, tmp->data);
       if(status < 0){
-	sp_error_fatal("Unable to read dataset");
+	sp_error_fatal("Unable to read dataset from file %s",filename);
       }
 
 	status = H5Dclose(dataset_id);
@@ -1589,13 +1589,13 @@ Image * _read_imagefile(const char * filename, char * file, int line){
 			     sp_i3matrix_z(res->mask),file,line);
       dataset_id = H5Dopen(file_id, "/real");
       if(dataset_id < 0){
-	sp_error_fatal("Unable to open dataset");
+	sp_error_fatal("Unable to open dataset in file %s",filename);
       }
 
       status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		       H5P_DEFAULT, tmp->data);
       if(status < 0){
-	sp_error_fatal("Unable to read dataset");
+	sp_error_fatal("Unable to read dataset from file %s",filename);
       }
 
       status = H5Dclose(dataset_id);
@@ -1610,7 +1610,7 @@ Image * _read_imagefile(const char * filename, char * file, int line){
     /* File does *NOT* includes version information */
     dataset_id = H5Dopen(file_id, "/mask");
       if(dataset_id < 0){
-	sp_error_fatal("Unable to open dataset");
+	sp_error_fatal("Unable to open dataset in file %s",filename);
       }
 
     space = H5Dget_space(dataset_id);
@@ -1632,7 +1632,7 @@ Image * _read_imagefile(const char * filename, char * file, int line){
     status = H5Dread(dataset_id,mem_type_id , H5S_ALL, H5S_ALL,
 		     H5P_DEFAULT, tmp->data);
       if(status < 0){
-	sp_error_fatal("Unable to read dataset");
+	sp_error_fatal("Unable to read dataset from file %s",filename);
       }
 
     for(i = 0;i<sp_3matrix_size(tmp);i++){
@@ -1644,13 +1644,13 @@ Image * _read_imagefile(const char * filename, char * file, int line){
     
     dataset_id = H5Dopen(file_id, "/image_center");
       if(dataset_id < 0){
-	sp_error_fatal("Unable to open dataset");
+	sp_error_fatal("Unable to open dataset in file %s",filename);
       }
 
     status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		     H5P_DEFAULT, values);
       if(status < 0){
-	sp_error_fatal("Unable to read dataset");
+	sp_error_fatal("Unable to read dataset from file %s",filename);
       }
 
     status = H5Dclose(dataset_id);
@@ -1664,13 +1664,13 @@ Image * _read_imagefile(const char * filename, char * file, int line){
     
     dataset_id = H5Dopen(file_id, "/phased");
       if(dataset_id < 0){
-	sp_error_fatal("Unable to open dataset");
+	sp_error_fatal("Unable to open dataset in file %s",filename);
       }
 
     status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		     H5P_DEFAULT, values);
       if(status < 0){
-	sp_error_fatal("Unable to read dataset");
+	sp_error_fatal("Unable to read dataset from file %s",filename);
       }
 
     status = H5Dclose(dataset_id);
@@ -1678,13 +1678,13 @@ Image * _read_imagefile(const char * filename, char * file, int line){
     
     dataset_id = H5Dopen(file_id, "/shifted");
       if(dataset_id < 0){
-	sp_error_fatal("Unable to open dataset");
+	sp_error_fatal("Unable to open dataset in file %s",filename);
       }
 
     status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		     H5P_DEFAULT, values);
       if(status < 0){
-	sp_error_fatal("Unable to read dataset");
+	sp_error_fatal("Unable to read dataset from file %s",filename);
       }
 
     status = H5Dclose(dataset_id);
@@ -1692,13 +1692,13 @@ Image * _read_imagefile(const char * filename, char * file, int line){
     
     dataset_id = H5Dopen(file_id, "/scaled");
       if(dataset_id < 0){
-	sp_error_fatal("Unable to open dataset");
+	sp_error_fatal("Unable to open dataset in file %s",filename);
       }
 
     status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		     H5P_DEFAULT, values);
       if(status < 0){
-	sp_error_fatal("Unable to read dataset");
+	sp_error_fatal("Unable to read dataset from file %s",filename);
       }
 
     status = H5Dclose(dataset_id);
@@ -1706,13 +1706,13 @@ Image * _read_imagefile(const char * filename, char * file, int line){
     
     dataset_id = H5Dopen(file_id, "/detector_distance");
       if(dataset_id < 0){
-	sp_error_fatal("Unable to open dataset");
+	sp_error_fatal("Unable to open dataset in file %s",filename);
       }
 
     status = H5Dread(dataset_id,  mem_type_id, H5S_ALL, H5S_ALL,
 		     H5P_DEFAULT, values);
       if(status < 0){
-	sp_error_fatal("Unable to read dataset");
+	sp_error_fatal("Unable to read dataset from file %s",filename);
       }
 
     status = H5Dclose(dataset_id);
@@ -1720,13 +1720,13 @@ Image * _read_imagefile(const char * filename, char * file, int line){
     
     dataset_id = H5Dopen(file_id, "/lambda");
       if(dataset_id < 0){
-	sp_error_fatal("Unable to open dataset");
+	sp_error_fatal("Unable to open dataset in file %s",filename);
       }
 
     status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		     H5P_DEFAULT, values);
       if(status < 0){
-	sp_error_fatal("Unable to read dataset");
+	sp_error_fatal("Unable to read dataset from file %s",filename);
       }
 
     status = H5Dclose(dataset_id);
@@ -1734,13 +1734,13 @@ Image * _read_imagefile(const char * filename, char * file, int line){
     
     dataset_id = H5Dopen(file_id, "/pixel_size");
       if(dataset_id < 0){
-	sp_error_fatal("Unable to open dataset");
+	sp_error_fatal("Unable to open dataset in file %s",filename);
       }
 
     status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		     H5P_DEFAULT, values);
       if(status < 0){
-	sp_error_fatal("Unable to read dataset");
+	sp_error_fatal("Unable to read dataset from file %s",filename);
       }
 
     status = H5Dclose(dataset_id);
@@ -1754,13 +1754,13 @@ Image * _read_imagefile(const char * filename, char * file, int line){
 			     sp_i3matrix_z(res->mask),file,line);
       dataset_id = H5Dopen(file_id, "/complex");
       if(dataset_id < 0){
-	sp_error_fatal("Unable to open dataset");
+	sp_error_fatal("Unable to open dataset in file %s",filename);
       }
 
       status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		       H5P_DEFAULT, tmp->data);
       if(status < 0){
-	sp_error_fatal("Unable to read dataset");
+	sp_error_fatal("Unable to read dataset from file %s",filename);
       }
 
       status = H5Dclose(dataset_id);
@@ -1773,13 +1773,13 @@ Image * _read_imagefile(const char * filename, char * file, int line){
 			     sp_i3matrix_z(res->mask),file,line);
       dataset_id = H5Dopen(file_id, "/real");
       if(dataset_id < 0){
-	sp_error_fatal("Unable to open dataset");
+	sp_error_fatal("Unable to open dataset in file %s",filename);
       }
 
       status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		       H5P_DEFAULT, tmp->data);
       if(status < 0){
-	sp_error_fatal("Unable to read dataset");
+	sp_error_fatal("Unable to read dataset from file %s",filename);
       }
 
       status = H5Dclose(dataset_id);
@@ -1794,13 +1794,13 @@ Image * _read_imagefile(const char * filename, char * file, int line){
 			       sp_i3matrix_z(res->mask),file,line);
 	dataset_id = H5Dopen(file_id, "/intensities");
       if(dataset_id < 0){
-	sp_error_fatal("Unable to open dataset");
+	sp_error_fatal("Unable to open dataset in file %s",filename);
       }
 
 	status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 			 H5P_DEFAULT, tmp->data);
       if(status < 0){
-	sp_error_fatal("Unable to read dataset");
+	sp_error_fatal("Unable to read dataset from file %s",filename);
       }
 
 	status = H5Dclose(dataset_id);
@@ -1813,13 +1813,13 @@ Image * _read_imagefile(const char * filename, char * file, int line){
 			       sp_i3matrix_z(res->mask),file,line);
 	dataset_id = H5Dopen(file_id, "/amplitudes");
       if(dataset_id < 0){
-	sp_error_fatal("Unable to open dataset");
+	sp_error_fatal("Unable to open dataset in file %s",filename);
       }
 
 	status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 			 H5P_DEFAULT, tmp->data);
       if(status < 0){
-	sp_error_fatal("Unable to read dataset");
+	sp_error_fatal("Unable to read dataset from file %s",filename);
       }
 
 	status = H5Dclose(dataset_id);
