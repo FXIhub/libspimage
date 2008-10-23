@@ -3,6 +3,19 @@
 
 #include "AllTests.h"
 
+void test_image_print(Image * a){
+  for(int z = 0; z<sp_image_z(a);z++){
+    printf("***  Layer z = %d ***\n",z);
+    for(int y = sp_image_y(a)-1; y>=0;y--){
+      for(int x = 0; x<sp_image_x(a);x++){
+	printf("(%3.2g,%3.2g)\t",sp_real(sp_image_get(a,x,y,z)),sp_imag(sp_image_get(a,x,y,z)));
+      }
+      printf("\n");
+    }
+    printf("\n");
+  }
+}
+
 void test_sp_image_edge_extend(CuTest * tc){
   Image * a = sp_image_alloc(2,2,1);
   sp_image_set(a,0,0,0,sp_cinit(1,0));
@@ -354,6 +367,250 @@ void test_sp_image_max(CuTest * tc){
   sp_image_free(a);
 }
 
+void test_sp_image_superimpose(CuTest * tc){
+  /* First a simple test without enantiomorph */
+  int size = 3;
+  Image * a;
+  Image * b;
+  a = sp_image_alloc(size,size,1);
+  b = sp_image_alloc(size,size,1);
+  a->phased = 1;
+  b->phased = 1;
+  for(int z = 0; z<sp_image_z(a);z++){
+    for(int y = 0; y<sp_image_y(a);y++){
+      for(int x = 0; x<sp_image_x(a);x++){
+	sp_image_set(a,x,y,z,sp_cinit(0,0));
+	sp_image_set(b,x,y,z,sp_cinit(0,0));
+      }
+    }
+  }  
+  /*
+         A       B
+ 
+       0 1 0   0 0 0
+       0 2 0   0 0 1
+       0 0 0   0 0 2
+   */
+  sp_image_set(a,1,2,0,sp_cinit(1,1));
+  sp_image_set(a,1,1,0,sp_cinit(2,-1));
+  sp_image_set(b,1+1,2-1,0,sp_cinit(1,1));
+  sp_image_set(b,1+1,1-1,0,sp_cinit(2,-1));
+  sp_image_superimpose(a,b,0);
+  for(int z = 0; z<sp_image_z(a);z++){
+    for(int y = 0; y<sp_image_y(a);y++){
+      for(int x = 0; x<sp_image_x(a);x++){
+	CuAssertComplexEquals(tc,sp_image_get(b,x,y,z),sp_image_get(a,x,y,z),fabs(REAL_EPSILON*sp_cabs(sp_image_get(b,x,y,z))+REAL_EPSILON));
+      }
+    }
+  }
+  /* Now a test with enantiomorph */
+  for(int z = 0; z<sp_image_z(a);z++){
+    for(int y = 0; y<sp_image_y(a);y++){
+      for(int x = 0; x<sp_image_x(a);x++){
+	sp_image_set(a,x,y,z,sp_cinit(0,0));
+	sp_image_set(b,x,y,z,sp_cinit(0,0));
+      }
+    }
+  }  
+  /*
+         A       B
+ 
+       0 1 0   0 0 0
+       0 2 3   0 3 2
+       0 0 0   0 0 1
+   */
+  sp_image_set(a,1,2,0,sp_cinit(1,1));
+  sp_image_set(a,1,1,0,sp_cinit(2,-1));
+  sp_image_set(a,2,1,0,sp_cinit(3,-1));
+
+  sp_image_set(b,2,0,0,sp_cinit(1,1));
+  sp_image_set(b,2,1,0,sp_cinit(2,-1));
+  sp_image_set(b,1,1,0,sp_cinit(3,-1));
+
+  sp_image_superimpose(a,b,SP_ENANTIOMORPH);
+  for(int z = 0; z<sp_image_z(a);z++){
+    for(int y = 0; y<sp_image_y(a);y++){
+      for(int x = 0; x<sp_image_x(a);x++){
+	CuAssertComplexEquals(tc,sp_image_get(b,x,y,z),sp_image_get(a,x,y,z),fabs(REAL_EPSILON*sp_cabs(sp_image_get(b,x,y,z))+REAL_EPSILON));
+      }
+    }
+  }
+}
+
+void test_sp_image_reflect(CuTest * tc){
+  /* First a simple test without enantiomorph */
+  int size = 3;
+  Image * a;
+  Image * b;
+  Image * c;
+  a = sp_image_alloc(size,size,1);
+  b = sp_image_alloc(size,size,1);
+  for(int z = 0; z<sp_image_z(a);z++){
+    for(int y = sp_image_y(a)-1; y>0;y--){
+      for(int x = 0; x<sp_image_x(a);x++){
+	sp_image_set(a,x,y,z,sp_cinit(0,0));
+	sp_image_set(b,x,y,z,sp_cinit(0,0));
+      }
+    }
+  }  
+  /*
+         A      B
+ 
+       0 1 0  0 0 0
+       0 2 3  3 2 0
+       0 0 0  0 1 0
+   */
+  /* We'll try XY reflection first */
+  sp_image_set(a,1,2,0,sp_cinit(1,0));
+  sp_image_set(a,1,1,0,sp_cinit(2,0));
+  sp_image_set(a,2,1,0,sp_cinit(3,0));
+
+  sp_image_set(b,1,0,0,sp_cinit(1,0));
+  sp_image_set(b,1,1,0,sp_cinit(2,0));
+  sp_image_set(b,0,1,0,sp_cinit(3,0));
+  /* first try the out of place */
+  c = sp_image_reflect(a,0,SP_AXIS_XY);
+  for(int z = 0; z<sp_image_z(a);z++){
+    for(int y = 0; y<sp_image_y(a);y++){
+      for(int x = 0; x<sp_image_x(a);x++){
+	CuAssertComplexEquals(tc,sp_image_get(b,x,y,z),sp_image_get(c,x,y,z),fabs(REAL_EPSILON*sp_cabs(sp_image_get(b,x,y,z))+REAL_EPSILON));
+      }
+    }
+  }
+  /* and now inplace. Also tests reversability  */
+  sp_image_reflect(b,1,SP_AXIS_XY);
+  for(int z = 0; z<sp_image_z(a);z++){
+    for(int y = 0; y<sp_image_y(a);y++){
+      for(int x = 0; x<sp_image_x(a);x++){
+	CuAssertComplexEquals(tc,sp_image_get(b,x,y,z),sp_image_get(a,x,y,z),fabs(REAL_EPSILON*sp_cabs(sp_image_get(b,x,y,z))+REAL_EPSILON));
+      }
+    }
+  }
+
+  /* Now through the origin. Should be the same as XY for 2D images */
+  sp_image_reflect(b,1,SP_ORIGO);
+  for(int z = 0; z<sp_image_z(a);z++){
+    for(int y = 0; y<sp_image_y(a);y++){
+      for(int x = 0; x<sp_image_x(a);x++){
+	CuAssertComplexEquals(tc,sp_image_get(b,x,y,z),sp_image_get(c,x,y,z),fabs(REAL_EPSILON*sp_cabs(sp_image_get(b,x,y,z))+REAL_EPSILON));
+      }
+    }
+  }
+  /*
+         A      B
+ 
+       0 1 0  0 0 0
+       0 2 3  0 2 3
+       0 0 0  0 1 0
+   */
+  for(int z = 0; z<sp_image_z(a);z++){
+    for(int y = sp_image_y(a)-1; y>0;y--){
+      for(int x = 0; x<sp_image_x(a);x++){
+	sp_image_set(b,x,y,z,sp_cinit(0,0));
+      }
+    }
+  }  
+  sp_image_set(b,1,0,0,sp_cinit(1,0));
+  sp_image_set(b,1,1,0,sp_cinit(2,0));
+  sp_image_set(b,2,1,0,sp_cinit(3,0));
+  sp_image_reflect(b,1,SP_AXIS_X);
+  for(int z = 0; z<sp_image_z(a);z++){
+    for(int y = 0; y<sp_image_y(a);y++){
+      for(int x = 0; x<sp_image_x(a);x++){
+	CuAssertComplexEquals(tc,sp_image_get(b,x,y,z),sp_image_get(a,x,y,z),fabs(REAL_EPSILON*sp_cabs(sp_image_get(b,x,y,z))+REAL_EPSILON));
+      }
+    }
+  }
+  /*
+         A      B
+ 
+       0 1 0  0 1 0
+       0 2 3  3 2 0
+       0 0 0  0 0 0
+   */
+  for(int z = 0; z<sp_image_z(a);z++){
+    for(int y = sp_image_y(a)-1; y>0;y--){
+      for(int x = 0; x<sp_image_x(a);x++){
+	sp_image_set(b,x,y,z,sp_cinit(0,0));
+      }
+    }
+  }  
+  sp_image_set(b,1,2,0,sp_cinit(1,0));
+  sp_image_set(b,1,1,0,sp_cinit(2,0));
+  sp_image_set(b,0,1,0,sp_cinit(3,0));
+  sp_image_reflect(b,1,SP_AXIS_Y);
+  for(int z = 0; z<sp_image_z(a);z++){
+    for(int y = 0; y<sp_image_y(a);y++){
+      for(int x = 0; x<sp_image_x(a);x++){
+	CuAssertComplexEquals(tc,sp_image_get(b,x,y,z),sp_image_get(a,x,y,z),fabs(REAL_EPSILON*sp_cabs(sp_image_get(b,x,y,z))+REAL_EPSILON));
+      }
+    }
+  }
+
+
+}
+
+void test_sp_image_phase_match(CuTest * tc){
+  int size = 3;
+  Image * a;
+  Image * b;
+  a = sp_image_alloc(size,size,1);
+  b = sp_image_alloc(size,size,1);
+  for(int z = 0; z<sp_image_z(a);z++){
+    for(int y = sp_image_y(a)-1; y>0;y--){
+      for(int x = 0; x<sp_image_x(a);x++){
+	sp_image_set(a,x,y,z,sp_cinit(0,0));
+	sp_image_set(b,x,y,z,sp_cinit(0,0));
+      }
+    }
+  }  
+  /*
+         A      B
+ 
+       0 1 0  0 1 0
+       0 2 3  0 2 3 + pi/2 rotation
+       0 0 0  0 0 0
+   */
+  sp_image_set(a,1,2,0,sp_cinit(1,0));
+  sp_image_set(a,1,1,0,sp_cinit(2,0));
+  sp_image_set(a,2,1,0,sp_cinit(3,0));
+
+  sp_image_set(b,1,2,0,sp_cinit(0,1));
+  sp_image_set(b,1,1,0,sp_cinit(0,2));
+  sp_image_set(b,2,1,0,sp_cinit(0,3));
+  sp_image_phase_match(a,b,1);
+
+  for(int z = 0; z<sp_image_z(a);z++){
+    for(int y = 0; y<sp_image_y(a);y++){
+      for(int x = 0; x<sp_image_x(a);x++){
+	CuAssertComplexEquals(tc,sp_image_get(b,x,y,z),sp_image_get(a,x,y,z),fabs(REAL_EPSILON*sp_cabs(sp_image_get(b,x,y,z))+REAL_EPSILON));
+      }
+    }
+  }
+
+  /* Now we're gonna try with random images and a random angle perturbed with 0.1 */
+  real dphi = p_drand48();
+  for(int z = 0; z<sp_image_z(a);z++){
+    for(int y = 0; y<sp_image_y(a);y++){
+      for(int x = 0; x<sp_image_x(a);x++){
+	sp_image_set(a,x,y,z,sp_cinit(p_drand48(),p_drand48()));
+	sp_image_set(b,x,y,z,sp_crot(sp_image_get(a,x,y,z),dphi+p_drand48()*0.1));
+	
+      }
+    }
+  }
+
+  sp_image_phase_match(a,b,1);
+  for(int z = 0; z<sp_image_z(a);z++){
+    for(int y = 0; y<sp_image_y(a);y++){
+      for(int x = 0; x<sp_image_x(a);x++){
+	CuAssertComplexEquals(tc,sp_image_get(b,x,y,z),sp_image_get(a,x,y,z),0.1);
+      }
+    }
+  }
+  
+}
+
 CuSuite* image_get_suite(void)
 {
   CuSuite* suite = CuSuiteNew();  
@@ -368,6 +625,9 @@ CuSuite* image_get_suite(void)
   //  SUITE_ADD_TEST(suite,test_sp_image_noise_estimate);
   SUITE_ADD_TEST(suite,test_sp_image_dist);
   SUITE_ADD_TEST(suite,test_sp_image_max);
+  SUITE_ADD_TEST(suite,test_sp_image_superimpose);
+  SUITE_ADD_TEST(suite,test_sp_image_reflect);
+  SUITE_ADD_TEST(suite,test_sp_image_phase_match);
   return suite;
 }
 

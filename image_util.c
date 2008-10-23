@@ -43,6 +43,74 @@ static Image * read_png(const char * filename);
 static int write_png(Image * img,const char * filename, int color);
 static int write_vtk(Image * img,const char * filename);
 static Image * read_smv(const char * filename);
+static void hsv_to_rgb(float H,float S,float V,float * R,float *G,float *B);
+
+
+static void hsv_to_rgb(float H,float S,float V,float * R,float *G,float *B){
+  if( V == 0 ){ *R = 0; *G = 0; *B = 0; 
+  }else if( S == 0 ) {                                                                   
+    *R = V;                                                            
+    *G = V;                                                            
+    *B = V;                                                            
+  } else {                                                                   
+    const double hf = H / 60.0;                                       
+    const int    i  = (int) floor( hf );                              
+    const double f  = hf - i;                                         
+    const double pv  = V * ( 1 - S );                                 
+    const double qv  = V * ( 1 - S * f );                             
+    const double tv  = V * ( 1 - S * ( 1 - f ) );                     
+    switch( i ){                                                               
+    case 0: 
+      *R = V; 
+      *G = tv;
+      *B = pv;
+      break; 
+    case 1:
+      *R = qv;
+      *G = V;
+      *B = pv;
+      break;
+    case 2:
+      *R = pv; 
+      *G = V;
+      *B = tv;
+      break; 
+    case 3: 
+      *R = pv;
+      *G = qv;
+      *B = V;
+      break;
+    case 4:  
+      *R = tv; 
+      *G = pv;
+      *B = V;
+      break;  
+    case 5:
+      *R = V;
+      *G = pv;
+      *B = qv; 
+      break;
+    case 6: 
+      *R = V;
+      *G = tv;    
+      *B = pv; 
+      break; 
+    case -1:  
+      *R = V;
+      *G = pv; 
+      *B = qv;
+      break;
+    default:
+      sp_error_fatal("i Value error in HSV to *R*G*B conversion, Value is %d",i);
+      break;
+    }									
+  }									
+  *R *= 255.0F;                                                        
+  *G *= 255.0F;                                                        
+  *B *= 255.0F;  
+}
+
+
 
 
 
@@ -82,7 +150,11 @@ Image * sp_image_reflect(Image * in, int in_place, int axis){
   }else if(axis == SP_AXIS_Y){
     return reflect_y(in,in_place);
   }else if(axis == SP_ORIGO){
-    return reflect_origo(in,in_place);
+    if(sp_image_z(in) == 1){
+      return reflect_xy(in,in_place);
+    }else{
+      return reflect_origo(in,in_place);
+    }
   }
   return NULL;
 }
@@ -130,8 +202,8 @@ static Image * reflect_y(Image * in, int in_place){
     x2 = sp_c3matrix_x(in->image)-x-1;
     for(y = 0;y<sp_c3matrix_y(in->image);y++){
       tmp = sp_c3matrix_get(in->image,x,y,0);
-      sp_c3matrix_set(out->image,x,y,0,sp_c3matrix_get(in->image,x,y,0));
-      sp_c3matrix_set(out->image,x,y,0,tmp);
+      sp_c3matrix_set(out->image,x,y,0,sp_c3matrix_get(in->image,x2,y,0));
+      sp_c3matrix_set(out->image,x2,y,0,tmp);
     }
   }
   return out;
@@ -2437,7 +2509,7 @@ int write_png(Image * img,const char * filename, int color){
     }else if(color & COLOR_RAINBOW){
       color_table[0][i] = fabs(2*value-0.5);
       color_table[1][i] = sin(value*M_PI);
-     color_table[2][i] = cos(value*M_PI/2);
+      color_table[2][i] = cos(value*M_PI/2);
     }else if(color & COLOR_JET){
       if(value < 1/8.0){
 	color_table[0][i] = 0;
@@ -2461,12 +2533,17 @@ int write_png(Image * img,const char * filename, int color){
 	color_table[2][i] = 0;
       }
     }
+
     color_table[0][i] = MIN(1,color_table[0][i]);
     color_table[1][i] = MIN(1,color_table[1][i]);
     color_table[2][i] = MIN(1,color_table[2][i]);
     color_table[0][i] *= 255;
     color_table[1][i] *= 255;
     color_table[2][i] *= 255;
+
+    if(color & COLOR_WHEEL){
+      hsv_to_rgb(360*value,1.0,1.0,&color_table[0][i],&color_table[1][i],&color_table[2][i]);
+    }
   }
   if (!fp){
     perror("Couldn't open file!\n");
@@ -3137,9 +3214,9 @@ Image * cube_crop(Image * in, int x1, int y1, int z1, int x2, int y2, int z2){
   cropped->detector->image_center[1] -= y1;
   cropped->detector->image_center[2] -= z1;
   sp_c3matrix_free(cropped->image);
-  cropped->image = sp_c3matrix_alloc(y2-y1+1,x2-x1+1,z2-z1+1);
+  cropped->image = sp_c3matrix_alloc(x2-x1+1,y2-y1+1,z2-z1+1);
   sp_i3matrix_free(cropped->mask);
-  cropped->mask = sp_i3matrix_alloc(y2-y1+1,x2-x1+1,z2-z1+1);
+  cropped->mask = sp_i3matrix_alloc(x2-x1+1,y2-y1+1,z2-z1+1);
 
 
   for(i = z1;i<=z2;i++){
@@ -3281,14 +3358,14 @@ real sp_image_max(Image * img, long long * index,int * x, int * y, int * z){
     sp_image_get_coords_from_index(img,*index,&fx,&fy,&fz,TopLeftCorner);
     if(x){
       *x = (int)round(fx);
-      *x = *index%(sp_image_z(img)*sp_image_y(img));
+      /*      *x = *index%(sp_image_z(img)*sp_image_y(img));*/
     }
     if(y){
       *y = (int)round(fy);
     }
     if(z){
       *z = (int)round(fz);
-      *z = *index%sp_image_x(img)%sp_image_y(img);
+      /*      *z = *index%sp_image_x(img)%sp_image_y(img);*/
     }
   }
   return ret;
@@ -4475,12 +4552,17 @@ static Image * read_smv(const char * filename){
  *  the "mirror image" of b [b(-x)].
  *
 */
-void sp_image_superimpose(Image * a,Image * b, int flags){
+void sp_image_superimpose(Image * _a,Image * _b, int flags){
   int x,y,z;
   long long index;
   int center_invert = 0;
   real max;
   /* check maximum overlap of a and b */
+  Image * a = sp_image_duplicate(_a,SP_COPY_DATA);
+  Image * b = sp_image_duplicate(_b,SP_COPY_DATA);
+  
+  sp_image_dephase(a);
+  sp_image_dephase(b);
   Image * direct_overlap = sp_image_cross_correlate(a,b,NULL);
   max = sp_image_max(direct_overlap,&index,&x,&y,&z);
   sp_image_free(direct_overlap);
@@ -4496,11 +4578,52 @@ void sp_image_superimpose(Image * a,Image * b, int flags){
       x = x2+1;
       y = y2+1;
       z = z2+1;
-      sp_image_reflect(b,IN_PLACE,SP_ORIGO);
+      sp_image_reflect(_b,IN_PLACE,SP_ORIGO);
     }
   }
+  sp_image_free(a);
+  sp_image_free(b);
+  sp_image_translate(_b,x,y,z,SP_TRANSLATE_WRAP_AROUND);
+}
 
-  sp_image_translate(b,x,y,z,SP_TRANSLATE_WRAP_AROUND);
+
+/*! Minimize the difference between the phases of a and b by adding a constant phase to b.
+ *
+ * The returned value is the phase factor in radians.
+ * The method used to minimize the phase difference is to take the average 
+ * of the vectors representing the phase difference between a and b.
+ * The constant phase is then simply the angle of the average vector.
+ * If wieghted is 1 the magnitude of each pixel is used as a weighting
+ * for the averaging. If it's 2 then the square of the magnitude is used.
+ * The weight is taken from image a. 
+ * Both images are assumed to have the same dimensions.
+ */
+real sp_image_phase_match(Image * a, Image * b,int weighted){
+  int i;
+  Complex average = sp_cinit(0,0);
+  real angle;
+  real magnitude;
+  Complex v;
+  real phi_constant;
+  for(i = 0;i<sp_image_size(a);i++){
+    angle = sp_carg(a->image->data[i]) - sp_carg(b->image->data[i]);
+    if(weighted == 1){
+      magnitude = sp_cabs(a->image->data[i]);
+    }else if(weighted == 2){
+      magnitude = sp_cabs2(a->image->data[i]);
+    }else{
+      magnitude = 1;
+    }
+    v = sp_cinit(cos(angle)*magnitude,sin(angle)*magnitude);
+    average = sp_cadd(average,v);
+  }
+  phi_constant = sp_carg(average);
+  for(i = 0;i<sp_image_size(b);i++){
+    angle = sp_carg(b->image->data[i])+phi_constant;
+    magnitude = sp_cabs(b->image->data[i]);
+    b->image->data[i] = sp_cinit(cos(angle)*magnitude,sin(angle)*magnitude);
+  }
+  return phi_constant;
 }
 
 void sp_image_translate(Image * a, int x,int y,int z,int flags){

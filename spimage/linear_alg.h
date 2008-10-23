@@ -165,6 +165,15 @@ static inline Complex sp_cdiv(Complex a, Complex b){
   sp_imag(ret) = (sp_imag(a)*sp_real(b)-sp_real(a)*sp_imag(b))/(sp_real(b)*sp_real(b)+sp_imag(b)*sp_imag(b));
   return ret;
 }
+
+static inline Complex sp_crot(Complex a, real phi){
+  Complex ret;
+  real angle = sp_carg(a)+phi;
+  real length = sp_cabs(a);
+  sp_real(ret) = cos(angle)*length;
+  sp_imag(ret) = sin(angle)*length;
+  return ret;
+}
   
 /*! Compare 2 complex numbers and return 1 if *pa bigger than *pb, 0 if they are equal or -1 otherwise.
  *  pa and pb should be pointers to a Complex. This function is useful for using qsort(3)

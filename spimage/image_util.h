@@ -17,6 +17,7 @@ extern "C"
 #define COLOR_HOT 4
 #define COLOR_RAINBOW 8
 #define COLOR_JET 16
+#define COLOR_WHEEL 128
 #define LOG_SCALE 32
 #define COLOR_PHASE 64
 
@@ -125,6 +126,7 @@ spimage_EXPORT real sp_image_dist(Image * in, int i, int type);
  *              COLOR_HOT          Image will use the hot color map
  *              COLOR_RAINBOW      Image will use the rainbow color map
  *              COLOR_JET          Image will use the jet color map
+ *              COLOR_WHEEL        Image will use the color wheel color map
  *              LOG_SCALE          Image will be written in log scale
  *
  */
@@ -636,9 +638,24 @@ spimage_EXPORT void sp_srand(int i);
  *  SP_ENANTIOMORPH - allow to try to superimpose not only b but also
  *  the "mirror image" of b [b(-x)].
  *
+ *  The maximum superposition is defined as the superposition that maximizes the
+ *  dot product of the \em absolute value of the two images.
+ *
  */
 spimage_EXPORT void sp_image_superimpose(Image * a,Image * b, int flags);
 
+/*! Minimize the difference between the phases of a and b by adding a constant phase to b.
+ *
+ * The returned value is the phase factor in radians.
+ * The method used to minimize the phase difference is to take the average 
+ * of the vectors representing the phase difference between a and b.
+ * The constant phase is then simply the angle of the average vector.
+ * If wieghted is 1 the magnitude of each pixel is used as a weighting
+ * for the averaging. If it's 2 then the square of the magnitude is used.
+ * The weight is taken from image a. 
+ * Both images are assumed to have the same dimensions.
+ */
+spimage_EXPORT real sp_image_phase_match(Image * a, Image * b,int weighted);
 
 /*! Translates an image by x,y,z.
  * 

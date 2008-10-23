@@ -89,7 +89,6 @@ Rotation * sp_rot_multiply(Rotation * a, Rotation * b)
 
 Rotation * sp_rot_transpose(Rotation * a)
 {
-  int i,k;
   Rotation * b = sp_rot_alloc();
   for (int i = 0; i < 3; i++)
     for (int j = 0; j < 3; j++)
@@ -437,7 +436,6 @@ void sp_image_get_slice(Image * space, Image * slice, sp_3matrix * slice_z, real
 {
   int x,y;
   real nx,ny,nz;
-  Complex tmp;
   sp_c3matrix * local;
   
   real cx = slice->detector->image_center[0];
