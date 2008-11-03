@@ -699,6 +699,15 @@ spimage_EXPORT real sp_box_muller(real m, real s);
  */
 spimage_EXPORT int sp_image_get_coords_from_index(Image * in,int index,real * x, real * y, real * z, SpOrigin origin);
 
+  /*! Returns the low frequency background of a diffraction image
+    
+    This function assumes that all diffraction images have zeros distributed everywhere in the image.
+    It then takes advantage of this by dividing the image in a grid cols x rows x slices and calculating the minimum 
+    value in each cell. If there is a zero inside the grid cell then the minimum value of the grid must be the background.
+    The function then returns a smooth interpolation of that grid to the size of the input image.
+  */
+  spimage_EXPORT Image * sp_background_adaptative_mesh(Image * a,int cols, int rows, int slices);
+
 #ifdef __cplusplus
 }  /* extern "C" */
 #endif /* __cplusplus */

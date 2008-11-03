@@ -611,6 +611,47 @@ void test_sp_image_phase_match(CuTest * tc){
   
 }
 
+void test_sp_background_adaptative_mesh(CuTest * tc){
+  int size = 128;
+  Complex one = sp_cinit(1,0);
+  int radius = 5;
+  int cx = size/2;
+  int cy = size/2;
+  Image * a;
+  real bg_value = 10;
+  a = sp_image_alloc(size,size,1);
+  /* draw a circle */
+  for(int x = 0;x<sp_image_x(a);x++){
+    for(int y = 0;y<sp_image_y(a);y++){
+      if((cx-x)*(cx-x) + (cy-y)*(cy-y) < radius*radius){
+	sp_image_set(a,x,y,0,one);
+      }
+    }
+  }
+  sp_image_write(a,"background_adaptative_mesh_square.png",COLOR_GRAYSCALE);
+  Image * pattern = sp_image_fft(a);
+  Image * pattern_centered = sp_image_shift(pattern);
+  sp_image_free(pattern);
+  pattern = pattern_centered;
+  pattern->scaled = 1;
+  sp_image_to_intensities(pattern);
+  for(int x = 0;x<sp_image_x(pattern);x++){
+    for(int y = 0;y<sp_image_y(pattern);y++){
+      Complex v= sp_image_get(pattern,x,y,0);
+      sp_real(v) += bg_value;
+      sp_image_set(pattern,x,y,0,v);
+    }
+  }
+  sp_image_write(pattern,"background_adaptative_mesh_pattern.tif",0);
+  Image * background = sp_background_adaptative_mesh(pattern,3,3,3);
+  sp_image_write(background,"background_adaptative_mesh_background.tif",0);
+  for(int x = 0;x<sp_image_x(pattern);x++){
+    for(int y = 0;y<sp_image_y(pattern);y++){
+      CuAssertDblEquals(tc,sp_cabs(sp_image_get(background,x,y,0)),bg_value,0.1);
+    }
+  }
+}
+  
 CuSuite* image_get_suite(void)
 {
   CuSuite* suite = CuSuiteNew();  
@@ -628,6 +669,7 @@ CuSuite* image_get_suite(void)
   SUITE_ADD_TEST(suite,test_sp_image_superimpose);
   SUITE_ADD_TEST(suite,test_sp_image_reflect);
   SUITE_ADD_TEST(suite,test_sp_image_phase_match);
+  SUITE_ADD_TEST(suite,test_sp_background_adaptative_mesh);
   return suite;
 }
 

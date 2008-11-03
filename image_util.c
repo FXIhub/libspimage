@@ -3321,18 +3321,14 @@ Image * bilinear_rescale(Image * img, int new_x, int new_y, int new_z){
   res->mask = sp_i3matrix_alloc(new_x,new_y,new_z);
   
 
-  for(x = 0; x<sp_c3matrix_x(res->image); x++){
-    virtual_x = (real)x*sp_c3matrix_x(img->image)/sp_c3matrix_x(res->image);
-    for(y = 0; y<sp_c3matrix_y(res->image); y++){
-      virtual_y = (real)y*sp_c3matrix_y(img->image)/sp_c3matrix_y(res->image);
-      for(z = 0; z<sp_c3matrix_z(res->image); z++){
-	virtual_z = (real)z*sp_c3matrix_z(img->image)/sp_c3matrix_z(res->image);
-	res->image->data[z*sp_c3matrix_y(res->image)*sp_c3matrix_x(res->image)+
-			 y*sp_c3matrix_x(res->image)+x] =
-	  sp_c3matrix_interp(img->image,virtual_x,virtual_y,virtual_z);	
-	res->mask->data[z*sp_c3matrix_y(res->image)*sp_c3matrix_x(res->image)+
-			y*sp_c3matrix_x(res->image)+x] = 
-	  sp_i3matrix_interp(img->mask,virtual_x,virtual_y,virtual_z);
+  for(x = 0; x<sp_image_x(res); x++){
+    virtual_x = (real)x*(sp_image_x(img)-1)/sp_image_x(res);
+    for(y = 0; y<sp_image_y(res); y++){
+      virtual_y = (real)y*(sp_image_y(img)-1)/sp_image_y(res);
+      for(z = 0; z<sp_image_z(res); z++){
+	virtual_z = (real)z*(sp_image_z(img)-1)/sp_image_z(res);
+	sp_image_set(res,x,y,z,sp_c3matrix_interp(img->image,virtual_x,virtual_y,virtual_z));
+	sp_i3matrix_set(res->mask,x,y,z,sp_i3matrix_interp(img->mask,virtual_x,virtual_y,virtual_z));
       }
     }
   }
@@ -4747,3 +4743,47 @@ int sp_image_get_coords_from_index(Image * in,int index,real * x, real * y, real
   }
   return -1;
 }
+
+
+Image * sp_background_adaptative_mesh(Image * a,int cols, int rows, int slices){
+  Image * cell_min;
+  if(cols > sp_image_x(a)){
+    cols = sp_image_x(a);
+  }
+  if(rows > sp_image_y(a)){
+    rows = sp_image_y(a);
+  }
+  if(slices > sp_image_z(a)){
+    slices = sp_image_z(a);
+  }
+  cell_min = sp_image_alloc(cols,rows,slices);
+  sp_image_rephase(cell_min,SP_ZERO_PHASE);
+
+
+  /* Do not be scared by the deep indentation!
+     The first three for loops just loop around the different cells
+     The second group of three for loops loops around the pixels inside the cell to find the minimum of the cell
+   */
+  for(int c = 0;c<cols;c++){
+    for(int r = 0;r<rows;r++){
+      for(int s = 0;s<slices;s++){
+	sp_image_set(cell_min,c,r,s,sp_cinit(1e9,0));	
+	for(int x = c*sp_image_x(a)/cols;x<(c+1)*sp_image_x(a)/cols;x++){
+	  for(int y = r*sp_image_y(a)/rows;y<(r+1)*sp_image_y(a)/rows;y++){
+	    for(int z = s*sp_image_z(a)/slices;z<(s+1)*sp_image_z(a)/slices;z++){
+
+	      if(sp_cabs(sp_image_get(a,x,y,z))	< sp_cabs(sp_image_get(cell_min,c,r,s))){
+	 	sp_image_set(cell_min,c,r,s,sp_image_get(a,x,y,z));
+	      }
+	    }
+	  }
+	}
+      }
+    }
+  }
+  sp_image_write(cell_min,"cell_min.tif",0);
+  Image * ret = bilinear_rescale(cell_min,sp_image_x(a),sp_image_y(a),sp_image_z(a));
+  sp_image_free(cell_min);
+  return ret;
+}
+
