@@ -4756,6 +4756,16 @@ Image * sp_background_adaptative_mesh(Image * a,int cols, int rows, int slices){
   if(slices > sp_image_z(a)){
     slices = sp_image_z(a);
   }
+  if(cols < 1){
+    cols = 1;
+  }
+  if(rows < 1){
+    rows = 1;
+  }
+
+  if(slices < 1){
+    slices = 1;
+  }
   cell_min = sp_image_alloc(cols,rows,slices);
   sp_image_rephase(cell_min,SP_ZERO_PHASE);
 
