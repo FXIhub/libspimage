@@ -159,6 +159,68 @@ Image * sp_image_reflect(Image * in, int in_place, int axis){
   return NULL;
 }
 
+Image * sp_image_rotate(Image * in, SpAxis axis, SpAngle angleDef, int in_place){
+  double angle = 0;
+  if(angleDef == sp_0Degrees){
+    return sp_image_duplicate(in,SP_COPY_DATA|SP_COPY_MASK); 
+  }
+  sp_matrix * rot = sp_matrix_alloc(2,2);
+  if(angleDef == sp_90Degrees){
+    angle = M_PI/2;
+  }
+  if(angleDef == sp_180Degrees){
+    angle = M_PI;
+  }  
+  if(angleDef == sp_270Degrees){
+    angle = 3*M_PI/2;
+  }
+  if(sp_image_x(in) != sp_image_y(in)){
+    sp_error_fatal("Cannot rotate non square images, sorry.");
+  }
+  if(axis == sp_XAxis){
+    sp_error_fatal("X axis rotation not implement yet, sorry.");
+  }
+  if(axis == sp_YAxis){
+    sp_error_fatal("Y axis rotation not implement yet, sorry.");
+  }
+  sp_matrix_set(rot,0,0,cos(angle));
+  sp_matrix_set(rot,0,1,sin(angle));
+  sp_matrix_set(rot,1,0,-sin(angle));
+  sp_matrix_set(rot,1,1,cos(angle));
+  Image * out = sp_image_duplicate(in,SP_COPY_DATA|SP_COPY_MASK);
+  sp_matrix * newx = sp_matrix_alloc(sp_image_x(in),sp_image_y(in));
+  sp_matrix * newy = sp_matrix_alloc(sp_image_x(in),sp_image_y(in));
+  int min_x = 1e9;
+  int min_y = 1e9;
+  for(int x = 0;x < sp_image_x(in);x++){
+    for(int y = 0;y < sp_image_y(in);y++){
+      int new_x = x*sp_matrix_get(rot,0,0)+y*sp_matrix_get(rot,0,1);
+      int new_y = x*sp_matrix_get(rot,1,0)+y*sp_matrix_get(rot,1,1);
+      sp_matrix_set(newx,x,y,new_x);
+      sp_matrix_set(newy,x,y,new_y);
+      if(min_x > new_x){
+	min_x = new_x;
+      }
+      if(min_y > new_y){
+	min_y = new_y;
+      }
+    }
+  }
+  for(int i = 0;i<sp_matrix_size(newx);i++){
+    newx->data[i] -= min_x;
+    newy->data[i] -= min_y;
+  }
+  for(int x = 0;x < sp_image_x(in);x++){
+    for(int y = 0;y < sp_image_y(in);y++){
+      sp_image_set(out,sp_matrix_get(newx,x,y),sp_matrix_get(newy,x,y),0,sp_image_get(in,x,y,0));
+    }
+  }
+  sp_matrix_free(newx);
+  sp_matrix_free(newy);
+  sp_matrix_free(rot);
+  return out;
+}
+
 /* reflect an image through the center, also 
  known as rotating by 180 degrees */
 static Image * reflect_xy(Image * in, int in_place){

@@ -61,6 +61,18 @@ extern "C"
 
 #define SP_ENANTIOMORPH 1
 
+/*! This enum defines an axis used for example for rotations */
+typedef enum{sp_XAxis,sp_YAxis,sp_ZAxis}SpAxis;
+
+  /*! Defines fixed rotation angles for rectangular images 
+      All rotations are anti clockwise, when the viewer is facing the rotation axis
+    
+      <'       <--------
+
+    Viewer    Rotation Axis
+  */
+  typedef enum{sp_0Degrees = 0,sp_90Degrees,sp_180Degrees,sp_270Degrees}SpAngle;
+
 /*! TopLeftCorner means that the Origin considered will be the Top Left Back pixel, or the first in the array 
    ImageCenter means that the Origin considered will be the image center
  */
@@ -708,6 +720,14 @@ spimage_EXPORT int sp_image_get_coords_from_index(Image * in,int index,real * x,
   */
   spimage_EXPORT Image * sp_background_adaptative_mesh(Image * a,int cols, int rows, int slices);
 
+
+  /*! Returns the input image rotate by a certain amount
+    
+    Only works for square images. At the moment it can only rotate images around the z axis by
+    90, 180 or 270 degrees!
+
+   */
+  spimage_EXPORT Image * sp_image_rotate(Image * in, SpAxis axis, SpAngle angleDef, int in_place);
 #ifdef __cplusplus
 }  /* extern "C" */
 #endif /* __cplusplus */
