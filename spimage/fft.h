@@ -19,6 +19,8 @@ extern "C"
 #define sp_image_ifft(a) sp_image_ifftw3(a)
 #define sp_image_fft(a) sp_image_fftw3(a) 
 #define sp_cmatrix_ifft(a) sp_cmatrix_ifftw3(a)
+#define sp_image_1d_fft(a,b) sp_image_1d_fftw3(a,b)
+#define sp_image_1d_ifft(a,b) sp_image_1d_fftw3(a,b)
 #define sp_cmatrix_fft(a) sp_cmatrix_fftw3(a) 
 #define sp_c3matrix_ifft(a) sp_c3matrix_ifftw3(a)
 #define sp_c3matrix_fft(a) sp_c3matrix_fftw3(a)
@@ -38,6 +40,7 @@ extern "C"
   #define fftwr_plan_guru_split_dft(a,b,c,d,e,f,g,h,i) fftw_plan_guru_split_dft(a,b,c,d,e,f,g,h,i)
   #define fftwr_init_threads() fftw_init_threads()
   #define fftwr_plan_with_nthreads(a) fftw_plan_with_nthreads(a)
+  #define fftwr_plan_many_dft(a,b,c,d,e,f,g,h,i,j,k,l,m) fftw_plan_many_dft(a,b,c,d,e,f,g,h,i,j,k,l,m)
 #else
   typedef fftwf_complex fftwr_complex;
   typedef fftwf_plan fftwr_plan;
@@ -52,6 +55,7 @@ extern "C"
   #define fftwr_plan_guru_split_dft(a,b,c,d,e,f,g,h,i) fftwf_plan_guru_split_dft(a,b,c,d,e,f,g,h,i)
   #define fftwr_init_threads() fftwf_init_threads()
   #define fftwr_plan_with_nthreads(a) fftwf_plan_with_nthreads(a)
+  #define fftwr_plan_many_dft(a,b,c,d,e,f,g,h,i,j,k,l,m) fftwf_plan_many_dft(a,b,c,d,e,f,g,h,i,j,k,l,m)
 #endif
 
 #endif
@@ -66,13 +70,19 @@ extern "C"
 #define image_fft(a) image_fftw2(a) 
 #define image_guru_fft(a) image_fftw2(a) 
 #endif
-
+  
 /*! Returns the forward FFT of img.
  *
  * The mask is copied unchanged
  * The center of the image is set to the middle of the image
  */
 spimage_EXPORT Image * sp_image_fft(Image * img);
+  /*!Returns the 1d fourier transform of img along the specified axis. 
+   * axis = 0,1,2 corresponds to x,y,z respectively. (axis = 1 only
+   * works for 2d images.
+   */
+spimage_EXPORT Image * sp_image_1d_fft(Image *img,int axis);
+spimage_EXPORT Image * sp_image_1d_ifft(Image *img,int axis);
 /*! Returns the forward FFT of m.
  */
 spimage_EXPORT sp_cmatrix * sp_cmatrix_fft(sp_cmatrix * m);

@@ -1538,6 +1538,7 @@ Image * _read_imagefile(const char * filename, char * file, int line){
     if(status < 0){
       sp_error_fatal("Unable to read dataset from file %s",filename);
     }
+    status = H5Dclose(dataset_id);
     if(version == 2){
       dataset_id = H5Dopen(file_id, "/mask");
       if(dataset_id < 0){
@@ -1777,15 +1778,15 @@ Image * _read_imagefile(const char * filename, char * file, int line){
     status = H5Dclose(dataset_id);
     
     dataset_id = H5Dopen(file_id, "/image_center");
-      if(dataset_id < 0){
-	sp_error_fatal("Unable to open dataset in file %s",filename);
-      }
-
+    if(dataset_id < 0){
+      sp_error_fatal("Unable to open dataset in file %s",filename);
+    }
     status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		     H5P_DEFAULT, values);
-      if(status < 0){
-	sp_error_fatal("Unable to read dataset from file %s",filename);
-      }
+
+    if(status < 0){
+      sp_error_fatal("Unable to read dataset from file %s",filename);
+    }
 
     status = H5Dclose(dataset_id);
     res->detector->image_center[0] = values[0];
@@ -1982,6 +1983,7 @@ Image * _read_imagefile(const char * filename, char * file, int line){
     }
     sp_image_free(tmp_img);
   }
+
   return res;
   
 }
@@ -3249,13 +3251,12 @@ Image * rectangle_crop(Image * in, int x1, int y1, int x2, int y2){
   cropped->detector->image_center[0] -= x1;
   cropped->detector->image_center[1] -= y1;
   sp_c3matrix_free(cropped->image);
-  cropped->image = sp_c3matrix_alloc(y2-y1+1,x2-x1+1,sp_c3matrix_z(in->image));
+  cropped->image = sp_c3matrix_alloc(x2-x1+1,y2-y1+1,sp_c3matrix_z(in->image));
   sp_i3matrix_free(cropped->mask);
-  cropped->mask = sp_i3matrix_alloc(y2-y1+1,x2-x1+1,sp_c3matrix_z(in->image));
-
+  cropped->mask = sp_i3matrix_alloc(x2-x1+1,y2-y1+1,sp_c3matrix_z(in->image));
 
   for(i = y1;i<= y2;i++){
-    memcpy(&cropped->image->data[(i-y1)*sp_c3matrix_x(cropped->image)],&in->image->data[(i)*sp_c3matrix_x(in->image)+x1],sp_c3matrix_x(cropped->image)*2*sizeof(real));
+    memcpy(&cropped->image->data[(i-y1)*sp_c3matrix_x(cropped->image)],&in->image->data[(i)*sp_c3matrix_x(in->image)+x1],sp_c3matrix_x(cropped->image)*sizeof(Complex));
     memcpy(&cropped->mask->data[(i-y1)*sp_c3matrix_x(cropped->image)],&in->mask->data[(i)*sp_c3matrix_x(in->image)+x1],sp_c3matrix_x(cropped->image)*sizeof(int));
   }
   return cropped;
