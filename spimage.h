@@ -13,5 +13,6 @@
 #include "spimage/sperror.h"
 #include "spimage/statistics.h"
 #include "spimage/image_noise.h"
+#include "spimage/hashtable.h"
 #endif
 

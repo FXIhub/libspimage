@@ -7,7 +7,7 @@ IF(WIN32)
 	ADD_DEFINITIONS(-D_HDF5USEDLL_)
 	ADD_DEFINITIONS(-D_CRT_SECURE_NO_DEPRECATE)
 ELSE(WIN32)
-	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -std=c99 ")
+	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -std=c99")
 ENDIF(WIN32)
 	
 
@@ -92,7 +92,7 @@ SET(FFTW_LIBRARY ${FFTW3_LIBRARY} ${FFTW3F_LIBRARY} ${FFTW3F_THREADS_LIBRARY} ${
 INCLUDE_DIRECTORIES(${FFTW_INCLUDE_DIR} ${PNG_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${HDF5_INCLUDE_DIR})
 
 
-LIST(APPEND OBJECTS  "image_util.c" "fft.c" "linear_alg.c" "mem_util.c" "image_sphere.c" "sperror.c" "gaussianinv.c" "image_noise.c")
+LIST(APPEND OBJECTS  "image_util.c" "fft.c" "linear_alg.c" "mem_util.c" "image_sphere.c" "sperror.c" "gaussianinv.c" "image_noise.c" "hashtable.c")
 
 
 
