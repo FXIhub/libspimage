@@ -18,7 +18,6 @@ static Malloc_Node sp_malloc_head = {
   .next = NULL
 };
 
-static struct sp_hashtable * pointer_hash = NULL;
 
 
 
@@ -26,6 +25,7 @@ static void sp_log(char * str);
 
 #if defined SP_MEM_DEBUG && !defined NDEBUG
 static void sp_alloc(size_t n,char * file, int line,void * retval);
+static struct sp_hashtable * pointer_hash = NULL;
 #endif
 
 static FILE * log_file = NULL;
