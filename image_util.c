@@ -920,8 +920,9 @@ static void random_rephase(Image *  img){
   real phase;
   for(i = 0;i<sp_image_size(img);i++){
     phase = p_drand48()*M_PI*2;
-    sp_real(img->image->data[i]) = cos(phase)*sp_cabs(img->image->data[i]);
-    sp_imag(img->image->data[i]) = sin(phase)*sp_cabs(img->image->data[i]);
+    real amp = sp_cabs(img->image->data[i]);
+    sp_real(img->image->data[i]) = cos(phase)*amp;
+    sp_imag(img->image->data[i]) = sin(phase)*amp;
   }
   img->phased = 1;    
 }
