@@ -321,6 +321,10 @@ spimage_EXPORT void sp_image_add(Image * a, Image * b);
  */
 spimage_EXPORT void sp_image_sub(Image * a, Image * b);
 
+/*! Numerically integrates image a
+ */
+spimage_EXPORT Complex sp_image_integrate(Image * a);
+
 /*! Mutiplies Image a with Image b element by element
  *  The result is stored in a.
  */

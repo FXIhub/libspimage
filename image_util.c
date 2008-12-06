@@ -963,6 +963,16 @@ void sp_image_fill(Image * a, Complex value){
   }
 }
 
+Complex sp_image_integrate(Image * a){
+  size_t size = sp_image_size(a);
+  Complex ret = {0,0};
+  for(size_t i = 0;i<size;i++){
+    sp_cadd(ret,a->image->data[i]);
+  }
+  return ret;
+}
+
+
 /* mean m, standard deviation s */
 /* gaussian distribution generator */
 real sp_box_muller(real m, real s){        
