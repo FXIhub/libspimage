@@ -967,7 +967,7 @@ Complex sp_image_integrate(Image * a){
   size_t size = sp_image_size(a);
   Complex ret = {0,0};
   for(size_t i = 0;i<size;i++){
-    sp_cadd(ret,a->image->data[i]);
+    sp_cincr(ret,a->image->data[i]);
   }
   return ret;
 }
