@@ -192,11 +192,17 @@ Image * sp_image_1d_fftw3(Image * img, int axis) {
   }
   odist = idist;
   ostride = istride;
+  /*
   plan = fftwr_plan_many_dft(1, n, sp_image_y(img)*sp_image_z(img),
+			     in, inembed, istride, idist, out, onembed, ostride, odist,
+			     FFTW_FORWARD, FFTW_ESTIMATE);
+  */
+  plan = fftwr_plan_many_dft(1, n, howmany,
 			     in, inembed, istride, idist, out, onembed, ostride, odist,
 			     FFTW_FORWARD, FFTW_ESTIMATE);
   fftwr_execute(plan);
   fftwr_destroy_plan(plan);
+  free(n);
   return res;
 }
 
@@ -236,11 +242,17 @@ Image * sp_image_1d_ifftw3(Image * img, int axis) {
   }
   odist = idist;
   ostride = istride;
+  /*
   plan = fftwr_plan_many_dft(1, n, sp_image_y(img)*sp_image_z(img),
+			     in, inembed, istride, idist, out, onembed, ostride, odist,
+			     FFTW_BACKWARD, FFTW_ESTIMATE);
+  */
+  plan = fftwr_plan_many_dft(1, n, howmany,
 			     in, inembed, istride, idist, out, onembed, ostride, odist,
 			     FFTW_BACKWARD, FFTW_ESTIMATE);
   fftwr_execute(plan);
   fftwr_destroy_plan(plan);
+  free(n);
   return res;
 }
 
