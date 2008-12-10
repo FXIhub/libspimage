@@ -14,5 +14,7 @@
 #include "spimage/statistics.h"
 #include "spimage/image_noise.h"
 #include "spimage/hashtable.h"
+#include "spimage/interpolation_kernels.h"
+#include "spimage/time_util.h"
 #endif
 

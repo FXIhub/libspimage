@@ -390,3 +390,57 @@ int sp_complex_ascend_compare(const void * pa,const void * pb){
   }
 }
 
+
+real sp_c3matrix_kernel_interpolation(sp_c3matrix * a, real x1, real y1, real z1,sp_kernel * k)
+{
+  real w_tot = 0.0;
+  real res = 0.0;
+  int max_d = k->boundary_in_3D;
+  int x_min = MAX((int)((x1+0.5)-max_d),0);
+  int x_max = MIN((int)((x1+0.5)+max_d),sp_c3matrix_x(a)-1);
+  int y_min = MAX((int)((y1+0.5)-max_d),0);
+  int y_max = MIN((int)((y1+0.5)+max_d),sp_c3matrix_y(a)-1);
+  int z_min = MAX((int)((z1+0.5)-max_d),0);
+  int z_max = MIN((int)((z1+0.5)+max_d),sp_c3matrix_z(a)-1);
+  for (int z = z_min; z <= z_max; z++) {
+    for (int y = y_min; y <= y_max; y++) {
+      for (int x = x_min; x <= x_max; x++) {
+	real r2 = (x - x1)*(x - x1) + (y - y1)*(y - y1) + (z - z1)*(z - z1);
+	real w = sp_kernel_table_sample(k,r2);
+	res += sp_cabs(sp_c3matrix_get(a,x,y,z))*w;
+	w_tot += w;
+      }
+    }
+  }
+  if (w_tot != 0.0 && res) return res /= w_tot;
+  else return 0.0;
+}
+
+
+real spline_interpolation2(Image * a, real x1, real y1)
+{
+  int x,y;
+  real r;
+  real w;
+  real w_tot = 0.0;
+  real res = 0.0;
+  
+  int x_min = MAX((int)(x1+0.5)-2,0);
+  int x_max = MIN((int)(x1+0.5)+2,sp_image_x(a)-1);
+  int y_min = MAX((int)(y1+0.5)-2,0);
+  int y_max = MIN((int)(y1+0.5)+2,sp_image_y(a)-1);
+  for (y = y_min; y <= y_max; y++) {
+    for (x = x_min; x <= x_max; x++) {
+      r = sqrt(((real)x - x1)*((real)x - x1) + ((real)y - y1)*((real)y - y1));
+      if (r < 2.0) {
+        w = (r+1.5)*(r+1.5) - 3.0*(r+0.5)*(r+0.5);
+        if (r > 0.5) w += 3.0*(r-0.5)*(r-0.5);
+        if (r > 1.5) w -= (r-1.5)*(r-1.5);
+        res += sp_cabs(sp_image_get(a,x,y,0))*w;
+        w_tot += w;
+      }
+    }
+  }
+  if (w_tot != 0.0 && res) return res /= w_tot;
+  else return 0.0;
+}

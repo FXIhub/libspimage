@@ -92,7 +92,7 @@ SET(FFTW_LIBRARY ${FFTW3_LIBRARY} ${FFTW3F_LIBRARY} ${FFTW3F_THREADS_LIBRARY} ${
 INCLUDE_DIRECTORIES(${FFTW_INCLUDE_DIR} ${PNG_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${HDF5_INCLUDE_DIR})
 
 
-LIST(APPEND OBJECTS  "image_util.c" "fft.c" "linear_alg.c" "mem_util.c" "image_sphere.c" "sperror.c" "gaussianinv.c" "image_noise.c" "hashtable.c")
+LIST(APPEND OBJECTS  "image_util.c" "fft.c" "linear_alg.c" "mem_util.c" "image_sphere.c" "sperror.c" "gaussianinv.c" "image_noise.c" "hashtable.c" "interpolation_kernels.c" "time_util.c")
 
 
 
@@ -109,7 +109,7 @@ INSTALL(TARGETS spimage
   RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
   LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib${LIBRARY_SUFFIX}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib${LIBRARY_SUFFIX})
-INSTALL(FILES spimage/statistics.h spimage/image_noise.h spimage/fft.h spimage/image_util.h spimage/image.h spimage/linear_alg.h spimage/mem_util.h spimage/image_sphere.h spimage/sperror.h spimage/hashtable.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/spimage)
+INSTALL(FILES spimage/statistics.h spimage/image_noise.h spimage/fft.h spimage/image_util.h spimage/image.h spimage/linear_alg.h spimage/mem_util.h spimage/image_sphere.h spimage/sperror.h spimage/hashtable.h spimage/interpolation_kernels.h spimage/time_util.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/spimage)
 INSTALL(FILES spimage.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/)
 
 LIST(APPEND TESTS_LIBRARIES  ${TIFF_LIBRARY} ${FFTW_LIBRARY} ${PNG_LIBRARY} ${HDF5_LIBRARY} ${MATH_LIBRARY} ${C_LIBRARY} ${Z_LIBRARY} ${JPEG_LIBRARY})

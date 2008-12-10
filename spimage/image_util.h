@@ -17,9 +17,10 @@ extern "C"
 #define COLOR_HOT 4
 #define COLOR_RAINBOW 8
 #define COLOR_JET 16
-#define COLOR_WHEEL 128
 #define LOG_SCALE 32
 #define COLOR_PHASE 64
+#define COLOR_WHEEL 128
+#define COLOR_WEIGHTED_PHASE 256
 
 #define OUT_OF_PLACE 0
 #define IN_PLACE 1

@@ -47,7 +47,8 @@ static void hsv_to_rgb(float H,float S,float V,float * R,float *G,float *B);
 
 
 static void hsv_to_rgb(float H,float S,float V,float * R,float *G,float *B){
-  if( V == 0 ){ *R = 0; *G = 0; *B = 0; 
+  if( V == 0 ){ *R 
+= 0; *G = 0; *B = 0; 
   }else if( S == 0 ) {                                                                   
     *R = V;                                                            
     *G = V;                                                            
@@ -2692,9 +2693,16 @@ int write_png(Image * img,const char * filename, int color){
       }
       if(color & COLOR_PHASE){
 	phase = (256*(sp_carg(img->image->data[i])+3.1416)/(2*3.1416));
-	row_pointers[y][x*3] =  sqrt(value)*color_table[0][(int)phase];
-	row_pointers[y][x*3+1] = sqrt(value)*color_table[1][(int)phase];
-	row_pointers[y][x*3+2] = sqrt(value)*color_table[2][(int)phase];
+	row_pointers[y][x*3] =  (value)*color_table[0][(int)phase];
+	row_pointers[y][x*3+1] = (value)*color_table[1][(int)phase];
+	row_pointers[y][x*3+2] = (value)*color_table[2][(int)phase];
+      }else if(color & COLOR_WEIGHTED_PHASE){
+	phase = (256*(sp_carg(img->image->data[i])+3.1416)/(2*3.1416));
+	float rgb[3];
+	hsv_to_rgb(360.0*phase/256.0,1.0,value,&rgb[0],&rgb[1],&rgb[2]);
+	row_pointers[y][x*3] = rgb[0];
+	row_pointers[y][x*3+1] = rgb[1];
+	row_pointers[y][x*3+2] = rgb[2];
       }else{
 	value *= 255;
 	row_pointers[y][x*3] =  color_table[0][(int)value];
@@ -3402,7 +3410,8 @@ Image * bilinear_rescale(Image * img, int new_x, int new_y, int new_z){
       for(z = 0; z<sp_image_z(res); z++){
 	virtual_z = (real)z*(sp_image_z(img)-1)/sp_image_z(res);
 	sp_image_set(res,x,y,z,sp_c3matrix_interp(img->image,virtual_x,virtual_y,virtual_z));
-	sp_i3matrix_set(res->mask,x,y,z,sp_i3matrix_interp(img->mask,virtual_x,virtual_y,virtual_z));
+	//	sp_i3matrix_set(res->mask,x,y,z,round(sp_i3matrix_interp(img->mask,virtual_x,virtual_y,virtual_z)));
+	sp_i3matrix_set(res->mask,x,y,z,round(sp_i3matrix_nearest_neighbour_interp(img->mask,virtual_x,virtual_y,virtual_z)));
       }
     }
   }
@@ -3836,7 +3845,11 @@ Image * sp_proj_module(Image * a, Image * b){
   int i;
   for(i = 0;i<sp_image_size(a);i++){
     if(b->mask->data[i]){
-      ret->image->data[i] = sp_cscale(ret->image->data[i],sp_cabs(b->image->data[i])/sp_cabs(a->image->data[i]));
+      if(sp_cabs(a->image->data[i])){
+	  ret->image->data[i] = sp_cscale(ret->image->data[i],sp_cabs(b->image->data[i])/sp_cabs(a->image->data[i]));
+      }else{
+	ret->image->data[i] = b->image->data[i];
+      }
     }else{
       ret->image->data[i] = a->image->data[i];
     }

@@ -9,7 +9,6 @@
 
 #include "mem_util.h"
 
-
 #ifdef __cplusplus
 extern "C"
 {
@@ -35,6 +34,8 @@ typedef struct {
 #define REAL_MAX FLT_MAX
 #define REAL_EPSILON FLT_EPSILON
 #endif
+
+#include "interpolation_kernels.h"
 
 
 typedef struct{
@@ -2067,6 +2068,11 @@ static inline real sp_i3matrix_interp(const sp_i3matrix * m, real fx, real fy, r
   return res;
 }
 
+
+static inline int sp_i3matrix_nearest_neighbour_interp(const sp_i3matrix * m, real fx, real fy, real fz){
+  return sp_i3matrix_get(m,round(fx),round(fy),round(fz));
+}
+
 /*! Resizes complex matrix m to the desired size. 
  *
  *  The content of the matrix will be destroyed.
@@ -2177,6 +2183,7 @@ spimage_EXPORT sp_vector * sp_c3matrix_center_of_mass(sp_c3matrix * a);
 
 
 
+spimage_EXPORT real sp_c3matrix_kernel_interpolation(sp_c3matrix * a, real x1, real y1, real z1,sp_kernel * k);
 
 #ifdef __cplusplus
 }  /* extern "C" */
