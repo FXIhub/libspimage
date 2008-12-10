@@ -733,6 +733,8 @@ spimage_EXPORT int sp_image_get_coords_from_index(Image * in,int index,real * x,
 
    */
   spimage_EXPORT Image * sp_image_rotate(Image * in, SpAxis axis, SpAngle angleDef, int in_place);
+
+
 #ifdef __cplusplus
 }  /* extern "C" */
 #endif /* __cplusplus */

@@ -1529,7 +1529,7 @@ void test_sp_create_spline2_kernel_table(CuTest * tc){
   }
   CuAssertTrue(tc,max_error < tol*1.1);
 #ifndef NDEBUG
-  printf("Spline2 R2 Table Max Error = %f at r = %f for tolerance = %f\n",max_error,max_error_r,tol);
+  printf("Spline2 R2 Table Max Error = %g at r = %f for tolerance = %g\n",max_error,max_error_r,tol);
 #endif
 
   /* Do a control run */
@@ -1538,6 +1538,8 @@ void test_sp_create_spline2_kernel_table(CuTest * tc){
   int i = 0;
   /* I need double precision or the small step is gonna be washed in the numerical error */
   for(double r2 = 0;r2<4;r2+=step){
+    real sample = 1;
+    sample = i;
     i++;
   }
   long long int control_dt = sp_timer_stop(t);
@@ -1548,28 +1550,77 @@ void test_sp_create_spline2_kernel_table(CuTest * tc){
   /* I need double precision or the small step is gonna be washed in the numerical error */
   for(double r2 = 0;r2<4;r2+=step){
     real sample = sp_kernel_table_sample(k,r2);
+    sample = i;
     i++;
   }
   long long int dt = sp_timer_stop(t)-control_dt;
 #ifndef NDEBUG
-  printf("Spline R2 %d steps in %lld micro seconds %f steps/us\n",i,dt,(real)i/dt);
+  printf("Spline R2 %d steps in %lld micro seconds %g steps/us\n",i,dt,(real)i/dt);
 #endif
 }
 
-void test_sp_c3matrix_kernel_interpolation(CuTest * tc){
-  sp_c3matrix * m = sp_c3matrix_alloc(4,4,1);
-  sp_kernel * k = sp_create_spline2_kernel_table(3*2.5*2.5,1e-4);
-  for(int i = 0;i<sp_c3matrix_size(m);i++){
-    m->data[i] = sp_cinit(1,0);
-  }
-  real f = sp_c3matrix_kernel_interpolation(m,1.5,1.5,1.5,k);
+
+real spline_interpolation2(Image * a, real x1, real y1,real z1)
+{
+  int x,y,z;
+  real r;
+  real w;
+  real w_tot = 0.0;
+  real res = 0.0;
   
+  int x_min = MAX((int)(x1+0.5)-2,0);
+  int x_max = MIN((int)(x1+0.5)+2,sp_image_x(a)-1);
+  int y_min = MAX((int)(y1+0.5)-2,0);
+  int y_max = MIN((int)(y1+0.5)+2,sp_image_y(a)-1);
+  int z_min = MAX((int)(z1+0.5)-2,0);
+  int z_max = MIN((int)(z1+0.5)+2,sp_image_z(a)-1);
+  for (z = z_min; z <= z_max; z++) {
+    for (y = y_min; y <= y_max; y++) {
+      for (x = x_min; x <= x_max; x++) {
+	r = sqrt(((real)x - x1)*((real)x - x1) + ((real)y - y1)*((real)y - y1)+((real)z - z1)*((real)z - z1));
+	if (r < 2.0) {
+	  w = (r+1.5)*(r+1.5) - 3.0*(r+0.5)*(r+0.5);
+	  if (r > 0.5) w += 3.0*(r-0.5)*(r-0.5);
+	  if (r > 1.5) w -= (r-1.5)*(r-1.5);
+	  res += sp_cabs(sp_image_get(a,x,y,z))*w;
+	  w_tot += w;
+	}
+      }
+    }
+  }
+  if (w_tot != 0.0 && res) return res /= w_tot;
+  else return 0.0;
+}
+
+void test_sp_c3matrix_kernel_interpolation(CuTest * tc){
+  real tolerance = 1e-5;
+  Image * a = sp_image_alloc(4,4,4);
+  sp_c3matrix * m = a->image;
+  int ntests = 1000;
+  double max_error = 0;
+  sp_kernel * k = sp_create_spline2_kernel_table(3*2.5*2.5,tolerance);
+  for(int i = 0;i<sp_c3matrix_size(m);i++){
+    m->data[i] = sp_cinit(p_drand48()-0.5,p_drand48()-0.5);
+  }
+  for(int i = 0;i<ntests;i++){
+    real x1 = p_drand48()*3;
+    real y1 = p_drand48()*3;
+    real z1 = p_drand48()*3;
+    real f = sp_c3matrix_kernel_interpolation(m,x1,y1,z1,k);
+    real f2 = spline_interpolation2(a,x1,y1,z1);
+    if(fabs(f-f2) > max_error){
+      max_error = fabs(f-f2);
+    }
+    CuAssertDblEquals(tc,f,f2,tolerance*(f+f2)/2.0);
+  }
+#ifndef NDEBUG
+  printf("Max error between spline interpolation and c3matrix_kernel_interpolation with a spline kernel = %g using a tolerance = %g\n",max_error,tolerance);
+#endif
 }
 
 CuSuite* linear_alg_get_suite(void)
 {
   CuSuite* suite = CuSuiteNew();
-  
 
   SUITE_ADD_TEST(suite, test_sp_min);
   SUITE_ADD_TEST(suite, test_sp_max);

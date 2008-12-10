@@ -29,8 +29,6 @@ sp_kernel * sp_create_spline2_kernel_table_by_size(real max_r2,int size){
 
 
 sp_kernel * sp_create_spline2_kernel_table(real max_r2,real tolerance){
-  sp_kernel * ret = NULL;
-  real max_error = tolerance+1;
   /* According to Mathematica and after much thinking I think the error
    on the approximation is given by:
    -((3 (1/2 - Sqrt[1/4 + step] + step (5/2 + Sqrt[1/4 + step] - 2 Sqrt[step + 2 (1/4 + 1/2 Sqrt[1/4 + step])])))/(4 step))

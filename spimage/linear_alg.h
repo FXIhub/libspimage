@@ -2184,6 +2184,7 @@ spimage_EXPORT sp_vector * sp_c3matrix_center_of_mass(sp_c3matrix * a);
 
 
 spimage_EXPORT real sp_c3matrix_kernel_interpolation(sp_c3matrix * a, real x1, real y1, real z1,sp_kernel * k);
+ 
 
 #ifdef __cplusplus
 }  /* extern "C" */
