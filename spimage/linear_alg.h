@@ -110,6 +110,19 @@ static inline real sp_max(real a,real b){
 /* You have to be careful when using this macro because it can cause unintended side effects! */
 #define sp_cincr(a,b){sp_real(a) += sp_real(b); sp_imag(a) += sp_imag(b);}
 
+
+/*! This enum defines an axis used for example for rotations */
+typedef enum{sp_XAxis,sp_YAxis,sp_ZAxis}SpAxis;
+  
+  /*! Defines fixed rotation angles for rectangular images 
+      All rotations are anti clockwise, when the viewer is facing the rotation axis
+    
+      <'       <--------
+
+    Viewer    Rotation Axis
+  */
+  typedef enum{sp_0Degrees = 0,sp_90Degrees,sp_180Degrees,sp_270Degrees}SpAngle;
+
 static inline Complex sp_cinit(real a, real b){
   Complex ret = {a,b};
   return ret;
@@ -189,43 +202,49 @@ spimage_EXPORT int sp_complex_ascend_compare(const void * pa,const void * pb);
 /*! This function allocates memory for a 3matrix of size nrows rows by ncols columns and initializes all the elements of the matrix to zero.
  *
  */
-spimage_EXPORT sp_3matrix * _sp_3matrix_alloc(unsigned int nx, unsigned int ny, unsigned int nz,char * file, int line);
+spimage_EXPORT sp_3matrix * _sp_3matrix_alloc(unsigned int nx, unsigned int ny, unsigned int nz,const char * file, int line);
 #define sp_3matrix_alloc(nx,ny,nz) _sp_3matrix_alloc(nx,ny,nz,__FILE__,__LINE__)
 
 /*! This function allocates memory for a i3matrix of size nrows rows by ncols columns and initializes all the elements of the matrix to zero.
  *
  */
-spimage_EXPORT sp_i3matrix * _sp_i3matrix_alloc(unsigned int nx, unsigned int ny, unsigned int nz,char * file,int line);
+spimage_EXPORT sp_i3matrix * _sp_i3matrix_alloc(unsigned int nx, unsigned int ny, unsigned int nz,const char * file,int line);
 #define sp_i3matrix_alloc(nx,ny,nz) _sp_i3matrix_alloc(nx,ny,nz,__FILE__,__LINE__)
 
 /*! This function allocates memory for a Complex 3matrix of size nrows rows by ncols columns and initializes all the elements of the matrix to zero.
  *
  */
-spimage_EXPORT sp_c3matrix * _sp_c3matrix_alloc(unsigned int nx, unsigned int ny, unsigned int nz, char * file, int line);
+spimage_EXPORT sp_c3matrix * _sp_c3matrix_alloc(unsigned int nx, unsigned int ny, unsigned int nz, const char * file, int line);
 #define sp_c3matrix_alloc(nx,ny,nz) _sp_c3matrix_alloc(nx,ny,nz,__FILE__,__LINE__)
 
 /*! This function creates a duplicate of it's argument and returns a pointer to it
  *
  */
-spimage_EXPORT sp_c3matrix * _sp_c3matrix_duplicate(sp_c3matrix * m, char * file, int line);
+spimage_EXPORT sp_c3matrix * _sp_c3matrix_duplicate(sp_c3matrix * m, const char * file, int line);
 #define sp_c3matrix_duplicate(m) _sp_c3matrix_duplicate(m,__FILE__,__LINE__)
+
+/*! This function creates a duplicate of it's argument and returns a pointer to it
+ *
+ */
+spimage_EXPORT sp_matrix * _sp_matrix_duplicate(sp_matrix * m, const char * file, int line);
+#define sp_matrix_duplicate(m) _sp_matrix_duplicate(m,__FILE__,__LINE__)
 
 /*! This function frees a previously allocated matrix m
  *
  */
-spimage_EXPORT void _sp_3matrix_free(sp_3matrix * m, char * file, int line);
+spimage_EXPORT void _sp_3matrix_free(sp_3matrix * m, const char * file, int line);
 #define sp_3matrix_free(m) _sp_3matrix_free(m,__FILE__,__LINE__)
 
 /*! This function frees a previously allocated matrix m
  *
  */
-spimage_EXPORT void _sp_i3matrix_free(sp_i3matrix * m, char * file, int line);
+spimage_EXPORT void _sp_i3matrix_free(sp_i3matrix * m, const char * file, int line);
 #define sp_i3matrix_free(m) _sp_i3matrix_free(m,__FILE__,__LINE__)
 
 /*! This function frees a previously allocated Complex matrix m
  *
  */
-spimage_EXPORT void _sp_c3matrix_free(sp_c3matrix * m, char * file, int line);
+spimage_EXPORT void _sp_c3matrix_free(sp_c3matrix * m, const char * file, int line);
 #define sp_c3matrix_free(m) _sp_c3matrix_free(m,__FILE__,__LINE__)
 
 
@@ -233,43 +252,43 @@ spimage_EXPORT void _sp_c3matrix_free(sp_c3matrix * m, char * file, int line);
 /*! This function allocates memory for a matrix of size nrows rows by ncols columns and initializes all the elements of the matrix to zero.
  *
  */
-spimage_EXPORT sp_matrix * _sp_matrix_alloc(unsigned int nrows, unsigned int ncols, char * file, int line);
+spimage_EXPORT sp_matrix * _sp_matrix_alloc(unsigned int nrows, unsigned int ncols, const char * file, int line);
 #define sp_matrix_alloc(nrows,ncols) _sp_matrix_alloc(nrows,ncols,__FILE__,__LINE__)
 
 /*! This function allocates memory for a Complex matrix of size nrows rows by ncols columns and initializes all the elements of the matrix to zero.
  *
  */
-spimage_EXPORT sp_cmatrix * _sp_cmatrix_alloc(unsigned int nrows, unsigned int ncols, char * file, int line);
+spimage_EXPORT sp_cmatrix * _sp_cmatrix_alloc(unsigned int nrows, unsigned int ncols, const char * file, int line);
 #define sp_cmatrix_alloc(nrows,ncols) _sp_cmatrix_alloc(nrows,ncols,__FILE__,__LINE__)
 
 /*! This function creates a duplicate of it's argument and returns a pointer to it
  *
  */
-spimage_EXPORT sp_cmatrix * _sp_cmatrix_duplicate(sp_cmatrix * m, char * file, int line);
+spimage_EXPORT sp_cmatrix * _sp_cmatrix_duplicate(sp_cmatrix * m, const char * file, int line);
 #define sp_cmatrix_duplicate(m) _sp_cmatrix_duplicate(m,__FILE__,__LINE__)
 
 /*! This function allocates memory for an Integer matrix of size nrows rows by ncols columns and initializes all the elements of the matrix to zero.
  *
  */
-spimage_EXPORT sp_imatrix * _sp_imatrix_alloc(unsigned int nrows, unsigned int ncols, char * file, int line);
+spimage_EXPORT sp_imatrix * _sp_imatrix_alloc(unsigned int nrows, unsigned int ncols, const char * file, int line);
 #define sp_imatrix_alloc(nrows,ncols) _sp_imatrix_alloc(nrows,ncols,__FILE__,__LINE__)
 
 /*! This function frees a previously allocated matrix m
  *
  */
-spimage_EXPORT void _sp_matrix_free(sp_matrix * m, char * file, int line);
+spimage_EXPORT void _sp_matrix_free(sp_matrix * m, const char * file, int line);
 #define sp_matrix_free(m) _sp_matrix_free(m,__FILE__,__LINE__)
 
 /*! This function frees a previously allocated Complex matrix m
  *
  */
-spimage_EXPORT void _sp_cmatrix_free(sp_cmatrix * m, char * file, int line);
+spimage_EXPORT void _sp_cmatrix_free(sp_cmatrix * m, const char * file, int line);
 #define sp_cmatrix_free(m) _sp_cmatrix_free(m,__FILE__,__LINE__)
 
 /*! This function frees a previously allocated Complex matrix m
  *
  */
-spimage_EXPORT void _sp_imatrix_free(sp_imatrix * m, char * file, int line);
+spimage_EXPORT void _sp_imatrix_free(sp_imatrix * m, const char * file, int line);
 #define sp_imatrix_free(m) _sp_imatrix_free(m,__FILE__,__LINE__)
 
 
@@ -279,7 +298,7 @@ spimage_EXPORT void _sp_imatrix_free(sp_imatrix * m, char * file, int line);
  * to a newly initialized vector struct. All vector elements are set
  * to 0.
  */
-spimage_EXPORT sp_vector * _sp_vector_alloc(const int size, char * file, int line);
+spimage_EXPORT sp_vector * _sp_vector_alloc(const int size, const char * file, int line);
 #define sp_vector_alloc(size) _sp_vector_alloc(size,__FILE__,__LINE__)
 
 /*! Creates an empty zero initialized Complex vector of the desired size.
@@ -288,19 +307,19 @@ spimage_EXPORT sp_vector * _sp_vector_alloc(const int size, char * file, int lin
  * to a newly initialized vector struct. All vector elements are set
  * to 0.
  */
-spimage_EXPORT sp_cvector * _sp_cvector_alloc(const int size, char * file, int line);
+spimage_EXPORT sp_cvector * _sp_cvector_alloc(const int size, const char * file, int line);
 #define sp_cvector_alloc(size) _sp_cvector_alloc(size,__FILE__,__LINE__)
  
 /*! Frees a previously allocated vector.
  *
  */
-spimage_EXPORT void _sp_vector_free(sp_vector * v, char * file, int line);
+spimage_EXPORT void _sp_vector_free(sp_vector * v, const char * file, int line);
 #define sp_vector_free(v) _sp_vector_free(v,__FILE__,__LINE__)
 
 /*! Frees a previously allocated Complex vector.
  *
  */
-spimage_EXPORT void _sp_cvector_free(sp_cvector * v, char * file, int line);
+spimage_EXPORT void _sp_cvector_free(sp_cvector * v, const char * file, int line);
 #define sp_cvector_free(v) _sp_cvector_free(v,__FILE__,__LINE__)
 
 /*! This function returns the size of the vector v
@@ -2182,9 +2201,16 @@ static inline Complex sp_c3matrix_froenius_prod(const sp_c3matrix * a, const sp_
 spimage_EXPORT sp_vector * sp_c3matrix_center_of_mass(sp_c3matrix * a);
 
 
-
 spimage_EXPORT real sp_c3matrix_kernel_interpolation(sp_c3matrix * a, real x1, real y1, real z1,sp_kernel * k);
  
+
+/* Rotates a c3matrix by a multiple of 90 degrees counter clockwise
+*/
+spimage_EXPORT sp_c3matrix * sp_c3matrix_rotate(sp_c3matrix * in, SpAxis axis, SpAngle angleDef, int in_place);
+
+/* Rotates a matrix by a multiple of 90 degrees counter clockwise
+*/
+spimage_EXPORT sp_matrix * sp_matrix_rotate(sp_matrix * in, SpAngle angleDef, int in_place);
 
 #ifdef __cplusplus
 }  /* extern "C" */

@@ -35,7 +35,7 @@ static Image * reflect_x(Image * in, int in_place);
 static Image * reflect_y(Image * in, int in_place);
 static Image * reflect_origo(Image * in, int in_place);
 static void write_h5_img(Image * img,const char * filename, int output_precision);
-static Image * _read_imagefile(const char * filename, char * file, int line);
+static Image * _read_imagefile(const char * filename,const char * file, int line);
 static Image * read_tiff(const char * filename);
 static  void write_tiff(Image * img,const char * filename);
 static  void write_csv(Image * img,const char * filename);
@@ -1074,7 +1074,7 @@ void sp_image_high_pass(Image * in, real radius, int type){
   }
 }
 
-void _sp_image_free(Image * in, char * file, int line){
+void _sp_image_free(Image * in, const char * file, int line){
   _sp_c3matrix_free(in->image,file,line);
   _sp_i3matrix_free(in->mask,file,line);
 #ifdef _DEBUG_MEM
@@ -1087,7 +1087,7 @@ void _sp_image_free(Image * in, char * file, int line){
 
 }
 
-Image * _sp_image_duplicate(Image * in, int flags,char * file, int line){
+Image * _sp_image_duplicate(Image * in, int flags,const char * file, int line){
   Image  *res = sp_malloc(sizeof(Image));
   if(!res){
     sp_error_fatal("Out of memory!");
@@ -1120,7 +1120,7 @@ Image * _sp_image_duplicate(Image * in, int flags,char * file, int line){
 }
 
 
-Image * _sp_image_alloc(int x, int y, int z,char * file, int line){
+Image * _sp_image_alloc(int x, int y, int z,const char * file, int line){
   Image  *res = sp_malloc(sizeof(Image));
   if(!res){
     perror("Out of memory!\n");
@@ -1151,7 +1151,7 @@ Image * _sp_image_alloc(int x, int y, int z,char * file, int line){
 
 
 
-void sp_image_write(Image * img, const char * filename, int flags){
+void sp_image_write(Image * img, const const char * filename, int flags){
   char buffer[1024];
   strcpy(buffer,filename);
   for(int i = 0;i<strlen(buffer);i++){
@@ -1177,7 +1177,7 @@ void sp_image_write(Image * img, const char * filename, int flags){
   }
 }
 
-Image * _sp_image_read(const char * filename, int flags, char * file, int line){
+Image * _sp_image_read(const char * filename, int flags, const char * file, int line){
   char buffer[1024];
   strcpy(buffer,filename);
   for(int i = 0;i<strlen(buffer);i++){
@@ -1507,7 +1507,7 @@ static void write_h5_img(Image * img,const char * filename, int output_precision
 }
 
 
-Image * _read_imagefile(const char * filename, char * file, int line){
+Image * _read_imagefile(const char * filename,const char * file, int line){
   Image * res = sp_malloc(sizeof(Image));
   int file_id,dataset_id,space;
   int status,i;

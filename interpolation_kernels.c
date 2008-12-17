@@ -69,7 +69,8 @@ real sp_kernel_table_sample(sp_kernel * k, real r2){
   /* linear interpolation */
   real pos = k->size*r2/k->boundary;
   real u = pos-(int)pos;
-  return (1-u)*k->table[(int)(k->size*r2/k->boundary)]+(u)*k->table[(int)(k->size*r2/k->boundary)+1];
+  real ret = (1-u)*k->table[(int)(pos)]+(u)*k->table[(int)(pos)+1];
+  return ret;
 }
 
 void sp_kernel_free(sp_kernel * k){

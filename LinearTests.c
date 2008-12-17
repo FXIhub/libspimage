@@ -1527,10 +1527,10 @@ void test_sp_create_spline2_kernel_table(CuTest * tc){
       max_error_r = r;
     }    
   }
-  CuAssertTrue(tc,max_error < tol*1.1);
 #ifndef NDEBUG
   printf("Spline2 R2 Table Max Error = %g at r = %f for tolerance = %g\n",max_error,max_error_r,tol);
 #endif
+  CuAssertTrue(tc,max_error < tol*1.1);
 
   /* Do a control run */
   int t = sp_timer_start();
@@ -1616,6 +1616,57 @@ void test_sp_c3matrix_kernel_interpolation(CuTest * tc){
 #ifndef NDEBUG
   printf("Max error between spline interpolation and c3matrix_kernel_interpolation with a spline kernel = %g using a tolerance = %g\n",max_error,tolerance);
 #endif
+}
+
+
+void test_sp_c3matrix_rotate(CuTest * tc){
+  sp_c3matrix * a = sp_c3matrix_alloc(2,2,1);
+  sp_c3matrix_set(a,0,0,0,sp_cinit(1,0));
+  sp_c3matrix_set(a,1,0,0,sp_cinit(2,0));
+  sp_c3matrix_set(a,1,1,0,sp_cinit(3,0));
+  sp_c3matrix_set(a,0,1,0,sp_cinit(4,0));
+  sp_c3matrix * b = sp_c3matrix_rotate(a,sp_ZAxis,sp_90Degrees,0);
+  CuAssertComplexEquals(tc,sp_c3matrix_get(b,0,0,0),sp_cinit(2,0),REAL_EPSILON);  
+  sp_c3matrix_free(b);
+  b = sp_c3matrix_rotate(a,sp_ZAxis,sp_180Degrees,0);
+  CuAssertComplexEquals(tc,sp_c3matrix_get(b,0,0,0),sp_cinit(3,0),REAL_EPSILON);  
+  sp_c3matrix_free(b);
+  b = sp_c3matrix_rotate(a,sp_ZAxis,sp_270Degrees,0);
+  CuAssertComplexEquals(tc,sp_c3matrix_get(b,0,0,0),sp_cinit(4,0),REAL_EPSILON);  
+  sp_c3matrix_free(b);
+  b = sp_c3matrix_rotate(a,sp_ZAxis,sp_90Degrees,0);
+  sp_c3matrix * c = sp_c3matrix_rotate(b,sp_ZAxis,sp_270Degrees,0);
+  for(int i =0;i<sp_c3matrix_size(a);i++){
+    CuAssertComplexEquals(tc,a->data[i],c->data[i],REAL_EPSILON);  
+  }
+  sp_c3matrix_free(a);
+  sp_c3matrix_free(b);
+  sp_c3matrix_free(c);
+}
+
+void test_sp_matrix_rotate(CuTest * tc){
+  sp_matrix * a = sp_matrix_alloc(2,2);
+  sp_matrix_set(a,0,0,1);
+  sp_matrix_set(a,1,0,2);
+  sp_matrix_set(a,1,1,3);
+  sp_matrix_set(a,0,1,4);
+  sp_matrix * b = sp_matrix_rotate(a,sp_90Degrees,0);
+  CuAssertDblEquals(tc,sp_matrix_get(b,0,0),2,REAL_EPSILON);  
+  sp_matrix_free(b);
+  b = sp_matrix_rotate(a,sp_180Degrees,0);
+  CuAssertDblEquals(tc,sp_matrix_get(b,0,0),3,REAL_EPSILON);  
+  sp_matrix_free(b);
+  b = sp_matrix_rotate(a,sp_270Degrees,0);
+  CuAssertDblEquals(tc,sp_matrix_get(b,0,0),4,REAL_EPSILON);  
+  sp_matrix_free(b);
+  b = sp_matrix_rotate(a,sp_90Degrees,0);
+  sp_matrix * c = sp_matrix_rotate(b,sp_270Degrees,0);
+  for(int i =0;i<sp_matrix_size(a);i++){
+    CuAssertDblEquals(tc,a->data[i],c->data[i],REAL_EPSILON);  
+  }
+  sp_matrix_free(a);
+  sp_matrix_free(b);
+  sp_matrix_free(c);
 }
 
 CuSuite* linear_alg_get_suite(void)
@@ -1714,6 +1765,9 @@ CuSuite* linear_alg_get_suite(void)
 
   SUITE_ADD_TEST(suite,test_sp_create_spline2_kernel_table);
   SUITE_ADD_TEST(suite,test_sp_c3matrix_kernel_interpolation);
+
+  SUITE_ADD_TEST(suite,test_sp_c3matrix_rotate);
+  SUITE_ADD_TEST(suite,test_sp_matrix_rotate);
 
   return suite;
 }

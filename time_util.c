@@ -86,3 +86,13 @@ long long int sp_timer_stop(int token){
   timers[i].active = 0;
   return ret;
 }
+
+
+/* Returns the number of microseconds since the corresponding sp_timer_start */
+long long int sp_timer_elapsed(int token){
+  int i = token;
+  struct timeval tv;
+  gettimeofday(&tv,NULL);
+  long long int ret = (tv.tv_sec-timers[i].tv.tv_sec)*1e6 + (tv.tv_usec-timers[i].tv.tv_usec);
+  return ret;
+}

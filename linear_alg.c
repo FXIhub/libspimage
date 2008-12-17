@@ -5,7 +5,7 @@
 #endif
 #include "spimage.h"
 
-sp_vector * _sp_vector_alloc(const int size,char * file, int line){
+sp_vector * _sp_vector_alloc(const int size,const char * file, int line){
   sp_vector * ret = _sp_malloc(sizeof(sp_vector),file,line);
   ret->size = size;
   ret->data = _sp_calloc(size,sizeof(real),file,line);
@@ -13,19 +13,19 @@ sp_vector * _sp_vector_alloc(const int size,char * file, int line){
 }
 
 
-sp_cvector * _sp_cvector_alloc(const int size,char * file, int line){
+sp_cvector * _sp_cvector_alloc(const int size,const char * file, int line){
   sp_cvector * ret = _sp_malloc(sizeof(sp_cvector),file,line);
   ret->size = size;
   ret->data = _sp_calloc(size,sizeof(Complex),file,line);
   return ret;
 }
 
-void _sp_vector_free(sp_vector * v,char * file,int line){
+void _sp_vector_free(sp_vector * v,const char * file,int line){
   _sp_free(v->data,file,line);
   _sp_free(v,file,line);
 }
 
-void _sp_cvector_free(sp_cvector * v,char * file, int line){
+void _sp_cvector_free(sp_cvector * v,const char * file, int line){
   _sp_free(v->data,file,line);
   _sp_free(v,file,line);
 }
@@ -33,7 +33,7 @@ void _sp_cvector_free(sp_cvector * v,char * file, int line){
 
 
 
-sp_matrix * _sp_matrix_alloc(unsigned int nrows, unsigned int ncols,char * file, int line){
+sp_matrix * _sp_matrix_alloc(unsigned int nrows, unsigned int ncols,const char * file, int line){
   sp_matrix * res = _sp_malloc(sizeof(sp_matrix),file,line);
   res->rows = nrows;
   res->cols = ncols;
@@ -41,7 +41,7 @@ sp_matrix * _sp_matrix_alloc(unsigned int nrows, unsigned int ncols,char * file,
   return res;
 }
 
-sp_imatrix * _sp_imatrix_alloc(unsigned int nrows, unsigned int ncols,char * file,int line){
+sp_imatrix * _sp_imatrix_alloc(unsigned int nrows, unsigned int ncols,const char * file,int line){
   sp_imatrix * res = _sp_malloc(sizeof(sp_imatrix),file,line);
   res->rows = nrows;
   res->cols = ncols;
@@ -50,7 +50,7 @@ sp_imatrix * _sp_imatrix_alloc(unsigned int nrows, unsigned int ncols,char * fil
 }
 
 
-sp_cmatrix * _sp_cmatrix_alloc(unsigned int nrows, unsigned int ncols,char * file,int line){
+sp_cmatrix * _sp_cmatrix_alloc(unsigned int nrows, unsigned int ncols,const char * file,int line){
   sp_cmatrix * res = _sp_malloc(sizeof(sp_cmatrix),file,line);
   res->rows = nrows;
   res->cols = ncols;
@@ -59,32 +59,32 @@ sp_cmatrix * _sp_cmatrix_alloc(unsigned int nrows, unsigned int ncols,char * fil
 }
 
 
-sp_cmatrix * _sp_cmatrix_duplicate(sp_cmatrix * m,char * file, int line){
+sp_cmatrix * _sp_cmatrix_duplicate(sp_cmatrix * m,const char * file, int line){
   sp_cmatrix * res = _sp_cmatrix_alloc(sp_cmatrix_rows(m),sp_cmatrix_cols(m),file,line);
   sp_cmatrix_memcpy(res,m);
   return res;
 }
 
-void _sp_matrix_free(sp_matrix * a,char * file, int line){
+void _sp_matrix_free(sp_matrix * a,const char * file, int line){
   _sp_free(a->data,file,line);
   _sp_free(a,file,line);
 }
 
 
-void _sp_imatrix_free(sp_imatrix * a,char * file, int line){
+void _sp_imatrix_free(sp_imatrix * a,const char * file, int line){
   _sp_free(a->data,file,line);
   _sp_free(a,file,line);
 }
 
 
-void _sp_cmatrix_free(sp_cmatrix * a,char * file, int line){
+void _sp_cmatrix_free(sp_cmatrix * a,const char * file, int line){
   _sp_free(a->data,file,line);
   _sp_free(a,file,line);
 }
 
 
 
-sp_3matrix * _sp_3matrix_alloc(unsigned int nx, unsigned int ny, unsigned int nz,char * file,int line){
+sp_3matrix * _sp_3matrix_alloc(unsigned int nx, unsigned int ny, unsigned int nz,const char * file,int line){
   sp_3matrix * res = _sp_malloc(sizeof(sp_3matrix),file,line);
   res->x = nx;
   res->y = ny;
@@ -93,7 +93,7 @@ sp_3matrix * _sp_3matrix_alloc(unsigned int nx, unsigned int ny, unsigned int nz
   return res;
 }
 
-sp_i3matrix * _sp_i3matrix_alloc(unsigned int nx, unsigned int ny, unsigned int nz,char * file, int line){
+sp_i3matrix * _sp_i3matrix_alloc(unsigned int nx, unsigned int ny, unsigned int nz,const char * file, int line){
   sp_i3matrix * res = _sp_malloc(sizeof(sp_i3matrix),file,line);
   res->x = nx;
   res->y = ny;
@@ -102,7 +102,7 @@ sp_i3matrix * _sp_i3matrix_alloc(unsigned int nx, unsigned int ny, unsigned int 
   return res;
 }
 
-sp_c3matrix * _sp_c3matrix_alloc(unsigned int nx, unsigned int ny, unsigned int nz,char * file, int line){
+sp_c3matrix * _sp_c3matrix_alloc(unsigned int nx, unsigned int ny, unsigned int nz,const char * file, int line){
   sp_c3matrix * res = _sp_malloc(sizeof(sp_c3matrix),file,line);
   res->x = nx;
   res->y = ny;
@@ -112,23 +112,30 @@ sp_c3matrix * _sp_c3matrix_alloc(unsigned int nx, unsigned int ny, unsigned int 
 }
 
 
-sp_c3matrix * _sp_c3matrix_duplicate(sp_c3matrix * m, char * file, int line){
+sp_c3matrix * _sp_c3matrix_duplicate(sp_c3matrix * m, const char * file, int line){
   sp_c3matrix * res = _sp_c3matrix_alloc(sp_c3matrix_x(m),sp_c3matrix_y(m),sp_c3matrix_z(m),file,line);
   sp_c3matrix_memcpy(res,m);
   return res;
 }
 
-void _sp_3matrix_free(sp_3matrix * a,char * file, int line){
+
+sp_matrix * _sp_matrix_duplicate(sp_matrix * m, const char * file, int line){
+  sp_matrix * res = _sp_matrix_alloc(sp_matrix_rows(m),sp_matrix_cols(m),file,line);
+  sp_matrix_memcpy(res,m);
+  return res;
+}
+
+void _sp_3matrix_free(sp_3matrix * a,const char * file, int line){
   _sp_free(a->data,file,line);
   _sp_free(a,file,line);
 }
 
-void _sp_i3matrix_free(sp_i3matrix * a,char * file, int line){
+void _sp_i3matrix_free(sp_i3matrix * a,const char * file, int line){
   _sp_free(a->data,file,line);
   _sp_free(a,file,line);
 }
 
-void _sp_c3matrix_free(sp_c3matrix * a,char * file, int line){
+void _sp_c3matrix_free(sp_c3matrix * a,const char * file, int line){
   _sp_free(a->data,file,line);
   _sp_free(a,file,line);
 }
@@ -417,3 +424,127 @@ real sp_c3matrix_kernel_interpolation(sp_c3matrix * a, real x1, real y1, real z1
 }
 
 
+sp_c3matrix * sp_c3matrix_rotate(sp_c3matrix * in, SpAxis axis, SpAngle angleDef, int in_place){
+  double angle = 0;
+  if(angleDef == sp_0Degrees){
+    return sp_c3matrix_duplicate(in);
+  }
+  sp_matrix * rot = sp_matrix_alloc(2,2);
+  if(angleDef == sp_90Degrees){
+    angle = M_PI/2;
+  }
+  if(angleDef == sp_180Degrees){
+    angle = M_PI;
+  }  
+  if(angleDef == sp_270Degrees){
+    angle = 3*M_PI/2;
+  }
+  if(in_place){
+    sp_error_fatal("In place rotation not implemented yet, sorry.");
+  }
+  if(sp_c3matrix_x(in) != sp_c3matrix_y(in)){
+    sp_error_fatal("Cannot rotate non square images, sorry.");
+  }
+  if(axis == sp_XAxis){
+    sp_error_fatal("X axis rotation not implement yet, sorry.");
+  }
+  if(axis == sp_YAxis){
+    sp_error_fatal("Y axis rotation not implement yet, sorry.");
+  }
+  sp_matrix_set(rot,0,0,cos(angle));
+  sp_matrix_set(rot,0,1,sin(angle));
+  sp_matrix_set(rot,1,0,-sin(angle));
+  sp_matrix_set(rot,1,1,cos(angle));
+  sp_c3matrix * out = sp_c3matrix_duplicate(in);
+  sp_matrix * newx = sp_matrix_alloc(sp_c3matrix_x(in),sp_c3matrix_y(in));
+  sp_matrix * newy = sp_matrix_alloc(sp_c3matrix_x(in),sp_c3matrix_y(in));
+  int min_x = 1e9;
+  int min_y = 1e9;
+  for(int x = 0;x < sp_c3matrix_x(in);x++){
+    for(int y = 0;y < sp_c3matrix_y(in);y++){
+      int new_x = round(x*sp_matrix_get(rot,0,0)+y*sp_matrix_get(rot,0,1));
+      int new_y = round(x*sp_matrix_get(rot,1,0)+y*sp_matrix_get(rot,1,1));
+      sp_matrix_set(newx,x,y,new_x);
+      sp_matrix_set(newy,x,y,new_y);
+      if(min_x > new_x){
+	min_x = new_x;
+      }
+      if(min_y > new_y){
+	min_y = new_y;
+      }
+    }
+  }
+  for(int i = 0;i<sp_matrix_size(newx);i++){
+    newx->data[i] -= min_x;
+    newy->data[i] -= min_y;
+  }
+  for(int x = 0;x < sp_c3matrix_x(in);x++){
+    for(int y = 0;y < sp_c3matrix_y(in);y++){
+      sp_c3matrix_set(out,sp_matrix_get(newx,x,y),sp_matrix_get(newy,x,y),0,sp_c3matrix_get(in,x,y,0));
+    }
+  }
+  sp_matrix_free(newx);
+  sp_matrix_free(newy);
+  sp_matrix_free(rot);
+  return out;
+}
+
+
+sp_matrix * sp_matrix_rotate(sp_matrix * in, SpAngle angleDef, int in_place){
+  double angle = 0;
+  if(angleDef == sp_0Degrees){
+    return sp_matrix_duplicate(in);
+  }
+  sp_matrix * rot = sp_matrix_alloc(2,2);
+  if(angleDef == sp_90Degrees){
+    angle = M_PI/2;
+  }
+  if(angleDef == sp_180Degrees){
+    angle = M_PI;
+  }  
+  if(angleDef == sp_270Degrees){
+    angle = 3*M_PI/2;
+  }
+  if(in_place){
+    sp_error_fatal("In place rotation not implemented yet, sorry.");
+  }
+  if(sp_matrix_rows(in) != sp_matrix_cols(in)){
+    sp_error_fatal("Cannot rotate non square images, sorry.");
+  }
+  sp_matrix_set(rot,0,0,cos(angle));
+  sp_matrix_set(rot,0,1,sin(angle));
+  sp_matrix_set(rot,1,0,-sin(angle));
+  sp_matrix_set(rot,1,1,cos(angle));
+  sp_matrix * out = sp_matrix_duplicate(in);
+  sp_matrix * newx = sp_matrix_alloc(sp_matrix_rows(in),sp_matrix_cols(in));
+  sp_matrix * newy = sp_matrix_alloc(sp_matrix_rows(in),sp_matrix_cols(in));
+  int min_x = 1e9;
+  int min_y = 1e9;
+  for(int x = 0;x < sp_matrix_rows(in);x++){
+    for(int y = 0;y < sp_matrix_cols(in);y++){
+      int new_x = round(x*sp_matrix_get(rot,0,0)+y*sp_matrix_get(rot,0,1));
+      int new_y = round(x*sp_matrix_get(rot,1,0)+y*sp_matrix_get(rot,1,1));
+      sp_matrix_set(newx,x,y,new_x);
+      sp_matrix_set(newy,x,y,new_y);
+      if(min_x > new_x){
+	min_x = new_x;
+      }
+      if(min_y > new_y){
+	min_y = new_y;
+      }
+    }
+  }
+  for(int i = 0;i<sp_matrix_size(newx);i++){
+    newx->data[i] -= min_x;
+    newy->data[i] -= min_y;
+  }
+  for(int x = 0;x < sp_matrix_rows(in);x++){
+    for(int y = 0;y < sp_matrix_cols(in);y++){
+      sp_matrix_set(out,sp_matrix_get(newx,x,y),sp_matrix_get(newy,x,y),sp_matrix_get(in,x,y));
+    }
+  }
+  sp_matrix_free(newx);
+  sp_matrix_free(newy);
+  sp_matrix_free(rot);
+  return out;
+}

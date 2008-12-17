@@ -21,13 +21,21 @@ spimage_EXPORT long long int sp_gettime();
 */
 spimage_EXPORT int sp_timer_start();
 
-/*! Returns the elapsed time since the beggining of the timer
+/*! Stop and releases the times. Returns the elapsed time since the beggining of the timer.
   
    The token argument is required to identify the timer.
    
    \sa sp_timer_start()
  */
 spimage_EXPORT long long int sp_timer_stop(int token);
+
+/*! Returns the elapsed time since the beggining of the timer.
+  
+   The token argument is required to identify the timer.
+   
+   \sa sp_timer_start()
+ */
+spimage_EXPORT long long int sp_timer_elapsed(int token);
 
 #ifdef __cplusplus
 }  /* extern "C" */

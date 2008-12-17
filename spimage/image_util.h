@@ -1,5 +1,5 @@
 #ifndef _IMAGE_UTIL_H_
-#define _IMAGE_UTIL_H_
+#define _IMAGE_UTIL_H_ 1
 
 #include "image.h"
 #include "linear_alg.h"
@@ -62,17 +62,6 @@ extern "C"
 
 #define SP_ENANTIOMORPH 1
 
-/*! This enum defines an axis used for example for rotations */
-typedef enum{sp_XAxis,sp_YAxis,sp_ZAxis}SpAxis;
-
-  /*! Defines fixed rotation angles for rectangular images 
-      All rotations are anti clockwise, when the viewer is facing the rotation axis
-    
-      <'       <--------
-
-    Viewer    Rotation Axis
-  */
-  typedef enum{sp_0Degrees = 0,sp_90Degrees,sp_180Degrees,sp_270Degrees}SpAngle;
 
 /*! TopLeftCorner means that the Origin considered will be the Top Left Back pixel, or the first in the array 
    ImageCenter means that the Origin considered will be the image center
@@ -159,7 +148,7 @@ spimage_EXPORT void sp_image_write(Image * img,const char * filename, int flags)
  * The flags value is currently ignored.
  *
  */
-spimage_EXPORT Image * _sp_image_read(const char * filename,int flags, char * file, int line );
+spimage_EXPORT Image * _sp_image_read(const char * filename,int flags, const char * file, int line );
 #define sp_image_read(filename,flags) _sp_image_read(filename,flags,__FILE__,__LINE__)
 
 /*! Write the mask of the image to a file in png format, using 
@@ -177,7 +166,7 @@ spimage_EXPORT int write_mask_to_png(Image * img, char * filename, int color);
 
 /*! Allocates an image of width x and height y
  */
-spimage_EXPORT Image * _sp_image_alloc(int x, int y, int z, char * file, int line);
+spimage_EXPORT Image * _sp_image_alloc(int x, int y, int z, const char * file, int line);
 #define sp_image_alloc(x,y,z) _sp_image_alloc(x,y,z,__FILE__,__LINE__)
 
 /*! Create a copy of Image in
@@ -187,12 +176,12 @@ spimage_EXPORT Image * _sp_image_alloc(int x, int y, int z, char * file, int lin
  * SP_COPY_DATA - memcpy the image data from in to the newly created image
  * SP_COPY_MASK - memcpy the mask from in to the newly created image
  */
-spimage_EXPORT Image * _sp_image_duplicate(Image * in,int flags, char * file, int line);
+spimage_EXPORT Image * _sp_image_duplicate(Image * in,int flags, const char * file, int line);
 #define sp_image_duplicate(in, flags) _sp_image_duplicate(in,flags,__FILE__,__LINE__)
 
 /*! Delete image Image in
  */
-spimage_EXPORT void _sp_image_free(Image * in, char * file, int line);
+spimage_EXPORT void _sp_image_free(Image * in, const char * file, int line);
 #define sp_image_free(in) _sp_image_free(in,__FILE__,__LINE__)
 
 /*! Copies the contents of src to dst.
