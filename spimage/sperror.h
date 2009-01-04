@@ -17,7 +17,7 @@ extern "C"
 
 #else
   spimage_EXPORT void sp_error_warning(char *format, ...);
-  spimage_EXPORT void sp_error_fatal(char *format, ...);
+  spimage_EXPORT void sp_error_fatal(char *format, ...); 
 #endif
 
 #ifdef __cplusplus

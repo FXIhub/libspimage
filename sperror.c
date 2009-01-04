@@ -8,7 +8,6 @@ const char      lib_name[] = "libspimage";
  * less than zero, terminate calling program.  Argument mode is intended
  * to describe error severity. */
 
-#if __STDC_VERSION__ >= 199901L
   /* Lets try our luck with variable argument macros */ 
 void sp_error_report(char * file, int line, int status, char *mode, char *format,va_list ap){
    fprintf(stderr, "%s: %s: ", lib_name, mode);
@@ -32,9 +31,8 @@ void _sp_error_fatal(char * file, int line, char *format, ...){
   sp_error_report(file, line,EXIT_FAILURE, "FATAL", format,ap);
   va_end(ap);
 }
-#else
 
- void sp_error_report(int status,  char *mode,  char *format,va_list ap){
+ void sp_error_report2(int status,  char *mode,  char *format,va_list ap){
    fprintf(stderr, "%s: %s: ", lib_name, mode);
    vfprintf(stderr, format, ap);
    fprintf(stderr, "\n");
@@ -46,15 +44,14 @@ void _sp_error_fatal(char * file, int line, char *format, ...){
 void sp_error_warning( char *format, ...){
   va_list ap;
   va_start(ap,format);
-  sp_error_report(-1, "warning", format,ap);
+  sp_error_report2(-1, "warning", format,ap);
   va_end(ap);
 }
 
 void sp_error_fatal( char *format, ...){
   va_list ap;
   va_start(ap,format);
-  sp_error_report(EXIT_FAILURE, "FATAL", format,ap);
+  sp_error_report2(EXIT_FAILURE, "FATAL", format,ap);
   va_end(ap);
 }
 
-#endif

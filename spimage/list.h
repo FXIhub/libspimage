@@ -14,8 +14,8 @@ typedef struct{
 }sp_list;
 
 static inline sp_list * sp_list_alloc(unsigned int init_size){
-  sp_list * ret = sp_malloc(sizeof(sp_list));
-  ret->data = sp_malloc(sizeof(real)*init_size);
+  sp_list * ret = (sp_list *)sp_malloc(sizeof(sp_list));
+  ret->data = (real *)sp_malloc(sizeof(real)*init_size);
   ret->used = 0;
   ret->size = init_size;
   return ret;
@@ -85,7 +85,7 @@ static inline void sp_list_grow(sp_list * l){
   }else{
     l->size *= 2.0;
   }
-  l->data = sp_realloc(l->data,sizeof(real)*l->size);
+  l->data = (real *)sp_realloc(l->data,sizeof(real)*l->size);
 }
 
 static inline void sp_list_append(sp_list * l, real value){
@@ -110,7 +110,7 @@ static inline sp_list * sp_list_duplicate(sp_list * l){
 
 static inline void sp_list_insert(sp_list * l, unsigned int n, real value){
 #ifndef NDEBUG
-  if(n >= l->used){
+  if(n > l->used){
     sp_error_fatal("Trying to insert in the list out of boundaries");
   }
 #endif

@@ -16,5 +16,7 @@
 #include "spimage/hashtable.h"
 #include "spimage/interpolation_kernels.h"
 #include "spimage/time_util.h"
+#include "spimage/list.h"
+#include "spimage/map.h"
 #endif
 
