@@ -32,6 +32,11 @@ static inline void sp_smap_free(sp_smap * m){
   sp_free(m);
 }
 
+static inline void sp_smap_clear(sp_smap * m){
+  sp_list_clear(m->keys);
+  sp_list_clear(m->values);
+}
+
 static inline sp_list * sp_smap_get_keys(sp_smap * m){
   return m->keys;
 }
@@ -42,7 +47,7 @@ static inline sp_list * sp_smap_get_values(sp_smap * m){
 
 static inline real sp_smap_get(sp_smap * m, real key,int * ok){
   *ok = 0;
-  int i;
+  unsigned int i;
   for(i = 0;i<sp_list_size(m->keys);i++){
     if(sp_list_get(m->keys,i) == key){
       *ok = 1;
@@ -54,7 +59,7 @@ static inline real sp_smap_get(sp_smap * m, real key,int * ok){
 
 static inline void sp_smap_insert(sp_smap * m, real key,real value){
   /* calculate insertion index */
-  int index;
+  unsigned int index;
   for(index = 0;index<sp_list_size(m->keys);index++){
     if(sp_list_get(m->keys,index) > key){
       break;

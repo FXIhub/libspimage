@@ -12,12 +12,14 @@ extern "C"
 #define  sp_error_warning(...) _sp_error_warning(__FILE__,__LINE__,__VA_ARGS__)
 #define  sp_error_fatal(...) _sp_error_fatal(__FILE__,__LINE__,__VA_ARGS__)
 
-  spimage_EXPORT void _sp_error_warning(char * file, int line, char *format, ...);
-  spimage_EXPORT void _sp_error_fatal(char * file, int line, char *format, ...);
+  spimage_EXPORT void _sp_error_warning(const char * file, int line,
+					const char *format, ...);
+  spimage_EXPORT void _sp_error_fatal(const char * file, int line,
+				      const char *format, ...);
 
 #else
-  spimage_EXPORT void sp_error_warning(char *format, ...);
-  spimage_EXPORT void sp_error_fatal(char *format, ...); 
+  spimage_EXPORT void sp_error_warning(const char *format, ...);
+  spimage_EXPORT void sp_error_fatal(const char *format, ...); 
 #endif
 
 #ifdef __cplusplus

@@ -2089,7 +2089,7 @@ static inline real sp_i3matrix_interp(const sp_i3matrix * m, real fx, real fy, r
 
 
 static inline int sp_i3matrix_nearest_neighbour_interp(const sp_i3matrix * m, real fx, real fy, real fz){
-  return sp_i3matrix_get(m,round(fx),round(fy),round(fz));
+  return sp_i3matrix_get(m,(int)(fx+0.5),(int)(fy+0.5),(int)(fz+0.5));
 }
 
 /*! Resizes complex matrix m to the desired size. 

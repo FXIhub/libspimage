@@ -9,8 +9,8 @@ extern "C"
 
 typedef struct{
   real * data;
-  int used;
-  int size;
+  unsigned int used;
+  unsigned int size;
 }sp_list;
 
 static inline sp_list * sp_list_alloc(unsigned int init_size){
@@ -98,6 +98,11 @@ static inline void sp_list_append(sp_list * l, real value){
 
 static inline unsigned int sp_list_size(sp_list * l){
   return l->used;
+}
+
+
+static inline void sp_list_clear(sp_list * l){
+  l->used = 0;
 }
 
 
