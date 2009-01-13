@@ -74,7 +74,9 @@ Image * sp_image_ifftw3(Image * img){
   /* Kinda buggy FM: I'm gonna assume the compiler doesn't make strange things to our structure and everything is binary compatible */
   in = (fftwr_complex *)img->image->data;
   out = (fftwr_complex *)res->image->data;
-  plan = fftwr_plan_dft_3d(sp_c3matrix_x(img->image),sp_c3matrix_y(img->image),sp_c3matrix_z(img->image),in,out, FFTW_BACKWARD,FFTW_ESTIMATE);
+
+  /* It is very important to have z,y,x as the plan order as FFTW is row-major! */
+  plan = fftwr_plan_dft_3d(sp_c3matrix_z(img->image),sp_c3matrix_y(img->image),sp_c3matrix_x(img->image),in,out, FFTW_BACKWARD,FFTW_ESTIMATE);
 
   fftwr_execute(plan);
   fftwr_destroy_plan(plan);
@@ -90,7 +92,7 @@ sp_c3matrix * sp_c3matrix_ifftw3(sp_c3matrix * m){
   res = sp_c3matrix_alloc(sp_c3matrix_x(m),sp_c3matrix_y(m),sp_c3matrix_z(m));
   in = (fftwr_complex *)m->data;
   out = (fftwr_complex *)res->data;
-  plan = fftwr_plan_dft_3d(sp_c3matrix_x(m),sp_c3matrix_y(m),sp_c3matrix_z(m),in,out, FFTW_BACKWARD,FFTW_ESTIMATE);
+  plan = fftwr_plan_dft_3d(sp_c3matrix_z(m),sp_c3matrix_y(m),sp_c3matrix_x(m),in,out, FFTW_BACKWARD,FFTW_ESTIMATE);
 
   fftwr_execute(plan);
   fftwr_destroy_plan(plan);
@@ -119,7 +121,8 @@ Image * sp_image_ifftw2(Image * img){
   /* We're gonna rely on the binary compatibility between fftwr_complex and Complex type */
   in = img->image->data;
   out = res->image->data;
-  plan = fftw3d_create_plan(sp_c3matrix_x(img->image),sp_c3matrix_y(img->image),sp_c3matrix_z(img->image), FFTW_BACKWARD,FFTW_ESTIMATE);
+  /* It is very important to have z,y,x as the plan order as FFTW is row-major! */
+  plan = fftw3d_create_plan(sp_c3matrix_z(img->image),sp_c3matrix_y(img->image),sp_c3matrix_x(img->image), FFTW_BACKWARD,FFTW_ESTIMATE);
 
   j = 0;
   fftwnd_one(plan,in,out);
@@ -142,7 +145,8 @@ Image * sp_image_fftw3(Image * img){
   /* Rely on binary compatibility of the Complex type */
   in = (fftwr_complex *)img->image->data;
   out = (fftwr_complex *)res->image->data;
-  plan = fftwr_plan_dft_3d(sp_c3matrix_x(img->image),sp_c3matrix_y(img->image),sp_c3matrix_z(img->image),in,out,FFTW_FORWARD,FFTW_ESTIMATE);
+  /* It is very important to have z,y,x as the plan order as FFTW is row-major! */
+  plan = fftwr_plan_dft_3d(sp_c3matrix_z(img->image),sp_c3matrix_y(img->image),sp_c3matrix_x(img->image),in,out,FFTW_FORWARD,FFTW_ESTIMATE);
 
   fftwr_execute(plan);
   fftwr_destroy_plan(plan);
@@ -267,7 +271,8 @@ sp_c3matrix * sp_c3matrix_fftw3(sp_c3matrix * m){
   /* Rely on binary compatibility of the Complex type */
   in = (fftwr_complex *)m->data;
   out = (fftwr_complex *)res->data;
-  plan = fftwr_plan_dft_3d(sp_c3matrix_x(m),sp_c3matrix_y(m),sp_c3matrix_z(m),in,out,FFTW_FORWARD,FFTW_ESTIMATE);
+  /* It is very important to have z,y,x as the plan order as FFTW is row-major! */
+  plan = fftwr_plan_dft_3d(sp_c3matrix_z(m),sp_c3matrix_y(m),sp_c3matrix_x(m),in,out,FFTW_FORWARD,FFTW_ESTIMATE);
 
   fftwr_execute(plan);
   fftwr_destroy_plan(plan);
@@ -290,7 +295,8 @@ sp_c3matrix * sp_c3matrix_fftw2(sp_c3matrix * m){
   /* Rely on binary compatibility of the Complex type */
   in = m->data;
   out = res->data;
-  plan = fftw3d_create_plan(sp_c3matrix_x(m),sp_c3matrix_y(m),sp_c3matrix_z(m),
+  /* It is very important to have z,y,x as the plan order as FFTW is row-major! */
+  plan = fftw3d_create_plan(sp_c3matrix_z(m),sp_c3matrix_y(m),sp_c3matrix_x(m),
 			    FFTW_FORWARD,FFTW_ESTIMATE);
   fftwnd_one(plan,in,out);
   fftwnd_destroy_plan(plan);
