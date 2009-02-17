@@ -2885,6 +2885,14 @@ unsigned char * sp_image_get_false_color(Image * img, int color, double min, dou
 	out[y*sp_image_x(img)*4+x*4+2] =  sqrt(value)*color_table[0][(int)phase];
 	out[y*sp_image_x(img)*4+x*4+1] = sqrt(value)*color_table[1][(int)phase];
 	out[y*sp_image_x(img)*4+x*4] = sqrt(value)*color_table[2][(int)phase];
+      }else if(color & COLOR_MASK){
+	value = img->mask->data[i];
+	if(value){
+	  value = 255;
+	}
+	out[y*sp_image_x(img)*4+x*4+2] = color_table[0][(int)value];
+	out[y*sp_image_x(img)*4+x*4+1] = color_table[1][(int)value];
+	out[y*sp_image_x(img)*4+x*4] = color_table[2][(int)value];
       }else{
 	value *= 255;
 	out[y*sp_image_x(img)*4+x*4+2] =  color_table[0][(int)value];

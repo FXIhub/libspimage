@@ -21,6 +21,7 @@ extern "C"
 #define COLOR_PHASE 64
 #define COLOR_WHEEL 128
 #define COLOR_WEIGHTED_PHASE 256
+#define COLOR_MASK 512
 
 #define OUT_OF_PLACE 0
 #define IN_PLACE 1
