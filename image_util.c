@@ -2751,40 +2751,9 @@ Image * read_png(const char * filename){
 
 
 
-int write_png(Image * img,const char * filename, int color){
-
-  if(img->num_dimensions != SP_2D){
-    fprintf(stderr,"Can only write png of 2D images in write_png!\n");
-    abort();
-  }
-
-  FILE *fp = fopen(filename, "wb");
-  
-  png_structp png_ptr; 
-  png_infop info_ptr;
-  int bit_depth = 8;
-  int color_type;
-  int interlace_type = PNG_INTERLACE_NONE;
-  int compression_type = PNG_COMPRESSION_TYPE_DEFAULT;
-  int filter_method = PNG_FILTER_TYPE_DEFAULT;
-  int png_transforms = PNG_TRANSFORM_IDENTITY/*|PNG_TRANSFORM_INVERT_MONO*/;
-  int pixel_size = 0;
-  int i,x,y;
-  real log_of_2;
-  real color_table[3][256];
-  real scale,offset,max_v,min_v,value;
-  real phase;
-  png_byte ** row_pointers;
-
-  /*fclose(fp);
-  return 0;*/
-  max_v = 0;
-  min_v = REAL_MAX;
-
-/* Fill color tables */
-
-  for(i = 0;i<256;i++){
-    value = i/255.0;
+static void create_color_table(real color_table[3][256],int color){
+  for(int i = 0;i<256;i++){
+    real value = i/255.0;
     if(color & COLOR_GRAYSCALE){       
       color_table[0][i] = value;
       color_table[1][i] = value;
@@ -2836,6 +2805,41 @@ int write_png(Image * img,const char * filename, int color){
       hsv_to_rgb(360*value,1.0,1.0,&color_table[0][i],&color_table[1][i],&color_table[2][i]);
     }
   }
+}
+
+int write_png(Image * img,const char * filename, int color){
+
+  if(img->num_dimensions != SP_2D){
+    fprintf(stderr,"Can only write png of 2D images in write_png!\n");
+    abort();
+  }
+
+  FILE *fp = fopen(filename, "wb");
+  
+  png_structp png_ptr; 
+  png_infop info_ptr;
+  int bit_depth = 8;
+  int color_type;
+  int interlace_type = PNG_INTERLACE_NONE;
+  int compression_type = PNG_COMPRESSION_TYPE_DEFAULT;
+  int filter_method = PNG_FILTER_TYPE_DEFAULT;
+  int png_transforms = PNG_TRANSFORM_IDENTITY/*|PNG_TRANSFORM_INVERT_MONO*/;
+  int pixel_size = 0;
+  int i,x,y;
+  real log_of_2;
+  real color_table[3][256];
+  real scale,offset,max_v,min_v,value;
+  real phase;
+  png_byte ** row_pointers;
+
+  /*fclose(fp);
+  return 0;*/
+  max_v = 0;
+  min_v = REAL_MAX;
+
+/* Fill color tables */
+  create_color_table(color_table,color);
+
   if (!fp){
     perror("Couldn't open file!\n");
     abort();
@@ -2962,55 +2966,8 @@ unsigned char * sp_image_get_false_color(Image * img, int color, double min, dou
   max_v = 0;
   min_v = REAL_MAX;
 
+  create_color_table(color_table,color);
 
-  for(i = 0;i<256;i++){
-    value = i/255.0;
-    if(color & COLOR_GRAYSCALE){       
-      color_table[0][i] = value;
-      color_table[1][i] = value;
-      color_table[2][i] = value;
-    }else if(color & COLOR_TRADITIONAL){       
-      color_table[0][i] = sqrt(value);
-      color_table[1][i] = value*value*value;
-      color_table[2][i] = sin(value*2*M_PI);
-    }else if(color & COLOR_HOT){
-      color_table[0][i] = 3*value;
-      color_table[1][i] = 3*value-1;
-      color_table[2][i] = 3*value-2;
-    }else if(color & COLOR_RAINBOW){
-      color_table[0][i] = fabs(2*value-0.5);
-      color_table[1][i] = sin(value*M_PI);
-     color_table[2][i] = cos(value*M_PI/2);
-    }else if(color & COLOR_JET){
-      if(value < 1/8.0){
-	color_table[0][i] = 0;
-	color_table[1][i] = 0;
-	color_table[2][i] = (value+1.0/8.0)*4;	   
-      }else if(value < 3/8.0){
-	color_table[0][i] = 0;
-	color_table[1][i] = (value-1.0/8.0)*4;
-	color_table[2][i] = 1;
-      }else if(value < 5/8.0){
-	color_table[0][i] = (value-3.0/8.0)*4;
-	color_table[1][i] = 1;
-	color_table[2][i] = 1-(value-3.0/8.0)*4;
-      }else if(value < 7/8.0){
-	color_table[0][i] = 1;
-	color_table[1][i] = 1-(value-5.0/8.0)*4;
-	color_table[2][i] = 0;
-      }else if(value <= 1.01){
-	color_table[0][i] = 1-(value-7.0/8.0)*4;;
-	color_table[1][i] = 0;
-	color_table[2][i] = 0;
-      }
-    }
-    color_table[0][i] = MIN(1,color_table[0][i]);
-    color_table[1][i] = MIN(1,color_table[1][i]);
-    color_table[2][i] = MIN(1,color_table[2][i]);
-    color_table[0][i] *= 255;
-    color_table[1][i] *= 255;
-    color_table[2][i] *= 255;
-  }
   if(min == max){
     /* We're gonna scale the image so that it fits on the 8 bits */
     min_v = sp_c3matrix_min(img->image,NULL);
