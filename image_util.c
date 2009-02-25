@@ -8,6 +8,8 @@ typedef long off_t;
 #  define PNG_DEBUG 3
 #endif
 
+#define _XOPEN_SOURCE 500
+
 #include <stdlib.h>
 #include <math.h>
 #include <hdf5.h>
@@ -21,6 +23,8 @@ typedef long off_t;
 #endif
 
 #include "spimage.h"
+
+
 
 
 static Image * zero_pad_shifted_image(Image * a, int newx, int newy, int newz, int pad_mask);
@@ -1366,6 +1370,15 @@ static void write_h5_img(Image * img,const char * filename, int output_precision
   hid_t mem_type_id = 0;
   hid_t plist;
   hsize_t chunk_size[3] = {sp_c3matrix_x(img->image),sp_c3matrix_y(img->image),sp_c3matrix_z(img->image)};
+  char tmpfile[1024];
+  strcpy(tmpfile,filename);
+  strcat(tmpfile,"XXXXXX");
+  int fd = mkstemp(tmpfile);
+  if(fd == -1){
+    sp_error_warning("Unable create temporary filename");
+    return;
+  }
+  close(fd);
   if(output_precision == sizeof(double)){
     out_type_id = H5T_NATIVE_DOUBLE;
   }else if(output_precision == sizeof(float)){
@@ -1384,7 +1397,8 @@ static void write_h5_img(Image * img,const char * filename, int output_precision
   dims[0] = sp_c3matrix_x(img->image);
   dims[1] = sp_c3matrix_y(img->image);
   dims[2] = sp_c3matrix_z(img->image);
-  file_id = H5Fcreate(filename,  H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+  //  file_id = H5Fcreate(filename,  H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+  file_id = H5Fcreate(tmpfile,  H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
   dataspace_id = H5Screate_simple( 3, dims, NULL );
 
   plist = H5Pcreate (H5P_DATASET_CREATE);
@@ -1504,12 +1518,15 @@ static void write_h5_img(Image * img,const char * filename, int output_precision
 
 
   status = H5Fclose(file_id);
+  if(rename(tmpfile,filename)){
+    sp_error_warning("Unable to rename %s to %s",tmpfile,filename);
+  }
 }
 
 
 Image * _read_imagefile(const char * filename,const char * file, int line){
   Image * res = sp_malloc(sizeof(Image));
-  int file_id,dataset_id,space;
+  hid_t file_id,dataset_id,space;
   int status,i;
   int version;
   hsize_t dims[3];
@@ -1579,6 +1596,11 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
 
       status = H5Dclose(dataset_id);
       
+      if(status < 0){
+	sp_error_warning("Unable to close dataset from file %s",filename);
+	return NULL;
+      }
+
       dataset_id = H5Dopen(file_id, "/image_center");
       if(dataset_id < 0){
 	sp_error_warning("Unable to open dataset in file %s",filename);
@@ -1613,6 +1635,11 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
       }
 
       status = H5Dclose(dataset_id);
+      if(status < 0){
+	sp_error_warning("Unable to close dataset from file %s",filename);
+	return NULL;
+      }
+
       res->phased = values[0];
       
       dataset_id = H5Dopen(file_id, "/shifted");
@@ -1629,6 +1656,12 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
       }
 
       status = H5Dclose(dataset_id);
+
+      if(status < 0){
+	sp_error_warning("Unable to close dataset from file %s",filename);
+	return NULL;
+      }
+
       res->shifted = values[0];
       
       dataset_id = H5Dopen(file_id, "/scaled");
@@ -1645,6 +1678,11 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
       }
 
       status = H5Dclose(dataset_id);
+      if(status < 0){
+	sp_error_warning("Unable to close dataset from file %s",filename);
+	return NULL;
+      }
+
       res->scaled = values[0];
       
       dataset_id = H5Dopen(file_id, "/detector_distance");
@@ -1661,6 +1699,11 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
       }
 
       status = H5Dclose(dataset_id);
+      if(status < 0){
+	sp_error_warning("Unable to close dataset from file %s",filename);
+	return NULL;
+      }
+
       res->detector->detector_distance = values[0];
       
       dataset_id = H5Dopen(file_id, "/lambda");
@@ -1677,6 +1720,11 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
       }
 
       status = H5Dclose(dataset_id);
+      if(status < 0){
+	sp_error_warning("Unable to close dataset from file %s",filename);
+	return NULL;
+      }
+
       res->detector->lambda = values[0];
       
       dataset_id = H5Dopen(file_id, "/pixel_size");
@@ -1693,6 +1741,11 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
       }
 
       status = H5Dclose(dataset_id);
+      if(status < 0){
+	sp_error_warning("Unable to close dataset from file %s",filename);
+	return NULL;
+      }
+
       res->detector->pixel_size[0] = values[0];
       res->detector->pixel_size[1] = values[1];
       res->detector->pixel_size[2] = values[2];
@@ -1740,12 +1793,17 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
 
 	status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 			 H5P_DEFAULT, tmp->data);
-      if(status < 0){
-	sp_error_warning("Unable to read dataset from file %s",filename);
-	return NULL;
-      }
+	if(status < 0){
+	  sp_error_warning("Unable to read dataset from file %s",filename);
+	  return NULL;
+	}
 
 	status = H5Dclose(dataset_id);
+	if(status < 0){
+	  sp_error_warning("Unable to close dataset from file %s",filename);
+	  return NULL;
+	}
+
 	for(i = 0;i<sp_3matrix_size(tmp);i++){
 	  sp_imag(res->image->data[i]) = tmp->data[i];
 	  sp_real(res->image->data[i]) = 0;
@@ -1755,6 +1813,11 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
       
       tmp = _sp_3matrix_alloc(sp_i3matrix_x(res->mask),sp_i3matrix_y(res->mask),
 			     sp_i3matrix_z(res->mask),file,line);
+      if(!tmp){
+	sp_error_warning("Unable to allocate matrix");
+	return NULL;
+      }
+
       dataset_id = H5Dopen(file_id, "/real");
       if(dataset_id < 0){
 	sp_error_warning("Unable to open dataset in file %s",filename);
@@ -1775,6 +1838,10 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
       sp_3matrix_free(tmp);
       
       status = H5Fclose(file_id);
+      if(status < 0){
+	sp_error_warning("Unable to close dataset from file %s",filename);
+	return NULL;
+      }
     }
   }else{
     /* File does *NOT* includes version information */
@@ -1785,8 +1852,19 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
     }
 
     space = H5Dget_space(dataset_id);
+    if(space < 0){
+      sp_error_warning("Unable to get space in file %s",filename);
+      return NULL;
+    }
     res->num_dimensions = H5Sget_simple_extent_ndims(space);
-    H5Sget_simple_extent_dims(space,dims,NULL);
+    if(res->num_dimensions < 0){
+      sp_error_warning("Unable to get dimensions in file %s",filename);
+      return NULL;
+    }
+    if(H5Sget_simple_extent_dims(space,dims,NULL) < 0){
+      sp_error_warning("Unable to get dimensions extent in file %s",filename);
+      return NULL;
+    }
     if(H5Sget_simple_extent_ndims(space) == 3){
       res->image = _sp_c3matrix_alloc(dims[0],dims[1],dims[2],file,line);
       res->mask = _sp_i3matrix_alloc(dims[0],dims[1],dims[2],file,line);
@@ -1799,6 +1877,10 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
     }
     tmp = _sp_3matrix_alloc(sp_i3matrix_x(res->mask),sp_i3matrix_y(res->mask),
 			   sp_i3matrix_z(res->mask),file,line);
+    if(!tmp){
+      sp_error_warning("Unable to allocate matrix");
+      return NULL;
+    }
     
     status = H5Dread(dataset_id,mem_type_id , H5S_ALL, H5S_ALL,
 		     H5P_DEFAULT, tmp->data);
@@ -1813,6 +1895,11 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
     sp_3matrix_free(tmp);
     
     status = H5Dclose(dataset_id);
+    if(status < 0){
+      sp_error_warning("Unable to close dataset from file %s",filename);
+      return NULL;
+    }
+
     
     dataset_id = H5Dopen(file_id, "/image_center");
     if(dataset_id < 0){
@@ -1829,6 +1916,11 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
     
 
     status = H5Dclose(dataset_id);
+    if(status < 0){
+      sp_error_warning("Unable to close dataset from file %s",filename);
+      return NULL;
+    }
+
     res->detector->image_center[0] = values[0];
     res->detector->image_center[1] = values[1];
     if(values[2]){
@@ -1851,6 +1943,11 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
     }
 
     status = H5Dclose(dataset_id);
+    if(status < 0){
+      sp_error_warning("Unable to close dataset from file %s",filename);
+      return NULL;
+    }
+
     res->phased = values[0];
     
     dataset_id = H5Dopen(file_id, "/shifted");
@@ -1862,11 +1959,21 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
     status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		     H5P_DEFAULT, values);
     if(status < 0){
+      sp_error_warning("Unable to close dataset from file %s",filename);
+      return NULL;
+    }
+
+    if(status < 0){
       sp_error_warning("Unable to read dataset from file %s",filename);
       return NULL;
     }
 
     status = H5Dclose(dataset_id);
+    if(status < 0){
+      sp_error_warning("Unable to close dataset from file %s",filename);
+      return NULL;
+    }
+
     res->shifted = values[0];
     
     dataset_id = H5Dopen(file_id, "/scaled");
@@ -1883,6 +1990,11 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
     }
 
     status = H5Dclose(dataset_id);
+    if(status < 0){
+      sp_error_warning("Unable to close dataset from file %s",filename);
+      return NULL;
+    }
+
     res->scaled = values[0];
     
     dataset_id = H5Dopen(file_id, "/detector_distance");
@@ -1899,6 +2011,11 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
     }
 
     status = H5Dclose(dataset_id);
+    if(status < 0){
+      sp_error_warning("Unable to close dataset from file %s",filename);
+      return NULL;
+    }
+
     res->detector->detector_distance = values[0];
     
     dataset_id = H5Dopen(file_id, "/lambda");
@@ -1915,6 +2032,11 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
     }
 
     status = H5Dclose(dataset_id);
+    if(status < 0){
+      sp_error_warning("Unable to close dataset from file %s",filename);
+      return NULL;
+    }
+
     res->detector->lambda = values[0];
     
     dataset_id = H5Dopen(file_id, "/pixel_size");
@@ -1931,6 +2053,11 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
     }
 
     status = H5Dclose(dataset_id);
+    if(status < 0){
+      sp_error_warning("Unable to close dataset from file %s",filename);
+      return NULL;
+    }
+
     res->detector->pixel_size[0] = values[0];
     res->detector->pixel_size[1] = values[0];
     res->detector->pixel_size[2] = values[0];
@@ -1939,6 +2066,10 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
     if(res->phased){
       tmp = _sp_3matrix_alloc(sp_i3matrix_x(res->mask),sp_i3matrix_y(res->mask),
 			     sp_i3matrix_z(res->mask),file,line);
+      if(!tmp){
+	sp_error_warning("Unable to allocate matrix for %s",filename);
+	return NULL;
+      }
       dataset_id = H5Dopen(file_id, "/complex");
       if(dataset_id < 0){
 	sp_error_warning("Unable to open dataset in file %s",filename);
@@ -1953,6 +2084,11 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
       }
 
       status = H5Dclose(dataset_id);
+      if(status < 0){
+	sp_error_warning("Unable to close dataset from file %s",filename);
+	return NULL;
+      }
+      
       for(i = 0;i<sp_3matrix_size(tmp);i++){
 	sp_imag(res->image->data[i]) = tmp->data[i];
 	sp_real(res->image->data[i]) = 0;
@@ -1960,6 +2096,9 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
       sp_3matrix_free(tmp);
       tmp = _sp_3matrix_alloc(sp_i3matrix_x(res->mask),sp_i3matrix_y(res->mask),
 			     sp_i3matrix_z(res->mask),file,line);
+      if(!tmp){
+	sp_error_warning("Unable to allocate matrix");
+      }
       dataset_id = H5Dopen(file_id, "/real");
       if(dataset_id < 0){
 	sp_error_warning("Unable to open dataset in file %s",filename);
@@ -1974,6 +2113,11 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
       }
 
       status = H5Dclose(dataset_id);
+      if(status < 0){
+	sp_error_warning("Unable to close dataset from file %s",filename);
+	return NULL;
+      }
+
       for(i = 0;i<sp_3matrix_size(tmp);i++){
 	sp_real(res->image->data[i]) += tmp->data[i];
       }
@@ -1983,41 +2127,59 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
       if(!res->scaled){
 	tmp = _sp_3matrix_alloc(sp_i3matrix_x(res->mask),sp_i3matrix_y(res->mask),
 			       sp_i3matrix_z(res->mask),file,line);
+	if(!tmp){
+	  sp_error_warning("Unable to allocate matrix");
+	}
+	
 	dataset_id = H5Dopen(file_id, "/intensities");
-      if(dataset_id < 0){
-	sp_error_warning("Unable to open dataset in file %s",filename);
-	return NULL;
-      }
-
+	if(dataset_id < 0){
+	  sp_error_warning("Unable to open dataset in file %s",filename);
+	  return NULL;
+	}
+	
 	status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 			 H5P_DEFAULT, tmp->data);
-      if(status < 0){
-	sp_error_warning("Unable to read dataset from file %s",filename);
-	return NULL;
-      }
-
+	if(status < 0){
+	  sp_error_warning("Unable to read dataset from file %s",filename);
+	  return NULL;
+	}
+	
 	status = H5Dclose(dataset_id);
+	if(status < 0){
+	  sp_error_warning("Unable to close dataset from file %s",filename);
+	  return NULL;
+	}
+	
 	for(i = 0;i<sp_3matrix_size(tmp);i++){
 	  sp_real(res->image->data[i]) += tmp->data[i];
 	}
 	sp_3matrix_free(tmp);
       }else{
 	tmp = _sp_3matrix_alloc(sp_i3matrix_x(res->mask),sp_i3matrix_y(res->mask),
-			       sp_i3matrix_z(res->mask),file,line);
-	dataset_id = H5Dopen(file_id, "/amplitudes");
-      if(dataset_id < 0){
-	sp_error_warning("Unable to open dataset in file %s",filename);
-	return NULL;
-      }
+				sp_i3matrix_z(res->mask),file,line);
+	if(!tmp){
+	  sp_error_warning("Unable to allocate matrix");
+	}
 
+	dataset_id = H5Dopen(file_id, "/amplitudes");
+	if(dataset_id < 0){
+	  sp_error_warning("Unable to open dataset in file %s",filename);
+	  return NULL;
+	}
+	
 	status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 			 H5P_DEFAULT, tmp->data);
-      if(status < 0){
-	sp_error_warning("Unable to read dataset from file %s",filename);
-	return NULL;
-      }
+	if(status < 0){
+	  sp_error_warning("Unable to read dataset from file %s",filename);
+	  return NULL;
+	}
 
 	status = H5Dclose(dataset_id);
+	if(status < 0){
+	  sp_error_warning("Unable to close dataset from file %s",filename);
+	  return NULL;
+	}
+
 	for(i = 0;i<sp_3matrix_size(tmp);i++){
 	  sp_real(res->image->data[i]) += tmp->data[i];
 	}
@@ -2025,6 +2187,11 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
       }
     }        
     status = H5Fclose(file_id);    
+    if(status < 0){
+      sp_error_warning("Unable to close file from file %s",filename);
+      return NULL;
+    }
+
   }
   H5Eset_auto(func,client_data);
 
