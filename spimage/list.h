@@ -128,6 +128,27 @@ static inline void sp_list_insert(sp_list * l, unsigned int n, real value){
   l->used++; 
 }
 
+
+static inline void sp_list_remove_all(sp_list * l,  real value){
+  for(int i = 0;i<l->used;i++){
+    if(l->data[i] >= value-FLT_EPSILON && l->data[i] <= value+FLT_EPSILON){
+      memmove(&(l->data[i]),&(l->data[i+1]),sizeof(real)*(l->used-(i+1)));
+      i--;      
+      l->used--;
+    }
+  }  
+}
+
+static inline void sp_list_remove_at(sp_list * l, int pos){
+  memmove(&(l->data[pos]),&(l->data[pos+1]),sizeof(real)*(l->used-(pos+1)));
+  l->used--;      
+}
+
+
+
+spimage_EXPORT void sp_list_sort(sp_list * l);
+spimage_EXPORT void sp_list_union(sp_list * l,sp_list * m);
+
 #ifdef __cplusplus
 }  /* extern "C" */
 #endif /* __cplusplus */

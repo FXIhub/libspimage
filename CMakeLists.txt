@@ -59,7 +59,8 @@ ENDIF(DMALLOC_USE)
 INCLUDE_DIRECTORIES(${FFTW_INCLUDE_DIR} ${PNG_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${HDF5_INCLUDE_DIR})
 
 
-LIST(APPEND OBJECTS  "image_util.c" "fft.c" "linear_alg.c" "mem_util.c" "image_sphere.c" "sperror.c" "gaussianinv.c" "image_noise.c" "hashtable.c" "interpolation_kernels.c" "time_util.c")
+LIST(APPEND OBJECTS  "image_util.c" "fft.c" "linear_alg.c" "mem_util.c" "image_sphere.c" "sperror.c" 
+  "gaussianinv.c" "image_noise.c" "hashtable.c" "interpolation_kernels.c" "time_util.c" "list.c")
 
 
 
@@ -69,7 +70,7 @@ ELSE(BUILD_STATIC_LIB)
 	ADD_LIBRARY(spimage SHARED ${OBJECTS})
 ENDIF(BUILD_STATIC_LIB)
 
-ADD_EXECUTABLE(tests ${OBJECTS} CuTest.c AllTests.c ImageTests.c LinearTests.c ProjTests.c)
+ADD_EXECUTABLE(tests ${OBJECTS} CuTest.c AllTests.c ImageTests.c LinearTests.c ProjTests.c ContainerTests.c)
 
 
 INSTALL(TARGETS spimage

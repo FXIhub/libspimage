@@ -462,8 +462,8 @@ sp_c3matrix * sp_c3matrix_rotate(sp_c3matrix * in, SpAxis axis, SpAngle angleDef
   int min_y = 1e9;
   for(int x = 0;x < sp_c3matrix_x(in);x++){
     for(int y = 0;y < sp_c3matrix_y(in);y++){
-      int new_x = (x*sp_matrix_get(rot,0,0)+y*sp_matrix_get(rot,0,1))+0.5;
-      int new_y = (x*sp_matrix_get(rot,1,0)+y*sp_matrix_get(rot,1,1))+0.5;
+      int new_x = round((x*sp_matrix_get(rot,0,0)+y*sp_matrix_get(rot,0,1)));
+      int new_y = round((x*sp_matrix_get(rot,1,0)+y*sp_matrix_get(rot,1,1)));
       sp_matrix_set(newx,x,y,new_x);
       sp_matrix_set(newy,x,y,new_y);
       if(min_x > new_x){
@@ -522,8 +522,8 @@ sp_matrix * sp_matrix_rotate(sp_matrix * in, SpAngle angleDef, int in_place){
   int min_y = 1e9;
   for(int x = 0;x < sp_matrix_rows(in);x++){
     for(int y = 0;y < sp_matrix_cols(in);y++){
-      int new_x = (x*sp_matrix_get(rot,0,0)+y*sp_matrix_get(rot,0,1))+0.5;
-      int new_y = (x*sp_matrix_get(rot,1,0)+y*sp_matrix_get(rot,1,1))+0.5;
+      int new_x = round((x*sp_matrix_get(rot,0,0)+y*sp_matrix_get(rot,0,1)));
+      int new_y = round((x*sp_matrix_get(rot,1,0)+y*sp_matrix_get(rot,1,1)));
       sp_matrix_set(newx,x,y,new_x);
       sp_matrix_set(newy,x,y,new_y);
       if(min_x > new_x){
