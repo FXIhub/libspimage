@@ -148,6 +148,7 @@ static inline void sp_list_remove_at(sp_list * l, int pos){
 
 spimage_EXPORT void sp_list_sort(sp_list * l);
 spimage_EXPORT void sp_list_union(sp_list * l,sp_list * m);
+spimage_EXPORT void sp_list_print(sp_list * l);
 
 #ifdef __cplusplus
 }  /* extern "C" */

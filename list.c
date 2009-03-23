@@ -30,3 +30,14 @@ void sp_list_union(sp_list * l, sp_list * m){
   }
   sp_list_sort(l);
 }
+
+void sp_list_print(sp_list * l){
+  int line_start = 1;
+  for(unsigned int i = 0;i<sp_list_size(l);i++){
+    if(i){
+      printf(",");
+    }
+    printf("%g",sp_list_get(l,i));
+  }
+  printf("\n");
+}
