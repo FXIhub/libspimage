@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.4)
+cmake_minimum_required(VERSION 2.6)
 
 PROJECT (spimage)
 
@@ -57,42 +57,24 @@ ENDIF(DMALLOC_USE)
 
 
 INCLUDE_DIRECTORIES(${FFTW_INCLUDE_DIR} ${PNG_INCLUDE_DIR} ${TIFF_INCLUDE_DIR} ${HDF5_INCLUDE_DIR})
-
-
-LIST(APPEND OBJECTS  "image_util.c" "fft.c" "linear_alg.c" "mem_util.c" "image_sphere.c" "sperror.c" 
-  "gaussianinv.c" "image_noise.c" "hashtable.c" "interpolation_kernels.c" "time_util.c" "list.c")
+INCLUDE_DIRECTORIES("${CMAKE_SOURCE_DIR}/include/")
 
 
 
-IF(BUILD_STATIC_LIB)
-	ADD_LIBRARY(spimage STATIC ${OBJECTS})
-ELSE(BUILD_STATIC_LIB)
-	ADD_LIBRARY(spimage SHARED ${OBJECTS})
-ENDIF(BUILD_STATIC_LIB)
-
-ADD_EXECUTABLE(tests ${OBJECTS} CuTest.c AllTests.c ImageTests.c LinearTests.c ProjTests.c ContainerTests.c)
 
 
-INSTALL(TARGETS spimage
-  RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
-  LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib${LIBRARY_SUFFIX}
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib${LIBRARY_SUFFIX})
-INSTALL(FILES spimage/statistics.h spimage/image_noise.h spimage/fft.h spimage/image_util.h spimage/image.h spimage/linear_alg.h spimage/mem_util.h spimage/image_sphere.h spimage/sperror.h spimage/hashtable.h spimage/interpolation_kernels.h spimage/time_util.h spimage/list.h spimage/map.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/spimage)
-INSTALL(FILES spimage.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/)
+
+
+
 
 LIST(APPEND TESTS_LIBRARIES  ${TIFF_LIBRARIES} ${FFTW3_LIBRARIES} ${PNG_LIBRARIES} ${HDF5_LIBRARIES} ${MATH_LIBRARIES} ${ZLIB_LIBRARIES} ${JPEG_LIBRARIES})
-LIST(APPEND SPIMAGE_LIBRARIES  ${TIFF_LIBRARIES} ${FFTW3_LIBRARIES} ${PNG_LIBRARIES} ${HDF5_LIBRARIES} ${MATH_LIBRARIES} ${Z_LIBRARIES} ${JPEG_LIBRARIES})
+LIST(APPEND SPIMAGE_LIBRARIES  ${TIFF_LIBRARIES} ${FFTW3_LIBRARIES} ${PNG_LIBRARIES} ${HDF5_LIBRARIES} ${MATH_LIBRARIES} ${ZLIB_LIBRARIES} ${JPEG_LIBRARIES})
 	    
 IF(LINK_TO_DMALLOC)
 LIST(APPEND SPIMAGE_LIBRARIES ${DMALLOC_LIBRARY})
 LIST(APPEND TESTS_LIBRARIES ${DMALLOC_LIBRARY})
 ENDIF(LINK_TO_DMALLOC)
 
-
-TARGET_LINK_LIBRARIES(tests ${TESTS_LIBRARIES})
-TARGET_LINK_LIBRARIES(spimage ${SPIMAGE_LIBRARIES})
-
-
-ENABLE_TESTING()
-
-ADD_TEST(tests tests)
+ADD_SUBDIRECTORY(src)
+ADD_SUBDIRECTORY(include)
+ADD_SUBDIRECTORY(tests)
