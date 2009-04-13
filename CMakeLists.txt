@@ -27,6 +27,7 @@ find_package(HDF5 REQUIRED)
 find_package(JPEG REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(MATH REQUIRED)
+find_package(GSL REQUIRED)
 
 
 IF(UNIX AND CMAKE_SIZEOF_VOID_P EQUAL 8)
