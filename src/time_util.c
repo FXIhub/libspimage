@@ -13,7 +13,7 @@
 #  include <time.h>
 # include <windows.h>
 #include <direct.h>
-#ifdef _TIMEVAL_DEFINED /* also in winsock[2].h */
+#ifndef _TIMEVAL_DEFINED /* also in winsock[2].h */
 #define _TIMEVAL_DEFINED
 struct timeval {
     long tv_sec;

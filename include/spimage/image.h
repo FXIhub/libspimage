@@ -26,9 +26,12 @@ extern "C"
 
 
 #if defined(_WIN32) || defined(WIN32) /* Win32 version */
-#ifdef spimage_EXPORTS
-#  define spimage_EXPORT __declspec(dllexport)
+#ifdef SPIMAGE_NO_DLL
+  /* Nothing happens */
+  //#  define spimage_EXPORT __declspec(dllimport)
+#define spimage_EXPORT
 #else
+  /* export as DLL */
 #  define spimage_EXPORT __declspec(dllimport)
 #endif
 #else

@@ -4,6 +4,7 @@
 #ifdef _MSC_VER
 #pragma warning(disable: 4244)
 #endif
+
 #include "spimage/image.h"
 #include "spimage/fft.h"
 #include "spimage/image_util.h"

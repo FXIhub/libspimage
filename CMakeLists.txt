@@ -5,13 +5,19 @@ PROJECT (spimage)
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
 ADD_DEFINITIONS(-D H5_USE_16_API)
+# Make sure that while building this library the include files are not 
+# built will export prefix
+ADD_DEFINITIONS(-D SPIMAGE_NO_DLL)
 
 IF(WIN32)
-	ADD_DEFINITIONS(-D_HDF5USEDLL_)
+#	ADD_DEFINITIONS(-D_HDF5USEDLL_)
 	ADD_DEFINITIONS(-D_CRT_SECURE_NO_DEPRECATE)
-ELSE(WIN32)
-	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -std=c99")
 ENDIF(WIN32)
+
+IF(CMAKE_COMPILER_IS_GNUCC)
+	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -std=c99")
+ENDIF(CMAKE_COMPILER_IS_GNUCC)
+
 	
 
 SET(BUILD_STATIC_LIB CACHE BOOL "If ON output static library. Otherwise output shared libraries.")

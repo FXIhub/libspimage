@@ -83,7 +83,7 @@ static inline void sp_list_grow(sp_list * l){
   }else if(l->size < 16372){
     l->size = 16372;
   }else{
-    l->size *= 2.0;
+    l->size *= 2;
   }
   l->data = (real *)sp_realloc(l->data,sizeof(real)*l->size);
 }
@@ -130,7 +130,7 @@ static inline void sp_list_insert(sp_list * l, unsigned int n, real value){
 
 
 static inline void sp_list_remove_all(sp_list * l,  real value){
-  for(int i = 0;i<l->used;i++){
+  for(unsigned int i = 0;i<l->used;i++){
     if(l->data[i] >= value-FLT_EPSILON && l->data[i] <= value+FLT_EPSILON){
       memmove(&(l->data[i]),&(l->data[i+1]),sizeof(real)*(l->used-(i+1)));
       i--;      

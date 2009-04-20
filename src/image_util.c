@@ -1,8 +1,15 @@
-#ifdef __MINGW32__
-/* resolve conflict with ssize_t*/
-#define _NO_OLDNAMES
-typedef long off_t;
-#endif
+/* #ifdef __MINGW32__ */
+/* /\* resolve conflict with ssize_t*\/ */
+/* #define _NO_OLDNAMES */
+/* typedef long off_t; */
+
+/* #ifndef _SSIZE_T_ */
+/* #define _SSIZE_T_ */
+/* #warning "defining ssize_t" */
+/* typedef unsigned int ssize_t; */
+/* #endif */
+
+//#endif
 
 #ifndef PNG_DEBUG
 #  define PNG_DEBUG 3
@@ -1161,17 +1168,17 @@ void sp_image_write(Image * img, const const char * filename, int flags){
   for(int i = 0;i<strlen(buffer);i++){
     buffer[i] = tolower(buffer[i]);
   }
-  /* select the correct function depending on the buffer extension */
-  if(rindex(buffer,'.') && strcmp(rindex(buffer,'.'),".h5") == 0){
+ /* select the correct function depending on the buffer extension */
+  if(strrchr(buffer,'.') && strcmp(strrchr(buffer,'.'),".h5") == 0){
     /* we have an h5 file */
     write_h5_img(img,filename,sizeof(real));
-  }else if(rindex(buffer,'.') && strcmp(rindex(buffer,'.'),".png") == 0){
+  }else if(strrchr(buffer,'.') && strcmp(strrchr(buffer,'.'),".png") == 0){
     write_png(img,filename,flags);
-  }else if(rindex(buffer,'.') && strcmp(rindex(buffer,'.'),".vtk") == 0){
+  }else if(strrchr(buffer,'.') && strcmp(strrchr(buffer,'.'),".vtk") == 0){
     write_vtk(img,filename);
-  }else if(rindex(buffer,'.') && (strcmp(rindex(buffer,'.'),".tif") == 0 ||strcmp(rindex(buffer,'.'),".tiff") == 0 )){
+  }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".tif") == 0 ||strcmp(strrchr(buffer,'.'),".tiff") == 0 )){
     write_tiff(img,filename);
-  }else if(rindex(buffer,'.') && (strcmp(rindex(buffer,'.'),".csv") == 0)){
+  }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".csv") == 0)){
     if(img->num_dimensions == SP_3D){
       fprintf(stderr,"Cannot export 3D file to csv");
     }
@@ -1188,20 +1195,20 @@ Image * _sp_image_read(const char * filename, int flags, const char * file, int 
     buffer[i] = tolower(buffer[i]);
   }
   /* select the correct function depending on the filename extension */
-  if(rindex(buffer,'.') && strcmp(rindex(buffer,'.'),".h5") == 0){
+  if(strrchr(buffer,'.') && strcmp(strrchr(buffer,'.'),".h5") == 0){
     /* we have an h5 file */
     return _read_imagefile(filename,file,line);
-  }else if(rindex(buffer,'.') && strcmp(rindex(buffer,'.'),".png") == 0){
+  }else if(strrchr(buffer,'.') && strcmp(strrchr(buffer,'.'),".png") == 0){
     /* we  have a png file */
     return read_png(filename);
-  }else if(rindex(buffer,'.') && strcmp(rindex(buffer,'.'),".vtk") == 0){
+  }else if(strrchr(buffer,'.') && strcmp(strrchr(buffer,'.'),".vtk") == 0){
     /* we have a vtk file */
     fprintf(stderr,"Cannot read VTK files!\n");
     return NULL;
-  }else if(rindex(buffer,'.') && (strcmp(rindex(buffer,'.'),".tif") == 0 ||strcmp(rindex(buffer,'.'),".tiff") == 0 )){
+  }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".tif") == 0 ||strcmp(strrchr(buffer,'.'),".tiff") == 0 )){
     /* we have a tiff file */
     return read_tiff(filename);
-  }else if(rindex(buffer,'.') && (strcmp(rindex(buffer,'.'),".smv") == 0 ||strcmp(rindex(buffer,'.'),".SMV") == 0 )){
+  }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".smv") == 0 ||strcmp(strrchr(buffer,'.'),".SMV") == 0 )){
     /* we have an smv file */
     return read_smv(filename);
   }else{
@@ -1371,14 +1378,15 @@ static void write_h5_img(Image * img,const char * filename, int output_precision
   hid_t plist;
   hsize_t chunk_size[3] = {sp_c3matrix_x(img->image),sp_c3matrix_y(img->image),sp_c3matrix_z(img->image)};
   char tmpfile[1024];
-  strcpy(tmpfile,filename);
-  strcat(tmpfile,"XXXXXX");
-  int fd = mkstemp(tmpfile);
+  //  strcpy(tmpfile,filename);
+  //  strcat(tmpfile,"XXXXXX");
+  sprintf(tmpfile,"%s-%d",filename,rand());
+  /*  int fd = mkstemp(tmpfile);
   if(fd == -1){
     sp_error_warning("Unable create temporary filename");
     return;
   }
-  close(fd);
+  close(fd);*/
   if(output_precision == sizeof(double)){
     out_type_id = H5T_NATIVE_DOUBLE;
   }else if(output_precision == sizeof(float)){
