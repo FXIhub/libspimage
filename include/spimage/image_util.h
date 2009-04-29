@@ -264,6 +264,18 @@ static inline void sp_image_set(Image * a,int x,int y,int z,Complex v){
   sp_c3matrix_set(a->image,x,y,z,v);
 }
 
+/*! Increments the real part of the point x,y,z (or x,y,0 for 2D) by the value v
+ */
+static inline void sp_image_inc(Image * a,int x,int y,int z,real v){
+  sp_c3matrix_inc(a->image,x,y,z,v);
+}
+
+/*! Increments the point x,y,z (or x,y,0 for 2D) by the value v
+ */
+static inline void sp_image_cinc(Image * a,int x,int y,int z,Complex v){
+  sp_c3matrix_cinc(a->image,x,y,z,v);
+}
+
 /*! Returns the image value at point x,y,z (or x,y,0 for 2D)
  */
 static inline Complex sp_image_get(Image * a,int x,int y,int z){

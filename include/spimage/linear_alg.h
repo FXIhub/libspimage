@@ -370,6 +370,15 @@ static inline void sp_3matrix_set (sp_3matrix * m, unsigned int x, unsigned int 
   m->data[z*m->y*m->x+y*m->x+x] = entry;
 }
 
+
+/*! This function adds entry to the (x,y,z)-th element of a matrix m.
+ *
+ * x, y and z must lie in the range of 0 to x-1, 0 to y-1 and 0 to z-1.
+ */
+static inline void sp_3matrix_inc (sp_3matrix * m, unsigned int x, unsigned int y, unsigned int z, real entry){
+  m->data[z*m->y*m->x+y*m->x+x] += entry;
+}
+
 /*! This function sets the (x,y,z)-th element of a matrix m to entry.
  *
  * x, y and z must lie in the range of 0 to x-1, 0 to y-1 and 0 to z-1.
@@ -385,6 +394,24 @@ static inline void sp_i3matrix_set (sp_i3matrix * m, unsigned int x, unsigned in
 static inline void sp_c3matrix_set (sp_c3matrix * m, unsigned int x, unsigned int y, unsigned int z, Complex entry){
   m->data[z*m->y*m->x+y*m->x+x] = entry;
 }
+
+/*! This function increments the (x,y,z)-th element of an Complex matrix m by entry.
+ *
+ * x, y and z must lie in the range of 0 to x-1, 0 to y-1 and 0 to z-1.
+ */
+static inline void sp_c3matrix_cinc (sp_c3matrix * m, unsigned int x, unsigned int y, unsigned int z, Complex entry){
+  sp_real(m->data[z*m->y*m->x+y*m->x+x]) += sp_real(entry);
+  sp_imag(m->data[z*m->y*m->x+y*m->x+x]) += sp_imag(entry);
+}
+
+/*! This function increments the real part of the (x,y,z)-th element of an Complex matrix m by entry.
+ *
+ * x, y and z must lie in the range of 0 to x-1, 0 to y-1 and 0 to z-1.
+ */
+static inline void sp_c3matrix_inc (sp_c3matrix * m, unsigned int x, unsigned int y, unsigned int z, real entry){
+  sp_real(m->data[z*m->y*m->x+y*m->x+x]) += entry;
+}
+
 
 /*! This function returns the (row,col)-th element of a matrix m.
  *
