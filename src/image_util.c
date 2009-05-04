@@ -432,7 +432,7 @@ static int shift_size(int size, int shift_origin, int pad){
   If you wish the new vector to have as many components to the right of the shift_origin
   as to the left of the shift_origin set pad to 1. 
 */
-static int shit_coordinate(int i, int size, int shift_origin, int pad){
+static int shift_coordinate(int i, int size, int shift_origin, int pad){
   if(!pad){
     return (i-shift_origin+size)%size;
   }else{
@@ -477,11 +477,11 @@ Image * sp_image_shift(Image * img){
   }
   /* We're going to shift the image in all 3 dimensions by shifting each dimension individually */
   for(int z = 0;z<sp_image_z(img);z++){
-    int new_z = shit_coordinate(z,sp_image_z(img),new_origin[2],pad_z);
+    int new_z = shift_coordinate(z,sp_image_z(img),new_origin[2],pad_z);
     for(int y = 0;y<sp_image_y(img);y++){
-      int new_y = shit_coordinate(y,sp_image_y(img),new_origin[1],pad);
+      int new_y = shift_coordinate(y,sp_image_y(img),new_origin[1],pad);
       for(int x = 0;x<sp_image_x(img);x++){
-	int new_x = shit_coordinate(x,sp_image_x(img),new_origin[0],pad);
+	int new_x = shift_coordinate(x,sp_image_x(img),new_origin[0],pad);
 	sp_image_set(out,new_x,new_y,new_z,sp_image_get(img,x,y,z));
 	sp_image_mask_set(out,new_x,new_y,new_z,sp_image_mask_get(img,x,y,z));
       }
