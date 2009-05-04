@@ -417,6 +417,90 @@ Image * sp_make_unshifted_image_square(Image * in){
 }
 
 
+/*! This function calculates the size of the input vector
+  after being shifted and possibly padded (depending on the value
+  of the flag pad) */
+static int shift_size(int size, int shift_origin, int pad){
+  if(pad){
+    return sp_max((size-shift_origin)*2,shift_origin*2);
+  }else{
+    return size;
+  }
+}
+/*! This function simply takes as argument the index you want to shift (i),
+  the size of the vector you want to shift (size), and the new origin (shift_origin).
+  If you wish the new vector to have as many components to the right of the shift_origin
+  as to the left of the shift_origin set pad to 1. 
+*/
+static int shit_coordinate(int i, int size, int shift_origin, int pad){
+  if(!pad){
+    return (i-shift_origin+size)%size;
+  }else{
+    int new_size = shift_size(size,shift_origin,pad);
+    if(i<shift_origin){
+      return new_size+(i-shift_origin);
+    }else{
+      return i-shift_origin;
+    }
+  }
+  return -1;
+}
+
+Image * sp_image_shift(Image * img){
+  Image * out;
+  const int small_constant = 0.001;    
+  int pad = 1;
+  int pad_z = 1;
+  if(img->num_dimensions == 2){
+    pad_z = 0;
+  }
+  int new_origin[3];
+
+  if(img->shifted){
+    new_origin[0] = ceil((sp_image_x(img)-1.0)/2.0-small_constant);
+    new_origin[1] = ceil((sp_image_y(img)-1.0)/2.0-small_constant);
+    new_origin[2] = ceil((sp_image_z(img)-1.0)/2.0-small_constant);
+  }else{
+    new_origin[0] = ceil(img->detector->image_center[0]-small_constant);
+    new_origin[1] = ceil(img->detector->image_center[1]-small_constant);
+    new_origin[2] = ceil(img->detector->image_center[2]-small_constant);
+  }
+  int new_size[3] = {shift_size(sp_image_x(img),new_origin[0],pad),
+		     shift_size(sp_image_y(img),new_origin[1],pad),
+		     shift_size(sp_image_z(img),new_origin[2],pad_z)};
+
+  out = sp_image_alloc(new_size[0],new_size[1],new_size[2]);
+
+  for(int i = 0;i<sp_image_size(out);i++){
+    out->image->data[i] = sp_cinit(0,0);
+    out->mask->data[i] = 1;
+  }
+  /* We're going to shift the image in all 3 dimensions by shifting each dimension individually */
+  for(int z = 0;z<sp_image_z(img);z++){
+    int new_z = shit_coordinate(z,sp_image_z(img),new_origin[2],pad_z);
+    for(int y = 0;y<sp_image_y(img);y++){
+      int new_y = shit_coordinate(y,sp_image_y(img),new_origin[1],pad);
+      for(int x = 0;x<sp_image_x(img);x++){
+	int new_x = shit_coordinate(x,sp_image_x(img),new_origin[0],pad);
+	sp_image_set(out,new_x,new_y,new_z,sp_image_get(img,x,y,z));
+	sp_image_mask_set(out,new_x,new_y,new_z,sp_image_mask_get(img,x,y,z));
+      }
+    }
+  }		       
+  if(img->shifted){
+    out->shifted = 0;
+    out->detector->image_center[0] = (sp_image_x(img)-1.0)/2.0;
+    out->detector->image_center[1] = (sp_image_y(img)-1.0)/2.0;
+    out->detector->image_center[2] = (sp_image_z(img)-1.0)/2.0;
+  }else{
+    out->shifted = 1;
+    out->detector->image_center[0] = 0;
+    out->detector->image_center[1] = 0;
+    out->detector->image_center[2] = 0;
+  }
+
+  return out;
+}
 
 /*
   For unshifted images it shifted the quadrants around image_center and 
@@ -425,26 +509,41 @@ Image * sp_make_unshifted_image_square(Image * in){
   For shifted images it shifted the quadrants around (size[]-1)/2 
   This function is generalized for 3D patterns as well.
 */
-Image * sp_image_shift(Image * img){
+Image * sp_image_shift2(Image * img){
   Image * out;
   int i;
   int index1,index2;
   int x,y,z;
   int newx,newy,newz;
   real max_x,max_y,max_z;//changed from int
+  const int small_constant = 0.001;    
+  int new_origin[3] = {ceil(img->detector->image_center[0]-small_constant),
+		       ceil(img->detector->image_center[1]-small_constant),
+		       ceil(img->detector->image_center[2]-small_constant)};
+  
+
+
+  /* for purposes of shifting the image the pixels which goes to the upper left of the image is
+     the ceil(img->detector->image_center) pixel 
+     
+     A small constant is subtracted from img->detector->image_center to deal with numerical errors
+     when the image_center is an integer (say 50).
+  */
 
   /* fft shift the image */
   out = sp_image_duplicate(img,SP_COPY_DATA|SP_COPY_MASK);
   if(!img->shifted){
-    max_x = sp_max(img->detector->image_center[0],sp_c3matrix_x(img->image)-1-img->detector->image_center[0]);
-    max_y = sp_max(img->detector->image_center[1],sp_c3matrix_y(img->image)-1-img->detector->image_center[1]);
-    max_z = sp_max(img->detector->image_center[2],sp_c3matrix_z(img->image)-1-img->detector->image_center[2]);
+    max_x = sp_max(new_origin[0],sp_c3matrix_x(img->image)-1-new_origin[0]);
+    max_y = sp_max(new_origin[1],sp_c3matrix_y(img->image)-1-new_origin[1]);
+    max_z = sp_max(new_origin[2],sp_c3matrix_z(img->image)-1-new_origin[2]);
     //was 2*max_x+1 before (other way of defining center)
     /* FM BUG: There was a bug here for 2D images with max_z so I added this hack */
-    if(max_z == 0){
+    /* With the new way of defining the top left pixel this is no longer required */
+    /*    if(max_z == 0){
       max_z = 0.5;
       img->detector->image_center[2] = 0.5;
     }
+    */
     sp_image_realloc(out,2*max_x,2*max_y,2*max_z);
   }
 

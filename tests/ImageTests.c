@@ -3,6 +3,124 @@
 
 #include "AllTests.h"
 
+
+void test_sp_image_shift(CuTest * tc){
+  /* First test a shift on an even image without need for padding */
+  Image * a = sp_image_alloc(2,2,1);
+  a->detector->image_center[0] = 1;
+  a->detector->image_center[1] = 1;
+  a->detector->image_center[2] = 0;
+  sp_image_set(a,0,0,0,sp_cinit(0,0));
+  sp_image_set(a,1,0,0,sp_cinit(1,0));
+  sp_image_set(a,0,1,0,sp_cinit(2,0));
+  sp_image_set(a,1,1,0,sp_cinit(3,0));
+  Image * b = sp_image_shift(a);
+  CuAssertIntEquals(tc,sp_image_size(a),sp_image_size(b));
+  CuAssertIntEquals(tc,sp_image_x(a),sp_image_x(b));
+  CuAssertIntEquals(tc,sp_image_y(a),sp_image_y(b));
+  CuAssertIntEquals(tc,sp_image_z(a),sp_image_z(b));
+  CuAssertComplexEquals(tc,sp_image_get(b,0,0,0),sp_image_get(a,1,1,0),fabs(REAL_EPSILON*(sp_cabs(sp_image_get(b,0,0,0)))+REAL_EPSILON));  
+  CuAssertComplexEquals(tc,sp_image_get(b,1,0,0),sp_image_get(a,0,1,0),fabs(REAL_EPSILON*(sp_cabs(sp_image_get(b,1,0,0)))+REAL_EPSILON));  
+  CuAssertComplexEquals(tc,sp_image_get(b,0,1,0),sp_image_get(a,1,0,0),fabs(REAL_EPSILON*(sp_cabs(sp_image_get(b,0,1,0)))+REAL_EPSILON));  
+  CuAssertComplexEquals(tc,sp_image_get(b,1,1,0),sp_image_get(a,0,0,0),fabs(REAL_EPSILON*(sp_cabs(sp_image_get(b,1,1,0)))+REAL_EPSILON));  
+
+
+  /* Now test to shift back */
+  Image * c = sp_image_shift(b);
+  CuAssertIntEquals(tc,sp_image_size(a),sp_image_size(c));
+  CuAssertIntEquals(tc,sp_image_x(a),sp_image_x(c));
+  CuAssertIntEquals(tc,sp_image_y(a),sp_image_y(c));
+  CuAssertIntEquals(tc,sp_image_z(a),sp_image_z(c));
+  CuAssertComplexEquals(tc,sp_image_get(c,0,0,0),sp_image_get(a,0,0,0),fabs(REAL_EPSILON*(sp_cabs(sp_image_get(c,0,0,0)))+REAL_EPSILON));  
+  CuAssertComplexEquals(tc,sp_image_get(c,1,0,0),sp_image_get(a,1,0,0),fabs(REAL_EPSILON*(sp_cabs(sp_image_get(c,1,0,0)))+REAL_EPSILON));  
+  CuAssertComplexEquals(tc,sp_image_get(c,0,1,0),sp_image_get(a,0,1,0),fabs(REAL_EPSILON*(sp_cabs(sp_image_get(c,0,1,0)))+REAL_EPSILON));  
+  CuAssertComplexEquals(tc,sp_image_get(c,1,1,0),sp_image_get(a,1,1,0),fabs(REAL_EPSILON*(sp_cabs(sp_image_get(c,1,1,0)))+REAL_EPSILON));  
+
+  sp_image_free(a);
+  sp_image_free(b);
+  sp_image_free(c);
+
+  /* Now test an even image with need for padding*/
+  a = sp_image_alloc(2,2,1);
+  a->detector->image_center[0] = 0;
+  a->detector->image_center[1] = 0;
+  a->detector->image_center[2] = 0;
+  sp_image_set(a,0,0,0,sp_cinit(0,0));
+  sp_image_set(a,1,0,0,sp_cinit(1,0));
+  sp_image_set(a,0,1,0,sp_cinit(2,0));
+  sp_image_set(a,1,1,0,sp_cinit(3,0));
+
+  b = sp_image_shift(a);
+  /* This time we must have two zero paddings on the right size of the image*/
+  CuAssertIntEquals(tc,4,sp_image_x(b));
+  CuAssertIntEquals(tc,4,sp_image_y(b));
+  CuAssertIntEquals(tc,1,sp_image_z(b));
+
+  CuAssertComplexEquals(tc,sp_image_get(b,0,0,0),sp_image_get(a,0,0,0),fabs(REAL_EPSILON*(sp_cabs(sp_image_get(b,0,0,0)))+REAL_EPSILON));  
+  CuAssertComplexEquals(tc,sp_image_get(b,1,0,0),sp_image_get(a,1,0,0),fabs(REAL_EPSILON*(sp_cabs(sp_image_get(b,1,0,0)))+REAL_EPSILON));  
+  CuAssertComplexEquals(tc,sp_image_get(b,0,1,0),sp_image_get(a,0,1,0),fabs(REAL_EPSILON*(sp_cabs(sp_image_get(b,0,1,0)))+REAL_EPSILON));  
+  CuAssertComplexEquals(tc,sp_image_get(b,1,1,0),sp_image_get(a,1,1,0),fabs(REAL_EPSILON*(sp_cabs(sp_image_get(b,1,1,0)))+REAL_EPSILON));  
+  CuAssertComplexEquals(tc,sp_image_get(b,2,1,0),sp_cinit(0,0),fabs(REAL_EPSILON*(sp_cabs(sp_image_get(b,2,1,0)))+REAL_EPSILON));  
+  CuAssertComplexEquals(tc,sp_image_get(b,1,2,0),sp_cinit(0,0),fabs(REAL_EPSILON*(sp_cabs(sp_image_get(b,2,1,0)))+REAL_EPSILON));  
+  CuAssertComplexEquals(tc,sp_image_get(b,2,2,0),sp_cinit(0,0),fabs(REAL_EPSILON*(sp_cabs(sp_image_get(b,2,1,0)))+REAL_EPSILON));  
+
+  /* Now test to shift back */
+  c = sp_image_shift(b);
+  CuAssertIntEquals(tc,sp_image_size(b),sp_image_size(c));
+  CuAssertIntEquals(tc,sp_image_x(b),sp_image_x(c));
+  CuAssertIntEquals(tc,sp_image_y(b),sp_image_y(c));
+  CuAssertIntEquals(tc,sp_image_z(b),sp_image_z(c));
+  CuAssertComplexEquals(tc,sp_image_get(c,2,2,0),sp_image_get(a,0,0,0),fabs(REAL_EPSILON*(sp_cabs(sp_image_get(c,2,2,0)))+REAL_EPSILON));  
+  CuAssertComplexEquals(tc,sp_image_get(c,3,2,0),sp_image_get(a,1,0,0),fabs(REAL_EPSILON*(sp_cabs(sp_image_get(c,3,2,0)))+REAL_EPSILON));  
+  CuAssertComplexEquals(tc,sp_image_get(c,2,3,0),sp_image_get(a,0,1,0),fabs(REAL_EPSILON*(sp_cabs(sp_image_get(c,2,3,0)))+REAL_EPSILON));  
+  CuAssertComplexEquals(tc,sp_image_get(c,3,3,0),sp_image_get(a,1,1,0),fabs(REAL_EPSILON*(sp_cabs(sp_image_get(c,3,3,0)))+REAL_EPSILON));    
+
+  sp_image_free(a);
+  sp_image_free(b);
+  sp_image_free(c);
+
+  /* Now test an odd image, with need for padding */
+
+  a = sp_image_alloc(3,3,1);
+  a->detector->image_center[0] = 1;
+  a->detector->image_center[1] = 1;
+  a->detector->image_center[2] = 0;
+  sp_image_set(a,0,0,0,sp_cinit(0,0));
+  sp_image_set(a,1,0,0,sp_cinit(1,0));
+  sp_image_set(a,0,1,0,sp_cinit(2,0));
+  sp_image_set(a,1,1,0,sp_cinit(3,0));
+
+  b = sp_image_shift(a);
+  /* This time we must have two zero paddings on the right size of the image*/
+  CuAssertIntEquals(tc,4,sp_image_x(b));
+  CuAssertIntEquals(tc,4,sp_image_y(b));
+  CuAssertIntEquals(tc,1,sp_image_z(b));
+
+  CuAssertComplexEquals(tc,sp_image_get(b,0,0,0),sp_image_get(a,1,1,0),fabs(REAL_EPSILON*(sp_cabs(sp_image_get(b,0,0,0)))+REAL_EPSILON));  
+  CuAssertComplexEquals(tc,sp_image_get(b,1,0,0),sp_image_get(a,2,1,0),fabs(REAL_EPSILON*(sp_cabs(sp_image_get(b,1,0,0)))+REAL_EPSILON));  
+  CuAssertComplexEquals(tc,sp_image_get(b,0,1,0),sp_image_get(a,1,2,0),fabs(REAL_EPSILON*(sp_cabs(sp_image_get(b,0,1,0)))+REAL_EPSILON));  
+  CuAssertComplexEquals(tc,sp_image_get(b,1,1,0),sp_image_get(a,2,2,0),fabs(REAL_EPSILON*(sp_cabs(sp_image_get(b,1,1,0)))+REAL_EPSILON));  
+  CuAssertComplexEquals(tc,sp_image_get(b,3,3,0),sp_image_get(a,0,0,0),fabs(REAL_EPSILON*(sp_cabs(sp_image_get(b,1,1,0)))+REAL_EPSILON));  
+  CuAssertComplexEquals(tc,sp_image_get(b,3,0,0),sp_image_get(a,0,1,0),fabs(REAL_EPSILON*(sp_cabs(sp_image_get(b,3,0,0)))+REAL_EPSILON));  
+  CuAssertComplexEquals(tc,sp_image_get(b,0,3,0),sp_image_get(a,1,0,0),fabs(REAL_EPSILON*(sp_cabs(sp_image_get(b,0,3,0)))+REAL_EPSILON));  
+
+
+  /* Now test to shift back */
+  c = sp_image_shift(b);
+  CuAssertIntEquals(tc,sp_image_size(b),sp_image_size(c));
+  CuAssertIntEquals(tc,sp_image_x(b),sp_image_x(c));
+  CuAssertIntEquals(tc,sp_image_y(b),sp_image_y(c));
+  CuAssertIntEquals(tc,sp_image_z(b),sp_image_z(c));
+  CuAssertComplexEquals(tc,sp_image_get(c,1,1,0),sp_image_get(a,0,0,0),fabs(REAL_EPSILON*(sp_cabs(sp_image_get(c,1,1,0)))+REAL_EPSILON));  
+  CuAssertComplexEquals(tc,sp_image_get(c,2,1,0),sp_image_get(a,1,0,0),fabs(REAL_EPSILON*(sp_cabs(sp_image_get(c,2,1,0)))+REAL_EPSILON));  
+  CuAssertComplexEquals(tc,sp_image_get(c,1,2,0),sp_image_get(a,0,1,0),fabs(REAL_EPSILON*(sp_cabs(sp_image_get(c,1,2,0)))+REAL_EPSILON));  
+  CuAssertComplexEquals(tc,sp_image_get(c,2,2,0),sp_image_get(a,1,1,0),fabs(REAL_EPSILON*(sp_cabs(sp_image_get(c,2,2,0)))+REAL_EPSILON));    
+  sp_image_free(a);
+  sp_image_free(b);
+  sp_image_free(c);
+
+}
+
 void test_image_print(Image * a){
   for(int z = 0; z<sp_image_z(a);z++){
     printf("***  Layer z = %d ***\n",z);
@@ -670,6 +788,7 @@ CuSuite* image_get_suite(void)
   SUITE_ADD_TEST(suite,test_sp_image_reflect);
   SUITE_ADD_TEST(suite,test_sp_image_phase_match);
   SUITE_ADD_TEST(suite,test_sp_background_adaptative_mesh);
+  SUITE_ADD_TEST(suite,test_sp_image_shift);
   return suite;
 }
 

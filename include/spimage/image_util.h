@@ -264,6 +264,12 @@ static inline void sp_image_set(Image * a,int x,int y,int z,Complex v){
   sp_c3matrix_set(a->image,x,y,z,v);
 }
 
+/*! Sets the mask at x,y,z (or x,y,0 for 2D) to the value v
+ */
+static inline void sp_image_mask_set(Image * a,int x,int y,int z,int v){
+  sp_i3matrix_set(a->mask,x,y,z,v);
+}
+
 /*! Increments the real part of the point x,y,z (or x,y,0 for 2D) by the value v
  */
 static inline void sp_image_inc(Image * a,int x,int y,int z,real v){
@@ -280,6 +286,12 @@ static inline void sp_image_cinc(Image * a,int x,int y,int z,Complex v){
  */
 static inline Complex sp_image_get(Image * a,int x,int y,int z){
   return sp_c3matrix_get(a->image,x,y,z);
+}
+
+/*! Returns the mask value at point x,y,z (or x,y,0 for 2D)
+ */
+static inline int sp_image_mask_get(Image * a,int x,int y,int z){
+  return sp_i3matrix_get(a->mask,x,y,z);
 }
 
 /*! Returns x*y*z size of image a
