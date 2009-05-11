@@ -19,5 +19,6 @@
 #include "spimage/time_util.h"
 #include "spimage/list.h"
 #include "spimage/map.h"
+#include "spimage/prtf.h"
 #endif
 

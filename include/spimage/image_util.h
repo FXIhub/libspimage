@@ -69,6 +69,11 @@ extern "C"
  */
 typedef enum{TopLeftCorner,ImageCenter}SpOrigin;
 
+/*! FourierSpace corresponds to diffraction space and RealSpace corresponds to
+  the object space.
+ */
+typedef enum{FourierSpace,RealSpace}SpSpace;
+
 /** @defgroup Distance
  *  Calculates several kinds of distances in an image
  *  @{
@@ -464,6 +469,21 @@ spimage_EXPORT Image * gaussian_filter(Image * in, real radius, int in_place);
  */
 spimage_EXPORT Image * sp_image_convolute(Image * a, Image * b, int * size);
 
+/*! Convolutes Image a with Image b 
+ *
+ *  Note that b must fit inside a or the other way around.
+ *  The convolution only acts on the amplitudes, 
+ *  the real and complex parts of the Image will be set to 0.
+ *  The resulting mask will be the same as the one from image a.
+ *
+ * The convolution is calculated with better than pixel precision. 
+ * precision is the inverse of the precision of the output. precision == 2 
+ * corresponds to output with 1/2 pixel precision.
+ * Flag tells whether to calculate convolution (flag == 0) or correlation (flag != 0)
+ * The other parameters are similar to the normal convolution
+ */
+ spimage_EXPORT Image * sp_image_convolute_fractional(Image * a, Image * b, int * size,int precision, int flag);
+  
 /*! Low pass filter using a centered square window of side edge_size 
  *
  *  The mask is also low pass filtered.

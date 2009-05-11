@@ -769,6 +769,83 @@ void test_sp_background_adaptative_mesh(CuTest * tc){
     }
   }
 }
+
+void test_sp_image_convolute_fractional(CuTest * tc){
+  int size = 10;
+  Image * a = sp_image_alloc(size,size,1);
+  for(int i = 0;i<sp_image_size(a);i++){
+    a->image->data[i] = sp_cinit(p_drand48(),p_drand48());
+  }
+  a->phased = 1;
+  int precision = 1;
+  Image * fcorr = sp_image_convolute_fractional(a,a,NULL,precision,1);
+  Image * corr = sp_image_cross_correlate(a,a,NULL);
+  for(int i = 0;i<sp_image_size(a);i++){
+    CuAssertComplexEquals(tc,fcorr->image->data[i],corr->image->data[i],fabs(REAL_EPSILON*(sp_cabs(fcorr->image->data[i]))+REAL_EPSILON));  
+  }
+  sp_image_free(fcorr);
+  Image * fconv = sp_image_convolute_fractional(a,a,NULL,precision,0);
+  Image * conv = sp_image_convolute(a,a,NULL);
+  for(int i = 0;i<sp_image_size(a);i++){
+    CuAssertComplexEquals(tc,fconv->image->data[i],conv->image->data[i],fabs(REAL_EPSILON*(sp_cabs(fconv->image->data[i]))+REAL_EPSILON));  
+  }
+  sp_image_free(fconv);
+  precision = 2;
+  for(precision = 2;precision<10;precision++){
+    fcorr = sp_image_convolute_fractional(a,a,NULL,precision,1);
+    for(int z = 0;z<sp_image_z(corr);z++){
+      for(int y = 0;y<sp_image_y(corr);y++){
+	for(int x = 0;x<sp_image_x(corr);x++){	
+	  CuAssertComplexEquals(tc,sp_image_get(fcorr,x*precision,y*precision,z*precision),sp_image_get(corr,x,y,z),1000*fabs(REAL_EPSILON*(sp_cabs(sp_image_get(fcorr,x,y,z)))+REAL_EPSILON));  
+	}
+      }
+    }
+    sp_image_free(fcorr);
+    fconv = sp_image_convolute_fractional(a,a,NULL,precision,0);
+    for(int z = 0;z<sp_image_z(corr);z++){
+      for(int y = 0;y<sp_image_y(corr);y++){
+	for(int x = 0;x<sp_image_x(corr);x++){	
+	  CuAssertComplexEquals(tc,sp_image_get(fconv,x*precision,y*precision,z*precision),sp_image_get(conv,x,y,z),1000*fabs(REAL_EPSILON*(sp_cabs(sp_image_get(fconv,x,y,0)))+REAL_EPSILON));  
+	}
+      }
+    }
+    sp_image_free(fconv);
+  }
+  Image * b = sp_image_duplicate(a,SP_COPY_ALL);
+  real t_x = 1;
+  real t_y = 1;
+  real t_z = 0;
+  sp_image_translate(b,t_x,t_y,t_z,SP_TRANSLATE_WRAP_AROUND);
+  precision = 2;
+  fcorr = sp_image_convolute_fractional(a,b,NULL,precision,1);
+  int x,y,z;
+  long long index;
+  real max = sp_image_max(fcorr,&index,&x,&y,&z);
+  CuAssertTrue(tc, ((int)((real)x/precision+t_x+0.5)) % sp_image_x(a) == 0);  
+  CuAssertTrue(tc, ((int)((real)y/precision+t_y+0.5)) % sp_image_y(a) == 0);  
+  CuAssertTrue(tc, ((int)((real)z/precision+t_z+0.5)) % sp_image_z(a) == 0);  
+
+  sp_image_free(b);
+  b = sp_image_duplicate(a,SP_COPY_ALL);
+  t_x = 0.5;
+  t_y = 0;
+  t_z = 0;
+
+  Image * tmp = sp_image_fft(b);
+  sp_image_fourier_translate(tmp,t_x,t_y,t_z);
+  sp_image_free(b);
+  b = sp_image_ifft(tmp);
+  sp_image_scale(b,1.0/sp_image_size(b));
+  sp_image_free(tmp);
+  precision = 2;
+  fcorr = sp_image_convolute_fractional(a,b,NULL,precision,1);
+  max = sp_image_max(fcorr,&index,&x,&y,&z);
+  CuAssertTrue(tc, ((int)((real)x/precision+t_x+0.5)) % sp_image_x(a) == 0);  
+  CuAssertTrue(tc, ((int)((real)y/precision+t_y+0.5)) % sp_image_y(a) == 0);  
+  CuAssertTrue(tc, ((int)((real)z/precision+t_z+0.5)) % sp_image_z(a) == 0);  
+
+}  
+
   
 CuSuite* image_get_suite(void)
 {
@@ -789,6 +866,7 @@ CuSuite* image_get_suite(void)
   SUITE_ADD_TEST(suite,test_sp_image_phase_match);
   SUITE_ADD_TEST(suite,test_sp_background_adaptative_mesh);
   SUITE_ADD_TEST(suite,test_sp_image_shift);
+  SUITE_ADD_TEST(suite,test_sp_image_convolute_fractional);
   return suite;
 }
 

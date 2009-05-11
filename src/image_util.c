@@ -1516,7 +1516,13 @@ static void write_h5_img(Image * img,const char * filename, int output_precision
 			 dataspace_id, plist);
   status = H5Dwrite(dataset_id,H5T_NATIVE_INT , H5S_ALL, H5S_ALL,
 		    H5P_DEFAULT, img->mask->data);
+  if(status < 0){
+    goto error;
+  }
   status = H5Dclose(dataset_id);
+  if(status < 0){
+    goto error;
+  }
 
   tmp = sp_3matrix_alloc(sp_c3matrix_x(img->image),sp_c3matrix_y(img->image),
 			 sp_c3matrix_z(img->image));
@@ -1528,7 +1534,13 @@ static void write_h5_img(Image * img,const char * filename, int output_precision
 			 dataspace_id, plist);
   status = H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		    H5P_DEFAULT, tmp->data);
+  if(status < 0){
+    goto error;
+  }
   status = H5Dclose(dataset_id);
+  if(status < 0){
+    goto error;
+  }
   sp_3matrix_free(tmp);
 
   if(img->phased){
@@ -1542,92 +1554,200 @@ static void write_h5_img(Image * img,const char * filename, int output_precision
 			   dataspace_id, plist);
     status = H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		    H5P_DEFAULT, tmp->data);
+    if(status < 0){
+      goto error;
+    }
     status = H5Dclose(dataset_id);
+    if(status < 0){
+      goto error;
+    }
     sp_3matrix_free(tmp);
 
   }
   dims[0] = 3;
   dataspace_id = H5Screate_simple( 1, dims, NULL );
+  if(dataspace_id < 0){
+    goto error;
+  }
   dataset_id = H5Dcreate(file_id, "/image_center",out_type_id ,
 			 dataspace_id, H5P_DEFAULT);
+  if(dataset_id < 0){
+    goto error;
+  }
   values[0] = img->detector->image_center[0];
   values[1] = img->detector->image_center[1];
   values[2] = img->detector->image_center[2];
   status = H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		    H5P_DEFAULT, values);
+  if(status < 0){
+    goto error;
+  }
   status = H5Dclose(dataset_id);
+  if(status < 0){
+    goto error;
+  }
   status = H5Sclose(dataspace_id);
+  if(status < 0){
+    goto error;
+  }
 
   dims[0] = 1;
   dataspace_id = H5Screate_simple( 1, dims, NULL );
+  if(dataspace_id < 0){
+    goto error;
+  }
+
   values[0] = img->phased;
   dataset_id = H5Dcreate(file_id, "/phased", out_type_id,
 			 dataspace_id, H5P_DEFAULT);
+  if(dataset_id < 0){
+    goto error;
+  }
   status = H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		    H5P_DEFAULT, values);
+  if(status < 0){
+    goto error;
+  }
   status = H5Dclose(dataset_id);
+  if(status < 0){
+    goto error;
+  }
 
   values[0] = img->shifted;
   dataset_id = H5Dcreate(file_id, "/shifted", out_type_id,
 			 dataspace_id, H5P_DEFAULT);
+  if(dataset_id < 0){
+    goto error;
+  }
   status = H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		    H5P_DEFAULT, values);
+  if(status < 0){
+    goto error;
+  }
   status = H5Dclose(dataset_id);
+  if(status < 0){
+    goto error;
+  }
 
   values[0] = img->detector->lambda;
   dataset_id = H5Dcreate(file_id, "/lambda", out_type_id,
 			 dataspace_id, H5P_DEFAULT);
+  if(dataset_id < 0){
+    goto error;
+  }
   status = H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		    H5P_DEFAULT, values);
+  if(status < 0){
+    goto error;
+  }
   status = H5Dclose(dataset_id);
+  if(status < 0){
+    goto error;
+  }
 
   values[0] = img->detector->pixel_size[0];
   values[1] = img->detector->pixel_size[1];
   values[2] = img->detector->pixel_size[2];
   dataset_id = H5Dcreate(file_id, "/pixel_size", out_type_id,
 			 dataspace_id, H5P_DEFAULT);
+  if(dataset_id < 0){
+    goto error;
+  }
   status = H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		    H5P_DEFAULT, values);
+  if(status < 0){
+    goto error;
+  }
   status = H5Dclose(dataset_id);
+  if(status < 0){
+    goto error;
+  }
 
   values[0] = img->num_dimensions;
   dataset_id = H5Dcreate(file_id, "/num_dimensions", out_type_id,
 			 dataspace_id, H5P_DEFAULT);
+  if(dataset_id < 0){
+    goto error;
+  }
   status = H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		    H5P_DEFAULT, values);
+  if(status < 0){
+    goto error;
+  }
   status = H5Dclose(dataset_id);
+  if(status < 0){
+    goto error;
+  }
 
   values[0] = img->detector->detector_distance;
   dataset_id = H5Dcreate(file_id, "/detector_distance", out_type_id,
 			 dataspace_id, H5P_DEFAULT);
+  if(dataset_id < 0){
+    goto error;
+  }
   status = H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		    H5P_DEFAULT, values);
+  if(status < 0){
+    goto error;
+  }
   status = H5Dclose(dataset_id);
+  if(status < 0){
+    goto error;
+  }
 
   values[0] = img->scaled;
   dataset_id = H5Dcreate(file_id, "/scaled", out_type_id,
 			 dataspace_id, H5P_DEFAULT);
+  if(dataset_id < 0){
+    goto error;
+  }
   status = H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		    H5P_DEFAULT, values);
+  if(status < 0){
+    goto error;
+  }
   status = H5Dclose(dataset_id);
+  if(status < 0){
+    goto error;
+  }
 
 
 
   version = 2;
   dataset_id = H5Dcreate(file_id, "/version", H5T_NATIVE_INT,
 			 dataspace_id, H5P_DEFAULT);
+  if(dataset_id < 0){
+    goto error;
+  }
   status = H5Dwrite(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL,
 		    H5P_DEFAULT, &version);
+  if(status < 0){
+    goto error;
+  }
   status = H5Dclose(dataset_id);
+  if(status < 0){
+    goto error;
+  }
 
 
   status = H5Sclose(dataspace_id);
+  if(status < 0){
+    goto error;
+  }
 
 
   status = H5Fclose(file_id);
+  if(status < 0){
+    goto error;
+  }
   if(rename(tmpfile,filename)){
     sp_error_warning("Unable to rename %s to %s",tmpfile,filename);
   }
+  return;
+  
+ error:
+  sp_error_warning("Error while writing HDF5 file at %s:%d\n",__FILE__,__LINE__);
+  return;    
 }
 
 
@@ -2544,6 +2664,98 @@ Image * sp_image_cross_correlate(Image * a, Image * b, int * size){
   }
   return res;  
 }
+
+
+/* Calculates the convolution (or correlation if flag != 0) of a with b.
+ *
+ * The convolution is calculated with better than pixel precision. 
+ * precision is the inverse of the precision of the output. precision == 2 
+ * corresponds to output with 1/2 pixel precision.
+ * Flag tells whether to calculate convolution (flag == 0) or correlation (flag != 0)
+ * The other parameters are similar to the normal convolution
+ */
+Image * sp_image_convolute_fractional(Image * a, Image * b, int * size,int precision, int flag){
+  int x;
+  int y;
+  int z;
+  int i;
+  Image * res;
+  Image * a_ft;
+  Image * b_ft;
+  Image * tmp;
+
+  if(sp_c3matrix_x(a->image) < sp_c3matrix_x(b->image)){
+    /* swap */
+    res = a;
+    a = b;
+    b = res;
+  }
+
+  /* special treatment of 2D images */
+  int precision_z = precision;
+  if(a->num_dimensions == SP_2D){
+    precision_z = 1;
+  }
+
+  if(size){
+    x = size[0];
+    y = size[1];
+    z = size[2];
+  }else{
+    x = sp_c3matrix_x(a->image);
+    y = sp_c3matrix_y(a->image);
+    z = sp_c3matrix_z(a->image);
+  }
+
+  tmp = zero_pad_image(a,x,y,z,1);
+  a_ft = sp_image_fft(tmp);
+  sp_image_free(tmp);
+  tmp = zero_pad_image(a_ft,x*precision,y*precision,z*precision_z,1);
+  sp_image_free(a_ft);
+  a_ft = tmp;
+  
+
+  tmp = zero_pad_image(b,x,y,z,1);
+  b_ft = sp_image_fft(tmp);
+  sp_image_free(tmp);
+  tmp = zero_pad_image(b_ft,x*precision,y*precision,z*precision_z,1);
+  sp_image_free(b_ft);
+  b_ft = tmp;
+
+
+  tmp = sp_image_duplicate(a_ft,SP_COPY_DETECTOR);
+  tmp->shifted = 1;
+  sp_image_rephase(tmp,SP_ZERO_PHASE);
+  /* Now do the multiplication in fourier space */
+  /* Using the Convolution Theorem */
+  for(i = 0;i<sp_image_size(tmp);i++){
+    if(flag){
+      tmp->image->data[i] = sp_cmul(a_ft->image->data[i],sp_cconj(b_ft->image->data[i]));
+    }else{
+      tmp->image->data[i] = sp_cmul(a_ft->image->data[i],b_ft->image->data[i]);
+    }
+  }
+
+  sp_image_free(a_ft);
+  sp_image_free(b_ft);
+  /* Backtransform */
+  res = sp_image_ifft(tmp);
+  sp_image_free(tmp);
+
+  /* should be all real */
+  /* Note well that we're using the size of the INPUT to scale! */
+  for(i = 0;i<sp_image_size(res);i++){
+    res->image->data[i] = sp_cscale(res->image->data[i],1.0/sp_image_size(a));    
+  }
+
+  res->detector->image_center[0] = 0;
+  res->detector->image_center[1] = 1;
+  res->detector->image_center[2] = 2;
+  res->shifted = 1;
+
+  return res;  
+}
+
 
 /* if wrap around is on b must fit inside a or the other way around */
 
@@ -4933,6 +5145,56 @@ void sp_image_superimpose(Image * _a,Image * _b, int flags){
   
   sp_image_dephase(a);
   sp_image_dephase(b);
+  Image * direct_overlap = sp_image_cross_correlate(a,b,NULL);
+  max = sp_image_max(direct_overlap,&index,&x,&y,&z);
+  sp_image_free(direct_overlap);
+  if(flags & SP_ENANTIOMORPH){
+    int x2,y2,z2;
+    long long index2;
+    Image * enantio_overlap = sp_image_convolute(a,b,NULL);
+    real max2 = sp_image_max(enantio_overlap,&index2,&x2,&y2,&z2);
+    sp_image_free(enantio_overlap);
+    if(max2 > max){
+      center_invert = 1;
+      max = max2;
+      x = x2+1;
+      y = y2+1;
+      z = z2+1;
+      sp_image_reflect(_b,IN_PLACE,SP_ORIGO);
+    }
+  }
+  sp_image_free(a);
+  sp_image_free(b);
+  sp_image_translate(_b,x,y,z,SP_TRANSLATE_WRAP_AROUND);
+}
+
+
+
+/*! Superimposes image b on top of image a with fractional pixel precision
+ *
+ *  flags is a bitwise combination of the following:
+ *
+ *  SP_ENANTIOMORPH - allow to try to superimpose not only b but also
+ *  the "mirror image" of b [b(-x)].
+ *
+ *  A precision==2 corresponds to superpositions with 1/2 pixels precision
+ *  precision==3 corresponds to superpositions with 1/3 pixels precision and so forth
+ *  The image is padded with zeroes so as to becomes precision*original so the 
+ *  run time is proportional to the precision to the power of the image dimension.
+ *
+*/
+void sp_image_fractional_superimpose(Image * _a,Image * _b, int flags, int precision){
+  int x,y,z;
+  long long index;
+  int center_invert = 0;
+  real max;
+  /* check maximum overlap of a and b */
+  Image * a = sp_image_duplicate(_a,SP_COPY_DATA);
+  Image * b = sp_image_duplicate(_b,SP_COPY_DATA);
+  
+  sp_image_dephase(a);
+  sp_image_dephase(b);
+
   Image * direct_overlap = sp_image_cross_correlate(a,b,NULL);
   max = sp_image_max(direct_overlap,&index,&x,&y,&z);
   sp_image_free(direct_overlap);

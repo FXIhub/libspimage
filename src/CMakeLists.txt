@@ -1,5 +1,5 @@
 LIST(APPEND OBJECTS  "image_util.c" "fft.c" "linear_alg.c" "mem_util.c" "image_sphere.c" "sperror.c" 
-  "gaussianinv.c" "image_noise.c" "hashtable.c" "interpolation_kernels.c" "time_util.c" "list.c")
+  "gaussianinv.c" "image_noise.c" "hashtable.c" "interpolation_kernels.c" "time_util.c" "list.c" "prtf.c")
 IF(BUILD_STATIC_LIB)
 	ADD_LIBRARY(spimage STATIC ${OBJECTS})
 ELSE(BUILD_STATIC_LIB)
