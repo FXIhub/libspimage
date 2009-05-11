@@ -5183,7 +5183,7 @@ void sp_image_superimpose(Image * _a,Image * _b, int flags){
  *  run time is proportional to the precision to the power of the image dimension.
  *
 */
-void sp_image_fractional_superimpose(Image * _a,Image * _b, int flags, int precision){
+void sp_image_superimpose_fractional(Image * _a,Image * _b, int flags, int precision){
   int x,y,z;
   long long index;
   int center_invert = 0;
@@ -5195,13 +5195,13 @@ void sp_image_fractional_superimpose(Image * _a,Image * _b, int flags, int preci
   sp_image_dephase(a);
   sp_image_dephase(b);
 
-  Image * direct_overlap = sp_image_cross_correlate(a,b,NULL);
+  Image * direct_overlap = sp_image_convolute_fractional(a,b,NULL,precision,1);
   max = sp_image_max(direct_overlap,&index,&x,&y,&z);
   sp_image_free(direct_overlap);
   if(flags & SP_ENANTIOMORPH){
     int x2,y2,z2;
     long long index2;
-    Image * enantio_overlap = sp_image_convolute(a,b,NULL);
+    Image * enantio_overlap = sp_image_convolute_fractional(a,b,NULL,precision,0);
     real max2 = sp_image_max(enantio_overlap,&index2,&x2,&y2,&z2);
     sp_image_free(enantio_overlap);
     if(max2 > max){
@@ -5215,7 +5215,7 @@ void sp_image_fractional_superimpose(Image * _a,Image * _b, int flags, int preci
   }
   sp_image_free(a);
   sp_image_free(b);
-  sp_image_translate(_b,x,y,z,SP_TRANSLATE_WRAP_AROUND);
+  sp_image_fourier_translate(_b,(real)x/precision,(real)y/precision,(real)z/precision);
 }
 
 
@@ -5318,6 +5318,53 @@ void sp_image_translate(Image * a, int x,int y,int z,int flags){
   sp_image_free(tmp);
 }
   
+
+void sp_image_fourier_translate(Image * ra, real t_x, real t_y, real t_z){
+  Image * a = sp_image_fft(ra);
+  /* fourier frequency x*/
+  int f_x;
+  /* fourier frequency y*/
+  int f_y;
+  /* fourier frequency z*/
+  int f_z;
+  long long i = 0;
+  real nx_inv = 1.0/sp_image_x(a);
+  real ny_inv = 1.0/sp_image_y(a);
+  real nz_inv = 1.0/sp_image_z(a);
+  int x,y,z;
+  real two_pi = 2*M_PI;
+  for(z = 0;z<sp_image_z(a);z++){    
+    if(z < sp_image_z(a)/2){
+      f_z = z;
+    }else{
+      f_z = -(sp_image_z(a)-z);
+    }
+    for(y = 0;y<sp_image_y(a);y++){
+      if(y < sp_image_y(a)/2){
+	f_y = y;
+      }else{
+	f_y = -(sp_image_y(a)-y);
+      }
+      for(x = 0;x<sp_image_x(a);x++){
+	if(x < sp_image_x(a)/2){
+	  f_x = x;
+	}else{
+	  f_x = -(sp_image_x(a)-x);
+	}
+	a->image->data[i] = sp_cmul(a->image->data[i],
+				       sp_cinit(cos(f_x * t_x * nx_inv * two_pi+f_y * t_y * ny_inv * two_pi+f_z * t_z * nz_inv * two_pi),
+						-sin(f_x * t_x * nx_inv * two_pi+f_y * t_y * ny_inv * two_pi+f_z * t_z * nz_inv * two_pi)));
+	i++;
+      }
+    }
+  }
+  Image * tmp = sp_image_ifft(a);
+  sp_image_scale(tmp,1.0/sp_image_size(tmp));
+  sp_image_memcpy(ra,tmp);
+  sp_image_free(a);
+  sp_image_free(tmp);
+}
+
 real sp_image_rs_r_factor(Image * a, Image * b){
   real sum_dif = 0;
   real sum_sum = 0;

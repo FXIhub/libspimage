@@ -831,12 +831,7 @@ void test_sp_image_convolute_fractional(CuTest * tc){
   t_y = 0;
   t_z = 0;
 
-  Image * tmp = sp_image_fft(b);
-  sp_image_fourier_translate(tmp,t_x,t_y,t_z);
-  sp_image_free(b);
-  b = sp_image_ifft(tmp);
-  sp_image_scale(b,1.0/sp_image_size(b));
-  sp_image_free(tmp);
+  sp_image_fourier_translate(b,t_x,t_y,t_z);
   precision = 2;
   fcorr = sp_image_convolute_fractional(a,b,NULL,precision,1);
   max = sp_image_max(fcorr,&index,&x,&y,&z);
@@ -845,6 +840,74 @@ void test_sp_image_convolute_fractional(CuTest * tc){
   CuAssertTrue(tc, ((int)((real)z/precision+t_z+0.5)) % sp_image_z(a) == 0);  
 
 }  
+
+
+void test_sp_image_superimpose_fractional(CuTest * tc){
+  /* First a simple test without enantiomorph */
+  int size = 4;
+  Image * a;
+  Image * b;
+  int precision = 1;
+  a = sp_image_alloc(size,size,1);
+  b = sp_image_alloc(size,size,1);
+  a->phased = 1;
+  b->phased = 1;
+  for(int i = 0;i<sp_image_size(a);i++){
+    a->image->data[i] = sp_cinit(p_drand48(),0);
+  }
+  b = sp_image_duplicate(a,SP_COPY_ALL);
+  sp_image_translate(b,1,-1,0,SP_TRANSLATE_WRAP_AROUND);
+  sp_image_superimpose_fractional(a,b,0,precision);
+  for(int z = 0; z<sp_image_z(a);z++){
+    for(int y = 0; y<sp_image_y(a);y++){
+      for(int x = 0; x<sp_image_x(a);x++){
+	CuAssertComplexEquals(tc,sp_image_get(b,x,y,z),sp_image_get(a,x,y,z),fabs(1000*REAL_EPSILON*sp_cabs(sp_image_get(b,x,y,z))+1000*REAL_EPSILON));
+      }
+    }
+  }
+  /* Now test with enantiomorph*/
+  sp_image_free(b);
+  b = sp_image_duplicate(a,SP_COPY_ALL);
+  sp_image_translate(b,1,-1,0,SP_TRANSLATE_WRAP_AROUND);
+  sp_image_reflect(b,1,SP_ORIGO);
+  
+
+  sp_image_superimpose_fractional(a,b,SP_ENANTIOMORPH,precision);
+  for(int z = 0; z<sp_image_z(a);z++){
+    for(int y = 0; y<sp_image_y(a);y++){
+      for(int x = 0; x<sp_image_x(a);x++){
+	CuAssertComplexEquals(tc,sp_image_get(b,x,y,z),sp_image_get(a,x,y,z),fabs(REAL_EPSILON*sp_cabs(sp_image_get(b,x,y,z))+REAL_EPSILON*1000));
+      }
+    }
+  }
+  /* try fractional superimpose */
+  sp_image_free(b);
+  b = sp_image_duplicate(a,SP_COPY_ALL);
+  sp_image_fourier_translate(b,0.5,0,0);
+  precision = 2;
+  sp_image_superimpose_fractional(a,b,SP_ENANTIOMORPH,precision);
+  for(int z = 0; z<sp_image_z(a);z++){
+    for(int y = 0; y<sp_image_y(a);y++){
+      for(int x = 0; x<sp_image_x(a);x++){
+	CuAssertComplexEquals(tc,sp_image_get(b,x,y,z),sp_image_get(a,x,y,z),fabs(REAL_EPSILON*sp_cabs(sp_image_get(b,x,y,z))+REAL_EPSILON*1000));
+      }
+    }
+  }
+
+  sp_image_free(b);
+  b = sp_image_duplicate(a,SP_COPY_ALL);
+  sp_image_fourier_translate(b,1.25,2.25,0);
+  precision = 8;
+  sp_image_superimpose_fractional(a,b,SP_ENANTIOMORPH,precision);
+  for(int z = 0; z<sp_image_z(a);z++){
+    for(int y = 0; y<sp_image_y(a);y++){
+      for(int x = 0; x<sp_image_x(a);x++){
+	CuAssertComplexEquals(tc,sp_image_get(b,x,y,z),sp_image_get(a,x,y,z),fabs(REAL_EPSILON*sp_cabs(sp_image_get(b,x,y,z))+REAL_EPSILON*1000000));
+      }
+    }
+  }
+
+}
 
   
 CuSuite* image_get_suite(void)
@@ -867,6 +930,7 @@ CuSuite* image_get_suite(void)
   SUITE_ADD_TEST(suite,test_sp_background_adaptative_mesh);
   SUITE_ADD_TEST(suite,test_sp_image_shift);
   SUITE_ADD_TEST(suite,test_sp_image_convolute_fractional);
+  SUITE_ADD_TEST(suite,test_sp_image_superimpose_fractional);
   return suite;
 }
 

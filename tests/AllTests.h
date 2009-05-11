@@ -25,6 +25,7 @@
 CuSuite* linear_alg_get_suite();
 CuSuite* image_get_suite();
 CuSuite* proj_get_suite();
+CuSuite* prtf_get_suite();
 CuSuite* container_get_suite();
 
 #endif

@@ -106,11 +106,7 @@ void test_sp_prtf_advanced(CuTest* tc){
 
   /* test fine translation correction */
   list[1]->phased = 1;
-   tmp = sp_image_fft(list[1]);
-  sp_image_fourier_translate(tmp, 0.5,0,0);
-  sp_image_free(list[1]);
-  list[1] = sp_image_ifft(tmp);
-  sp_image_scale(list[1],1.0/sp_image_size(list[1]));
+  sp_image_fourier_translate(list[1], 0.5,0,0);
   sp_image_free(prtf);
 
   prtf = sp_prtf_advanced(list,2,RealSpace);

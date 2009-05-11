@@ -694,6 +694,22 @@ spimage_EXPORT void sp_srand(int i);
  */
 spimage_EXPORT void sp_image_superimpose(Image * a,Image * b, int flags);
 
+
+/*! Superimposes image b on top of image a with fractional pixel precision
+ *
+ *  flags is a bitwise combination of the following:
+ *
+ *  SP_ENANTIOMORPH - allow to try to superimpose not only b but also
+ *  the "mirror image" of b [b(-x)].
+ *
+ *  A precision==2 corresponds to superpositions with 1/2 pixels precision
+ *  precision==3 corresponds to superpositions with 1/3 pixels precision and so forth
+ *  The image is padded with zeroes so as to becomes precision*original so the 
+ *  run time is proportional to the precision to the power of the image dimension.
+ *
+*/
+spimage_EXPORT void sp_image_superimpose_fractional(Image * _a,Image * _b, int flags, int precision);
+
 /*! Minimize the difference between the phases of a and b by adding a constant phase to b.
  *
  * The returned value is the phase factor in radians.
@@ -716,7 +732,13 @@ spimage_EXPORT real sp_image_phase_match(Image * a, Image * b,int weighted);
  */
 spimage_EXPORT void sp_image_translate(Image * a,int x,int y,int z, int flags);
 
-
+/*! Translates an image by x,y,z by transforming the image to fourier space and back.
+ * 
+ * Translates an image by multiplying it with a phase ramp in fourier space.
+ * The image is always wrapped around when it goes outside the image.
+ */
+spimage_EXPORT void sp_image_fourier_translate(Image * ra, real t_x, real t_y, real t_z);
+  
 /*! Calculates the Real Space R factor between a and b
  *
  *  This routine does not scale or translate the images! This must be done before hand
