@@ -61,18 +61,21 @@ extern "C"
 #define SP_TRANSLATE_WRAP_AROUND 1
 #define SP_TRANSLATE_DISCARD_OUTSIDE 2
 
-#define SP_ENANTIOMORPH 1
 
 
 /*! TopLeftCorner means that the Origin considered will be the Top Left Back pixel, or the first in the array 
    ImageCenter means that the Origin considered will be the image center
  */
-typedef enum{TopLeftCorner,ImageCenter}SpOrigin;
+typedef enum{SpTopLeftCorner,SpImageCenter}SpOrigin;
 
 /*! FourierSpace corresponds to diffraction space and RealSpace corresponds to
   the object space.
  */
-typedef enum{FourierSpace,RealSpace}SpSpace;
+typedef enum{SpFourierSpace,SpRealSpace}SpSpace;
+
+/*! Parameters for the superimpose routines. They should all be powers of 2 as they
+  will be ORed together as a single argument. */
+typedef enum{SpEnantiomorph=1,SpCorrectPhaseShift=2}SpSuperimposeFlags;
 
 /** @defgroup Distance
  *  Calculates several kinds of distances in an image
@@ -692,15 +695,16 @@ spimage_EXPORT void sp_srand(int i);
  *  dot product of the \em absolute value of the two images.
  *
  */
-spimage_EXPORT void sp_image_superimpose(Image * a,Image * b, int flags);
+spimage_EXPORT void sp_image_superimpose(Image * a,Image * b, SpSuperimposeFlags flags);
 
 
 /*! Superimposes image b on top of image a with fractional pixel precision
  *
  *  flags is a bitwise combination of the following:
  *
- *  SP_ENANTIOMORPH - allow to try to superimpose not only b but also
- *  the "mirror image" of b [b(-x)].
+ *  SpEnantiomorph - allow to try to superimpose not only b but also
+ *  the "mirror image" of b [b(-x)*].
+ *  SpCorrectPhaseShift - phase_shift b to match a.
  *
  *  A precision==2 corresponds to superpositions with 1/2 pixels precision
  *  precision==3 corresponds to superpositions with 1/3 pixels precision and so forth
@@ -708,7 +712,7 @@ spimage_EXPORT void sp_image_superimpose(Image * a,Image * b, int flags);
  *  run time is proportional to the precision to the power of the image dimension.
  *
 */
-spimage_EXPORT void sp_image_superimpose_fractional(Image * _a,Image * _b, int flags, int precision);
+  spimage_EXPORT void sp_image_superimpose_fractional(Image * a,Image * b, SpSuperimposeFlags flags, int precision);
 
 /*! Minimize the difference between the phases of a and b by adding a constant phase to b.
  *
@@ -789,7 +793,12 @@ spimage_EXPORT int sp_image_get_coords_from_index(Image * in,int index,real * x,
    */
   spimage_EXPORT Image * sp_image_rotate(Image * in, SpAxis axis, SpAngle angleDef, int in_place);
 
+  /*! Returns input*exp(i phi) meaning a phase shift of phi on each pixel
 
+    If in_place is different from 0 the input image is altered,
+    otherwise a new image is created.
+   */
+  spimage_EXPORT Image * sp_image_phase_shift(Image * in, real phi, int in_place);
 #ifdef __cplusplus
 }  /* extern "C" */
 #endif /* __cplusplus */

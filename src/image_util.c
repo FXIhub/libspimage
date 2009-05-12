@@ -936,7 +936,7 @@ real sp_image_dist(Image * in, int i, int type){
 
 static real dist_to_axis(int i, Image * in){
   float x,y,z;
-  sp_image_get_coords_from_index(in,i,&x,&y,&z,TopLeftCorner);
+  sp_image_get_coords_from_index(in,i,&x,&y,&z,SpTopLeftCorner);
   real dx,dy,dz;
   if(in->shifted){
     dx = MIN(x,sp_c3matrix_x(in->image)-x);
@@ -954,7 +954,7 @@ static real dist_to_axis(int i, Image * in){
 
 static real dist_to_center(int i, Image * in){
   float x,y,z;
-  sp_image_get_coords_from_index(in,i,&x,&y,&z,TopLeftCorner);
+  sp_image_get_coords_from_index(in,i,&x,&y,&z,SpTopLeftCorner);
   real dx,dy,dz;
   if(in->shifted){
     dx = MIN(x,sp_c3matrix_x(in->image)-x);
@@ -970,7 +970,7 @@ static real dist_to_center(int i, Image * in){
 
 static real square_dist_to_center(int i, Image * in){
   float x,y,z;
-  sp_image_get_coords_from_index(in,i,&x,&y,&z,TopLeftCorner);
+  sp_image_get_coords_from_index(in,i,&x,&y,&z,SpTopLeftCorner);
   real dx,dy,dz;
   if(in->shifted){
     dx = MIN(x,sp_c3matrix_x(in->image)-x);
@@ -987,7 +987,7 @@ static real square_dist_to_center(int i, Image * in){
 
 static real dist_to_corner(int i, Image * in){
   float x,y,z;
-  sp_image_get_coords_from_index(in,i,&x,&y,&z,TopLeftCorner);
+  sp_image_get_coords_from_index(in,i,&x,&y,&z,SpTopLeftCorner);
   real dx,dy,dz;
   if(sp_c3matrix_x(in->image)-1-x < x){
     dx = sp_c3matrix_x(in->image)-1-x;
@@ -3933,7 +3933,7 @@ real sp_image_max(Image * img, long long * index,int * x, int * y, int * z){
   float fx,fy,fz;
   ret = sp_c3matrix_max(img->image,index);
   if(index){
-    sp_image_get_coords_from_index(img,*index,&fx,&fy,&fz,TopLeftCorner);
+    sp_image_get_coords_from_index(img,*index,&fx,&fy,&fz,SpTopLeftCorner);
     if(x){
       *x = (int)round(fx);
       /*      *x = *index%(sp_image_z(img)*sp_image_y(img));*/
@@ -4117,7 +4117,7 @@ real sp_point_convolute(Image * a, Image * b, int index){
     fprintf(stderr,"Point convoluting with a shifted function is not currently defined!\n");
     return 0;
   }
-  sp_image_get_coords_from_index(a,index,&index_x,&index_y,&index_z,ImageCenter);
+  sp_image_get_coords_from_index(a,index,&index_x,&index_y,&index_z,SpImageCenter);
   /*  index_x = index%sp_c3matrix_z(a->image)%sp_c3matrix_y(a->image)-
     a->detector->image_center[0];
   index_y = index/sp_c3matrix_x(a->image)%sp_c3matrix_z(a->image)-
@@ -4151,7 +4151,7 @@ real sp_point_convolute(Image * a, Image * b, int index){
 int sp_image_shift_index(Image * a, long long index){
   int x,y,z;
   real fx,fy,fz;
-  sp_image_get_coords_from_index(a,index,&fx,&fy,&fz,TopLeftCorner);
+  sp_image_get_coords_from_index(a,index,&fx,&fy,&fz,SpTopLeftCorner);
   x = (int)round(fx);
   y = (int)round(fy);
   z = (int)round(fz);
@@ -5134,7 +5134,7 @@ static Image * read_smv(const char * filename){
  *  the "mirror image" of b [b(-x)].
  *
 */
-void sp_image_superimpose(Image * _a,Image * _b, int flags){
+void sp_image_superimpose(Image * _a,Image * _b, SpSuperimposeFlags flags){
   int x,y,z;
   long long index;
   int center_invert = 0;
@@ -5148,7 +5148,7 @@ void sp_image_superimpose(Image * _a,Image * _b, int flags){
   Image * direct_overlap = sp_image_cross_correlate(a,b,NULL);
   max = sp_image_max(direct_overlap,&index,&x,&y,&z);
   sp_image_free(direct_overlap);
-  if(flags & SP_ENANTIOMORPH){
+  if(flags & SpEnantiomorph){
     int x2,y2,z2;
     long long index2;
     Image * enantio_overlap = sp_image_convolute(a,b,NULL);
@@ -5174,7 +5174,9 @@ void sp_image_superimpose(Image * _a,Image * _b, int flags){
  *
  *  flags is a bitwise combination of the following:
  *
- *  SP_ENANTIOMORPH - allow to try to superimpose not only b but also
+ *  SpEnantiomorph - allow to try to superimpose not only b but also
+ *  the "mirror image" of b [b(-x)].
+ *  SpCorrectPhaseShift - allow to try to superimpose not only b but also
  *  the "mirror image" of b [b(-x)].
  *
  *  A precision==2 corresponds to superpositions with 1/2 pixels precision
@@ -5182,8 +5184,9 @@ void sp_image_superimpose(Image * _a,Image * _b, int flags){
  *  The image is padded with zeroes so as to becomes precision*original so the 
  *  run time is proportional to the precision to the power of the image dimension.
  *
+ *
 */
-void sp_image_superimpose_fractional(Image * _a,Image * _b, int flags, int precision){
+void sp_image_superimpose_fractional(Image * _a,Image * _b, SpSuperimposeFlags flags, int precision){
   int x,y,z;
   long long index;
   int center_invert = 0;
@@ -5191,31 +5194,41 @@ void sp_image_superimpose_fractional(Image * _a,Image * _b, int flags, int preci
   /* check maximum overlap of a and b */
   Image * a = sp_image_duplicate(_a,SP_COPY_DATA);
   Image * b = sp_image_duplicate(_b,SP_COPY_DATA);
-  
-  sp_image_dephase(a);
-  sp_image_dephase(b);
+  real phase_correction = 0;
 
   Image * direct_overlap = sp_image_convolute_fractional(a,b,NULL,precision,1);
+  /* It's important that this is the maximum of the absolute value
+   Because in the case of phase shifted input that maximum is gonna have the
+  same value in abosolute value as |(a+bi)*((a-bi)*exp(phi))| = a^2+b^2 */
   max = sp_image_max(direct_overlap,&index,&x,&y,&z);
+  phase_correction = sp_carg(direct_overlap->image->data[index]);
   sp_image_free(direct_overlap);
-  if(flags & SP_ENANTIOMORPH){
+  if(flags & SpEnantiomorph){
     int x2,y2,z2;
     long long index2;
+
     Image * enantio_overlap = sp_image_convolute_fractional(a,b,NULL,precision,0);
+
     real max2 = sp_image_max(enantio_overlap,&index2,&x2,&y2,&z2);
-    sp_image_free(enantio_overlap);
     if(max2 > max){
       center_invert = 1;
       max = max2;
-      x = x2+1;
-      y = y2+1;
-      z = z2+1;
+      x = x2+precision;
+      y = y2+precision;
+      z = z2+precision;
+      phase_correction = sp_carg(enantio_overlap->image->data[index2]);
+      /* enantiomorph is both reflected and conjugated */
       sp_image_reflect(_b,IN_PLACE,SP_ORIGO);
+      sp_image_conj(_b);
     }
+    sp_image_free(enantio_overlap);
   }
   sp_image_free(a);
   sp_image_free(b);
   sp_image_fourier_translate(_b,(real)x/precision,(real)y/precision,(real)z/precision);
+  if(flags & SpCorrectPhaseShift){
+    sp_image_phase_shift(_b,phase_correction,1);
+  }
 }
 
 
@@ -5408,12 +5421,12 @@ int sp_image_get_coords_from_index(Image * in,int index,real * x, real * y, real
   nx = sp_image_x(in);
   ny = sp_image_y(in);
   nz = sp_image_z(in);
-  if(origin == TopLeftCorner){    
+  if(origin == SpTopLeftCorner){    
     *z = index/(ny*nx);
     *y = (index%(ny*nx))/nx;
     *x = index%(nx);
     return 0;
-  }else if(origin == ImageCenter){
+  }else if(origin == SpImageCenter){
     *z = index/(ny*nx);
     *y = (index%(ny*nx))/nx;
     *x = index%(nx);
@@ -5480,3 +5493,19 @@ Image * sp_background_adaptative_mesh(Image * a,int cols, int rows, int slices){
   return ret;
 }
 
+
+Image * sp_image_phase_shift(Image * a, real phi, int in_place){
+  Image * out;
+  if(in_place){
+    out = a;
+  }else{
+    out = sp_image_duplicate(a,SP_COPY_ALL);
+  }
+  for(int i = 0;i<sp_image_size(a);i++){
+    real mag = sp_cabs(a->image->data[i]);
+    real arg = sp_carg(a->image->data[i]);
+    sp_real(out->image->data[i]) = mag*cos(arg+phi);
+    sp_imag(out->image->data[i]) = mag*sin(arg+phi);
+  }
+  return out;
+}

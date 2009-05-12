@@ -41,11 +41,7 @@ void test_sp_prtf_advanced(CuTest* tc){
   Image * list[2];
   Image * a = sp_image_alloc(size,size,1);
   for(int i = 0;i<sp_image_size(a);i++){
-    if(sp_image_dist(a,i,SP_TO_CORNER) < 2){
-      a->image->data[i] = sp_cinit(p_drand48(),p_drand48());
-    }else{
-      a->image->data[i] = sp_cinit(0,0);
-    }
+    a->image->data[i] = sp_cinit(p_drand48(),p_drand48());
   }
   Image * tmp = sp_image_shift(a);
   sp_image_free(a);
@@ -53,7 +49,7 @@ void test_sp_prtf_advanced(CuTest* tc){
   Image * b = sp_image_duplicate(a,SP_COPY_ALL);
   list[0] = sp_image_fft(a);
   list[1] = sp_image_fft(b);
-  Image * prtf = sp_prtf_advanced(list,2,FourierSpace);
+  Image * prtf = sp_prtf_advanced(list,2,SpFourierSpace);
   for(int i = 0;i<sp_image_size(prtf);i++){
     /* Check that the magnitude is 1 */
     CuAssertDblEquals(tc,1,sp_cabs(prtf->image->data[i]),1000*fabs(REAL_EPSILON));
@@ -62,7 +58,7 @@ void test_sp_prtf_advanced(CuTest* tc){
   sp_image_free(list[1]);
   list[0] = sp_image_duplicate(a,SP_COPY_ALL);
   list[1] = sp_image_duplicate(b,SP_COPY_ALL);
-  prtf = sp_prtf_advanced(list,2,RealSpace);
+  prtf = sp_prtf_advanced(list,2,SpRealSpace);
   for(int i = 0;i<sp_image_size(prtf);i++){
     /* Check that the magnitude is 1 */
     CuAssertDblEquals(tc,1,sp_cabs(prtf->image->data[i]),1000*fabs(REAL_EPSILON));
@@ -77,7 +73,7 @@ void test_sp_prtf_advanced(CuTest* tc){
   }
   sp_image_free(list[1]);
   list[1] = sp_image_duplicate(b,SP_COPY_ALL);
-  prtf = sp_prtf_advanced(list,2,RealSpace);
+  prtf = sp_prtf_advanced(list,2,SpRealSpace);
   for(int i = 0;i<sp_image_size(prtf);i++){
     /* Check that the magnitude is 1 */
     CuAssertDblEquals(tc,1,sp_cabs(prtf->image->data[i]),fabs(1000*REAL_EPSILON));
@@ -87,29 +83,47 @@ void test_sp_prtf_advanced(CuTest* tc){
   sp_image_free(prtf);
   /* test centrosymmetry correction */
   sp_image_reflect(list[1],1,SP_ORIGO);
+  sp_image_conj(list[1]);
 
-  prtf = sp_prtf_advanced(list,2,RealSpace);
+  prtf = sp_prtf_advanced(list,2,SpRealSpace);
   for(int i = 0;i<sp_image_size(prtf);i++){
     /* Check that the magnitude is 1 */
     CuAssertDblEquals(tc,1,sp_cabs(prtf->image->data[i]),fabs(1000*REAL_EPSILON));
   }
 
   /* test translation correction */
-  sp_image_translate(list[1], rand()%3,rand()%3,rand()%3,SP_TRANSLATE_WRAP_AROUND);
+  sp_image_translate(list[1], rand()%sp_image_x(list[1]),rand()%sp_image_y(list[1]),rand()%sp_image_z(list[1]),SP_TRANSLATE_WRAP_AROUND);
   sp_image_free(prtf);
 
-  prtf = sp_prtf_advanced(list,2,RealSpace);
+  prtf = sp_prtf_advanced(list,2,SpRealSpace);
   for(int i = 0;i<sp_image_size(prtf);i++){
     /* Check that the magnitude is 1 */
     CuAssertDblEquals(tc,1,sp_cabs(prtf->image->data[i]),fabs(1000*REAL_EPSILON));
   }  
+
+  /* test fine translation correction with centrosymmetry and phase shift */
+  list[1]->phased = 1;
+  sp_image_fourier_translate(list[1], 0.5,0,0);
+  sp_image_free(prtf);
+  /* test centrosymmetry correction */
+  sp_image_reflect(list[1],1,SP_ORIGO);
+  sp_image_conj(list[1]);
+  sp_image_phase_shift(list[1],0.25,1);
+
+
+  prtf = sp_prtf_advanced(list,2,SpRealSpace);
+  for(int i = 0;i<sp_image_size(prtf);i++){
+    /* Check that the magnitude is 1 */
+    CuAssertDblEquals(tc,1,sp_cabs(prtf->image->data[i]),fabs(1000*REAL_EPSILON));
+  }  
+
 
   /* test fine translation correction */
   list[1]->phased = 1;
   sp_image_fourier_translate(list[1], 0.5,0,0);
   sp_image_free(prtf);
 
-  prtf = sp_prtf_advanced(list,2,RealSpace);
+  prtf = sp_prtf_advanced(list,2,SpRealSpace);
   for(int i = 0;i<sp_image_size(prtf);i++){
     /* Check that the magnitude is 1 */
     CuAssertDblEquals(tc,1,sp_cabs(prtf->image->data[i]),fabs(1000*REAL_EPSILON));
@@ -121,7 +135,7 @@ void test_sp_prtf_advanced(CuTest* tc){
   }
   list[1] = sp_image_duplicate(b,SP_COPY_ALL);
   sp_image_free(prtf);
-  prtf = sp_prtf_advanced(list,2,RealSpace);
+  prtf = sp_prtf_advanced(list,2,SpRealSpace);
   for(int i = 0;i<sp_image_size(prtf);i++){
     /* Check that the magnitude is 1 */
     CuAssertTrue(tc,sp_cabs(prtf->image->data[i]) >= 0);

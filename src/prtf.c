@@ -41,7 +41,7 @@ Image * sp_prtf_advanced(Image ** list,int n,SpSpace space){
   /* We'll do the superposition and phase match in real space
      but the prtf in reciprocal space
   */
-  if(space == RealSpace){
+  if(space == SpRealSpace){
     for(int i = 0;i<n;i++){
       real_image[i] = sp_image_duplicate(list[i],SP_COPY_ALL);
     }
@@ -51,8 +51,7 @@ Image * sp_prtf_advanced(Image ** list,int n,SpSpace space){
     }
   }
   for(int i = 1;i<n;i++){
-    sp_image_superimpose_fractional(real_image[0],real_image[i],SP_ENANTIOMORPH,4);
-    sp_image_phase_match(real_image[0],real_image[i],2);
+    sp_image_superimpose_fractional(real_image[0],real_image[i],SpCorrectPhaseShift|SpEnantiomorph,4);
   }
   for(int i = 0;i<n;i++){
     fourier_image[i] = sp_image_fft(real_image[i]);
