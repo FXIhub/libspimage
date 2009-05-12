@@ -71,7 +71,11 @@ typedef enum{SpTopLeftCorner,SpImageCenter}SpOrigin;
 /*! FourierSpace corresponds to diffraction space and RealSpace corresponds to
   the object space.
  */
-typedef enum{SpFourierSpace,SpRealSpace}SpSpace;
+typedef enum{SpFourierSpace=1,SpRealSpace=2}SpSpace;
+
+/*! This is a general flag which is usually used to represent whether the input
+ of a certain operation is altered(InPlace) or not(OutOfPlace) */
+typedef enum{SpInPlace=65536,SpOutOfPlace=131072}SpPlace;
 
 /*! Parameters for the superimpose routines. They should all be powers of 2 as they
   will be ORed together as a single argument. */
