@@ -136,6 +136,20 @@ real p_drand48(){
   return (ret);
 }
 
+
+int sp_image_is_valid(Image * a){
+  int valid = 1;
+  for(int i = 0;i<sp_image_size(a);i++){
+    if(!isfinite(sp_real(a->image->data[i])) ||
+       !isfinite(sp_imag(a->image->data[i])) ||
+       !isfinite(sp_cabs(a->image->data[i]))){
+      valid = 0;
+      break;
+    }
+  }
+  return valid;
+}
+
 /* Returns the patterson from diffraction image a */
 Image * sp_image_patterson(Image * a){
   Image * b = sp_image_duplicate(a,SP_COPY_DATA|SP_COPY_MASK);

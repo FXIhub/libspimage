@@ -803,6 +803,11 @@ spimage_EXPORT int sp_image_get_coords_from_index(Image * in,int index,real * x,
     otherwise a new image is created.
    */
   spimage_EXPORT Image * sp_image_phase_shift(Image * in, real phi, int in_place);
+
+  /*! Tries to determine if the input is a valid image.
+      If so returns 1. Otherwise returns 0.
+  */
+  spimage_EXPORT int sp_image_is_valid(Image * a);
 #ifdef __cplusplus
 }  /* extern "C" */
 #endif /* __cplusplus */
