@@ -20,5 +20,6 @@
 #include "spimage/list.h"
 #include "spimage/map.h"
 #include "spimage/prtf.h"
+#include "spimage/phasing.h"
 #endif
 
