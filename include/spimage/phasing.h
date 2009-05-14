@@ -10,7 +10,7 @@ extern "C"
 
 typedef enum{SpModelRandomPhases=1,SpModelZeroPhases=2,SpModelRandomValues=4,SpModelMaskedOutZeroed=256}SpModelInitialization;
 typedef enum{SpHIO=1,SpRAAR,SpDiffMap}SpPhasingAlgorithmType;
-typedef enum{SpRealObject=1,SpPositiveRealObject=2,SpPositiveComplexObject=4}SpPhasingConstraints;
+  typedef enum{SpNoConstraints=0,SpRealObject=1,SpPositiveRealObject=2,SpPositiveComplexObject=4,SpPositivityFlipping=8}SpPhasingConstraints;
 
 /*! This structure is private */
 typedef struct{

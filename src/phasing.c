@@ -176,15 +176,27 @@ static void phase_apply_constraints(SpPhaser * ph,Image * new_model, SpPhasingCo
 	sp_imag(new_model->image->data[i]) = 0;
       }else if(constraints & SpPositiveRealObject){
 	if(sp_real(new_model->image->data[i]) < 0){
-	  sp_real(new_model->image->data[i]) = 0;
+	  if(constraints & SpPositivityFlipping){
+	    sp_real(new_model->image->data[i]) = fabs(sp_real(new_model->image->data[i]));
+	  }else{
+	    sp_real(new_model->image->data[i]) = 0;
+	  }
 	}
 	sp_imag(new_model->image->data[i]) = 0;	
       }else if(constraints & SpPositiveComplexObject){
 	if(sp_real(new_model->image->data[i]) < 0){
-	  sp_real(new_model->image->data[i]) = 0;
+	  if(constraints & SpPositivityFlipping){
+	    sp_real(new_model->image->data[i]) = fabs(sp_real(new_model->image->data[i]));
+	  }else{
+	    sp_real(new_model->image->data[i]) = 0;
+	  }
 	}
 	if(sp_imag(new_model->image->data[i]) < 0){
-	  sp_imag(new_model->image->data[i]) = 0;
+	  if(constraints & SpPositivityFlipping){
+	    sp_imag(new_model->image->data[i]) = fabs(sp_imag(new_model->image->data[i]));
+	  }else{
+	    sp_imag(new_model->image->data[i]) = 0;
+	  }
 	}
 
       }
