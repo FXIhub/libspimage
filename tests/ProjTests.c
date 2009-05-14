@@ -18,7 +18,7 @@ void test_sp_proj_module(CuTest* tc)
   }
 
 
-  Image * proj = sp_proj_module(a,exp);
+  Image * proj = sp_proj_module(a,exp,SpOutOfPlace);
 
   for(int i = 0;i<sp_image_size(a);i++){
     /* Check that the magnitude is the same as the experimental */

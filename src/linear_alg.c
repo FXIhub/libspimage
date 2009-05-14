@@ -59,7 +59,7 @@ sp_cmatrix * _sp_cmatrix_alloc(unsigned int nrows, unsigned int ncols,const char
 }
 
 
-sp_cmatrix * _sp_cmatrix_duplicate(sp_cmatrix * m,const char * file, int line){
+sp_cmatrix * _sp_cmatrix_duplicate(const sp_cmatrix * m,const char * file, int line){
   sp_cmatrix * res = _sp_cmatrix_alloc(sp_cmatrix_rows(m),sp_cmatrix_cols(m),file,line);
   sp_cmatrix_memcpy(res,m);
   return res;
@@ -112,14 +112,14 @@ sp_c3matrix * _sp_c3matrix_alloc(unsigned int nx, unsigned int ny, unsigned int 
 }
 
 
-sp_c3matrix * _sp_c3matrix_duplicate(sp_c3matrix * m, const char * file, int line){
+sp_c3matrix * _sp_c3matrix_duplicate(const sp_c3matrix * m, const char * file, int line){
   sp_c3matrix * res = _sp_c3matrix_alloc(sp_c3matrix_x(m),sp_c3matrix_y(m),sp_c3matrix_z(m),file,line);
   sp_c3matrix_memcpy(res,m);
   return res;
 }
 
 
-sp_matrix * _sp_matrix_duplicate(sp_matrix * m, const char * file, int line){
+sp_matrix * _sp_matrix_duplicate(const sp_matrix * m, const char * file, int line){
   sp_matrix * res = _sp_matrix_alloc(sp_matrix_rows(m),sp_matrix_cols(m),file,line);
   sp_matrix_memcpy(res,m);
   return res;
@@ -347,7 +347,7 @@ void sp_cmatrix_print(sp_cmatrix * a,FILE * fp){
 }
 
 
-sp_vector * sp_c3matrix_center_of_mass(sp_c3matrix * a){
+sp_vector * sp_c3matrix_center_of_mass(const sp_c3matrix * a){
   sp_vector * res = sp_vector_alloc(3);
   int i = 0;
   real sum= 0;

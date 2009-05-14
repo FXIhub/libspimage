@@ -999,7 +999,7 @@ void test_sp_c3matrix_scale(CuTest * tc){
   for(i = 0;i<sp_c3matrix_x(v);i++){
     for(j = 0;j<sp_c3matrix_y(v);j++){
       for(k = 0;k<sp_c3matrix_z(v);k++){
-      CuAssertComplexEquals(tc,sp_c3matrix_get(u,i,j,k),sp_cscale(sp_c3matrix_get(v,i,j,k),x),fabs(REAL_EPSILON*sp_cabs(sp_c3matrix_get(u,i,j,k))));
+	CuAssertComplexEquals(tc,sp_c3matrix_get(u,i,j,k),sp_cscale(sp_c3matrix_get(v,i,j,k),x),fabs(REAL_EPSILON*sp_cabs(sp_c3matrix_get(u,i,j,k)))+REAL_EPSILON);
       }
     }
   }
@@ -1528,7 +1528,7 @@ void test_sp_create_spline2_kernel_table(CuTest * tc){
     }    
   }
 #ifndef NDEBUG
-  printf("Spline2 R2 Table Max Error = %g at r = %f for tolerance = %g\n",max_error,max_error_r,tol);
+  //  printf("Spline2 R2 Table Max Error = %g at r = %f for tolerance = %g\n",max_error,max_error_r,tol);
 #endif
   CuAssertTrue(tc,max_error < tol*1.1);
 
@@ -1555,7 +1555,7 @@ void test_sp_create_spline2_kernel_table(CuTest * tc){
   }
   long long int dt = sp_timer_stop(t)-control_dt;
 #ifndef NDEBUG
-  printf("Spline R2 %d steps in %lld micro seconds %g steps/us\n",i,dt,(real)i/dt);
+  //  printf("Spline R2 %d steps in %lld micro seconds %g steps/us\n",i,dt,(real)i/dt);
 #endif
 }
 
@@ -1614,7 +1614,7 @@ void test_sp_c3matrix_kernel_interpolation(CuTest * tc){
     CuAssertDblEquals(tc,f,f2,tolerance*(f+f2)/2.0);
   }
 #ifndef NDEBUG
-  printf("Max error between spline interpolation and c3matrix_kernel_interpolation with a spline kernel = %g using a tolerance = %g\n",max_error,tolerance);
+  //  printf("Max error between spline interpolation and c3matrix_kernel_interpolation with a spline kernel = %g using a tolerance = %g\n",max_error,tolerance);
 #endif
 }
 
@@ -1760,8 +1760,8 @@ CuSuite* linear_alg_get_suite(void)
   SUITE_ADD_TEST(suite, test_sp_matrix_mul);
   SUITE_ADD_TEST(suite, test_sp_cmatrix_mul);
 
-  SUITE_ADD_TEST(suite, test_sp_matrix_invert);
-  SUITE_ADD_TEST(suite, test_sp_cmatrix_invert);
+  //  SUITE_ADD_TEST(suite, test_sp_matrix_invert);
+  //  SUITE_ADD_TEST(suite, test_sp_cmatrix_invert);
 
   SUITE_ADD_TEST(suite,test_sp_create_spline2_kernel_table);
   SUITE_ADD_TEST(suite,test_sp_c3matrix_kernel_interpolation);

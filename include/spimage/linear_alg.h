@@ -220,13 +220,13 @@ spimage_EXPORT sp_c3matrix * _sp_c3matrix_alloc(unsigned int nx, unsigned int ny
 /*! This function creates a duplicate of it's argument and returns a pointer to it
  *
  */
-spimage_EXPORT sp_c3matrix * _sp_c3matrix_duplicate(sp_c3matrix * m, const char * file, int line);
+spimage_EXPORT sp_c3matrix * _sp_c3matrix_duplicate(const sp_c3matrix * m, const char * file, int line);
 #define sp_c3matrix_duplicate(m) _sp_c3matrix_duplicate(m,__FILE__,__LINE__)
 
 /*! This function creates a duplicate of it's argument and returns a pointer to it
  *
  */
-spimage_EXPORT sp_matrix * _sp_matrix_duplicate(sp_matrix * m, const char * file, int line);
+spimage_EXPORT sp_matrix * _sp_matrix_duplicate(const sp_matrix * m, const char * file, int line);
 #define sp_matrix_duplicate(m) _sp_matrix_duplicate(m,__FILE__,__LINE__)
 
 /*! This function frees a previously allocated matrix m
@@ -264,7 +264,7 @@ spimage_EXPORT sp_cmatrix * _sp_cmatrix_alloc(unsigned int nrows, unsigned int n
 /*! This function creates a duplicate of it's argument and returns a pointer to it
  *
  */
-spimage_EXPORT sp_cmatrix * _sp_cmatrix_duplicate(sp_cmatrix * m, const char * file, int line);
+spimage_EXPORT sp_cmatrix * _sp_cmatrix_duplicate(const sp_cmatrix * m, const char * file, int line);
 #define sp_cmatrix_duplicate(m) _sp_cmatrix_duplicate(m,__FILE__,__LINE__)
 
 /*! This function allocates memory for an Integer matrix of size nrows rows by ncols columns and initializes all the elements of the matrix to zero.
@@ -773,7 +773,7 @@ static inline sp_3matrix * sp_vector_outer_prod(sp_vector * a, const sp_vector *
 /*! This function calculates the norm of the vector a.
   *
   */
-static inline real sp_vector_norm(sp_vector * a){
+static inline real sp_vector_norm(const sp_vector * a){
   unsigned int i;
   real ret = 0;
   for(i = 0;i<a->size;i++){
@@ -785,7 +785,7 @@ static inline real sp_vector_norm(sp_vector * a){
 /*! This function calculates the norm of the vector a.
   *
   */
-static inline real sp_cvector_norm(sp_cvector * a){
+static inline real sp_cvector_norm(const sp_cvector * a){
   unsigned int i;
   real ret = 0;
   for(i = 0;i<a->size;i++){
@@ -2186,7 +2186,7 @@ static inline void sp_c3matrix_get_xyz(const sp_c3matrix * m, long long index, i
 /*! This function sets the real part to the cabs of each element and the complex part to 0
  *
  */
-static inline void sp_cmatrix_to_real(const sp_cmatrix * m){
+static inline void sp_cmatrix_to_real(sp_cmatrix * m){
   int i;
   for(i = 0;i<sp_cmatrix_size(m);i++){
     sp_real(m->data[i]) = sp_cabs(m->data[i]);
@@ -2225,7 +2225,7 @@ static inline Complex sp_c3matrix_froenius_prod(const sp_c3matrix * a, const sp_
  *
  *  The formula used is R = 1/M * Sum(m_i * r_i) Where m_i is equal to sp_cabs(a->data[i]) and r_i is the position of i
  */
-spimage_EXPORT sp_vector * sp_c3matrix_center_of_mass(sp_c3matrix * a);
+spimage_EXPORT sp_vector * sp_c3matrix_center_of_mass(const sp_c3matrix * a);
 
 
 spimage_EXPORT real sp_c3matrix_kernel_interpolation(sp_c3matrix * a, real x1, real y1, real z1,sp_kernel * k);

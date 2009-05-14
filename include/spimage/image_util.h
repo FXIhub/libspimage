@@ -189,7 +189,7 @@ spimage_EXPORT Image * _sp_image_alloc(int x, int y, int z, const char * file, i
  * SP_COPY_DATA - memcpy the image data from in to the newly created image
  * SP_COPY_MASK - memcpy the mask from in to the newly created image
  */
-spimage_EXPORT Image * _sp_image_duplicate(Image * in,int flags, const char * file, int line);
+spimage_EXPORT Image * _sp_image_duplicate(const Image * in,int flags, const char * file, int line);
 #define sp_image_duplicate(in, flags) _sp_image_duplicate(in,flags,__FILE__,__LINE__)
 
 /*! Delete image Image in
@@ -308,7 +308,7 @@ static inline int sp_image_mask_get(Image * a,int x,int y,int z){
 
 /*! Returns x*y*z size of image a
  */
-static inline long long sp_image_size(Image * a){
+static inline long long sp_image_size(const Image * a){
   return sp_c3matrix_size(a->image);
 }
 
@@ -351,6 +351,10 @@ spimage_EXPORT void sp_image_sub(Image * a, Image * b);
 /*! Numerically integrates image a
  */
 spimage_EXPORT Complex sp_image_integrate(Image * a);
+
+/*! Numerically integrates a.a*, meaning the square of the absolute value of a
+ */
+spimage_EXPORT real sp_image_integrate2(Image * a);
 
 /*! Mutiplies Image a with Image b element by element
  *  The result is stored in a.
@@ -556,8 +560,9 @@ spimage_EXPORT Image * image_local_variance(Image * img, Image * window);
  *
  *  Returns an image that combines the phases of a with the amplitudes of b
  *  Both images are assumed to be in reciprocal space
+ *  If SpPlace is set to SpInPlace the input a is used to write the output
  */
-spimage_EXPORT Image * sp_proj_module(Image * a, Image * b);
+  spimage_EXPORT Image * sp_proj_module(Image * a, Image * b, SpPlace place);
 
 /*! Module Histogram projector
  *
@@ -576,9 +581,11 @@ spimage_EXPORT Image * sp_proj_module_histogram(Image * a, Image * b,Image * std
  *  and keeps the image for regions for which image b is 1
  *  Both images are assumed to be in real space
  *
+ *  If SpPlace is set to SpInPlace the input a is used to write the output
+ *
  *  Warning: Image b must only take values 0 and 1
  */
-spimage_EXPORT Image * sp_proj_support(Image * a, Image * b);
+  spimage_EXPORT Image * sp_proj_support(Image * a, Image * b, SpPlace place);
 
 /*@}*/
 spimage_EXPORT void sp_add_noise(Image * in, real level,int type);

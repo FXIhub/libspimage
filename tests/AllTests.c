@@ -12,6 +12,7 @@ int RunAllTests(void)
 	CuSuiteAddSuite(suite, image_get_suite());
 	CuSuiteAddSuite(suite, proj_get_suite());
 	CuSuiteAddSuite(suite, prtf_get_suite());
+	CuSuiteAddSuite(suite, phasing_get_suite());
 	CuSuiteAddSuite(suite, container_get_suite());
 
 	CuSuiteRun(suite);

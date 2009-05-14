@@ -1034,6 +1034,9 @@ void sp_image_dephase(Image *  img){
 void sp_image_rephase(Image *  img, int type){ 
   img->phased = 1;
   if(type == SP_ZERO_PHASE){
+    for(int i = 0;i<sp_image_size(img);i++){
+      img->image->data[i] = sp_cinit(sp_cabs(img->image->data[i]),0);
+    }
     return;
   }else if(type == SP_RANDOM_PHASE){
     random_rephase(img);
@@ -1093,6 +1096,15 @@ Complex sp_image_integrate(Image * a){
   Complex ret = {0,0};
   for(size_t i = 0;i<size;i++){
     sp_cincr(ret,a->image->data[i]);
+  }
+  return ret;
+}
+
+real sp_image_integrate2(Image * a){
+  size_t size = sp_image_size(a);
+  double ret = 0;
+  for(size_t i = 0;i<size;i++){
+    ret += sp_cabs2(a->image->data[i]);
   }
   return ret;
 }
@@ -1211,7 +1223,7 @@ void _sp_image_free(Image * in, const char * file, int line){
 
 }
 
-Image * _sp_image_duplicate(Image * in, int flags,const char * file, int line){
+Image * _sp_image_duplicate(const Image * in, int flags,const char * file, int line){
   Image  *res = sp_malloc(sizeof(Image));
   if(!res){
     sp_error_fatal("Out of memory!");
@@ -4353,8 +4365,13 @@ Complex sp_image_dot_prod(Image * a, Image * b){
   return sp_c3matrix_froenius_prod(a->image,b->image);
 }
 
-Image * sp_proj_module(Image * a, Image * b){
-  Image * ret = sp_image_duplicate(a,SP_COPY_DATA|SP_COPY_MASK);
+Image * sp_proj_module(Image * a, Image * b,SpPlace place){
+  Image * ret;
+  if(place & SpInPlace){
+    ret = a;
+  }else{
+    ret = sp_image_duplicate(a,SP_COPY_ALL);
+  }
   int i;
   for(i = 0;i<sp_image_size(a);i++){
     if(b->mask->data[i]){
@@ -4371,8 +4388,13 @@ Image * sp_proj_module(Image * a, Image * b){
 }
 
 
-Image * sp_proj_support(Image * a, Image * b){
-  Image * ret = sp_image_duplicate(a,SP_COPY_DATA|SP_COPY_MASK);
+Image * sp_proj_support(Image * a, Image * b, SpPlace place){
+  Image * ret;
+  if(place & SpInPlace){
+    ret = a;
+  }else{
+    ret = sp_image_duplicate(a,SP_COPY_ALL);
+  }
   int i;
   for(i = 0;i<sp_image_size(a);i++){
     if(!sp_cabs(b->image->data[i])){
