@@ -129,7 +129,7 @@ void test_sp_phasing_hio_success_rate(CuTest * tc){
   real beta = 0.8;
   real stop_tol = 1e-10;
   real match_tol = 1e-4;
-  int nruns = 10;
+  int nruns = 100;
   Image * pada;
   SpPhasingAlgorithm * alg;
   int n_success = 0;
@@ -190,7 +190,7 @@ void test_sp_phasing_raar_success_rate(CuTest * tc){
   real beta = 0.8;
   real stop_tol = 1e-10;
   real match_tol = 1e-4;
-  int nruns = 10;
+  int nruns = 100;
   Image * pada;
   SpPhasingAlgorithm * alg;
   int n_success = 0;

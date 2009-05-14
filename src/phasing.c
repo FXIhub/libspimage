@@ -209,6 +209,7 @@ static int phaser_iterate_hio(SpPhaser * ph){
   SpPhasingHIOParameters * params = ph->algorithm->params;
   sp_proj_module(fmodel,ph->amplitudes,SpInPlace);
   Image * new_model = sp_image_ifft(fmodel);
+  sp_image_free(fmodel);
   sp_image_scale(new_model,1.0/sp_image_size(new_model));
   for(int i =0;i<sp_image_size(new_model);i++){
     if(sp_real(ph->support->image->data[i])){
@@ -232,6 +233,7 @@ static int phaser_iterate_raar(SpPhaser * ph){
   real beta = params->beta;
   sp_proj_module(fmodel,ph->amplitudes,SpInPlace);
   Image * new_model = sp_image_ifft(fmodel);
+  sp_image_free(fmodel);
   sp_image_scale(new_model,1.0/sp_image_size(new_model));
   for(int i =0;i<sp_image_size(new_model);i++){
     /* A bit of documentation about the equation:
