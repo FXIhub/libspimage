@@ -150,6 +150,15 @@ void test_sp_phasing_hio_success_rate(CuTest * tc){
     sp_image_free(pada);
   }
   printf("HIO Positive Complex success rate = %5.2f\n",(real)n_success/nruns);
+  alg = sp_phasing_hio_alloc(beta,SpPositiveComplexObject| SpPositivityFlipping);
+  CuAssertTrue(tc,n_success>0);
+  n_success = 0;
+  for(int i = 0;i<nruns;i++){
+    pada = create_test_image(size,oversampling,SpPositiveComplexObject);  
+    n_success += test_sp_phasing_success_common(tc,alg,pada,0,stop_tol,match_tol);  
+    sp_image_free(pada);
+  }
+  printf("HIO Flipping Positive Complex success rate = %5.2f\n",(real)n_success/nruns);
   CuAssertTrue(tc,n_success>0);
   alg = sp_phasing_hio_alloc(beta,SpRealObject);
   n_success = 0;
@@ -211,6 +220,15 @@ void test_sp_phasing_raar_success_rate(CuTest * tc){
     sp_image_free(pada);
   }
   printf("RAAR Positive Complex success rate = %5.2f\n",(real)n_success/nruns);
+  alg = sp_phasing_raar_alloc(beta,SpPositiveComplexObject| SpPositivityFlipping);
+  CuAssertTrue(tc,n_success>0);
+  n_success = 0;
+  for(int i = 0;i<nruns;i++){
+    pada = create_test_image(size,oversampling,SpPositiveComplexObject);  
+    n_success += test_sp_phasing_success_common(tc,alg,pada,0,stop_tol,match_tol);  
+    sp_image_free(pada);
+  }
+  printf("RAAR Flipping Positive Complex success rate = %5.2f\n",(real)n_success/nruns);
   alg = sp_phasing_raar_alloc(beta,SpRealObject);
   CuAssertTrue(tc,n_success>0);
   n_success = 0;
