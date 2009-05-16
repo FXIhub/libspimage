@@ -1528,7 +1528,7 @@ void test_sp_create_spline2_kernel_table(CuTest * tc){
     }    
   }
 #ifndef NDEBUG
-  //  printf("Spline2 R2 Table Max Error = %g at r = %f for tolerance = %g\n",max_error,max_error_r,tol);
+  printf("Spline2 R2 Table Max Error = %g at r = %f for tolerance = %g\n",max_error,max_error_r,tol);
 #endif
   CuAssertTrue(tc,max_error < tol*1.1);
 
@@ -1555,7 +1555,7 @@ void test_sp_create_spline2_kernel_table(CuTest * tc){
   }
   long long int dt = sp_timer_stop(t)-control_dt;
 #ifndef NDEBUG
-  //  printf("Spline R2 %d steps in %lld micro seconds %g steps/us\n",i,dt,(real)i/dt);
+  printf("Spline R2 %d steps in %lld micro seconds %g steps/us\n",i,dt,(real)i/dt);
 #endif
 }
 
@@ -1614,7 +1614,7 @@ void test_sp_c3matrix_kernel_interpolation(CuTest * tc){
     CuAssertDblEquals(tc,f,f2,tolerance*(f+f2)/2.0);
   }
 #ifndef NDEBUG
-  //  printf("Max error between spline interpolation and c3matrix_kernel_interpolation with a spline kernel = %g using a tolerance = %g\n",max_error,tolerance);
+  printf("Max error between spline interpolation and c3matrix_kernel_interpolation with a spline kernel = %g using a tolerance = %g\n",max_error,tolerance);
 #endif
 }
 
