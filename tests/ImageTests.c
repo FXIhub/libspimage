@@ -10,11 +10,13 @@ void test_sp_image_shift(CuTest * tc){
   a->detector->image_center[0] = 1;
   a->detector->image_center[1] = 1;
   a->detector->image_center[2] = 0;
+  a->scaled = 1;
   sp_image_set(a,0,0,0,sp_cinit(0,0));
   sp_image_set(a,1,0,0,sp_cinit(1,0));
   sp_image_set(a,0,1,0,sp_cinit(2,0));
   sp_image_set(a,1,1,0,sp_cinit(3,0));
   Image * b = sp_image_shift(a);
+  CuAssertIntEquals(tc,a->scaled,b->scaled);
   CuAssertIntEquals(tc,sp_image_size(a),sp_image_size(b));
   CuAssertIntEquals(tc,sp_image_x(a),sp_image_x(b));
   CuAssertIntEquals(tc,sp_image_y(a),sp_image_y(b));

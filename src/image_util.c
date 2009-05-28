@@ -482,8 +482,12 @@ Image * sp_image_shift(Image * img){
   int new_size[3] = {shift_size(sp_image_x(img),new_origin[0],pad),
 		     shift_size(sp_image_y(img),new_origin[1],pad),
 		     shift_size(sp_image_z(img),new_origin[2],pad_z)};
-
+  /* Copying Image members by hand. Potential bug waiting to happen */
   out = sp_image_alloc(new_size[0],new_size[1],new_size[2]);
+  out->scaled = img->scaled;
+  out->phased = img->phased;
+  out->shifted = !img->shifted;
+  out->num_dimensions = img->num_dimensions;
 
   for(int i = 0;i<sp_image_size(out);i++){
     out->image->data[i] = sp_cinit(0,0);
@@ -502,12 +506,10 @@ Image * sp_image_shift(Image * img){
     }
   }		       
   if(img->shifted){
-    out->shifted = 0;
     out->detector->image_center[0] = (sp_image_x(img)-1.0)/2.0;
     out->detector->image_center[1] = (sp_image_y(img)-1.0)/2.0;
     out->detector->image_center[2] = (sp_image_z(img)-1.0)/2.0;
   }else{
-    out->shifted = 1;
     out->detector->image_center[0] = 0;
     out->detector->image_center[1] = 0;
     out->detector->image_center[2] = 0;
