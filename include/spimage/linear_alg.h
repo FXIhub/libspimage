@@ -17,17 +17,38 @@ extern "C"
 
 #ifdef _SP_DOUBLE_PRECISION
 typedef double real;
-#define sp_real(a) (a).re
-#define sp_imag(a) (a).im
+
 typedef struct {
      double re, im;
 }Complex;
+
+#ifdef SWIG
+  double sp_real(Complex a){
+    return a.re;
+  }
+  double sp_imag(Complex a){
+    return a.im;
+  }
+#else
+#define sp_real(a) (a).re
+#define sp_imag(a) (a).im
+#endif
 #define REAL_MAX DBL_MAX
 #define REAL_EPSILON DBL_EPSILON
 #else
 typedef float real;
+
+#ifdef SWIG
+  float sp_real(Complex a){
+    return a.re;
+  }
+  float sp_imag(Complex a){
+    return a.im;
+  }
+#else
 #define sp_real(a) (a).re
 #define sp_imag(a) (a).im
+#endif
 typedef struct {
      float re, im;
 }Complex;

@@ -42,7 +42,7 @@ spimage_EXPORT Rotation * sp_rot_disturb(Rotation * a, real sigma);
 
 spimage_EXPORT real sp_rot_difference(Rotation * a, Rotation * b);
 
-spimage_EXPORT Rotation * sp_rotation_by_axis(real v1, real v2, real v3,real angle);
+//spimage_EXPORT Rotation * sp_rotation_by_axis(real v1, real v2, real v3,real angle);
 
 spimage_EXPORT real sp_rot_determinant(Rotation * rot);
 
@@ -70,7 +70,7 @@ spimage_EXPORT sp_3matrix * sp_image_sphere_z(Image * img);
 
 /*! Collects one 2D image in one single matrix on every process.
  */
-spimage_EXPORT sp_c3matrix * sp_image_allgather(Image * img);
+//spimage_EXPORT sp_c3matrix * sp_image_allgather(Image * img);
 
 /*! Adds the values of the 2D image ewald_xy to the 3D image img.
  */
@@ -89,5 +89,5 @@ void sp_image_get_2dpattern(Image * pattern, Image * slice, sp_3matrix * curvatu
  */
 spimage_EXPORT void sp_image_get_slice(Image * space, Image * slice, sp_3matrix * slice_z, real a, Rotation * rot);
 
-spimage_EXPORT void sp_image_nfft_slice(Image * space, Image * slice, sp_3matrix * curvature, Rotation * rot);
+//spimage_EXPORT void sp_image_nfft_slice(Image * space, Image * slice, sp_3matrix * curvature, Rotation * rot);
 #endif

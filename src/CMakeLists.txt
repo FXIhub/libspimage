@@ -7,7 +7,9 @@ ELSE(BUILD_STATIC_LIB)
 ENDIF(BUILD_STATIC_LIB)
 
 
+
 TARGET_LINK_LIBRARIES(spimage ${SPIMAGE_LIBRARIES})
+
 
 set_target_properties(
  spimage
@@ -17,7 +19,60 @@ set_target_properties(
 )
 
 
+
 INSTALL(TARGETS spimage
   RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
   LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib${LIBRARY_SUFFIX}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib${LIBRARY_SUFFIX})
+
+
+# Find the python interpreter without calling the findpackage 
+FIND_PROGRAM(PYTHON_EXECUTABLE
+  NAMES python python2.6 python2.5 python2.4 python2.3 python2.2 python2.1 python2.0 python1.6 python1.5
+  PATHS
+  [HKEY_LOCAL_MACHINE\\SOFTWARE\\Python\\PythonCore\\2.6\\InstallPath]
+  [HKEY_LOCAL_MACHINE\\SOFTWARE\\Python\\PythonCore\\2.5\\InstallPath]
+  [HKEY_LOCAL_MACHINE\\SOFTWARE\\Python\\PythonCore\\2.4\\InstallPath]
+  [HKEY_LOCAL_MACHINE\\SOFTWARE\\Python\\PythonCore\\2.3\\InstallPath]
+  [HKEY_LOCAL_MACHINE\\SOFTWARE\\Python\\PythonCore\\2.2\\InstallPath]
+  [HKEY_LOCAL_MACHINE\\SOFTWARE\\Python\\PythonCore\\2.1\\InstallPath]
+  [HKEY_LOCAL_MACHINE\\SOFTWARE\\Python\\PythonCore\\2.0\\InstallPath]
+  [HKEY_LOCAL_MACHINE\\SOFTWARE\\Python\\PythonCore\\1.6\\InstallPath]
+  [HKEY_LOCAL_MACHINE\\SOFTWARE\\Python\\PythonCore\\1.5\\InstallPath]
+  )
+
+# handle the QUIETLY and REQUIRED arguments and set PYTHONINTERP_FOUND to TRUE if
+# all listed variables are TRUE
+INCLUDE(FindPackageHandleStandardArgs)
+FIND_PACKAGE_HANDLE_STANDARD_ARGS(PythonInterp DEFAULT_MSG PYTHON_EXECUTABLE)
+
+MARK_AS_ADVANCED(PYTHON_EXECUTABLE)
+if(PYTHONLIBS_FOUND AND SWIG_FOUND AND PYTHONINTERP_FOUND)
+  add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/spimage_wrap.c COMMAND ${SWIG_EXECUTABLE} -python  -o ${CMAKE_CURRENT_SOURCE_DIR}/spimage_wrap.c ${CMAKE_CURRENT_SOURCE_DIR}/spimage.i)
+  INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH})
+ ADD_LIBRARY(_spimage SHARED ${OBJECTS} ${CMAKE_CURRENT_SOURCE_DIR}/spimage_wrap.c)
+ TARGET_LINK_LIBRARIES(_spimage ${SPIMAGE_LIBRARIES} ${PYTHON_LIBRARIES})
+  # Taken from plplot. Many thanks!
+  # N.B. This is a nice way to obtain all sorts of python information
+  # using distutils.
+  execute_process(
+  COMMAND
+  ${PYTHON_EXECUTABLE} -c "from distutils import sysconfig; print sysconfig.get_python_lib()"
+  OUTPUT_VARIABLE PYTHON_INSTDIR
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  set_target_properties(
+    _spimage
+    PROPERTIES SOVERSION 1
+    VERSION 1
+    PREFIX ""
+    SUFFIX ".so"
+    INSTALL_NAME_DIR ${PYTHON_INSTDIR}
+    )
+  INSTALL(TARGETS _spimage
+    RUNTIME DESTINATION ${PYTHON_INSTDIR}
+    LIBRARY DESTINATION ${PYTHON_INSTDIR}
+    ARCHIVE DESTINATION ${PYTHON_INSTDIR}
+    )
+  INSTALL(FILES spimage.py DESTINATION  ${PYTHON_INSTDIR})
+endif()

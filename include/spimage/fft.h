@@ -18,10 +18,10 @@ extern "C"
 #include <fftw3.h>
 #define sp_image_ifft(a) sp_image_ifftw3(a)
 #define sp_image_fft(a) sp_image_fftw3(a) 
-#define sp_cmatrix_ifft(a) sp_cmatrix_ifftw3(a)
+  //#define sp_cmatrix_ifft(a) sp_cmatrix_ifftw3(a)
 #define sp_image_1d_fft(a,b) sp_image_1d_fftw3(a,b)
 #define sp_image_1d_ifft(a,b) sp_image_1d_fftw3(a,b)
-#define sp_cmatrix_fft(a) sp_cmatrix_fftw3(a) 
+//#define sp_cmatrix_fft(a) sp_cmatrix_fftw3(a) 
 #define sp_c3matrix_ifft(a) sp_c3matrix_ifftw3(a)
 #define sp_c3matrix_fft(a) sp_c3matrix_fftw3(a)
 
@@ -85,7 +85,7 @@ spimage_EXPORT Image * sp_image_1d_fft(Image *img,int axis);
 spimage_EXPORT Image * sp_image_1d_ifft(Image *img,int axis);
 /*! Returns the forward FFT of m.
  */
-spimage_EXPORT sp_cmatrix * sp_cmatrix_fft(sp_cmatrix * m);
+//spimage_EXPORT sp_cmatrix * sp_cmatrix_fft(sp_cmatrix * m);
 /*! Returns the forward FFT of m.
  */
 spimage_EXPORT sp_c3matrix * sp_c3matrix_fft(sp_c3matrix * m);
@@ -96,7 +96,7 @@ spimage_EXPORT sp_c3matrix * sp_c3matrix_fft(sp_c3matrix * m);
 spimage_EXPORT Image * sp_image_ifft(Image * img);
 /*! Returns the backward FFT of m.
  */
-spimage_EXPORT sp_cmatrix * sp_cmatrix_ifft(sp_cmatrix * img);
+//spimage_EXPORT sp_cmatrix * sp_cmatrix_ifft(sp_cmatrix * img);
 /*! Returns the backward FFT of m.
  */
 spimage_EXPORT sp_c3matrix * sp_c3matrix_ifft(sp_c3matrix * img);

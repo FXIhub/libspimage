@@ -873,7 +873,7 @@ void sp_image_smooth_edges(Image * img, sp_i3matrix * mask, int flags, real * va
   }  
 }
 
-real sp_centro_sym_value(int index,Image * img){
+real sp_centro_sym_value(long long index,Image * img){
   int x,y,z;
   real nx,ny,nz;
   x = index/sp_c3matrix_y(img->image)/sp_c3matrix_z(img->image);
@@ -890,7 +890,7 @@ real sp_centro_sym_value(int index,Image * img){
   return sp_image_interp(img, nx, ny, nz);
 }
 
-int sp_centro_sym_index(int index,Image * img){
+int sp_centro_sym_index(long long index,Image * img){
   int x,y,z;
   int nx,ny,nz;
   x = index/sp_c3matrix_y(img->image)/sp_c3matrix_z(img->image);

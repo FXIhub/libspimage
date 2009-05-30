@@ -162,7 +162,13 @@ spimage_EXPORT void sp_image_write(Image * img,const char * filename, int flags)
  *
  */
 spimage_EXPORT Image * _sp_image_read(const char * filename,int flags, const char * file, int line );
+#ifdef SWIG
+  Image * sp_image_read(const char * filename,int flags){
+    return _sp_image_read(filename,flags,NULL,0);
+  }
+#else
 #define sp_image_read(filename,flags) _sp_image_read(filename,flags,__FILE__,__LINE__)
+#endif
 
 /*! Write the mask of the image to a file in png format, using 
   the specified color map
@@ -240,7 +246,7 @@ spimage_EXPORT Image * cube_crop(Image * in, int x1, int y1, int z1, int x2, int
 
    The values are obtained by linear interpolation
  */
-spimage_EXPORT Image * get_image_radial_sector(Image * img, real * point, real direction, int samples, real * intersection);
+spimage_EXPORT Image * sp_image_radial_sector(Image * img, real * point, real direction, int samples, real * intersection);
 
 /*! Gives the distance to the border on a given direction
 
@@ -259,7 +265,7 @@ spimage_EXPORT real sp_image_distance_to_edge(Image * img, real * point, real di
   It assumes the sector is pixel scaled (each bin 1 pixel ).
   That is it does not try to stretch the sector to cover the image.
 */
-spimage_EXPORT Image * circular_image_from_sector(Image * sector, int * size, real * center);
+spimage_EXPORT Image * sp_image_create_from_sector(Image * sector, int * size, real * center);
 
 
 /*@}*/
@@ -444,7 +450,7 @@ spimage_EXPORT Image * sp_image_get_phases(Image * a);
 
 /*! Transposes the images
 */
-spimage_EXPORT void sp_image_tranpose(Image * in);
+spimage_EXPORT void sp_image_transpose(Image * in);
 
 /*! Returns the linearly interpolated value of the image at v_x, v_y
 */
@@ -547,7 +553,7 @@ spimage_EXPORT real sp_point_convolute(Image * a, Image * b, int index);
  * and then returns the difference between this averaged image and the input img
  */
 
-spimage_EXPORT Image * image_local_variance(Image * img, Image * window);
+spimage_EXPORT Image * sp_image_local_variance(Image * img, Image * window);
 /*@}*/
 
 
@@ -589,19 +595,19 @@ spimage_EXPORT Image * sp_proj_module_histogram(Image * a, Image * b,Image * std
 
 /*@}*/
 spimage_EXPORT void sp_add_noise(Image * in, real level,int type);
-spimage_EXPORT float box_muller(float m, float s);
-spimage_EXPORT real lin_image_interpol(Image * img, real x, real y);
-spimage_EXPORT real centro_sym_value(long long index,Image * img);
-spimage_EXPORT int centro_sym_index(long long index,Image * img);
-spimage_EXPORT Image * centro_sym_correlation(Image  * img);
+spimage_EXPORT real sp_box_muller(real m, real s);
+  //spimage_EXPORT real lin_image_interpol(Image * img, real x, real y);
+spimage_EXPORT real sp_centro_sym_value(long long index,Image * img);
+spimage_EXPORT int sp_centro_sym_index(long long index,Image * img);
+spimage_EXPORT Image * sp_centro_sym_correlation(Image  * img);
 spimage_EXPORT Image * sp_image_shift(Image * img);
-spimage_EXPORT Image * make_shifted_image_square(Image * in);
-spimage_EXPORT Image * make_unshifted_image_square(Image * in);
-spimage_EXPORT Image * average_centrosymetry(Image * in);
+spimage_EXPORT Image * sp_make_shifted_image_square(Image * in);
+spimage_EXPORT Image * sp_make_unshifted_image_square(Image * in);
+spimage_EXPORT Image * sp_average_centrosymetry(Image * in);
 spimage_EXPORT real r_factor(Image * fobs, Image *fcalc,real low_intensity_cutoff);
 spimage_EXPORT Image * sp_image_reflect(Image * in, int in_place,int axis);
-spimage_EXPORT Image * centrosym_convolve(Image * in);
-spimage_EXPORT Image * get_phase_angle_image(Image * img);
+  //spimage_EXPORT Image * centrosym_convolve(Image * in);
+spimage_EXPORT Image * sp_image_get_phases(Image * img);
 spimage_EXPORT Image * zero_pad_image(Image * a, int newx, int newy, int newz, int pad_mask);
 spimage_EXPORT Image * shift_center_to_top_left(Image * a);
 spimage_EXPORT real I_divergenge(Image * a, Image * b);
@@ -611,10 +617,10 @@ spimage_EXPORT void find_center(Image * img, real * center_x, real * center_y, r
 spimage_EXPORT long long pixel_to_index(Image * img, real * point);
 spimage_EXPORT void sp_image_smooth_edges(Image * img, sp_i3matrix * mask, int flags, real * value);
 spimage_EXPORT Image * fourier_rescale(Image * img, int x, int y, int z);
-spimage_EXPORT real bilinear_interpol_img(Image * img, real * data, real v_x, real v_y);
+  //spimage_EXPORT real bilinear_interpol_img(Image * img, real * data, real v_x, real v_y);
 spimage_EXPORT Image * bilinear_rescale(Image * img, int new_x, int new_y, int new_z);
-spimage_EXPORT void resize_empty_image(Image * a,int newx, int newy);
-spimage_EXPORT Image * get_mask_from_image(Image * a);
+  //spimage_EXPORT void resize_empty_image(Image * a,int newx, int newy);
+spimage_EXPORT Image * sp_image_get_mask(Image * a);
 spimage_EXPORT int sp_image_shift_index(Image * a, long long index);
 spimage_EXPORT void sp_image_normalize(Image * in);
 

@@ -34,7 +34,9 @@ find_package(JPEG REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(MATH REQUIRED)
 find_package(GSL REQUIRED)
-
+find_package(PythonLibs)
+#find_package(PythonInterp)
+find_package(SWIG)
 
 IF(UNIX AND CMAKE_SIZEOF_VOID_P EQUAL 8)
 	IF(EXISTS /usr/lib64)
