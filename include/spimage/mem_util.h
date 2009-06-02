@@ -15,6 +15,7 @@ extern "C"
 #define _sp_c3matrix_realloc(m,x,y,z,f,l) _sp_c3matrix_realloc(m,x,y,z)
 #endif
 
+#ifndef SWIG
 /*! Function that makes some booking on the memory allocations
  *
  * This is an internal function. The public function is:
@@ -28,6 +29,12 @@ spimage_EXPORT void * _sp_malloc(size_t n, char * file, int line);
 #else
 #define _sp_malloc(n,__FILE__,__LINE__) malloc(n)
 #define sp_malloc(n) malloc(n)
+#endif
+
+#else /* SWIG */
+  void * sp_malloc(size_t n){
+    return malloc(n);
+  }
 #endif
 
 /*! Function that makes some booking on the memory allocations

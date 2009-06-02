@@ -164,7 +164,7 @@ spimage_EXPORT void sp_image_write(Image * img,const char * filename, int flags)
 spimage_EXPORT Image * _sp_image_read(const char * filename,int flags, const char * file, int line );
 #ifdef SWIG
   Image * sp_image_read(const char * filename,int flags){
-    return _sp_image_read(filename,flags,NULL,0);
+    return _sp_image_read(filename,flags,__FILE__,__LINE__);
   }
 #else
 #define sp_image_read(filename,flags) _sp_image_read(filename,flags,__FILE__,__LINE__)
@@ -186,7 +186,13 @@ spimage_EXPORT int write_mask_to_png(Image * img, char * filename, int color);
 /*! Allocates an image of width x and height y
  */
 spimage_EXPORT Image * _sp_image_alloc(int x, int y, int z, const char * file, int line);
+#ifndef SWIG
 #define sp_image_alloc(x,y,z) _sp_image_alloc(x,y,z,__FILE__,__LINE__)
+#else
+  Image * sp_image_alloc(int x, int y, int z){
+    return _sp_image_alloc(x,y,z,__FILE__,__LINE__);
+  }
+#endif
 
 /*! Create a copy of Image in
  *
@@ -196,12 +202,25 @@ spimage_EXPORT Image * _sp_image_alloc(int x, int y, int z, const char * file, i
  * SP_COPY_MASK - memcpy the mask from in to the newly created image
  */
 spimage_EXPORT Image * _sp_image_duplicate(const Image * in,int flags, const char * file, int line);
+#ifndef SWIG
 #define sp_image_duplicate(in, flags) _sp_image_duplicate(in,flags,__FILE__,__LINE__)
+#else
+  Image * sp_image_duplicate(const Image * in,int flags){
+    return _sp_image_duplicate(in,flags,__FILE__,__LINE__);
+  }
+#endif
 
 /*! Delete image Image in
  */
 spimage_EXPORT void _sp_image_free(Image * in, const char * file, int line);
+#ifndef SWIG
 #define sp_image_free(in) _sp_image_free(in,__FILE__,__LINE__)
+#else
+  void sp_image_free(Image * in){
+    _sp_image_free(in, __FILE__,__LINE__);
+  }
+#endif
+
 
 /*! Copies the contents of src to dst.
  *
@@ -630,7 +649,13 @@ spimage_EXPORT real p_drand48();
  *
  */
 spimage_EXPORT void _sp_image_realloc(Image * img, int new_x, int new_y, int new_z, char * file, int line);
+#ifndef SWIG
 #define sp_image_realloc(img,x,y,z) _sp_image_realloc(img,x,y,z,__FILE__,__LINE__)
+#else
+  void sp_image_realloc(Image * img, int new_x, int new_y, int new_z){
+    _sp_image_realloc(img,x,y,z,__FILE__,__LINE__);
+  }
+#endif
 
 /*! Filters the input image with a median filter
  *
