@@ -3,6 +3,18 @@
 
 static Complex czero = {0,0};
 
+void test_sp_clog(CuTest * tc){
+  Complex a = sp_cinit(1,1);
+  Complex log_a = sp_clog(a);
+  CuAssertComplexEquals(tc,log_a,sp_cinit(log(2)/2.0,M_PI/4.0),REAL_EPSILON);  
+}
+
+void test_sp_cexp(CuTest * tc){
+  Complex a = sp_cinit(1,1);
+  Complex exp_a = sp_cexp(a);
+  CuAssertComplexEquals(tc,exp_a,sp_cinit(exp(1.0)*cos(1.0),exp(1.0)*sin(1.0)),5*REAL_EPSILON);  
+}
+
 void test_sp_min(CuTest* tc)
 {
   CuAssertTrue(tc,sp_min(0,1) == 0);
@@ -1673,6 +1685,8 @@ CuSuite* linear_alg_get_suite(void)
 {
   CuSuite* suite = CuSuiteNew();
 
+  SUITE_ADD_TEST(suite, test_sp_clog);  
+  SUITE_ADD_TEST(suite, test_sp_cexp);  
   SUITE_ADD_TEST(suite, test_sp_min);
   SUITE_ADD_TEST(suite, test_sp_max);
 

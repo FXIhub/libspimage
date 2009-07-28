@@ -209,6 +209,41 @@ static inline Complex sp_crot(Complex a, real phi){
   sp_imag(ret) = sin(angle)*length;
   return ret;
 }
+
+static inline Complex sp_clog(Complex a){
+  Complex ret;
+  real mag = sp_cabs(a);
+  if(mag == 0){
+#ifdef NAN
+    sp_real(ret) = NAN;
+    sp_imag(ret) = NAN;
+#else
+    sp_real(ret) = 0.0/0.0;
+    sp_imag(ret) = 0.0/0.0;
+#endif
+    return ret;
+  }
+  real arg = sp_carg(a);
+  mag = log(mag);
+  sp_real(ret) = mag;
+  sp_imag(ret) = arg;
+  return ret;
+}
+
+static inline Complex sp_cexp(Complex a){
+  Complex ret;
+  real exp_r = exp(sp_real(a));
+  sp_real(ret) = exp_r*cos(sp_imag(a));
+  sp_imag(ret) = exp_r*sin(sp_imag(a));
+  return ret;
+}
+
+static inline Complex sp_cpow(Complex a, Complex b){
+  Complex log_a = sp_clog(a);
+  Complex b_log_a = sp_cmul(b,log_a);
+  return sp_cexp(b_log_a);
+}
+
   
 /*! Compare 2 complex numbers and return 1 if *pa bigger than *pb, 0 if they are equal or -1 otherwise.
  *  pa and pb should be pointers to a Complex. This function is useful for using qsort(3)
