@@ -21,5 +21,6 @@
 #include "spimage/map.h"
 #include "spimage/prtf.h"
 #include "spimage/phasing.h"
+#include "spimage/colormap.h"
 #endif
 

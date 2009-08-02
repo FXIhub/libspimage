@@ -3104,61 +3104,6 @@ Image * read_png(const char * filename){
 
 
 
-static void create_color_table(real color_table[3][256],int color){
-  for(int i = 0;i<256;i++){
-    real value = i/255.0;
-    if(color & COLOR_GRAYSCALE){       
-      color_table[0][i] = value;
-      color_table[1][i] = value;
-      color_table[2][i] = value;
-    }else if(color & COLOR_TRADITIONAL){       
-      color_table[0][i] = sqrt(value);
-      color_table[1][i] = value*value*value;
-      color_table[2][i] = sin(value*2*M_PI);
-    }else if(color & COLOR_HOT){
-      color_table[0][i] = 3*value;
-      color_table[1][i] = 3*value-1;
-      color_table[2][i] = 3*value-2;
-    }else if(color & COLOR_RAINBOW){
-      color_table[0][i] = fabs(2*value-0.5);
-      color_table[1][i] = sin(value*M_PI);
-      color_table[2][i] = cos(value*M_PI/2);
-    }else if(color & COLOR_JET){
-      if(value < 1/8.0){
-	color_table[0][i] = 0;
-	color_table[1][i] = 0;
-	color_table[2][i] = (value+1.0/8.0)*4;	   
-      }else if(value < 3/8.0){
-	color_table[0][i] = 0;
-	color_table[1][i] = (value-1.0/8.0)*4;
-	color_table[2][i] = 1;
-      }else if(value < 5/8.0){
-	color_table[0][i] = (value-3.0/8.0)*4;
-	color_table[1][i] = 1;
-	color_table[2][i] = 1-(value-3.0/8.0)*4;
-      }else if(value < 7/8.0){
-	color_table[0][i] = 1;
-	color_table[1][i] = 1-(value-5.0/8.0)*4;
-	color_table[2][i] = 0;
-      }else if(value <= 1.01){
-	color_table[0][i] = 1-(value-7.0/8.0)*4;;
-	color_table[1][i] = 0;
-	color_table[2][i] = 0;
-      }
-    }
-
-    color_table[0][i] = MIN(1,color_table[0][i]);
-    color_table[1][i] = MIN(1,color_table[1][i]);
-    color_table[2][i] = MIN(1,color_table[2][i]);
-    color_table[0][i] *= 255;
-    color_table[1][i] *= 255;
-    color_table[2][i] *= 255;
-
-    if(color & COLOR_WHEEL){
-      hsv_to_rgb(360*value,1.0,1.0,&color_table[0][i],&color_table[1][i],&color_table[2][i]);
-    }
-  }
-}
 
 int write_png(Image * img,const char * filename, int color){
 
@@ -3180,7 +3125,7 @@ int write_png(Image * img,const char * filename, int color){
   int pixel_size = 0;
   int i,x,y;
   real log_of_2;
-  real color_table[3][256];
+  sp_rgb color_table[256];
   real scale,offset,max_v,min_v,value;
   real phase;
   png_byte ** row_pointers;
@@ -3191,7 +3136,7 @@ int write_png(Image * img,const char * filename, int color){
   min_v = REAL_MAX;
 
 /* Fill color tables */
-  create_color_table(color_table,color);
+  sp_colormap_create_table(color_table,color);
 
   if (!fp){
     perror("Couldn't open file!\n");
@@ -3265,9 +3210,9 @@ int write_png(Image * img,const char * filename, int color){
       }
       if(color & COLOR_PHASE){
 	phase = (256*(sp_carg(img->image->data[i])+3.1416)/(2*3.1416));
-	row_pointers[y][x*3] =  (value)*color_table[0][(int)phase];
-	row_pointers[y][x*3+1] = (value)*color_table[1][(int)phase];
-	row_pointers[y][x*3+2] = (value)*color_table[2][(int)phase];
+	row_pointers[y][x*3] =  (value)*color_table[(int)phase].r;
+	row_pointers[y][x*3+1] = (value)*color_table[(int)phase].g;
+	row_pointers[y][x*3+2] = (value)*color_table[(int)phase].b;
       }else if(color & COLOR_WEIGHTED_PHASE){
 	phase = (256*(sp_carg(img->image->data[i])+3.1416)/(2*3.1416));
 	float rgb[3];
@@ -3277,9 +3222,9 @@ int write_png(Image * img,const char * filename, int color){
 	row_pointers[y][x*3+2] = rgb[2];
       }else{
 	value *= 255;
-	row_pointers[y][x*3] =  color_table[0][(int)value];
-	row_pointers[y][x*3+1] = color_table[1][(int)value];
-	row_pointers[y][x*3+2] = color_table[2][(int)value];
+	row_pointers[y][x*3] =  color_table[(int)value].r;
+	row_pointers[y][x*3+1] = color_table[(int)value].g;
+	row_pointers[y][x*3+2] = color_table[(int)value].b;
       }
       i++;
     }
@@ -3309,7 +3254,7 @@ unsigned char * sp_image_get_false_color(Image * img, int color, double min, dou
   }
   int i,x,y;
   real log_of_scale;
-  real color_table[3][256];
+  sp_rgb color_table[256];
   real scale,offset,max_v,min_v,value;
   real phase;
   unsigned char * out = sp_malloc(sizeof(unsigned char)*sp_image_x(img)*sp_image_y(img)*4);
@@ -3319,7 +3264,7 @@ unsigned char * sp_image_get_false_color(Image * img, int color, double min, dou
   max_v = 0;
   min_v = REAL_MAX;
 
-  create_color_table(color_table,color);
+  sp_colormap_create_table(color_table,color);
 
   if(min == max){
     /* We're gonna scale the image so that it fits on the 8 bits */
@@ -3359,22 +3304,22 @@ unsigned char * sp_image_get_false_color(Image * img, int color, double min, dou
       }
       if(color & COLOR_PHASE){
 	phase = (256*(sp_carg(img->image->data[i])+3.1416)/(2*3.1416));
-	out[y*sp_image_x(img)*4+x*4+2] =  sqrt(value)*color_table[0][(int)phase];
-	out[y*sp_image_x(img)*4+x*4+1] = sqrt(value)*color_table[1][(int)phase];
-	out[y*sp_image_x(img)*4+x*4] = sqrt(value)*color_table[2][(int)phase];
+	out[y*sp_image_x(img)*4+x*4+2] =  sqrt(value)*color_table[(int)phase].r;
+	out[y*sp_image_x(img)*4+x*4+1] = sqrt(value)*color_table[(int)phase].g;
+	out[y*sp_image_x(img)*4+x*4] = sqrt(value)*color_table[(int)phase].b;
       }else if(color & COLOR_MASK){
 	value = img->mask->data[i];
 	if(value){
 	  value = 255;
 	}
-	out[y*sp_image_x(img)*4+x*4+2] = color_table[0][(int)value];
-	out[y*sp_image_x(img)*4+x*4+1] = color_table[1][(int)value];
-	out[y*sp_image_x(img)*4+x*4] = color_table[2][(int)value];
+	out[y*sp_image_x(img)*4+x*4+2] = color_table[(int)value].r;
+	out[y*sp_image_x(img)*4+x*4+1] = color_table[(int)value].g;
+	out[y*sp_image_x(img)*4+x*4] = color_table[(int)value].b;
       }else{
 	value *= 255;
-	out[y*sp_image_x(img)*4+x*4+2] =  color_table[0][(int)value];
-	out[y*sp_image_x(img)*4+x*4+1] = color_table[1][(int)value];
-	out[y*sp_image_x(img)*4+x*4] = color_table[2][(int)value];
+	out[y*sp_image_x(img)*4+x*4+2] =  color_table[(int)value].r;
+	out[y*sp_image_x(img)*4+x*4+1] = color_table[(int)value].g;
+	out[y*sp_image_x(img)*4+x*4] = color_table[(int)value].b;
 
       }
       i++;
