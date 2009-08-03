@@ -11,7 +11,7 @@ extern "C"
 
 
 #define TSIZE(a) (a->detector->size[0]*a->detector->size[1])
-
+  /*
 #define COLOR_GRAYSCALE 1
 #define COLOR_TRADITIONAL 2
 #define COLOR_HOT 4
@@ -22,7 +22,7 @@ extern "C"
 #define COLOR_WHEEL 128
 #define COLOR_WEIGHTED_PHASE 256
 #define COLOR_MASK 512
-
+  */
 #define OUT_OF_PLACE 0
 #define IN_PLACE 1
 
@@ -136,13 +136,13 @@ spimage_EXPORT real sp_image_dist(Image * in, int i, int type);
  *              sizeof(double)     Data should be written in double precision
  *
  *      .png
- *              COLOR_GRAYSCALE    Image will use a grayscale color palete
- *              COLOR_TRADITIONAL  Image will use the traditional color map
- *              COLOR_HOT          Image will use the hot color map
- *              COLOR_RAINBOW      Image will use the rainbow color map
- *              COLOR_JET          Image will use the jet color map
- *              COLOR_WHEEL        Image will use the color wheel color map
- *              LOG_SCALE          Image will be written in log scale
+ *              SpColormapGrayScale    Image will use a grayscale color palete
+ *              SpColormapTraditional  Image will use the traditional color map
+ *              SpColormapHot          Image will use the hot color map
+ *              SpColormapRainbow      Image will use the rainbow color map
+ *              SpColormapJet          Image will use the jet color map
+ *              SpColormapWheel        Image will use the color wheel color map
+ *              SpColormapLogScale     Image will be written in log scale
  *
  */
 spimage_EXPORT void sp_image_write(Image * img,const char * filename, int flags);

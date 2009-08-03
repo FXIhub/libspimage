@@ -3203,17 +3203,17 @@ int write_png(Image * img,const char * filename, int color){
   for(y = 0;y<sp_c3matrix_y(img->image);y++){
     for(x = 0;x<sp_c3matrix_x(img->image);x++){
       /* traditional color scale taken from gnuplot manual */
-      if(color & LOG_SCALE){
+      if(color & SpColormapLogScale){
 	value = 1-log((sp_cabs(img->image->data[i])-offset)*scale+FLT_EPSILON)/log(FLT_EPSILON);
       }else{
 	value = ((sp_cabs(img->image->data[i])-offset)*scale);
       }
-      if(color & COLOR_PHASE){
+      if(color & SpColormapPhase){
 	phase = (256*(sp_carg(img->image->data[i])+3.1416)/(2*3.1416));
 	row_pointers[y][x*3] =  (value)*color_table[(int)phase].r;
 	row_pointers[y][x*3+1] = (value)*color_table[(int)phase].g;
 	row_pointers[y][x*3+2] = (value)*color_table[(int)phase].b;
-      }else if(color & COLOR_WEIGHTED_PHASE){
+      }else if(color & SpColormapWeightedPhase){
 	phase = (256*(sp_carg(img->image->data[i])+3.1416)/(2*3.1416));
 	float rgb[3];
 	hsv_to_rgb(360.0*phase/256.0,1.0,value,&rgb[0],&rgb[1],&rgb[2]);
@@ -3297,17 +3297,17 @@ unsigned char * sp_image_get_false_color(Image * img, int color, double min, dou
       value -= offset;
       value *= scale;
       
-      if(color & LOG_SCALE){
+      if(color & SpColormapLogScale){
 	value = log(value+1)/log_of_scale;
       }else{
 	value /= 65535;
       }
-      if(color & COLOR_PHASE){
+      if(color & SpColormapPhase){
 	phase = (256*(sp_carg(img->image->data[i])+3.1416)/(2*3.1416));
 	out[y*sp_image_x(img)*4+x*4+2] =  sqrt(value)*color_table[(int)phase].r;
 	out[y*sp_image_x(img)*4+x*4+1] = sqrt(value)*color_table[(int)phase].g;
 	out[y*sp_image_x(img)*4+x*4] = sqrt(value)*color_table[(int)phase].b;
-      }else if(color & COLOR_MASK){
+      }else if(color & SpColormapMask){
 	value = img->mask->data[i];
 	if(value){
 	  value = 255;
@@ -3359,7 +3359,7 @@ Image * low_pass_square_filter(Image * in, int edge_size){
   for(i = 0;i<sp_image_size(tmp);i++){
     tmp->image->data[i] = sp_cinit(log(sp_cabs(tmp->image->data[i])+1),0);
   }
-  write_png(tmp,"low_pass.png",COLOR_JET);
+  write_png(tmp,"low_pass.png",SpColormapJet);
   sp_image_free(tmp);
 
   res = sp_image_ifft(fft_img);
@@ -3880,7 +3880,7 @@ void find_center(Image * img, real * center_x, real * center_y, real * center_z)
   }
   printf("Center x - %f y - %f z - %f\n",bx,by,bz);
   if(a->num_dimensions == SP_2D){
-    write_png(a,"centrosym_convolve.png",COLOR_JET|LOG_SCALE);
+    write_png(a,"centrosym_convolve.png",SpColormapJet|SpColormapLogScale);
   }
   *center_x = bx;
   *center_y = by;

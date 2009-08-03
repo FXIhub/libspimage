@@ -73,23 +73,23 @@ static void hsv_to_rgb(float H,float S,float V,float * R,float *G,float *B){
 
 sp_rgb sp_colormap_rgb_from_value(real value, int colormap){
   sp_rgb ret;
-  if(colormap & COLOR_GRAYSCALE){       
+  if(colormap & SpColormapGrayScale){       
     ret.r = value;
     ret.g = value;
     ret.b = value;
-  }else if(colormap & COLOR_TRADITIONAL){       
+  }else if(colormap & SpColormapTraditional){       
     ret.r = sqrt(value);
     ret.g = value*value*value;
     ret.b = sin(value*2*M_PI);
-  }else if(colormap & COLOR_HOT){
+  }else if(colormap & SpColormapHot){
     ret.r = 3*value;
     ret.g = 3*value-1;
     ret.b = 3*value-2;
-  }else if(colormap & COLOR_RAINBOW){
+  }else if(colormap & SpColormapRainbow){
     ret.r = fabs(2*value-0.5);
     ret.g = sin(value*M_PI);
     ret.b = cos(value*M_PI/2);
-  }else if(colormap & COLOR_JET){
+  }else if(colormap & SpColormapJet){
     if(value < 1/8.0){
       ret.r = 0;
       ret.g = 0;
@@ -113,14 +113,17 @@ sp_rgb sp_colormap_rgb_from_value(real value, int colormap){
     }
   }
 
-  ret.r = MIN(1,ret.r);
-  ret.g = MIN(1,ret.g);
-  ret.b = MIN(1,ret.b);
+  ret.r = sp_min(1,ret.r);
+  ret.g = sp_min(1,ret.g);
+  ret.b = sp_min(1,ret.b);
+  ret.r = sp_max(0,ret.r);
+  ret.g = sp_max(0,ret.g);
+  ret.b = sp_max(0,ret.b);
   ret.r *= 255;
   ret.g *= 255;
   ret.b *= 255;
 
-  if(colormap & COLOR_WHEEL){
+  if(colormap & SpColormapWheel){
     hsv_to_rgb(360*value,1.0,1.0,&ret.r,&ret.g,&ret.b);
   }
   return ret;

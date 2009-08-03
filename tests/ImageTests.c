@@ -386,11 +386,11 @@ void test_sp_image_get_false_color(CuTest * tc){
       }
     }
   }
-  out = sp_image_get_false_color(a,COLOR_JET,0,0);
+  out = sp_image_get_false_color(a,SpColormapJet,0,0);
   free(out);
-  sp_image_get_false_color(a,COLOR_JET|LOG_SCALE,0,0);
+  sp_image_get_false_color(a,SpColormapJet|SpColormapLogScale,0,0);
   free(out);
-  sp_image_get_false_color(a,COLOR_JET|LOG_SCALE,0,25);
+  sp_image_get_false_color(a,SpColormapJet|SpColormapLogScale,0,25);
   free(out);
 }
 
@@ -747,7 +747,7 @@ void test_sp_background_adaptative_mesh(CuTest * tc){
       }
     }
   }
-  sp_image_write(a,"background_adaptative_mesh_square.png",COLOR_GRAYSCALE);
+  sp_image_write(a,"background_adaptative_mesh_square.png",SpColormapGrayScale);
   Image * pattern = sp_image_fft(a);
   Image * pattern_centered = sp_image_shift(pattern);
   sp_image_free(pattern);

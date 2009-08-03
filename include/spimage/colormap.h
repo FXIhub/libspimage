@@ -14,6 +14,11 @@ typedef struct{
   real b;
 }sp_rgb;
 
+  typedef enum{SpColormapFirstColorScheme=1,SpColormapGrayScale=1,SpColormapTraditional=2,
+	     SpColormapHot=4,SpColormapRainbow=8,SpColormapJet=16,
+	       SpColormapWheel=32,SpColormapLastColorScheme=64,SpColormapLogScale=128,SpColormapPhase=256,
+	     SpColormapWeightedPhase=512,SpColormapMask=1024}SpColormap;
+
 /*! 
   Calculates the color corresponding to the given value using a certain colormap.
   value must fall in the interval [0,1[.
