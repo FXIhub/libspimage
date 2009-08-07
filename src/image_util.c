@@ -1664,7 +1664,7 @@ static void write_h5_img(Image * img,const char * filename, int output_precision
   }
 
   values[0] = img->detector->wavelength;
-  dataset_id = H5Dcreate(file_id, "/wavelength", out_type_id,
+  dataset_id = H5Dcreate(file_id, "/lambda", out_type_id,
 			 dataspace_id, H5P_DEFAULT);
   if(dataset_id < 0){
     goto error;
@@ -1967,7 +1967,7 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
 
       res->detector->detector_distance = values[0];
       
-      dataset_id = H5Dopen(file_id, "/wavelength");
+      dataset_id = H5Dopen(file_id, "/lambda");
       if(dataset_id < 0){
 	sp_error_warning("Unable to open dataset in file %s",filename);
 	return NULL;
@@ -2279,7 +2279,7 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
 
     res->detector->detector_distance = values[0];
     
-    dataset_id = H5Dopen(file_id, "/wavelength");
+    dataset_id = H5Dopen(file_id, "/lambda");
     if(dataset_id < 0){
       sp_error_warning("Unable to open dataset in file %s",filename);
       return NULL;
