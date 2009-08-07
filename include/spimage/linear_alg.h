@@ -2179,12 +2179,12 @@ static inline int sp_i3matrix_nearest_neighbour_interp(const sp_i3matrix * m, re
  *
  *  The content of the matrix will be destroyed.
  */
-static inline void _sp_cmatrix_realloc(sp_cmatrix * m, int row, int col, char * file, int line){
+static inline void _sp_cmatrix_realloc(sp_cmatrix * m, int row, int col, const char * file, int line){
   m->rows = row;
   m->cols = col;
   m->data = (Complex *)_sp_realloc(m->data,sizeof(Complex)*sp_cmatrix_size(m), file, line);
 }
-static inline void _sp_c3matrix_realloc(sp_c3matrix * m, int x, int y, int z, char * file, int line){
+static inline void _sp_c3matrix_realloc(sp_c3matrix * m, int x, int y, int z, const char * file, int line){
   m->x = x;
   m->y = y;
   m->z = z;
@@ -2195,12 +2195,12 @@ static inline void _sp_c3matrix_realloc(sp_c3matrix * m, int x, int y, int z, ch
  *
  *  The content of the matrix will be destroyed.
  */
-static inline void _sp_imatrix_realloc(sp_imatrix * m, int row, int col, char * file, int line){
+static inline void _sp_imatrix_realloc(sp_imatrix * m, int row, int col,const char * file, int line){
   m->rows = row;
   m->cols = col;
   m->data = (int *)_sp_realloc(m->data,sizeof(int)*sp_imatrix_size(m),file,line);
 }
-static inline void _sp_i3matrix_realloc(sp_i3matrix * m, int x, int y, int z,char * file, int line){
+static inline void _sp_i3matrix_realloc(sp_i3matrix * m, int x, int y, int z,const char * file, int line){
   m->x = x;
   m->y = y;
   m->z = z;
@@ -2211,12 +2211,12 @@ static inline void _sp_i3matrix_realloc(sp_i3matrix * m, int x, int y, int z,cha
  *
  *  The content of the matrix will be destroyed.
  */
-static inline void _sp_matrix_realloc(sp_matrix * m, int row, int col,char * file, int line){
+static inline void _sp_matrix_realloc(sp_matrix * m, int row, int col,const char * file, int line){
   m->rows = row;
   m->cols = col;
   m->data = (real *)_sp_realloc(m->data,sizeof(real)*sp_matrix_size(m),file,line);
 }
-static inline void _sp_3matrix_realloc(sp_3matrix * m, int x, int y, int z, char * file, int line){
+static inline void _sp_3matrix_realloc(sp_3matrix * m, int x, int y, int z,const char * file, int line){
   m->x = x;
   m->y = y;
   m->z = z;

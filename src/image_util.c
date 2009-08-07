@@ -3986,7 +3986,7 @@ real sp_image_max(Image * img, long long * index,int * x, int * y, int * z){
 }
 
 
-void _sp_image_realloc(Image * img, int new_x, int new_y, int new_z, char * file, int line){
+void _sp_image_realloc(Image * img, int new_x, int new_y, int new_z,const char * file, int line){
   _sp_c3matrix_realloc(img->image,new_x,new_y,new_z,file,line);
   _sp_i3matrix_realloc(img->mask,new_x,new_y,new_z,file,line);
 }

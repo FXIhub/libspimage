@@ -648,7 +648,7 @@ spimage_EXPORT real p_drand48();
 /*! Resizes the input image to the desired size. It's content is discarded
  *
  */
-spimage_EXPORT void _sp_image_realloc(Image * img, int new_x, int new_y, int new_z, char * file, int line);
+spimage_EXPORT void _sp_image_realloc(Image * img, int new_x, int new_y, int new_z,const char * file, int line);
 #ifndef SWIG
 #define sp_image_realloc(img,x,y,z) _sp_image_realloc(img,x,y,z,__FILE__,__LINE__)
 #else
