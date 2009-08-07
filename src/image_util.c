@@ -483,12 +483,10 @@ Image * sp_image_shift(Image * img){
   int new_size[3] = {shift_size(sp_image_x(img),new_origin[0],pad),
 		     shift_size(sp_image_y(img),new_origin[1],pad),
 		     shift_size(sp_image_z(img),new_origin[2],pad_z)};
-  /* Copying Image members by hand. Potential bug waiting to happen */
-  out = sp_image_alloc(new_size[0],new_size[1],new_size[2]);
-  out->scaled = img->scaled;
-  out->phased = img->phased;
+  /* Try to duplicate the original image as faithfully as possible */
+  out = sp_image_duplicate(img,SP_COPY_ALL);
+  sp_image_realloc(out,new_size[0],new_size[1],new_size[2]);
   out->shifted = !img->shifted;
-  out->num_dimensions = img->num_dimensions;
 
   for(int i = 0;i<sp_image_size(out);i++){
     out->image->data[i] = sp_cinit(0,0);
@@ -1794,7 +1792,7 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
   hid_t mem_type_id = 0;
   H5E_auto_t func;
   void * client_data;
-  real values[3];
+  real values[3] = {0,0,0};
   sp_3matrix * tmp;
   int flag_num_dimensions = 0;
   if(sizeof(real) == sizeof(float)){
@@ -5640,3 +5638,4 @@ Image * sp_image_phase_shift(Image * a, real phi, int in_place){
   }
   return out;
 }
+
