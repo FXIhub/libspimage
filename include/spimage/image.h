@@ -50,7 +50,7 @@ typedef struct{
   real image_center[3];
   real pixel_size[3];
   real detector_distance;
-  real lambda;
+  real wavelength;
 }Detector;
 
 

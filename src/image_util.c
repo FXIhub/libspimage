@@ -1450,8 +1450,8 @@ static void write_h5_img(Image * img,const char * filename, int output_precision
 		    H5P_DEFAULT, values);
   status = H5Dclose(dataset_id);
 
-  values[0] = img->detector->lambda;
-  dataset_id = H5Dcreate(file_id, "/lambda", out_type_id,
+  values[0] = img->detector->wavelength;
+  dataset_id = H5Dcreate(file_id, "/wavelength", out_type_id,
 			 dataspace_id, H5P_DEFAULT);
   status = H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		    H5P_DEFAULT, values);
@@ -1663,8 +1663,8 @@ static void write_h5_img(Image * img,const char * filename, int output_precision
     goto error;
   }
 
-  values[0] = img->detector->lambda;
-  dataset_id = H5Dcreate(file_id, "/lambda", out_type_id,
+  values[0] = img->detector->wavelength;
+  dataset_id = H5Dcreate(file_id, "/wavelength", out_type_id,
 			 dataspace_id, H5P_DEFAULT);
   if(dataset_id < 0){
     goto error;
@@ -1967,7 +1967,7 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
 
       res->detector->detector_distance = values[0];
       
-      dataset_id = H5Dopen(file_id, "/lambda");
+      dataset_id = H5Dopen(file_id, "/wavelength");
       if(dataset_id < 0){
 	sp_error_warning("Unable to open dataset in file %s",filename);
 	return NULL;
@@ -1986,7 +1986,7 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
 	return NULL;
       }
 
-      res->detector->lambda = values[0];
+      res->detector->wavelength = values[0];
       
       dataset_id = H5Dopen(file_id, "/pixel_size");
       if(dataset_id < 0){
@@ -2279,7 +2279,7 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
 
     res->detector->detector_distance = values[0];
     
-    dataset_id = H5Dopen(file_id, "/lambda");
+    dataset_id = H5Dopen(file_id, "/wavelength");
     if(dataset_id < 0){
       sp_error_warning("Unable to open dataset in file %s",filename);
       return NULL;
@@ -2298,7 +2298,7 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
       return NULL;
     }
 
-    res->detector->lambda = values[0];
+    res->detector->wavelength = values[0];
     
     dataset_id = H5Dopen(file_id, "/pixel_size");
     if(dataset_id < 0){
@@ -5089,8 +5089,8 @@ void sp_image_fourier_coords(Image * in, sp_3matrix * k_x, sp_3matrix * k_y, sp_
   real px,py;
   /* reciprocal coordinates */
   real rx,ry;
-  real real_to_reciprocal = 1.0/(in->detector->detector_distance*in->detector->lambda);
-  real ewald_radius = 1.0/in->detector->lambda;
+  real real_to_reciprocal = 1.0/(in->detector->detector_distance*in->detector->wavelength);
+  real ewald_radius = 1.0/in->detector->wavelength;
   real distance_to_ewald_sphere_center;
 
   real det_x = in->detector->pixel_size[0] * sp_image_x(in);
