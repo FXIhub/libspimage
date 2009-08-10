@@ -21,7 +21,7 @@ spimage_EXPORT long long int sp_gettime();
 */
 spimage_EXPORT int sp_timer_start();
 
-/*! Stop and releases the times. Returns the elapsed time since the beggining of the timer.
+/*! Stop and releases the timer. Returns the elapsed time in microseconds since the beggining of the timer.
   
    The token argument is required to identify the timer.
    
