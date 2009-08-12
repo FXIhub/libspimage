@@ -564,7 +564,7 @@ spimage_EXPORT Image * spherical_window(int x, int y, int z, int radius, int shi
  *  no wrap around effect. That is points of b which are outside
  *  of a are simply discarded.
  */
-spimage_EXPORT real sp_point_convolute(Image * a, Image * b, int index);
+spimage_EXPORT Complex sp_point_convolute(Image * a, Image * b, int index);
 
 /*! Returns the variance of the image in respect to the vicinity defined by window
  *

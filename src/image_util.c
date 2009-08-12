@@ -4138,10 +4138,10 @@ Image * sp_image_get_mask(Image * a){
   return res;
 }
 
-real sp_point_convolute(Image * a, Image * b, int index){
+Complex sp_point_convolute(Image * a, Image * b, int index){
   real index_x, index_y, index_z;
   int x,y,z;
-  double out = 0;
+  Complex out = sp_cinit(0,0);
   int ai,bi;
   Image * tmp = NULL;
   if(a->shifted){
@@ -4151,30 +4151,36 @@ real sp_point_convolute(Image * a, Image * b, int index){
   }
   if(b->shifted){
     fprintf(stderr,"Point convoluting with a shifted function is not currently defined!\n");
-    return 0;
+    return sp_cinit(0,0);
   }
   sp_image_get_coords_from_index(a,index,&index_x,&index_y,&index_z,SpImageCenter);
+  if(sp_image_z(b) == 1){
+    b->detector->image_center[2] = 0;
+  }
   /*  index_x = index%sp_c3matrix_z(a->image)%sp_c3matrix_y(a->image)-
     a->detector->image_center[0];
   index_y = index/sp_c3matrix_x(a->image)%sp_c3matrix_z(a->image)-
     a->detector->image_center[1];
   index_z = index/sp_c3matrix_x(a->image)/sp_c3matrix_y(a->image)-
   a->detector->image_center[2];*/
-  for(x = -b->detector->image_center[0];x<sp_c3matrix_x(b->image)-b->detector->image_center[0];x++){
+  /*  for(x = -b->detector->image_center[0];x<sp_c3matrix_x(b->image)-b->detector->image_center[0];x++){
     for(y = -b->detector->image_center[1];y<sp_c3matrix_y(b->image)-b->detector->image_center[1];y++){
-      for(z = -b->detector->image_center[2];z<sp_c3matrix_z(b->image)-b->detector->image_center[2];z++){
-	if(x+index_x < -a->detector->image_center[0] || 
-	   x+index_x >=  sp_c3matrix_x(a->image)-a->detector->image_center[0] ||
-	   y+index_y < -a->detector->image_center[1] || 
-	   y+index_y >=  sp_c3matrix_y(a->image)-a->detector->image_center[1] ||
-	   z+index_z < -a->detector->image_center[2] ||
-	   z+index_z >=  sp_c3matrix_z(a->image)-a->detector->image_center[2]){
+    for(z = -b->detector->image_center[2];z<sp_c3matrix_z(b->image)-b->detector->image_center[2];z++){*/
+  for(x = 0;x<sp_c3matrix_x(b->image);x++){
+    for(y = 0;y<sp_c3matrix_y(b->image);y++){
+      for(z = 0;z<sp_c3matrix_z(b->image);z++){
+	if(x+index_x-b->detector->image_center[0] < -a->detector->image_center[0] || 
+	   x+index_x-b->detector->image_center[0] >=  sp_c3matrix_x(a->image)-a->detector->image_center[0] ||
+	   y+index_y-b->detector->image_center[1] < -a->detector->image_center[1] || 
+	   y+index_y-b->detector->image_center[1] >=  sp_c3matrix_y(a->image)-a->detector->image_center[1] ||
+	   z+index_z-b->detector->image_center[2] < -a->detector->image_center[2] ||
+	   z+index_z-b->detector->image_center[2] >=  sp_c3matrix_z(a->image)-a->detector->image_center[2]){
 	  /* we're outside of image a */
 	  continue;
 	}
-	ai = (index_z+z+a->detector->image_center[2])*sp_c3matrix_y(a->image)*sp_c3matrix_x(a->image)+(index_y+y+a->detector->image_center[1])*sp_c3matrix_x(a->image)+(index_x+x+a->detector->image_center[0]);
-	bi = (z+b->detector->image_center[2])*sp_c3matrix_y(b->image)*sp_c3matrix_x(b->image)+(y+b->detector->image_center[1])*sp_c3matrix_x(b->image)+(x+b->detector->image_center[0]);
-	out += sp_cabs(a->image->data[ai])*sp_cabs(b->image->data[bi]);
+	ai = (index_z+z-b->detector->image_center[2]+a->detector->image_center[2])*sp_c3matrix_y(a->image)*sp_c3matrix_x(a->image)+(index_y+y-b->detector->image_center[1]+a->detector->image_center[1])*sp_c3matrix_x(a->image)+(index_x+x-b->detector->image_center[0]+a->detector->image_center[0]);
+	bi = (z)*sp_c3matrix_y(b->image)*sp_c3matrix_x(b->image)+(y)*sp_c3matrix_x(b->image)+(x);
+	out = sp_cadd(out,sp_cmul(a->image->data[ai],sp_cconj(b->image->data[bi])));
       }
     }
   }
