@@ -1,5 +1,8 @@
 
 #include "AllTests.h"
+#include <gsl/gsl_vector_float.h>
+#include <gsl/gsl_cblas.h>
+#include <gsl/gsl_blas.h>
 
 static Complex czero = {0,0};
 
@@ -343,6 +346,40 @@ void test_sp_vector_add(CuTest * tc){
   sp_vector_free(u);
   sp_vector_free(v);  
   sp_vector_free(t);  
+
+  /* test performance */
+  int total_time = 0;
+  v = sp_vector_alloc(1024*1024);
+  u = sp_vector_alloc(1024*1024);
+  int ntimes = 200;
+  for(i = 0;i<sp_vector_size(v);i++){
+    sp_vector_set(v,i,rand());
+    sp_vector_set(u,i,rand());
+  }
+  for(int j = 0;j<ntimes;j++){  
+    int timer = sp_timer_start();
+    //    sp_vector_add(v,u);
+    sp_vector_dot_prod(v,u);
+    total_time += sp_timer_stop(timer);
+  }
+  printf("Average time for vector(1024*1024) dot product is %e ms\n",total_time/1000.0/ntimes);
+
+  gsl_vector_float * gsl_v = gsl_vector_float_alloc(1024*1024);
+  gsl_vector_float * gsl_u = gsl_vector_float_alloc(1024*1024);
+  for(i = 0;i<gsl_u->size;i++){
+    gsl_vector_float_set(gsl_v,i,rand());
+    gsl_vector_float_set(gsl_u,i,rand());
+  }
+  total_time = 0;
+  for(int j = 0;j<ntimes;j++){     
+    int timer = sp_timer_start();
+    float res;
+    gsl_blas_sdot(gsl_v,gsl_u,&res);
+    //    cblas_saxpy(gsl_u->size,2.0,gsl_v->data,1,gsl_u->data,1);
+    total_time += sp_timer_stop(timer);
+  }
+  printf("Average time for gsl vector(1024*1024) dot product is %e ms\n",total_time/1000.0/ntimes);
+
 }
 
 void test_sp_cvector_add(CuTest * tc){
