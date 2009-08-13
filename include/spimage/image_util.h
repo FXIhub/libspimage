@@ -301,6 +301,12 @@ static inline void sp_image_set(Image * a,int x,int y,int z,Complex v){
   sp_c3matrix_set(a->image,x,y,z,v);
 }
 
+/*! Sets the point at the given index to the value v
+ */
+static inline void sp_image_set_by_index(Image * a,long long index,Complex v){
+  a->image->data[index] = v;
+}
+
 /*! Sets the mask at x,y,z (or x,y,0 for 2D) to the value v
  */
 static inline void sp_image_mask_set(Image * a,int x,int y,int z,int v){
@@ -473,7 +479,7 @@ spimage_EXPORT void sp_image_transpose(Image * in);
 
 /*! Returns the linearly interpolated value of the image at v_x, v_y
 */
-spimage_EXPORT real sp_image_interp(Image * img, real v_x, real v_y, real v_z);
+spimage_EXPORT real sp_image_interp(const Image * img, real v_x, real v_y, real v_z);
 
 /*@}*/
 
@@ -564,7 +570,7 @@ spimage_EXPORT Image * spherical_window(int x, int y, int z, int radius, int shi
  *  no wrap around effect. That is points of b which are outside
  *  of a are simply discarded.
  */
-spimage_EXPORT real sp_point_convolute(Image * a, Image * b, int index);
+spimage_EXPORT real sp_point_convolute(const Image * a,const Image * b, int index);
 
 /*! Returns the variance of the image in respect to the vicinity defined by window
  *
@@ -815,7 +821,7 @@ spimage_EXPORT real sp_box_muller(real m, real s);
   If the origin is TopLeftCorner then the returned coordinates are the image absolute coordinates with the origin
   in one corner of the image. If the origin is ImageCenter then the origin will be the image center.
  */
-spimage_EXPORT int sp_image_get_coords_from_index(Image * in,int index,real * x, real * y, real * z, SpOrigin origin);
+spimage_EXPORT int sp_image_get_coords_from_index(const Image * in,int index,real * x, real * y, real * z, SpOrigin origin);
 
   /*! Returns the low frequency background of a diffraction image
     
@@ -845,10 +851,10 @@ spimage_EXPORT int sp_image_get_coords_from_index(Image * in,int index,real * x,
   /*! Tries to determine if the input is a valid image.
       If so returns 1. Otherwise returns 0.
   */
-  spimage_EXPORT int sp_image_is_valid(Image * a);
+  spimage_EXPORT int sp_image_is_valid(const Image * a);
 
   /*! Returns 1 if the coordinates fall inside the image and 0 otherwise. */
-  spimage_EXPORT int sp_image_contains_coordinates(Image * a, real x, real y, real z);
+  spimage_EXPORT int sp_image_contains_coordinates(const Image * a, real x, real y, real z);
 #ifdef __cplusplus
 }  /* extern "C" */
 #endif /* __cplusplus */

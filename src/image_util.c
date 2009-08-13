@@ -138,7 +138,7 @@ real p_drand48(){
 }
 
 
-int sp_image_is_valid(Image * a){
+int sp_image_is_valid(const Image * a){
   int valid = 1;
   for(int i = 0;i<sp_image_size(a);i++){
     if(!isfinite(sp_real(a->image->data[i])) ||
@@ -3954,7 +3954,7 @@ Image * bilinear_rescale(Image * img, int new_x, int new_y, int new_z){
 }
   
 
-real sp_image_interp(Image * img, real v_x, real v_y, real v_z){
+real sp_image_interp(const Image * img, real v_x, real v_y, real v_z){
   return sp_real(sp_c3matrix_interp(img->image,v_x,v_y,v_z));
 }
 
@@ -4138,7 +4138,7 @@ Image * sp_image_get_mask(Image * a){
   return res;
 }
 
-real sp_point_convolute(Image * a, Image * b, int index){
+real sp_point_convolute(const Image * a,const Image * b, int index){
   real index_x, index_y, index_z;
   int x,y,z;
   real out = 0;
@@ -4157,9 +4157,6 @@ real sp_point_convolute(Image * a, Image * b, int index){
   }
   */
   sp_image_get_coords_from_index(a,index,&index_x,&index_y,&index_z,SpTopLeftCorner);
-  if(sp_image_z(b) == 1){
-    b->detector->image_center[2] = 0;
-  }
   /*  index_x = index%sp_c3matrix_z(a->image)%sp_c3matrix_y(a->image)-
     a->detector->image_center[0];
   index_y = index/sp_c3matrix_x(a->image)%sp_c3matrix_z(a->image)-
@@ -5546,7 +5543,7 @@ sp_vector * sp_image_center_of_mass(Image * a){
 }
 
 
-int sp_image_get_coords_from_index(Image * in,int index,real * x, real * y, real * z, SpOrigin origin){
+int sp_image_get_coords_from_index(const Image * in,int index,real * x, real * y, real * z, SpOrigin origin){
   int nx,ny,nz;
   nx = sp_image_x(in);
   ny = sp_image_y(in);
@@ -5640,7 +5637,7 @@ Image * sp_image_phase_shift(Image * a, real phi, int in_place){
   return out;
 }
 
-int sp_image_contains_coordinates(Image *a, real x, real y, real z){
+int sp_image_contains_coordinates(const Image *a, real x, real y, real z){
   if(x < 0 || x>=sp_image_x(a) || y< 0 || y>=sp_image_y(a) || z<0 || z>=sp_image_z(a)){
     return 0;
   }
