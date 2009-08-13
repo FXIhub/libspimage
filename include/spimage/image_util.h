@@ -331,6 +331,13 @@ static inline Complex sp_image_get(const Image * a,int x,int y,int z){
   return sp_c3matrix_get(a->image,x,y,z);
 }
 
+/*! Returns the image value at the given index
+ */
+static inline Complex sp_image_get_by_index(const Image * a,long long index){
+  return a->image->data[index];
+}
+
+
 /*! Returns the mask value at point x,y,z (or x,y,0 for 2D)
  */
 static inline int sp_image_mask_get(Image * a,int x,int y,int z){
