@@ -185,7 +185,7 @@ static inline Complex sp_cscale(Complex a, real b){
   sp_real(a) *= b;
   sp_imag(a) *= b;
   return a;
-}
+} 
 
 static inline Complex sp_cmul(Complex a, Complex b){
   Complex ret;

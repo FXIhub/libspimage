@@ -145,7 +145,7 @@ spimage_EXPORT real sp_image_dist(Image * in, int i, int type);
  *              SpColormapLogScale     Image will be written in log scale
  *
  */
-spimage_EXPORT void sp_image_write(Image * img,const char * filename, int flags);
+spimage_EXPORT void sp_image_write(const Image * img,const char * filename, int flags);
 
 
 /*! Reads an image from the specified filename
@@ -173,7 +173,7 @@ spimage_EXPORT Image * _sp_image_read(const char * filename,int flags, const cha
 /*! Write the mask of the image to a file in png format, using 
   the specified color map
 */
-spimage_EXPORT int write_mask_to_png(Image * img, char * filename, int color);
+spimage_EXPORT int write_mask_to_png(const Image * img, char * filename, int color);
 /*@}*/
 
 
@@ -321,7 +321,7 @@ static inline void sp_image_cinc(Image * a,int x,int y,int z,Complex v){
 
 /*! Returns the image value at point x,y,z (or x,y,0 for 2D)
  */
-static inline Complex sp_image_get(Image * a,int x,int y,int z){
+static inline Complex sp_image_get(const Image * a,int x,int y,int z){
   return sp_c3matrix_get(a->image,x,y,z);
 }
 
@@ -564,7 +564,7 @@ spimage_EXPORT Image * spherical_window(int x, int y, int z, int radius, int shi
  *  no wrap around effect. That is points of b which are outside
  *  of a are simply discarded.
  */
-spimage_EXPORT Complex sp_point_convolute(Image * a, Image * b, int index);
+spimage_EXPORT real sp_point_convolute(Image * a, Image * b, int index);
 
 /*! Returns the variance of the image in respect to the vicinity defined by window
  *
@@ -846,6 +846,9 @@ spimage_EXPORT int sp_image_get_coords_from_index(Image * in,int index,real * x,
       If so returns 1. Otherwise returns 0.
   */
   spimage_EXPORT int sp_image_is_valid(Image * a);
+
+  /*! Returns 1 if the coordinates fall inside the image and 0 otherwise. */
+  spimage_EXPORT int sp_image_contains_coordinates(Image * a, real x, real y, real z);
 #ifdef __cplusplus
 }  /* extern "C" */
 #endif /* __cplusplus */

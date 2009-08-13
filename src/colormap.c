@@ -72,7 +72,7 @@ static void hsv_to_rgb(float H,float S,float V,float * R,float *G,float *B){
 
 
 sp_rgb sp_colormap_rgb_from_value(real value, int colormap){
-  sp_rgb ret;
+  sp_rgb ret = {0,0,0};
   if(colormap & SpColormapGrayScale){       
     ret.r = value;
     ret.g = value;

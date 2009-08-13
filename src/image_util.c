@@ -45,15 +45,15 @@ static Image * reflect_xy(Image * in, int in_place);
 static Image * reflect_x(Image * in, int in_place);
 static Image * reflect_y(Image * in, int in_place);
 static Image * reflect_origo(Image * in, int in_place);
-static void write_h5_img(Image * img,const char * filename, int output_precision);
+static void write_h5_img(const Image * img,const char * filename, int output_precision);
 static Image * _read_imagefile(const char * filename,const char * file, int line);
 static Image * read_tiff(const char * filename);
-static  void write_tiff(Image * img,const char * filename);
-static  void write_csv(Image * img,const char * filename);
+static  void write_tiff(const Image * img,const char * filename);
+static  void write_csv(const Image * img,const char * filename);
 static Image * read_png(const char * filename);
-static int write_png(Image * img,const char * filename, int color);
-static int write_vtk(Image * img,const char * filename);
-static int write_xplor(Image * img,const char * filename);
+static int write_png(const Image * img,const char * filename, int color);
+static int write_vtk(const Image * img,const char * filename);
+static int write_xplor(const Image * img,const char * filename);
 static Image * read_smv(const char * filename);
 static void hsv_to_rgb(float H,float S,float V,float * R,float *G,float *B);
 
@@ -1288,7 +1288,7 @@ Image * _sp_image_alloc(int x, int y, int z,const char * file, int line){
 
 
 
-void sp_image_write(Image * img, const const char * filename, int flags){
+void sp_image_write(const Image * img, const const char * filename, int flags){
   char buffer[1024];
   strcpy(buffer,filename);
   for(int i = 0;i<strlen(buffer);i++){
@@ -1494,7 +1494,7 @@ static void write_h5_img(Image * img,const char * filename, int output_precision
 }
 */
 
-static void write_h5_img(Image * img,const char * filename, int output_precision){
+static void write_h5_img(const Image * img,const char * filename, int output_precision){
   hid_t dataspace_id;
   hid_t dataset_id;
   hid_t file_id;
@@ -2570,7 +2570,7 @@ Image * read_tiff(const char * filename){
 }
 
 
-void write_tiff(Image * img,const char * filename){
+void write_tiff(const Image * img,const char * filename){
   float * data;
   int nstrips;
   int stripsize;
@@ -2610,7 +2610,7 @@ void write_tiff(Image * img,const char * filename){
 
 /*! Write an image to CSV format 
  */
-void write_csv(Image * img,const char * filename){
+void write_csv(const Image * img,const char * filename){
   FILE * f = fopen(filename,"w");
   int x,y;
   if(!f){
@@ -3000,7 +3000,7 @@ Image * square_blur(Image * in, real radius, int type){
 }
 
 
-int write_mask_to_png(Image * img, char * filename, int color){
+int write_mask_to_png(const Image * img, char * filename, int color){
   Image  * res = sp_image_duplicate(img,SP_COPY_DATA|SP_COPY_MASK);
   int ret = 1;
   int i;
@@ -3103,7 +3103,7 @@ Image * read_png(const char * filename){
 
 
 
-int write_png(Image * img,const char * filename, int color){
+int write_png(const Image * img,const char * filename, int color){
 
   if(img->num_dimensions != SP_2D){
     fprintf(stderr,"Can only write png of 2D images in write_png!\n");
@@ -3213,8 +3213,8 @@ int write_png(Image * img,const char * filename, int color){
 	row_pointers[y][x*3+2] = (value)*color_table[(int)phase].b;
       }else if(color & SpColormapWeightedPhase){
 	phase = (256*(sp_carg(img->image->data[i])+3.1416)/(2*3.1416));
-	float rgb[3];
-	hsv_to_rgb(360.0*phase/256.0,1.0,value,&rgb[0],&rgb[1],&rgb[2]);
+	float rgb[3] = {0,0,0};
+	hsv_to_rgb(360.0*phase/256.0,1.0,value,&(rgb[0]),&(rgb[1]),&(rgb[2]));
 	row_pointers[y][x*3] = rgb[0];
 	row_pointers[y][x*3+1] = rgb[1];
 	row_pointers[y][x*3+2] = rgb[2];
@@ -3699,7 +3699,7 @@ int write_vtk(Image * img, const char * filename){
 }
 */
 
-int write_vtk(Image * img, const char * filename){
+int write_vtk(const Image * img, const char * filename){
   FILE * f = fopen(filename,"w");
   int x,y,z;
   if(!f){
@@ -3734,7 +3734,7 @@ int write_vtk(Image * img, const char * filename){
   return 0;
 }
 
-int write_xplor(Image * img, const char * filename){
+int write_xplor(const Image * img, const char * filename){
   FILE * f = fopen(filename,"w");
   int x,y,z;
   if(!f){
@@ -4138,22 +4138,25 @@ Image * sp_image_get_mask(Image * a){
   return res;
 }
 
-Complex sp_point_convolute(Image * a, Image * b, int index){
+real sp_point_convolute(Image * a, Image * b, int index){
   real index_x, index_y, index_z;
   int x,y,z;
-  Complex out = sp_cinit(0,0);
+  real out = 0;
   int ai,bi;
-  Image * tmp = NULL;
+  /* do shifted convolutions as normal convolutions */
+  /*
   if(a->shifted){
     tmp = sp_image_shift(a);
     index = sp_image_shift_index(a,index);
     a = tmp;
   }
+  
   if(b->shifted){
     fprintf(stderr,"Point convoluting with a shifted function is not currently defined!\n");
-    return sp_cinit(0,0);
+    return -1;
   }
-  sp_image_get_coords_from_index(a,index,&index_x,&index_y,&index_z,SpImageCenter);
+  */
+  sp_image_get_coords_from_index(a,index,&index_x,&index_y,&index_z,SpTopLeftCorner);
   if(sp_image_z(b) == 1){
     b->detector->image_center[2] = 0;
   }
@@ -4169,26 +4172,18 @@ Complex sp_point_convolute(Image * a, Image * b, int index){
   for(x = 0;x<sp_c3matrix_x(b->image);x++){
     for(y = 0;y<sp_c3matrix_y(b->image);y++){
       for(z = 0;z<sp_c3matrix_z(b->image);z++){
-	if(x+index_x-b->detector->image_center[0] < -a->detector->image_center[0] || 
-	   x+index_x-b->detector->image_center[0] >=  sp_c3matrix_x(a->image)-a->detector->image_center[0] ||
-	   y+index_y-b->detector->image_center[1] < -a->detector->image_center[1] || 
-	   y+index_y-b->detector->image_center[1] >=  sp_c3matrix_y(a->image)-a->detector->image_center[1] ||
-	   z+index_z-b->detector->image_center[2] < -a->detector->image_center[2] ||
-	   z+index_z-b->detector->image_center[2] >=  sp_c3matrix_z(a->image)-a->detector->image_center[2]){
+	if(!sp_image_contains_coordinates(a,x+index_x-b->detector->image_center[0],y+index_y-b->detector->image_center[1],z+index_z-b->detector->image_center[2])){
 	  /* we're outside of image a */
 	  continue;
 	}
-	ai = (index_z+z-b->detector->image_center[2]+a->detector->image_center[2])*sp_c3matrix_y(a->image)*sp_c3matrix_x(a->image)+(index_y+y-b->detector->image_center[1]+a->detector->image_center[1])*sp_c3matrix_x(a->image)+(index_x+x-b->detector->image_center[0]+a->detector->image_center[0]);
-	bi = (z)*sp_c3matrix_y(b->image)*sp_c3matrix_x(b->image)+(y)*sp_c3matrix_x(b->image)+(x);
-	out = sp_cadd(out,sp_cmul(a->image->data[ai],sp_cconj(b->image->data[bi])));
+	ai = sp_image_get_index(a,x+index_x-b->detector->image_center[0],y+index_y-b->detector->image_center[1],z+index_z-b->detector->image_center[2]);
+	bi = sp_image_get_index(b,x,y,z);
+	out += sp_cabs(a->image->data[ai])*sp_cabs(b->image->data[bi]);
       }
     }
   }
-  if(a->shifted){
-    sp_image_free(tmp);
-  }
   return out;
-  }
+}
 
 int sp_image_shift_index(Image * a, long long index){
   int x,y,z;
@@ -5645,3 +5640,9 @@ Image * sp_image_phase_shift(Image * a, real phi, int in_place){
   return out;
 }
 
+int sp_image_contains_coordinates(Image *a, real x, real y, real z){
+  if(x < 0 || x>=sp_image_x(a) || y< 0 || y>=sp_image_y(a) || z<0 || z>=sp_image_z(a)){
+    return 0;
+  }
+  return 1;
+}
