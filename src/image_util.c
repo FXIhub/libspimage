@@ -3076,12 +3076,20 @@ Image * read_png(const char * filename){
  png_get_IHDR(png_ptr, info_ptr, &width, &height,
 	      &bit_depth, &color_type, &interlace_type,
 	      &compression_type, &filter_method);
+ 
+ png_textp text;
+ int num_text;
+ if( png_get_text( png_ptr, info_ptr, &text, &num_text ) ){
+   for( i=0 ; i<num_text ; i++ ){
+     //     printf( "%s: %s\n", text[i].key, text[i].text);
+   }
+ }
 
- if(color_type == 6){
+ if(color_type == PNG_COLOR_TYPE_RGB_ALPHA){
    bit_depth *= 4;
- }else if(color_type == 4){
+ }else if(color_type == PNG_COLOR_TYPE_GRAY_ALPHA){
    bit_depth *= 2;
- }else if(color_type == 2){
+ }else if(color_type == PNG_COLOR_TYPE_RGB){
    bit_depth *= 3;
  }
  row_pointers = sp_malloc(sizeof(png_byte *)*height);
@@ -3096,6 +3104,11 @@ Image * read_png(const char * filename){
      res->mask->data[i*width+j] = 1;
    }
  }
+ for(i = 0;i<height;i++){
+   sp_free(row_pointers[i]);
+ }
+ sp_free(row_pointers);
+ png_destroy_read_struct(&png_ptr,&info_ptr, NULL);
  return res;
 }
 

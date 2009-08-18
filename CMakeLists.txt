@@ -24,7 +24,7 @@ SET(BUILD_STATIC_LIB CACHE BOOL "If ON output static library. Otherwise output s
 SET(INCLUDE_DEPENDENCIES CACHE BOOL "[EXPERIMENTAL] If ON embed dependent libraries.")
 SET(DMALLOC_USE OFF CACHE BOOL "If ON link to dmalloc library if possible.")
 SET(DOUBLE_PRECISION OFF CACHE BOOL "If ON use double precision. Otherwise use single precision")
-SET(DEBUG_MEM OFF CACHE BOOL "If ON use memory debugging code.")
+SET(SP_MEM_DEBUG OFF CACHE BOOL "If ON use memory debugging code.")
 
 find_package(TIFF REQUIRED)
 find_package(FFTW3 REQUIRED)

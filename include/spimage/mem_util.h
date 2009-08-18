@@ -6,6 +6,8 @@ extern "C"
 {
 #endif /* __cplusplus */
 
+
+
 #if !defined SP_MEM_DEBUG || defined NDEBUG
 #define _sp_matrix_realloc(m,r,c,f,l) _sp_matrix_realloc(m,r,c)
 #define _sp_imatrix_realloc(m,r,c,f,l) _sp_imatrix_realloc(m,r,c)
