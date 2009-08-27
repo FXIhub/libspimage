@@ -766,12 +766,12 @@ Image * sp_image_low_pass(Image * img, int resolution, int type){
     for(x = 0;x<sp_c3matrix_x(img->image);x++){
       dx = x;
       if(sp_c3matrix_x(img->image)-x-1 < dx){
-      dx = sp_c3matrix_x(img->image)-x;
+      dx = sp_c3matrix_x(img->image)-x-1;
       }
       for(y = 0;y<sp_c3matrix_y(img->image);y++){
 	dy = y;
 	if(sp_c3matrix_y(img->image)-y-1 < dy){
-	  dy = sp_c3matrix_y(img->image)-y;
+	  dy = sp_c3matrix_y(img->image)-y-1;
 	}
 	if(dx < resolution && dy < resolution){
 	  sp_c3matrix_set(res->image,nx,ny,0,sp_c3matrix_get(img->image,x,y,0));
@@ -800,17 +800,17 @@ Image * sp_image_low_pass(Image * img, int resolution, int type){
     for(x = 0;x<sp_c3matrix_x(img->image);x++){
       dx = x;
       if(sp_c3matrix_x(img->image)-x-1 < dx){
-	dx = sp_c3matrix_x(img->image)-x;
+	dx = sp_c3matrix_x(img->image)-x-1;
       }
       for(y = 0;y<sp_c3matrix_y(img->image);y++){
 	dy = y;
 	if(sp_c3matrix_y(img->image)-y-1 < dy){
-	  dy = sp_c3matrix_y(img->image)-y;
+	  dy = sp_c3matrix_y(img->image)-y-1;
 	}
 	for(z = 0;z<sp_c3matrix_z(img->image);z++){
 	  dz = z;
 	  if(sp_c3matrix_z(img->image)-z-1 < dz){
-	    dz = sp_c3matrix_z(img->image)-z;
+	    dz = sp_c3matrix_z(img->image)-z-1;
 	  }
 	  if(dx < resolution && dy < resolution && dz < resolution){
 	    sp_c3matrix_set(res->image,nx,ny,nz,sp_c3matrix_get(img->image,x,y,z));
