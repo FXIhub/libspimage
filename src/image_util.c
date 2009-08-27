@@ -754,13 +754,13 @@ Image * sp_image_low_pass(Image * img, int resolution, int type){
     fprintf(stderr,"Error: Trying to limit resolution on an unshifted image\n");
   }
   if(img->num_dimensions == SP_2D){
-    if(resolution*2-1 > sp_c3matrix_x(res->image) || resolution*2-1 > sp_c3matrix_y(res->image)){
+    if(resolution*2 > sp_c3matrix_x(res->image) || resolution*2 > sp_c3matrix_y(res->image)){
       return sp_image_duplicate(img,SP_COPY_DATA|SP_COPY_MASK);
     }  
     sp_c3matrix_free(res->image);
     sp_i3matrix_free(res->mask);
-    res->image = sp_c3matrix_alloc(resolution*2-1,resolution*2-1,1);
-    res->mask = sp_i3matrix_alloc(resolution*2-1,resolution*2-1,1);
+    res->image = sp_c3matrix_alloc(resolution*2,resolution*2,1);
+    res->mask = sp_i3matrix_alloc(resolution*2,resolution*2,1);
     nx = 0;
     ny = 0;
     for(x = 0;x<sp_c3matrix_x(img->image);x++){
@@ -785,15 +785,15 @@ Image * sp_image_low_pass(Image * img, int resolution, int type){
       }
     }
   }else{
-    if(resolution*2-1 > sp_c3matrix_x(res->image) ||
-       resolution*2-1 > sp_c3matrix_y(res->image) ||
-       resolution*2-1 > sp_c3matrix_z(res->image)){
+    if(resolution*2 > sp_c3matrix_x(res->image) ||
+       resolution*2 > sp_c3matrix_y(res->image) ||
+       resolution*2 > sp_c3matrix_z(res->image)){
       return sp_image_duplicate(img,SP_COPY_DATA|SP_COPY_MASK);
     }
     sp_c3matrix_free(res->image);
     sp_i3matrix_free(res->mask);
-    res->image = sp_c3matrix_alloc(resolution*2-1,resolution*2-1,resolution*2-1);
-    res->mask = sp_i3matrix_alloc(resolution*2-1,resolution*2-1,resolution*2-1);
+    res->image = sp_c3matrix_alloc(resolution*2,resolution*2,resolution*2);
+    res->mask = sp_i3matrix_alloc(resolution*2,resolution*2,resolution*2);
     nx = 0;
     ny = 0;
     nz = 0;
