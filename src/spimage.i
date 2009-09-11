@@ -17,8 +17,15 @@
 #include "../include/spimage/map.h"
 #include "../include/spimage/prtf.h"
 #include "../include/spimage/phasing.h"
+  //#include <numpy/npy_common.h>
+#include <numpy/arrayobject.h>
+
  %}
  
+%init %{
+        import_array();
+%}
+
 /* Parse the header file to generate wrappers */
 %typemap(out) Complex {
     $result = PyComplex_FromDoubles($1.re,$1.im);
@@ -27,6 +34,46 @@
 %typemap(in) Complex {
     $1.re = PyComplex_RealAsDouble($input);
     $1.im = PyComplex_ImagAsDouble($input);
+}
+
+
+%typemap(out) sp_i3matrix * {
+  npy_intp dims[3] = {$1->x,$1->y,$1->z};
+  $result = PyArray_SimpleNewFromData(3, dims, PyArray_INT, $1->data);
+}
+
+%typemap(in) sp_i3matrix * {
+  /* Make sure input is a NumPy array and an Int */
+  PyArrayObject *arr;
+  if(PyArray_Check($input) == 0 || PyArray_ISINTEGER($input) == 0){
+    PyErr_SetString( PyExc_TypeError, "not an int array" );
+    return NULL;
+  } 
+  arr = (PyArrayObject *)($input);
+  //  if ((arr = (PyArrayObject *) PyArray_ContiguousFromObject($input,PyArray_INT, 0, 0)) == NULL) return NULL;
+  npy_intp * dim = PyArray_DIMS(arr);
+  $1->x = dim[0];
+  $1->y = dim[1];
+  $1->z = dim[2];
+  $1->data = (int *)arr->data;
+  $input = (PyObject *)arr;
+}
+
+%typemap(out) sp_c3matrix * {
+  npy_intp dims[3] = {$1->x,$1->y,$1->z};
+  $result = PyArray_SimpleNewFromData(3, dims, PyArray_CFLOAT, $1->data);
+}
+
+%typemap(out) sp_3matrix * {
+  npy_intp dims[3] = {$1->x,$1->y,$1->z};
+  $result = PyArray_SimpleNewFromData(3, dims, PyArray_FLOAT, $1->data);
+}
+
+%typemap(out) float[3] {
+  $result = PyTuple_New(3);
+  PyTuple_SetItem($result, 0, PyFloat_FromDouble($1[0]));
+  PyTuple_SetItem($result, 1, PyFloat_FromDouble($1[1]));
+  PyTuple_SetItem($result, 2, PyFloat_FromDouble($1[2]));
 }
 
 

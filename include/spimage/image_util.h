@@ -96,7 +96,7 @@ typedef enum{SpEnantiomorph=1,SpCorrectPhaseShift=2}SpSuperimposeFlags;
  *
  * SP_TO_CENTER - Distance to center of the image.
  *
- * SP_TO_CENTER2 - Same as SP_TO_CENTER squared.
+ * SP_TO_CENTER2 - Manhattan distance to center
  *
  * SP_TO_CORNER - Distance to the closest corner.
  *
