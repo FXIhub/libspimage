@@ -4,6 +4,8 @@
 #include <gsl/gsl_cblas.h>
 #include <gsl/gsl_blas.h>
 
+Image * sp_image_cuda_ifft(Image * img);
+
 static Complex czero = {0,0};
 
 void test_sp_clog(CuTest * tc){
@@ -1718,6 +1720,43 @@ void test_sp_matrix_rotate(CuTest * tc){
   sp_matrix_free(c);
 }
 
+void test_sp_image_cuda_ifft(CuTest * tc){
+  Image * a = sp_image_alloc(512,512,1);
+  for(int i = 0;i<sp_image_size(a);i++){
+    a->image->data[0] = sp_cinit((float)rand()/RAND_MAX,(float)rand()/RAND_MAX);
+  }
+  a->phased = 1;
+  a->shifted = 1;
+  Image * cuda_out = sp_image_cuda_ifft(a);
+  Image * fftw_out = sp_image_ifft(a);
+  double error = 0;
+  double sum = 0;
+  for(int i= 0;i<sp_image_size(a);i++){
+    error += sp_cabs(sp_csub(cuda_out->image->data[i],fftw_out->image->data[i]));
+    sum += sp_cabs(fftw_out->image->data[i]);
+  }
+  printf("CUDA ifft tot. error = %e\n",error);
+  printf("CUDA ifft rel. error = %e\n",error/sum);
+}
+
+void test_sp_image_cuda_fft(CuTest * tc){
+  Image * a = sp_image_alloc(2048,2048,1);
+  for(int i = 0;i<sp_image_size(a);i++){
+    a->image->data[0] = sp_cinit((float)rand()/RAND_MAX,(float)rand()/RAND_MAX);
+  }
+  a->phased = 1;
+  Image * cuda_out = sp_image_cuda_fft(a);
+  Image * fftw_out = sp_image_fft(a);
+  double error = 0;
+  double sum = 0;
+  for(int i= 0;i<sp_image_size(a);i++){
+    error += sp_cabs(sp_csub(cuda_out->image->data[i],fftw_out->image->data[i]));
+    sum += sp_cabs(fftw_out->image->data[i]);
+  }
+  printf("CUDA fft tot. error = %e\n",error);
+  printf("CUDA fft rel. error = %e\n",error/sum);
+}
+
 CuSuite* linear_alg_get_suite(void)
 {
   CuSuite* suite = CuSuiteNew();
@@ -1819,6 +1858,9 @@ CuSuite* linear_alg_get_suite(void)
 
   SUITE_ADD_TEST(suite,test_sp_c3matrix_rotate);
   SUITE_ADD_TEST(suite,test_sp_matrix_rotate);
+
+  SUITE_ADD_TEST(suite,test_sp_image_cuda_ifft);
+  SUITE_ADD_TEST(suite,test_sp_image_cuda_fft);
 
   return suite;
 }

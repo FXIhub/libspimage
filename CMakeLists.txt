@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 2.6)
 PROJECT (spimage)
 
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/cuda")
 
 ADD_DEFINITIONS(-D H5_USE_16_API)
 # Make sure that while building this library the include files are not 
@@ -35,8 +36,18 @@ find_package(ZLIB REQUIRED)
 find_package(MATH REQUIRED)
 find_package(GSL REQUIRED)
 find_package(PythonLibs)
-#find_package(PythonInterp)
+find_package(PythonInterp)
+find_package(Numpy)
 find_package(SWIG)
+
+SET(CUDA_HOST_COMPILATION_CPP OFF)
+SET(CUDA_VERBOSE_BUILD ON)
+find_package(CUDA)
+
+IF(CUDA_FOUND)
+MESSAGE(STATUS "CUDA_FOUND!")
+ADD_DEFINITIONS(-D_USE_CUDA)
+ENDIF(CUDA_FOUND)
 
 IF(UNIX AND CMAKE_SIZEOF_VOID_P EQUAL 8)
 	IF(EXISTS /usr/lib64)

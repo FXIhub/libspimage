@@ -105,6 +105,11 @@ spimage_EXPORT sp_c3matrix * sp_c3matrix_ifft(sp_c3matrix * img);
  */
 spimage_EXPORT int sp_init_fft(int nthreads);
 
+#ifdef _USE_CUDA
+  spimage_EXPORT Image * sp_image_cuda_ifft(Image * img);
+  spimage_EXPORT Image * sp_image_cuda_fft(Image * img);
+#endif
+
 #ifdef __cplusplus
 }  /* extern "C" */
 #endif /* __cplusplus */

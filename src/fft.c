@@ -32,7 +32,7 @@ real * sp_image_fft_shift(real * fftout, Image * a){
 }
 
 int sp_init_fft(int nthreads){
-  int ret = 0; 
+  int ret = -1; 
   if(nthreads == 1){
     /* No need to do anything*/
     return 0;
