@@ -3,6 +3,7 @@
 
 #include "image.h"
 #include "cuda_util.h"
+#include "support_update.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -43,6 +44,7 @@ typedef struct{
   sp_3matrix * amplitudes;
   sp_i3matrix * pixel_flags;
   SpPhasingAlgorithm * algorithm;
+  SpSupportAlgorithm * sup_algorithm;
   int iteration;
   int image_size;
 

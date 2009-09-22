@@ -28,8 +28,6 @@ SpPhasingAlgorithm * sp_phasing_hio_alloc(real beta, SpPhasingConstraints constr
   return ret;
 }
 
-/*SpSupportAlgorithm * sp_support_fixed_alloc(SpSupportAlgorithmType type, int update_period, sp_smap * blur_radius,){*/
-
 SpPhaser * sp_phaser_alloc(){
   SpPhaser * ret = sp_malloc(sizeof(SpPhaser));
   memset(ret,0,sizeof(SpPhaser));

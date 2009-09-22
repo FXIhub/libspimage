@@ -1,5 +1,5 @@
 LIST(APPEND OBJECTS  "image_util.c" "fft.c" "linear_alg.c" "mem_util.c" "image_sphere.c" "sperror.c" 
-  "gaussianinv.c" "image_noise.c" "hashtable.c" "interpolation_kernels.c" "time_util.c" "list.c" "prtf.c" "phasing.c" "colormap.c" "cuda_util.c")
+  "gaussianinv.c" "image_noise.c" "hashtable.c" "interpolation_kernels.c" "time_util.c" "list.c" "prtf.c" "phasing.c" "colormap.c" "cuda_util.c" "support_update.c")
 
 
 IF(CUDA_FOUND)
@@ -58,6 +58,7 @@ FIND_PACKAGE_HANDLE_STANDARD_ARGS(PythonInterp DEFAULT_MSG PYTHON_EXECUTABLE)
 
 MARK_AS_ADVANCED(PYTHON_EXECUTABLE)
 if(PYTHONLIBS_FOUND AND SWIG_FOUND AND PYTHONINTERP_FOUND AND PYTHON_NUMPY_FOUND)
+MESSAGE("numpy found compiling python wrappers")
   FILE(GLOB spimage_headers "${CMAKE_CURRENT_SOURCE_DIR}/../include/spimage/*.h")
   add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/spimage_wrap.c COMMAND ${SWIG_EXECUTABLE} -python  -o ${CMAKE_CURRENT_SOURCE_DIR}/spimage_wrap.c ${CMAKE_CURRENT_SOURCE_DIR}/spimage.i DEPENDS ${spimage_headers})
   INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH} ${PYTHON_NUMPY_INCLUDE_DIR})

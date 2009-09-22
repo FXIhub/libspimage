@@ -23,5 +23,6 @@
 #include "spimage/phasing.h"
 #include "spimage/colormap.h"
 #include "spimage/cuda_util.h"
+#include "spimage/support_update.h"
 #endif
 

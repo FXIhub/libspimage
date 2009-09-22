@@ -88,5 +88,4 @@ static void phaser_cuda_handle_output_end(SpPhaser * ph,SpPhasingOutput output){
   }
 }
 
-static void phaser_cuda_apply_constraints(SpPhaser * ph,cufftComplex * g, SpPhasingConstraints constraints){
-}
+
