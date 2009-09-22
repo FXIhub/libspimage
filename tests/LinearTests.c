@@ -4,7 +4,6 @@
 #include <gsl/gsl_cblas.h>
 #include <gsl/gsl_blas.h>
 
-Image * sp_image_cuda_ifft(Image * img);
 
 static Complex czero = {0,0};
 
@@ -1724,6 +1723,7 @@ void test_sp_matrix_rotate(CuTest * tc){
 }
 
 void test_sp_image_cuda_ifft(CuTest * tc){
+#ifdef _USE_CUDA
   Image * a = sp_image_alloc(512,512,1);
   for(int i = 0;i<sp_image_size(a);i++){
     a->image->data[0] = sp_cinit((float)rand()/RAND_MAX,(float)rand()/RAND_MAX);
@@ -1740,9 +1740,11 @@ void test_sp_image_cuda_ifft(CuTest * tc){
   }
   printf("CUDA ifft tot. error = %e\n",error);
   printf("CUDA ifft rel. error = %e\n",error/sum);
+#endif
 }
 
 void test_sp_image_cuda_fft(CuTest * tc){
+#ifdef _USE_CUDA
   Image * a = sp_image_alloc(2048,2048,1);
   for(int i = 0;i<sp_image_size(a);i++){
     a->image->data[0] = sp_cinit((float)rand()/RAND_MAX,(float)rand()/RAND_MAX);
@@ -1758,6 +1760,7 @@ void test_sp_image_cuda_fft(CuTest * tc){
   }
   printf("CUDA fft tot. error = %e\n",error);
   printf("CUDA fft rel. error = %e\n",error/sum);
+#endif
 }
 
 CuSuite* linear_alg_get_suite(void)
