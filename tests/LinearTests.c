@@ -1585,6 +1585,7 @@ void test_sp_create_spline2_kernel_table(CuTest * tc){
 #endif
   CuAssertTrue(tc,max_error < tol*1.1);
 
+#ifndef NDEBUG
   /* Do a control run */
   int t = sp_timer_start();
   step = 1e-5;
@@ -1606,7 +1607,6 @@ void test_sp_create_spline2_kernel_table(CuTest * tc){
     sample = i;
     i++;
   }
-#ifndef NDEBUG
   long long int dt = sp_timer_stop(t)-control_dt;
   printf("Spline R2 %d steps in %lld micro seconds %g steps/us\n",i,dt,(real)i/dt);
 #endif

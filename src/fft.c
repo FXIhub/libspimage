@@ -221,6 +221,8 @@ Image * sp_image_1d_fftw3(Image * img, int axis) {
     n = malloc(sp_image_x(img)*sp_image_y(img)*sizeof(int));
     for (int i = 0; i < sp_image_x(img)*sp_image_y(img); i++) n[i] = sp_image_z(img);
     howmany = sp_image_x(img)*sp_image_y(img);
+  }else{
+    return NULL;
   }
   odist = idist;
   ostride = istride;
@@ -271,6 +273,8 @@ Image * sp_image_1d_ifftw3(Image * img, int axis) {
     n = malloc(sp_image_x(img)*sp_image_y(img)*sizeof(int));
     for (int i = 0; i < sp_image_x(img)*sp_image_y(img); i++) n[i] = sp_image_z(img);
     howmany = sp_image_x(img)*sp_image_y(img);
+  }else{
+    return NULL;
   }
   odist = idist;
   ostride = istride;

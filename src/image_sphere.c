@@ -370,12 +370,19 @@ void sp_image_get_2dpattern(Image * pattern, Image * slice, sp_3matrix * curvatu
   real px = slice->detector->pixel_size[0];
   real py = slice->detector->pixel_size[1];
   real w;
-  real w_tot;
+  real w_tot = 0;
   int x1,y1,z1;
   int radius;
-  if (kernel == SP_QSPLINE_KERNEL) radius = 2;
-  if (kernel == SP_CSPLINE_KERNEL) radius = 3;
-  if (kernel == SP_4SPLINE_KERNEL) radius = 3;
+  if (kernel == SP_QSPLINE_KERNEL){
+    radius = 2;
+  }else if (kernel == SP_CSPLINE_KERNEL){
+    radius = 3;
+  }else if (kernel == SP_4SPLINE_KERNEL){
+    radius = 3;
+  }else{
+    sp_error_fatal("wrong kernel parameter given");
+    return;
+  }
   for (x = 0; x < sp_image_x(slice); x++) {
     for (y = 0; y < sp_image_y(slice); y++) {
       nx = (((real)x-cx)*px*sp_matrix_get(rot->R,0,0) + ((real)y-cy)*py*sp_matrix_get(rot->R,1,0) + sp_3matrix_get(curvature,x,y,0)*sp_matrix_get(rot->R,2,0))/
