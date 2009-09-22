@@ -718,7 +718,6 @@ void test_sp_phasing_raar_speed(CuTest * tc){
 CuSuite* phasing_get_suite(void)
 {
   CuSuite* suite = CuSuiteNew();
-  sp_init_fft(8);
   SUITE_ADD_TEST(suite, test_sp_phasing_hio_speed);
   SUITE_ADD_TEST(suite, test_sp_phasing_hio);
   SUITE_ADD_TEST(suite, test_sp_phasing_raar);
