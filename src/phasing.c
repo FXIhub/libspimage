@@ -28,6 +28,8 @@ SpPhasingAlgorithm * sp_phasing_hio_alloc(real beta, SpPhasingConstraints constr
   return ret;
 }
 
+/*SpSupportAlgorithm * sp_support_fixed_alloc(SpSupportAlgorithmType type, int update_period, sp_smap * blur_radius,){*/
+
 SpPhaser * sp_phaser_alloc(){
   SpPhaser * ret = sp_malloc(sizeof(SpPhaser));
   memset(ret,0,sizeof(SpPhaser));
@@ -295,13 +297,21 @@ int sp_phaser_iterate(SpPhaser * ph, int iterations, SpPhasingOutput output){
   }
   if(ph->algorithm->type == SpHIO){
     if(ph->engine == SpEngineCUDA){
+#ifdef _USE_CUDA
       return phaser_iterate_hio_cuda(ph,iterations,output);
+#else
+      return -8;
+#endif
     }else {
       return phaser_iterate_hio(ph,iterations,output);
     }
   }else if(ph->algorithm->type == SpRAAR){
     if(ph->engine == SpEngineCUDA){
+#ifdef _USE_CUDA
       return phaser_iterate_raar_cuda(ph,iterations,output);
+#else
+      return -8
+#endif
     }else{
       return phaser_iterate_raar(ph,iterations,output);
     }
