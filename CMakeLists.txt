@@ -39,13 +39,9 @@ find_package(PythonLibs)
 find_package(PythonInterp)
 find_package(Numpy)
 find_package(SWIG)
-
-SET(CUDA_HOST_COMPILATION_CPP OFF)
-SET(CUDA_VERBOSE_BUILD ON)
-find_package(CUDA)
+find_package(CUDA QUIET)
 
 IF(CUDA_FOUND)
-MESSAGE(STATUS "CUDA_FOUND!")
 ADD_DEFINITIONS(-D_USE_CUDA)
 ENDIF(CUDA_FOUND)
 
