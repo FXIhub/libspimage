@@ -1865,8 +1865,10 @@ CuSuite* linear_alg_get_suite(void)
   SUITE_ADD_TEST(suite,test_sp_c3matrix_rotate);
   SUITE_ADD_TEST(suite,test_sp_matrix_rotate);
 
-  SUITE_ADD_TEST(suite,test_sp_image_cuda_ifft);
-  SUITE_ADD_TEST(suite,test_sp_image_cuda_fft);
+  if(sp_cuda_get_device_type() == SpCUDAHardwareDevice){
+    SUITE_ADD_TEST(suite,test_sp_image_cuda_ifft);
+    SUITE_ADD_TEST(suite,test_sp_image_cuda_fft);
+  }
 
   return suite;
 }
