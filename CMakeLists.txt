@@ -39,7 +39,13 @@ find_package(PythonLibs)
 find_package(PythonInterp)
 find_package(Numpy)
 find_package(SWIG)
+IF(CMAKE_VERSION)
+# CMAKE VERSION was first defined in 2.6.3. Sorry for the hack
 find_package(CUDA QUIET)
+ELSE(CMAKE_VERSION)
+message(STATUS "cmake 2.6.3 or higher required to use CUDA")
+ENDIF(CMAKE_VERSION)
+
 
 IF(CUDA_FOUND)
 ADD_DEFINITIONS(-D_USE_CUDA)
