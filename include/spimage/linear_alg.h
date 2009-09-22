@@ -1906,8 +1906,8 @@ static inline void sp_c3matrix_conj(sp_c3matrix * m){
  */
 static inline real sp_cmatrix_min(const sp_cmatrix * m, int * index){
   real min = sp_cabs(m->data[0]);
-  int i,ii;
-  for(i = 1;i<sp_cmatrix_size(m);i++){
+  int ii = 0;
+  for(int i = 1;i<sp_cmatrix_size(m);i++){
     if(sp_cabs(m->data[i]) < min){
       min = sp_cabs(m->data[i]);
       ii = i;
@@ -1921,8 +1921,8 @@ static inline real sp_cmatrix_min(const sp_cmatrix * m, int * index){
 
 static inline real sp_c3matrix_min(const sp_c3matrix * m, long long * index){
   real min = sp_cabs(m->data[0]);
-  int i,ii;
-  for(i = 1;i<sp_c3matrix_size(m);i++){
+  int ii = 0;
+  for(int i = 1;i<sp_c3matrix_size(m);i++){
     if(sp_cabs(m->data[i]) < min){
       min = sp_cabs(m->data[i]);
       ii = i;
