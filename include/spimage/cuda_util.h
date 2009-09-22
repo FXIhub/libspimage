@@ -1,5 +1,5 @@
-#ifndef _CUDA_UTIL_H_
-#define _CUDA_UTIL_H_ 1
+#ifndef _SP_CUDA_UTIL_H_
+#define _SP_CUDA_UTIL_H_ 1
 
 #ifdef _USE_CUDA
 
@@ -62,4 +62,4 @@ spimage_EXPORT  SpCUDADeviceType sp_cuda_get_device_type();
 }  /* extern "C" */
 #endif /* __cplusplus */
 
-#endif /* _CUDA_UTIL_H_ */
+#endif /* _SP_CUDA_UTIL_H_ */
