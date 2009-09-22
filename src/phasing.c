@@ -190,7 +190,7 @@ int sp_phaser_init_model(SpPhaser * ph, const Image * user_model, int flags){
   }else if(flags & SpModelRandomValues){
     ph->model = sp_image_alloc(sp_3matrix_x(ph->amplitudes),sp_3matrix_y(ph->amplitudes),sp_3matrix_y(ph->amplitudes));
     /* try to start with reasonable random values */
-    double sum;
+    double sum = 0;
     for(int i= 0;i<sp_image_size(ph->model);i++){
       sum += ph->amplitudes->data[i]*ph->amplitudes->data[i];
     }
