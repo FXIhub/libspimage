@@ -125,7 +125,7 @@ cuda_execute_process(
   "Generating dependency file: ${NVCC_generated_dependency_file}"
   COMMAND "${CUDA_NVCC_EXECUTABLE}"
   "${source_file}"
-  ${CUDA_NVCC_FLAGS}
+#  ${CUDA_NVCC_FLAGS}
   ${nvcc_flags}
   ${CCBIN}
   ${nvcc_host_compiler_flags}

@@ -18,6 +18,8 @@ extern "C"
 #include <fftw3.h>
 #define sp_image_ifft(a) sp_image_ifftw3(a)
 #define sp_image_fft(a) sp_image_fftw3(a) 
+#define sp_image_ifft_fast(a,b) sp_image_ifftw3_fast(a,b)
+#define sp_image_fft_fast(a,b) sp_image_fftw3_fast(a,b) 
   //#define sp_cmatrix_ifft(a) sp_cmatrix_ifftw3(a)
 #define sp_image_1d_fft(a,b) sp_image_1d_fftw3(a,b)
 #define sp_image_1d_ifft(a,b) sp_image_1d_fftw3(a,b)
@@ -77,6 +79,10 @@ extern "C"
  * The center of the image is set to the middle of the image
  */
 spimage_EXPORT Image * sp_image_fft(Image * img);
+
+/*! Simply does the fft of the input data and puts it into out */
+spimage_EXPORT void sp_image_fft_fast(Image * in, Image * out);
+
   /*!Returns the 1d fourier transform of img along the specified axis. 
    * axis = 0,1,2 corresponds to x,y,z respectively. (axis = 1 only
    * works for 2d images.
@@ -94,6 +100,10 @@ spimage_EXPORT sp_c3matrix * sp_c3matrix_fft(sp_c3matrix * m);
  * The mask is copied unchanged
  */
 spimage_EXPORT Image * sp_image_ifft(Image * img);
+/*! Simply does the ifft of the input data and puts it into out */
+spimage_EXPORT void sp_image_ifft_fast(Image * in, Image * out);
+
+
 /*! Returns the backward FFT of m.
  */
 //spimage_EXPORT sp_cmatrix * sp_cmatrix_ifft(sp_cmatrix * img);

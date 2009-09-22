@@ -22,5 +22,6 @@
 #include "spimage/prtf.h"
 #include "spimage/phasing.h"
 #include "spimage/colormap.h"
+#include "spimage/cuda_util.h"
 #endif
 

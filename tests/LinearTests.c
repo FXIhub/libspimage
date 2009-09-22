@@ -358,13 +358,14 @@ void test_sp_vector_add(CuTest * tc){
     sp_vector_set(v,i,rand());
     sp_vector_set(u,i,rand());
   }
+  int timer = sp_timer_start();
   for(int j = 0;j<ntimes;j++){  
-    int timer = sp_timer_start();
-    //    sp_vector_add(v,u);
     sp_vector_dot_prod(v,u);
-    total_time += sp_timer_stop(timer);
   }
+  total_time += sp_timer_stop(timer);
+#ifndef NDEBUG
   printf("Average time for vector(1024*1024) dot product is %e ms\n",total_time/1000.0/ntimes);
+#endif
 
   gsl_vector_float * gsl_v = gsl_vector_float_alloc(1024*1024);
   gsl_vector_float * gsl_u = gsl_vector_float_alloc(1024*1024);
@@ -373,14 +374,16 @@ void test_sp_vector_add(CuTest * tc){
     gsl_vector_float_set(gsl_u,i,rand());
   }
   total_time = 0;
+  timer = sp_timer_start();
   for(int j = 0;j<ntimes;j++){     
-    int timer = sp_timer_start();
     float res;
     gsl_blas_sdot(gsl_v,gsl_u,&res);
     //    cblas_saxpy(gsl_u->size,2.0,gsl_v->data,1,gsl_u->data,1);
-    total_time += sp_timer_stop(timer);
   }
+  total_time += sp_timer_stop(timer);
+#ifndef NDEBUG
   printf("Average time for gsl vector(1024*1024) dot product is %e ms\n",total_time/1000.0/ntimes);
+#endif
 
 }
 
@@ -1604,8 +1607,8 @@ void test_sp_create_spline2_kernel_table(CuTest * tc){
     sample = i;
     i++;
   }
-  long long int dt = sp_timer_stop(t)-control_dt;
 #ifndef NDEBUG
+  long long int dt = sp_timer_stop(t)-control_dt;
   printf("Spline R2 %d steps in %lld micro seconds %g steps/us\n",i,dt,(real)i/dt);
 #endif
 }

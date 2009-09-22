@@ -263,7 +263,7 @@ void test_sp_image_low_pass(CuTest * tc){
   sp_image_free(b);
   sp_image_set(a,0,0,3,sp_cinit(3.1,0));
   b = sp_image_low_pass(a,2,0);  
-  CuAssertComplexEquals(tc,sp_image_get(b,0,0,2),sp_image_get(a,0,0,3),3*fabs(REAL_EPSILON));  
+  CuAssertComplexEquals(tc,sp_image_get(b,0,0,3),sp_image_get(a,0,0,3),3*fabs(REAL_EPSILON));  
   
   sp_image_free(a);
   sp_image_free(b);
