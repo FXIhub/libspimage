@@ -310,7 +310,7 @@ int sp_phaser_iterate(SpPhaser * ph, int iterations, SpPhasingOutput output){
 #ifdef _USE_CUDA
       return phaser_iterate_raar_cuda(ph,iterations,output);
 #else
-      return -8
+      return -8;
 #endif
     }else{
       return phaser_iterate_raar(ph,iterations,output);
