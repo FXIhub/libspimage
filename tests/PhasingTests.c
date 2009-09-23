@@ -29,14 +29,14 @@ int test_sp_phasing_common(CuTest * tc,SpPhasingAlgorithm * alg,int size, real o
       }
     }
     SpPhaser * ph = sp_phaser_alloc();
-    CuAssertTrue(tc,sp_phaser_init(ph,alg,f,support,SpEngineAutomatic) == 0);
+    CuAssertTrue(tc,sp_phaser_init(ph,alg,NULL,f,support,SpEngineAutomatic) == 0);
     int i =0;
     change = 0;
     int max_iter = 300;
     CuAssertTrue(tc,sp_phaser_init_model(ph,NULL,SpModelRandomPhases) == 0); 
     do{
-      CuAssertTrue(tc,sp_phaser_iterate(ph,1,SpOutputModel|SpOutputModelChange) == 0);
-      change = sp_image_integrate2(sp_phaser_model_change(ph,0));
+      CuAssertTrue(tc,sp_phaser_iterate(ph,1) == 0);
+      change = sp_image_integrate2(sp_phaser_model_change(ph));
       //      printf("Iter = %d Delta = %g\n",i,change);
       i++;
     }while(change > tol && i < max_iter);
@@ -71,12 +71,12 @@ int test_sp_phasing_speed_common(CuTest * tc,SpPhasingAlgorithm * alg,int size, 
     }
   }
   SpPhaser * ph = sp_phaser_alloc();
-  CuAssertTrue(tc,sp_phaser_init(ph,alg,f,support,engine) == 0);
+  CuAssertTrue(tc,sp_phaser_init(ph,alg,NULL,f,support,engine) == 0);
   CuAssertTrue(tc,sp_phaser_init_model(ph,NULL,SpModelRandomPhases) == 0); 
   int timer = sp_timer_start();
-  CuAssertTrue(tc,sp_phaser_iterate(ph,iterations,0) == 0);
+  CuAssertTrue(tc,sp_phaser_iterate(ph,iterations) == 0);
   /* retrieve result and make sure the calculations are finished */
-  CuAssertTrue(tc,sp_phaser_iterate(ph,0,SpOutputModel) == 0);
+  sp_phaser_model(ph);
   int delta_t = sp_timer_stop(timer);
   sp_phaser_free(ph);
   sp_image_free(f);
@@ -106,7 +106,7 @@ int test_sp_phasing_success_common(CuTest * tc,SpPhasingAlgorithm * alg,Image * 
     }
   }
   SpPhaser * ph = sp_phaser_alloc();
-    CuAssertTrue(tc,sp_phaser_init(ph,alg,f,support,SpEngineAutomatic) == 0);
+  CuAssertTrue(tc,sp_phaser_init(ph,alg,NULL,f,support,SpEngineAutomatic) == 0);
   //    CuAssertTrue(tc,sp_phaser_init(ph,alg,f,support,SpEngineCPU) == 0);
 
   int i =0;
@@ -114,12 +114,12 @@ int test_sp_phasing_success_common(CuTest * tc,SpPhasingAlgorithm * alg,Image * 
   int max_iter = 300;
   CuAssertTrue(tc,sp_phaser_init_model(ph,NULL,SpModelRandomPhases) == 0); 
   do{
-    CuAssertTrue(tc,sp_phaser_iterate(ph,1,SpOutputModel|SpOutputModelChange) == 0);
-    change = sp_image_integrate2(sp_phaser_model_change(ph,0));
+    CuAssertTrue(tc,sp_phaser_iterate(ph,1) == 0);
+    change = sp_image_integrate2(sp_phaser_model_change(ph));
     //      printf("Iter = %d Delta = %g\n",i,change);
     i++;
   }while(change > stop_tol && i < max_iter);
-  Image * model = sp_phaser_model(ph,0);
+  Image * model = sp_phaser_model(ph);
   sp_image_superimpose_fractional(solution,model,SpEnantiomorph|SpCorrectPhaseShift,1);
   int match = 1;
   for(int i =0;i<sp_image_size(solution);i++){
@@ -167,19 +167,19 @@ int test_sp_phasing_noisy_success_common(CuTest * tc,SpPhasingAlgorithm * alg,Im
   }
   sp_image_write(support,"support_noisy.h5",0);
   SpPhaser * ph = sp_phaser_alloc();
-  CuAssertTrue(tc,sp_phaser_init(ph,alg,f,support,SpEngineAutomatic) == 0);
+  CuAssertTrue(tc,sp_phaser_init(ph,alg,NULL,f,support,SpEngineAutomatic) == 0);
 
   int i =0;
   double change = 0;
   int max_iter = 300;
   CuAssertTrue(tc,sp_phaser_init_model(ph,NULL,SpModelRandomPhases) == 0); 
   do{
-    CuAssertTrue(tc,sp_phaser_iterate(ph,1,SpOutputModel|SpOutputModelChange) == 0);
-    change = sp_image_integrate2(sp_phaser_model_change(ph,0));
+    CuAssertTrue(tc,sp_phaser_iterate(ph,1) == 0);
+    change = sp_image_integrate2(sp_phaser_model_change(ph));
     //      printf("Iter = %d Delta = %g\n",i,change);
     i++;
   }while(change > stop_tol && i < max_iter);
-  Image * model = sp_phaser_model(ph,0);
+  Image * model = sp_phaser_model(ph);
   /* Scale the solution to match the model */
   double model_support_sum = 0;
   double solution_support_sum = 0;
