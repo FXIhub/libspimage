@@ -13,7 +13,6 @@ extern "C"
 typedef enum{SpModelRandomPhases=1,SpModelZeroPhases=2,SpModelRandomValues=4,SpModelMaskedOutZeroed=256}SpModelInitialization;
 typedef enum{SpHIO=1,SpRAAR,SpDiffMap}SpPhasingAlgorithmType;
 typedef enum{SpNoConstraints=0,SpRealObject=1,SpPositiveRealObject=2,SpPositiveComplexObject=4,SpPositivityFlipping=8}SpPhasingConstraints;
-typedef enum{SpOutputNothing=0,SpOutputModel=1,SpOutputModelChange=2}SpPhasingOutput;
 typedef enum{SpEngineAutomatic=0,SpEngineCPU=1,SpEngineCUDA=2}SpPhasingEngine;
 typedef enum{SpPixelInsideSupport=1,SpPixelMeasuredAmplitude=2}SpPhasingPixelFlags;
 /*! This structure is private */
@@ -80,16 +79,20 @@ spimage_EXPORT SpPhasingAlgorithm * sp_phasing_raar_alloc(real beta, SpPhasingCo
 spimage_EXPORT SpPhaser * sp_phaser_alloc();
 spimage_EXPORT void sp_phaser_free(SpPhaser * ph);
 
-spimage_EXPORT Image * sp_phaser_model(const SpPhaser * ph, int * iteration);
-spimage_EXPORT Image * sp_phaser_model_change(const SpPhaser * ph, int * iteration);
-spimage_EXPORT int sp_phaser_init(SpPhaser * ph, SpPhasingAlgorithm * alg,Image * amplitudes,Image * support, SpPhasingEngine engine);
+spimage_EXPORT Image * sp_phaser_model(SpPhaser * ph);
+spimage_EXPORT Image * sp_phaser_model_change(SpPhaser * ph);
+spimage_EXPORT int sp_phaser_init(SpPhaser * ph, SpPhasingAlgorithm * alg,SpSupportAlgorithm * sup_alg,Image * amplitudes,Image * support, SpPhasingEngine engine);
 spimage_EXPORT int sp_phaser_init_model(SpPhaser * ph,const Image * model, int flags);
-spimage_EXPORT int sp_phaser_iterate(SpPhaser * ph, int iterations, SpPhasingOutput output);
+spimage_EXPORT int sp_phaser_iterate(SpPhaser * ph, int iterations);
 
 #ifdef _USE_CUDA
-int phaser_iterate_hio_cuda(SpPhaser * ph,int iterations, SpPhasingOutput output);  
-int phaser_iterate_raar_cuda(SpPhaser * ph,int iterations, SpPhasingOutput output);  
+int phaser_iterate_hio_cuda(SpPhaser * ph,int iterations);  
+int phaser_iterate_raar_cuda(SpPhaser * ph,int iterations);  
 #endif
+
+  int sp_support_area_update_support(SpPhaser * ph);
+  int sp_support_threshold_update_support(SpPhaser * ph);
+
 
 #ifdef __cplusplus
 }  /* extern "C" */
