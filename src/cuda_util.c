@@ -1,5 +1,11 @@
 #include <spimage.h>
 
+#ifndef NDEBUG
+#define sp_cuda_check_errors() __sp_cuda_check_errors(__FILE__,__LINE__)
+#else
+#define sp_cuda_check_errors() 
+#endif
+
 SpCUDADeviceType sp_cuda_get_device_type(){
 #ifdef _USE_CUDA
   int dev_count;

@@ -1014,6 +1014,70 @@ void test_sp_image_phase_shift(CuTest * tc){
 
 }
 
+#ifdef _USE_CUDA
+void test_sp_gaussian_blur_cuda(CuTest * tc){
+  cufftComplex * kernel;
+  int x = 1024;
+  int y = 1024;
+  int z = 1;
+  int size = x*y*z;
+  float radius = 5;
+  cutilSafeCall(cudaMalloc((void**)&kernel, sizeof(cufftComplex)*size));
+  sp_create_gaussian_kernel_cuda(kernel,x,y,z,radius);
+  return;
+
+  Image * h_kernel = sp_image_alloc(x,y,z);
+  cutilSafeCall(cudaMemcpy(h_kernel->image->data, kernel, sizeof(cufftComplex)*size, cudaMemcpyDeviceToHost));
+  //sp_image_write(h_kernel,"cuda_kernel.h5",0);
+  Image * h_image = sp_image_alloc(x,y,z);
+  sp_image_fill(h_image,sp_cinit(0,0));
+  sp_image_set(h_image,0,0,0,sp_cinit(1,0));
+  cufftComplex * image = kernel;
+  //  sp_image_write(h_image,"cuda_blur_input.h5",0);
+  cutilSafeCall(cudaMemcpy(image,h_image->image->data, sizeof(cufftComplex)*size, cudaMemcpyHostToDevice));
+  cufftHandle plan;
+  cufftSafeCall(cufftPlan2d(&plan, sp_image_y(h_image),sp_image_x(h_image), CUFFT_C2C));
+  sp_gaussian_blur_cuda(image,image,x,y,z,radius,plan);
+  cufftSafeCall(cufftDestroy(plan));
+  cutilSafeCall(cudaMemcpy(h_image->image->data, image, sizeof(cufftComplex)*size, cudaMemcpyDeviceToHost));
+  //  sp_image_write(h_image,"cuda_blur_output.h5",0);
+  for(int i = 0;i<sp_image_size(h_image);i++){
+    CuAssertDblEquals(tc,sp_real(h_image->image->data[i]),sp_real(h_kernel->image->data[i]),REAL_EPSILON*1000);
+  }
+  cutilSafeCall(cudaFree(image));
+  sp_image_free(h_image);
+  sp_image_free(h_kernel);
+}
+
+
+void test_sp_gaussian_blur_cuda_speed(CuTest * tc){
+  cufftComplex * image;
+  int x = 1024;
+  int y = 1024;
+  int z = 1;
+  int size = x*y*z;
+  float radius = 5;
+  cutilSafeCall(cudaMalloc((void**)&image, sizeof(cufftComplex)*size));
+  Image * h_image = sp_image_alloc(x,y,z);
+  sp_image_fill(h_image,sp_cinit(0,0));
+  sp_image_set(h_image,0,0,0,sp_cinit(1,0));
+  cutilSafeCall(cudaMemcpy(image,h_image->image->data, sizeof(cufftComplex)*size, cudaMemcpyHostToDevice));
+  cufftHandle plan;
+  cufftSafeCall(cufftPlan2d(&plan, sp_image_y(h_image),sp_image_x(h_image), CUFFT_C2C));
+  int iterations = 1;
+  int timer = sp_timer_start();
+  for(int i =0 ;i<iterations;i++){
+    sp_gaussian_blur_cuda(image,image,x,y,z,radius,plan);
+  }
+  int delta_t = sp_timer_stop(timer);
+  cutilSafeCall(cudaMemcpy(h_image->image->data, image, sizeof(cufftComplex)*size, cudaMemcpyDeviceToHost));
+  cutilSafeCall(cudaFree(image));
+  cufftSafeCall(cufftDestroy(plan));
+  printf("CUDA Gaussian blur %dx%d = %g iterations per second\n",x,y,(1.0e6*iterations)/delta_t);
+
+}
+#endif
+
 CuSuite* image_get_suite(void)
 {
   CuSuite* suite = CuSuiteNew();  
@@ -1031,11 +1095,15 @@ CuSuite* image_get_suite(void)
   SUITE_ADD_TEST(suite,test_sp_image_superimpose);
   SUITE_ADD_TEST(suite,test_sp_image_reflect);
   SUITE_ADD_TEST(suite,test_sp_image_phase_match);
-  SUITE_ADD_TEST(suite,test_sp_background_adaptative_mesh);
-  SUITE_ADD_TEST(suite,test_sp_image_shift);
+    SUITE_ADD_TEST(suite,test_sp_background_adaptative_mesh);
+    SUITE_ADD_TEST(suite,test_sp_image_shift);
   SUITE_ADD_TEST(suite,test_sp_image_convolute_fractional);
   SUITE_ADD_TEST(suite,test_sp_image_superimpose_fractional);
   SUITE_ADD_TEST(suite,test_sp_image_phase_shift);
+#ifdef _USE_CUDA
+    SUITE_ADD_TEST(suite,test_sp_gaussian_blur_cuda);
+    SUITE_ADD_TEST(suite,test_sp_gaussian_blur_cuda_speed);
+#endif  
   return suite;
 }
 

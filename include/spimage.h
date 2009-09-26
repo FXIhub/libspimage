@@ -24,5 +24,6 @@
 #include "spimage/colormap.h"
 #include "spimage/cuda_util.h"
 #include "spimage/support_update.h"
+#include "spimage/image_filter_cuda.h"
 #endif
 

@@ -3,14 +3,14 @@ LIST(APPEND OBJECTS  "image_util.c" "fft.c" "linear_alg.c" "mem_util.c" "image_s
 
 
 IF(CUDA_FOUND)
-  LIST(APPEND OBJECTS "fft.cu" "phasing.cu" "phasing_kernels.cu")
+  LIST(APPEND OBJECTS "fft.cu" "phasing.cu" "phasing_kernels.cu" "support_update_cuda.cu" "image_filter_cuda.cu")
 ENDIF(CUDA_FOUND)
 
 IF(BUILD_STATIC_LIB)
 	ADD_LIBRARY(spimage STATIC ${OBJECTS})
 ELSE(BUILD_STATIC_LIB)
 IF(CUDA_FOUND)
-  CUDA_ADD_LIBRARY(spimage SHARED ${OBJECTS})
+  CUDA_ADD_LIBRARY(spimage SHARED ${OBJECTS} OPTIONS --compiler-options -W --compiler-options -Wall)
 ELSE(CUDA_FOUND)
   ADD_LIBRARY(spimage SHARED ${OBJECTS})
 ENDIF(CUDA_FOUND)

@@ -14,7 +14,7 @@ void sp_error_report(char * file, int line, int status, char *mode, char *format
    vfprintf(stderr, format, ap);
    fprintf(stderr, " in %s:%d\n",file,line);
    if (status >= 0){
-     exit(status);
+     abort();
    }
 }
 

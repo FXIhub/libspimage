@@ -5,7 +5,14 @@
 
 #include <cuda_runtime_api.h>
 #include <cufft.h>
+#include <spimage/sperror.h>
 
+
+#ifndef NDEBUG
+#define sp_cuda_check_errors() __sp_cuda_check_errors(__FILE__,__LINE__)
+#else
+#define sp_cuda_check_errors() 
+#endif
 
 #define cutilSafeCall(err)           __cudaSafeCall      (err, __FILE__, __LINE__)
 #define cufftSafeCall(err)           __cufftSafeCall     (err, __FILE__, __LINE__)
@@ -48,6 +55,14 @@ static inline void __cutilCheckMsg( const char *errorMessage, const char *file, 
 #endif
 }
 
+static inline void __sp_cuda_check_errors(const char * file, const int line){
+  cudaError_t error = cudaGetLastError();
+  if(error != cudaSuccess ){
+    fprintf(stderr,"CUDA error \"%s\" at %s:%d\n",cudaGetErrorString(error),file,line);
+    abort();
+  }
+}
+
 #endif /* _USE_CUDA */
 
 #ifdef __cplusplus
@@ -57,7 +72,7 @@ extern "C"
   typedef enum{SpCUDANoDevice=0,SpCUDAEmulatedDevice=1,SpCUDAHardwareDevice=2}SpCUDADeviceType;
 
 spimage_EXPORT  SpCUDADeviceType sp_cuda_get_device_type();
-
+  //  spimage_EXPORT void __sp_cuda_check_errors(const char * file,const int line);
 #ifdef __cplusplus
 }  /* extern "C" */
 #endif /* __cplusplus */

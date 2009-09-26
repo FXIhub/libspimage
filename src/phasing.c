@@ -30,6 +30,9 @@ SpPhasingAlgorithm * sp_phasing_hio_alloc(real beta, SpPhasingConstraints constr
 SpPhaser * sp_phaser_alloc(){
   SpPhaser * ret = sp_malloc(sizeof(SpPhaser));
   memset(ret,0,sizeof(SpPhaser));
+  ret->model_iteration = -1;
+  ret->model_change_iteration = -1;
+  ret->support_iteration = -1;
   return ret;
 }
 
@@ -113,7 +116,7 @@ Image * sp_phaser_model_change(SpPhaser * ph){
 }
  
 
-int sp_phaser_init(SpPhaser * ph, SpPhasingAlgorithm * alg,SpSupportAlgorithm * sup_alg, Image * amplitudes, Image * support,SpPhasingEngine engine){
+int sp_phaser_init(SpPhaser * ph, SpPhasingAlgorithm * alg,SpSupportAlgorithm * sup_alg, Image * amplitudes,SpPhasingEngine engine){
   if(!ph){
     fprintf(stderr,"Phaser is NULL!\n");
     return -1;
@@ -126,27 +129,14 @@ int sp_phaser_init(SpPhaser * ph, SpPhasingAlgorithm * alg,SpSupportAlgorithm * 
     fprintf(stderr,"Amplitudes is NULL!\n");
     return -3;
   }
-  if(!support){
-    fprintf(stderr,"Support is NULL!\n");
-    return -4;
-  }
-  if(sp_image_x(amplitudes) != sp_image_x(support) || 
-     sp_image_y(amplitudes) != sp_image_y(support) ||
-     sp_image_z(amplitudes) != sp_image_z(support) ){
-    fprintf(stderr,"Support and amplitudes dimensions don't match!\n");
-    return -5;
-  }
   ph->image_size = sp_image_size(amplitudes);
   ph->algorithm = alg;
   ph->sup_algorithm = sup_alg;
   ph->amplitudes = sp_3matrix_alloc(sp_image_x(amplitudes),sp_image_y(amplitudes),sp_image_z(amplitudes));
-  ph->pixel_flags = sp_i3matrix_alloc(sp_image_x(support),sp_image_y(support),sp_image_z(support));
+  ph->pixel_flags = sp_i3matrix_alloc(sp_image_x(amplitudes),sp_image_y(amplitudes),sp_image_z(amplitudes));
   for(int i =0 ;i<sp_image_size(amplitudes);i++){
     ph->amplitudes->data[i] = sp_real(sp_image_get_by_index(amplitudes,i));
     ph->pixel_flags->data[i] = 0;
-    if(sp_real(sp_image_get_by_index(support,i))){
-      ph->pixel_flags->data[i] |= SpPixelInsideSupport;
-    }
     if(amplitudes->mask->data[i]){
       ph->pixel_flags->data[i] |= SpPixelMeasuredAmplitude;
     }
@@ -298,10 +288,75 @@ int sp_phaser_init_model(SpPhaser * ph, const Image * user_model, int flags){
     cutilSafeCall(cudaStreamCreate(&ph->transfer_stream));
     cufftSafeCall(cufftSetStream(ph->cufft_plan,ph->calc_stream));
   }
-#endif
+#endif 
   return 0;
 }
 
+
+int sp_phaser_init_support(SpPhaser * ph, const Image * support, int flags, real value){
+  if(support){
+    if(sp_3matrix_x(ph->amplitudes) != sp_image_x(support) || 
+       sp_3matrix_y(ph->amplitudes) != sp_image_y(support) ||
+       sp_3matrix_z(ph->amplitudes) != sp_image_z(support) ){
+      fprintf(stderr,"Support and amplitudes dimensions don't match!\n");
+      return -5;
+    }
+
+    /* use given support*/
+    for(int i = 0;i<ph->image_size;i++){
+      if(sp_real(sp_image_get_by_index(support,i))){
+	ph->pixel_flags->data[i] |= SpPixelInsideSupport;
+      }else{
+	ph->pixel_flags->data[i] &= ~SpPixelInsideSupport;
+      }
+    }
+  }else if(flags & SpSupportFromPatterson){
+    Image * tmp = sp_image_alloc(sp_3matrix_x(ph->amplitudes),sp_3matrix_y(ph->amplitudes),sp_3matrix_z(ph->amplitudes));
+    for(int i = 0;i<ph->image_size;i++){
+      sp_real(tmp->image->data[i]) = ph->amplitudes->data[i]*ph->amplitudes->data[i];
+      sp_imag(tmp->image->data[i]) = 0;
+    }
+    tmp->phased = 1;
+    tmp->shifted = 1;
+    
+    Image * patterson = sp_image_ifft(tmp);
+    real abs_threshold = sp_image_max(patterson,0,0,0,0)*value;
+    for(int i = 0;i<ph->image_size;i++){
+      if(sp_cabs(patterson->image->data[i]) > abs_threshold){
+	ph->pixel_flags->data[i] |= SpPixelInsideSupport;
+      }else{
+	ph->pixel_flags->data[i] &= ~SpPixelInsideSupport;
+      }
+    }
+    sp_image_free(patterson);
+  }else{
+    return -1;
+  }
+  if(ph->engine == SpEngineCUDA){
+#ifdef _USE_CUDA
+  cutilSafeCall(cudaMemcpy(ph->d_pixel_flags, ph->pixel_flags->data, sizeof(int)*ph->image_size, cudaMemcpyHostToDevice));
+#else
+    return -1;
+#endif
+  }
+  return 0;
+}
+
+Image * sp_phaser_support(SpPhaser * ph){
+  if(!ph->support){
+    ph->support = sp_image_alloc(sp_3matrix_x(ph->amplitudes),sp_3matrix_y(ph->amplitudes),sp_3matrix_z(ph->amplitudes));    
+  }
+  if(ph->iteration != ph->support_iteration){
+    ph->support_iteration = ph->iteration;
+    sp_image_fill(ph->support,sp_cinit(0,0));
+    for(int i = 0;i<ph->image_size;i++){
+      if(ph->pixel_flags->data[i] & SpPixelInsideSupport){
+	sp_real(ph->support->image->data[i]) = 1;
+      }
+    }
+  }
+  return ph->support;
+}
 
 int sp_phaser_iterate(SpPhaser * ph, int iterations){
   int (*phaser_iterate_pointer)(SpPhaser *, int) = NULL; 

@@ -32,7 +32,6 @@ typedef struct{
   SpSupportAlgorithm * sp_support_threshold_alloc(int update_period, sp_smap * blur_radius,sp_smap * threshold);
   SpSupportAlgorithm * sp_support_area_alloc(int update_period, sp_smap * blur_radius,sp_smap * area);
 
-
 #ifdef __cplusplus
 }  /* extern "C" */
 #endif /* __cplusplus */

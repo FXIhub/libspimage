@@ -16,15 +16,16 @@ int phaser_iterate_hio_cuda(SpPhaser * ph,int iterations){
     /* executes FFT processes */
     cufftSafeCall(cufftExecC2C(ph->cufft_plan, ph->d_g0, ph->d_g1, CUFFT_FORWARD));
     CUDA_module_projection<<<ph->number_of_blocks, ph->threads_per_block,0,ph->calc_stream>>>(ph->d_g1,ph->d_amplitudes,ph->d_pixel_flags,ph->image_size);
-    cutilCheckMsg("module projection execution failed\n");
+    sp_cuda_check_errors();
     cufftSafeCall(cufftExecC2C(ph->cufft_plan, ph->d_g1, ph->d_g1, CUFFT_INVERSE));
     /* normalize */
     CUDA_complex_scale<<<ph->number_of_blocks, ph->threads_per_block,0,ph->calc_stream>>>(ph->d_g1,ph->image_size, 1.0f / (ph->image_size));
-    cutilCheckMsg("scale execution failed\n");
-        CUDA_support_projection_hio<<<ph->number_of_blocks, ph->threads_per_block,0,ph->calc_stream>>>(ph->d_g1,ph->d_g0,ph->d_pixel_flags,ph->image_size,beta);
-    cutilCheckMsg("support projection execution failed\n");
+    sp_cuda_check_errors();
+    CUDA_support_projection_hio<<<ph->number_of_blocks, ph->threads_per_block,0,ph->calc_stream>>>(ph->d_g1,ph->d_g0,ph->d_pixel_flags,ph->image_size,beta);
+    sp_cuda_check_errors();
   }
   CUDA_apply_constraints<<<ph->number_of_blocks, ph->threads_per_block,0,ph->calc_stream>>>(ph->d_g1,ph->d_pixel_flags,ph->image_size,params->constraints);
+  sp_cuda_check_errors();
   ph->iteration += iterations;
   return 0;
 }
@@ -39,15 +40,16 @@ int phaser_iterate_raar_cuda(SpPhaser * ph,int iterations){
     /* executes FFT processes */
     cufftSafeCall(cufftExecC2C(ph->cufft_plan, ph->d_g0, ph->d_g1, CUFFT_FORWARD));
     CUDA_module_projection<<<ph->number_of_blocks, ph->threads_per_block,0,ph->calc_stream>>>(ph->d_g1,ph->d_amplitudes,ph->d_pixel_flags,ph->image_size);
-    cutilCheckMsg("module projection execution failed\n");
+    sp_cuda_check_errors();
     cufftSafeCall(cufftExecC2C(ph->cufft_plan, ph->d_g1, ph->d_g1, CUFFT_INVERSE));
     /* normalize */
     CUDA_complex_scale<<<ph->number_of_blocks, ph->threads_per_block,0,ph->calc_stream>>>(ph->d_g1,ph->image_size, 1.0f / (ph->image_size));
-    cutilCheckMsg("scale execution failed\n");
-        CUDA_support_projection_raar<<<ph->number_of_blocks, ph->threads_per_block,0,ph->calc_stream>>>(ph->d_g1,ph->d_g0,ph->d_pixel_flags,ph->image_size,beta);
-    cutilCheckMsg("support projection execution failed\n");
+    sp_cuda_check_errors();
+    CUDA_support_projection_raar<<<ph->number_of_blocks, ph->threads_per_block,0,ph->calc_stream>>>(ph->d_g1,ph->d_g0,ph->d_pixel_flags,ph->image_size,beta);
+    sp_cuda_check_errors();
   }
   CUDA_apply_constraints<<<ph->number_of_blocks, ph->threads_per_block,0,ph->calc_stream>>>(ph->d_g1,ph->d_pixel_flags,ph->image_size,params->constraints);
+  sp_cuda_check_errors();
   ph->iteration += iterations;
   return 0;
 }

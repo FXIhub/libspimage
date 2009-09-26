@@ -11,6 +11,7 @@ extern "C"
 #endif /* __cplusplus */
 
 typedef enum{SpModelRandomPhases=1,SpModelZeroPhases=2,SpModelRandomValues=4,SpModelMaskedOutZeroed=256}SpModelInitialization;
+typedef enum{SpSupportFromPatterson=1}SpSupportInitialization;
 typedef enum{SpHIO=1,SpRAAR,SpDiffMap}SpPhasingAlgorithmType;
 typedef enum{SpNoConstraints=0,SpRealObject=1,SpPositiveRealObject=2,SpPositiveComplexObject=4,SpPositivityFlipping=8}SpPhasingConstraints;
 typedef enum{SpEngineAutomatic=0,SpEngineCPU=1,SpEngineCUDA=2}SpPhasingEngine;
@@ -47,10 +48,16 @@ typedef struct{
   int iteration;
   int image_size;
 
+  /* These are images that are exposed to the user
+   when sp_phaser_model() sp_phaser_model_change()
+   and sp_phaser_support() are called */
   Image * model;
   int model_iteration;
   Image * model_change;
   int model_change_iteration;
+  Image * support;
+  int support_iteration;
+    
 
   SpPhasingEngine engine;
 
@@ -81,8 +88,10 @@ spimage_EXPORT void sp_phaser_free(SpPhaser * ph);
 
 spimage_EXPORT Image * sp_phaser_model(SpPhaser * ph);
 spimage_EXPORT Image * sp_phaser_model_change(SpPhaser * ph);
-spimage_EXPORT int sp_phaser_init(SpPhaser * ph, SpPhasingAlgorithm * alg,SpSupportAlgorithm * sup_alg,Image * amplitudes,Image * support, SpPhasingEngine engine);
-spimage_EXPORT int sp_phaser_init_model(SpPhaser * ph,const Image * model, int flags);
+spimage_EXPORT Image * sp_phaser_support(SpPhaser * ph);
+spimage_EXPORT int sp_phaser_init(SpPhaser * ph, SpPhasingAlgorithm * alg, SpSupportAlgorithm * sup_alg,Image * amplitudes, SpPhasingEngine engine);
+  spimage_EXPORT int sp_phaser_init_model(SpPhaser * ph,const Image * model, int flags);
+  spimage_EXPORT int sp_phaser_init_support(SpPhaser * ph,const Image * support, int flags, real value);
 spimage_EXPORT int sp_phaser_iterate(SpPhaser * ph, int iterations);
 
 #ifdef _USE_CUDA

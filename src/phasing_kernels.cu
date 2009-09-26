@@ -64,7 +64,7 @@ __global__ void CUDA_apply_constraints(cufftComplex* g, const int * pixel_flags,
       }else if(constraints & SpPositiveRealObject){
 	if(g[i].x < 0){
 	  if(constraints & SpPositivityFlipping){
-	    g[i].x < fabs(g[i].x);
+	    g[i].x = fabs(g[i].x);
 	  }else{
 	    g[i].x = 0;
 	  }
@@ -73,14 +73,14 @@ __global__ void CUDA_apply_constraints(cufftComplex* g, const int * pixel_flags,
       }else if(constraints & SpPositiveComplexObject){
 	if(g[i].x < 0){
 	  if(constraints & SpPositivityFlipping){
-	    g[i].x < fabs(g[i].x);
+	    g[i].x = fabs(g[i].x);
 	  }else{
 	    g[i].x = 0;
 	  }
 	}
 	if(g[i].y < 0){
 	  if(constraints & SpPositivityFlipping){
-	    g[i].y < fabs(g[i].y);
+	    g[i].y = fabs(g[i].y);
 	  }else{
 	    g[i].y = 0;
 	  }
