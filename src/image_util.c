@@ -1316,6 +1316,7 @@ void sp_image_write(const Image * img, const const char * filename, int flags){
     write_xplor(img,filename);
   }else{
     fprintf(stderr,"Unsupported file type: %s\n",filename);
+    abort();
   }
 }
 
@@ -1344,6 +1345,7 @@ Image * _sp_image_read(const char * filename, int flags, const char * file, int 
     return read_smv(filename);
   }else{
     fprintf(stderr,"Unsupported file type: %s\n",filename);
+    abort();
   }
   return NULL;
 }
@@ -5191,7 +5193,7 @@ static Image * read_smv(const char * filename){
  *  the "mirror image" of b [b(-x)].
  *
 */
-void sp_image_superimpose(Image * _a,Image * _b, SpSuperimposeFlags flags){
+void sp_image_superimpose(const Image * _a,Image * _b, SpSuperimposeFlags flags){
   int x,y,z;
   long long index;
   int center_invert = 0;
@@ -5528,7 +5530,7 @@ real sp_image_rs_r_factor(Image * a, Image * b){
   return sum_dif/sum_sum;
 }
 
-real sp_image_correlation_coefficient(Image * a,Image * b){
+real sp_image_correlation_coefficient(const Image * a,const Image * b){
   real sum_sq_x = 0;
   real sum_sq_y = 0;
   real sum_coproduct = 0;

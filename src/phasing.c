@@ -96,6 +96,24 @@ void sp_phaser_set_support(SpPhaser * ph,const Image * support){
   }
 }
 
+const Image * sp_phaser_amplitudes(SpPhaser * ph){
+  if(!ph->amplitudes_image){
+    ph->amplitudes_image = sp_image_alloc(sp_3matrix_x(ph->amplitudes),
+					  sp_3matrix_y(ph->amplitudes),
+					  sp_3matrix_z(ph->amplitudes));
+    for(int i = 0;i<sp_image_size(ph->amplitudes_image);i++){
+      sp_real(ph->amplitudes_image->image->data[i]) = ph->amplitudes->data[i];
+      sp_imag(ph->amplitudes_image->image->data[i]) = 0;
+      if(ph->pixel_flags->data[i] & SpPixelMeasuredAmplitude){
+	ph->amplitudes_image->mask->data[i] = 1;
+      }else{
+	ph->amplitudes_image->mask->data[i] = 0;
+      }
+    }
+  }
+  return ph->amplitudes_image;
+}
+
 const Image * sp_phaser_model(SpPhaser * ph){
   if(ph->model_iteration != ph->iteration){
     ph->model_iteration = ph->iteration;
@@ -112,6 +130,50 @@ const Image * sp_phaser_model(SpPhaser * ph){
   }
   return ph->model;
 }
+
+
+const Image * sp_phaser_fmodel(SpPhaser * ph){
+  if(ph->fmodel_iteration != ph->iteration){
+    if(!ph->fmodel){
+      ph->fmodel = sp_image_alloc(sp_3matrix_x(ph->amplitudes),
+				  sp_3matrix_y(ph->amplitudes),
+				  sp_3matrix_z(ph->amplitudes));
+    }
+    ph->fmodel_iteration = ph->iteration;
+    if(ph->engine == SpEngineCPU){
+      sp_image_memcpy(ph->fmodel,ph->g1);
+      sp_image_fft_fast(ph->fmodel,ph->fmodel);
+    }else if(ph->engine == SpEngineCUDA){
+#ifdef _USE_CUDA
+      /* transfer the model from the graphics card to the main memory */
+      cutilSafeCall(cudaMemcpy(ph->fmodel->image->data,ph->d_g1,sizeof(cufftComplex)*ph->image_size,cudaMemcpyDeviceToHost));
+      /* not really efficient here */
+      sp_image_fft_fast(ph->fmodel,ph->fmodel);
+#else
+      return NULL;
+#endif    
+    }
+  }
+  return ph->fmodel;
+}
+
+const Image * sp_phaser_old_model(SpPhaser * ph){
+  if(ph->old_model_iteration != ph->iteration){
+    ph->old_model_iteration = ph->iteration;
+    if(ph->engine == SpEngineCPU){
+      sp_image_memcpy(ph->old_model,ph->g0);
+    }else if(ph->engine == SpEngineCUDA){
+#ifdef _USE_CUDA
+      /* transfer the model from the graphics card to the main memory */
+      cutilSafeCall(cudaMemcpy(ph->old_model->image->data,ph->d_g0,sizeof(cufftComplex)*ph->image_size,cudaMemcpyDeviceToHost));
+#else
+      return NULL;
+#endif    
+    }
+  }
+  return ph->old_model;
+}
+
 
 Image * sp_phaser_model_change(SpPhaser * ph){
   if(ph->model_iteration != ph->iteration){

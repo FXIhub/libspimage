@@ -750,7 +750,7 @@ spimage_EXPORT void sp_srand(int i);
  *  dot product of the \em absolute value of the two images.
  *
  */
-spimage_EXPORT void sp_image_superimpose(Image * a,Image * b, SpSuperimposeFlags flags);
+spimage_EXPORT void sp_image_superimpose(const Image * a,Image * b, SpSuperimposeFlags flags);
 
 
 /*! Superimposes image b on top of image a with fractional pixel precision
@@ -810,7 +810,7 @@ spimage_EXPORT real sp_image_rs_r_factor(Image *a, Image *b);
 /*! Calculates the correlation coefficient of image a and b
  * 
  */
-spimage_EXPORT real sp_image_correlation_coefficient(Image * a,Image * b);
+spimage_EXPORT real sp_image_correlation_coefficient(const Image * a,const Image * b);
 
 
 spimage_EXPORT sp_vector * sp_image_center_of_mass(Image * a);
