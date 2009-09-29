@@ -226,7 +226,7 @@ spimage_EXPORT void _sp_image_free(Image * in, const char * file, int line);
  *
  * Both images must have the same dimensions!
  */
-spimage_EXPORT void sp_image_memcpy(Image * dst,Image *src);
+spimage_EXPORT void sp_image_memcpy(Image * dst,const Image *src);
 
 /*@}*/
 
@@ -381,23 +381,23 @@ spimage_EXPORT void sp_image_fill(Image * a, Complex value);
 
 /*! Add Image b to Image a
  */
-spimage_EXPORT void sp_image_add(Image * a, Image * b);
+spimage_EXPORT void sp_image_add(Image * a,const Image * b);
 /*! Subtract Image b from Image a
  */
-spimage_EXPORT void sp_image_sub(Image * a, Image * b);
+spimage_EXPORT void sp_image_sub(Image * a,const Image * b);
 
 /*! Numerically integrates image a
  */
-spimage_EXPORT Complex sp_image_integrate(Image * a);
+spimage_EXPORT Complex sp_image_integrate(const Image * a);
 
 /*! Numerically integrates a.a*, meaning the square of the absolute value of a
  */
-spimage_EXPORT real sp_image_integrate2(Image * a);
+spimage_EXPORT real sp_image_integrate2(const Image * a);
 
 /*! Mutiplies Image a with Image b element by element
  *  The result is stored in a.
  */
-spimage_EXPORT void sp_image_mul_elements(Image * a, Image * b);
+spimage_EXPORT void sp_image_mul_elements(Image * a,const Image * b);
 
 /*! Transforms an image in its complex conjugate
  */

@@ -14,10 +14,16 @@
 #define sp_cuda_check_errors() 
 #endif
 
-#define cutilSafeCall(err)           __cudaSafeCall      (err, __FILE__, __LINE__)
 #define cufftSafeCall(err)           __cufftSafeCall     (err, __FILE__, __LINE__)
-#define cutilCheckMsg(msg)           __cutilCheckMsg     (msg, __FILE__, __LINE__)
-
+static inline void __cufftSafeCall( cufftResult err, const char *file, const int line )
+{
+    if( CUFFT_SUCCESS != err) {
+        fprintf(stderr, "cufftSafeCall() CUFFT error in file <%s>, line %i.\n",
+                file, line);
+        exit(-1);
+    }
+}
+#define cutilSafeCall(err)           __cudaSafeCall      (err, __FILE__, __LINE__)
 static inline void __cudaSafeCall( cudaError_t err, const char *file, const int line )
 {
     if( cudaSuccess != err) {
@@ -27,14 +33,11 @@ static inline void __cudaSafeCall( cudaError_t err, const char *file, const int 
     }
 }
 
-static inline void __cufftSafeCall( cufftResult err, const char *file, const int line )
-{
-    if( CUFFT_SUCCESS != err) {
-        fprintf(stderr, "cufftSafeCall() CUFFT error in file <%s>, line %i.\n",
-                file, line);
-        exit(-1);
-    }
-}
+
+
+#define cutilCheckMsg(msg)           __cutilCheckMsg     (msg, __FILE__, __LINE__)
+
+
 
 
 static inline void __cutilCheckMsg( const char *errorMessage, const char *file, const int line )
@@ -55,6 +58,7 @@ static inline void __cutilCheckMsg( const char *errorMessage, const char *file, 
 #endif
 }
 
+
 static inline void __sp_cuda_check_errors(const char * file, const int line){
   cudaError_t error = cudaGetLastError();
   if(error != cudaSuccess ){
@@ -63,6 +67,7 @@ static inline void __sp_cuda_check_errors(const char * file, const int line){
   }
 }
 
+spimage_EXPORT Image * sp_get_image_from_cuda(cufftComplex * a, int size);
 #endif /* _USE_CUDA */
 
 #ifdef __cplusplus

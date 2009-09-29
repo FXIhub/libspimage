@@ -18,6 +18,8 @@ Image * sp_image_cuda_ifft(Image * img){
   }
   cufftSafeCall(cufftExecC2C(plan, d_img, d_img, CUFFT_INVERSE));
   cutilSafeCall(cudaMemcpy(out->image->data, d_img, sizeof(cufftComplex)*size, cudaMemcpyDeviceToHost));
+  cufftSafeCall(cufftDestroy(plan));
+  cutilSafeCall(cudaFree(d_img));
   return out;
 }
 
@@ -35,5 +37,7 @@ Image * sp_image_cuda_fft(Image * img){
   }
   cufftSafeCall(cufftExecC2C(plan, d_img, d_img, CUFFT_FORWARD));
   cutilSafeCall(cudaMemcpy(out->image->data, d_img, sizeof(cufftComplex)*size, cudaMemcpyDeviceToHost));
+  cutilSafeCall(cudaFree(d_img));
+  cufftSafeCall(cufftDestroy(plan));
   return out;
 }

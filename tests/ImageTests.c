@@ -1024,8 +1024,6 @@ void test_sp_gaussian_blur_cuda(CuTest * tc){
   float radius = 5;
   cutilSafeCall(cudaMalloc((void**)&kernel, sizeof(cufftComplex)*size));
   sp_create_gaussian_kernel_cuda(kernel,x,y,z,radius);
-  return;
-
   Image * h_kernel = sp_image_alloc(x,y,z);
   cutilSafeCall(cudaMemcpy(h_kernel->image->data, kernel, sizeof(cufftComplex)*size, cudaMemcpyDeviceToHost));
   //sp_image_write(h_kernel,"cuda_kernel.h5",0);

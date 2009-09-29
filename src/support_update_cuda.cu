@@ -1,27 +1,344 @@
 #include <spimage.h>
+#include <thrust/sort.h>
+#include <thrust/host_vector.h>
+#include <thrust/device_vector.h>
+#include <thrust/generate.h>
+#include <thrust/sort.h>
+#include <thrust/pair.h>
+#include <thrust/extrema.h>
+#include <thrust/partition.h>
+#include <thrust/count.h>
+#include <cstdlib>
 
 static real bezier_map_interpolation(sp_smap * map, real x);
-static void support_from_absolute_threshold_cuda(SpPhaser * ph, Image * blur, real abs_threshold);
+static void support_from_absolute_threshold_cuda(SpPhaser * ph, cufftComplex * blur, real abs_threshold);
+
+static __global__ void CUDA_support_from_threshold(cufftComplex * a,float abs_threshold,int * pixel_flags, int size){
+  const int i = blockIdx.x*blockDim.x + threadIdx.x;
+  if(i<size){
+    if(a[i].x > abs_threshold){
+      pixel_flags[i] |= SpPixelInsideSupport;
+    }else{
+      pixel_flags[i] &= ~SpPixelInsideSupport;
+    }
+  }
+}
+
+
+static __global__ void CUDA_dephase(cufftComplex * a, int size){
+  const int i = blockIdx.x*blockDim.x + threadIdx.x;
+  if(i<size){
+#ifdef _STRICT_IEEE_754
+    a[i].x = __fsqrt_rn(__fadd_rn(__fmul_rn(a[i].x,a[i].x), __fmul_rn(a[i].y,a[i].y)));
+#else
+    a[i].x = sqrt(a[i].x*a[i].x+a[i].y*a[i].y);
+#endif
+    a[i].y = 0;
+  }
+}
+
+static __global__ void CUDA_complex_to_float(cufftComplex * in,float * out, int size){
+  const int i = blockIdx.x*blockDim.x + threadIdx.x;
+  if(i<size){
+    out[i] = in[i].x;
+  }
+}
+
+struct maxCufftComplex{   
+  __host__ __device__ cufftComplex operator()(const cufftComplex lhs, const cufftComplex rhs) { 
+    if(lhs.x*lhs.x + lhs.y*lhs.y < rhs.x*rhs.x + rhs.y*rhs.y){
+      return rhs;
+    }
+    return lhs;
+  }
+};
+
+struct descend_cmpCufftComplex{   
+   __device__ bool operator()(const cufftComplex lhs, const cufftComplex rhs) { 
+#ifdef _STRICT_IEEE_754
+    if(__fadd_rn(__fmul_rn(lhs.x,lhs.x), __fmul_rn(lhs.y,lhs.y))
+       > __fadd_rn(__fmul_rn(rhs.x,rhs.x), __fmul_rn(rhs.y,rhs.y))){
+      return true;
+    }
+#else
+    if(lhs.x*lhs.x + lhs.y*lhs.y > rhs.x*rhs.x + rhs.y*rhs.y){
+      return true;
+    }
+#endif
+    return false;
+  }
+};
+
+struct descend_real_cmpCufftComplex{   
+   __device__ bool operator()(const cufftComplex lhs, const cufftComplex rhs) const { 
+#ifdef _STRICT_IEEE_754
+    if(__fadd_rn(__fmul_rn(lhs.x,lhs.x), __fmul_rn(lhs.y,lhs.y))
+       > __fadd_rn(__fmul_rn(rhs.x,rhs.x), __fmul_rn(rhs.y,rhs.y))){
+      return true;
+    }
+#else
+    if(lhs.x > rhs.x){
+      return true;
+    }
+#endif
+    return false;
+  }
+};
+
+
+struct is_larger_than
+{
+  float t;
+  is_larger_than(float _t)
+  :t(_t)
+  {
+  }
+   __device__  bool operator()(const float x) const
+  {
+    return (x > t);
+  }
+};
+
+struct is_larger_than_Complex
+{
+  float t;
+  is_larger_than_Complex(cufftComplex _t)
+  :t(_t.x)
+  {
+  }
+   __device__  bool operator()(const cufftComplex x) const
+  {
+    return (x.x > t);
+  }
+};
+/*
+static __global__ void CUDA_simple_histogram(float * a, int size,float * bin_ceil, int nbins, int * output){
+  __shared__ int data[512];
+  // initialize shared storage
+  data[threadIdx.x] = 0;
+  const int i = blockIdx.x*blockDim.x + threadIdx.x;
+  if(i<size){
+    for(int j = 0;j<nbins;j++){
+      if(bin_ceil[j] > a[i]){
+	data[j]++;
+      }
+    }
+  }
+  __syncthreads();
+  if(threadIdx.x < nbins){
+    output[threadIdx.x] += data[threadIdx.x];
+  }
+}
+
+static float sp_get_highest_n_cuda3(float * a, int n, int size){
+  thrust::device_ptr<float> begin =  thrust::device_pointer_cast(a);
+  thrust::device_ptr<float> end =  thrust::device_pointer_cast(a+size);
+  thrust::device_ptr<float> bottom = begin;
+  thrust::device_ptr<float> top = end;
+  thrust::pair<thrust::device_ptr<float>,thrust::device_ptr<float> > min_max = thrust::minmax_element(bottom,top);  
+  float min = *(min_max.first);
+  float max = *(min_max.second);  
+  int bins = 256;
+  float * bin_ceil = (float *)malloc(sizeof(float)*bins);
+  for(int i = 0;i<bins;i++){
+    bin_ceil[i] = min+(max-min)*(i+1.0f)/bins;
+  }
+  float * d_bin_ceil;
+  cutilSafeCall(cudaMalloc((void **)&d_bin_ceil,sizeof(float)*bins));
+  cutilSafeCall(cudaMemcpy(d_bin_ceil,bin_ceil,sizeof(float)*bins,cudaMemcpyHostToDevice));
+  int * output = (int *)malloc(sizeof(int)*bins);
+  int * d_output;
+  cutilSafeCall(cudaMalloc((void **)&d_output,sizeof(int)*bins));
+  int threads_per_block = 512;
+  int number_of_blocks = (size+threads_per_block-1)/threads_per_block;  
+    CUDA_simple_histogram<<<number_of_blocks, threads_per_block>>>(a,size,d_bin_ceil,bins,d_output);
+  cutilSafeCall(cudaMemcpy(output,d_output,sizeof(int)*bins,cudaMemcpyDeviceToHost));
+}
+
+static float sp_get_highest_n_cuda(cufftComplex * a, int n, int size){
+  thrust::device_ptr<cufftComplex> begin =  thrust::device_pointer_cast(a);
+  thrust::device_ptr<cufftComplex> end =  thrust::device_pointer_cast((cufftComplex *)(a+size));
+  thrust::device_ptr<cufftComplex> bottom = begin;
+  thrust::device_ptr<cufftComplex> top = end;
+  thrust::pair<thrust::device_ptr<cufftComplex>,thrust::device_ptr<cufftComplex> > min_max = thrust::minmax_element(bottom,top,descend_real_cmpCufftComplex());  
+  thrust::device_ptr<cufftComplex> min_p = thrust::min_element(begin,end,descend_real_cmpCufftComplex());  
+  cufftComplex min = *(min_max.first);
+  cufftComplex max = *(min_max.second);  
+  cufftComplex guess = {0,0};
+  do{
+    guess.x= (min.x+max.x)/2.0f;
+    int my_n = thrust::count_if(begin,end,is_larger_than_Complex(guess));
+    if(my_n < n){
+      if(max.x == guess.x){
+	return guess.x;
+      }
+      max = guess;
+    }else if(my_n > n){
+      if(min.x == guess.x){
+	return guess.x;
+      }
+      min = guess;
+    }else{
+      return guess.x;
+    }      
+  }while(1);  
+}
+
+
+static float sp_get_highest_n_cuda4(float * a, int n, int size){
+  thrust::device_ptr<float> begin =  thrust::device_pointer_cast(a);
+  thrust::device_ptr<float> end =  thrust::device_pointer_cast(a+size);
+  //  thrust::device_ptr<float> bottom = begin;
+  //  thrust::device_ptr<float> top = end;
+  thrust::pair<thrust::device_ptr<float>,thrust::device_ptr<float> > min_max = thrust::minmax_element(begin,end);  
+  float min = *(min_max.first);
+  float max = *(min_max.second);  
+  int my_n = size/2;
+  int bottom = 0;
+  int top = size;
+  do{
+    float guess = (min+max)/2.0f;
+    my_n = thrust::count_if(begin,end,is_larger_than(guess));
+    if(my_n < n){
+      if(max == guess){
+	return guess;
+      }
+      max = guess;
+    }else if(my_n > n){
+      if(min == guess){
+	return guess;
+      }
+      min = guess;
+    }else{
+      return guess;
+    }      
+  }while(1);  
+}
+
+
+static float sp_get_highest_n_cuda2(float * a, int n, int size){
+  thrust::device_ptr<float> begin =  thrust::device_pointer_cast(a);
+  thrust::device_ptr<float> end =  thrust::device_pointer_cast(a+size);
+  thrust::device_ptr<float> bottom = begin;
+  thrust::device_ptr<float> top = end;
+  while(top-bottom > 1024*16){
+    thrust::pair<thrust::device_ptr<float>,thrust::device_ptr<float> > min_max = thrust::minmax_element(bottom,top);  
+    float min = *(min_max.first);
+    float max = *(min_max.second);
+    float guess = (min+max)/2;
+    thrust::device_ptr<float> middle = thrust::partition(bottom,top,is_larger_than(guess));
+    int first =  middle-begin;
+    if(first < n){
+      bottom = middle;
+    }else if(first > n){
+      top = middle;
+    }else{
+      return *middle;
+    }      
+  }  
+  thrust::sort(bottom,top);
+  return begin[n];
+}
+*/
+
+static float sp_image_max_cuda(cufftComplex * a, int size){
+  thrust::device_ptr<cufftComplex> beginc =  thrust::device_pointer_cast(a);
+  thrust::device_ptr<cufftComplex> endc =  thrust::device_pointer_cast((cufftComplex *)(a+size));
+  cufftComplex max = {0,0};
+  max = thrust::reduce(beginc,endc,max,maxCufftComplex());
+  float ret = max.x*max.x+max.y*max.y;
+  return sqrt(ret);
+}
+/*
+static int descend_complex_compare(const void * pa,const void * pb){
+  Complex a,b;
+  a = *((Complex *)pa);
+  b = *((Complex *)pb);
+  if(sp_cabs(a) < sp_cabs(b)){
+    return 1;
+  }else if(sp_cabs(a) == sp_cabs(b)){
+    return 0;
+  }else{
+    return -1;
+  }
+}
+*/
+/*
+static void sp_image_sort_and_test_cuda(cufftComplex * a, int size){
+  Image * test_golden = sp_image_alloc(size,1,1);
+  cutilSafeCall(cudaMemcpy(test_golden->image->data,a,sizeof(cufftComplex)*size,cudaMemcpyDeviceToHost));
+  qsort(test_golden->image->data,size,sizeof(Complex),descend_complex_compare);
+  thrust::device_ptr<cufftComplex> beginc =  thrust::device_pointer_cast(a);
+  thrust::device_ptr<cufftComplex> endc =  thrust::device_pointer_cast((cufftComplex *)(a+size));
+  thrust::sort(beginc,endc,descend_cmpCufftComplex());
+  Image * test_gpu = sp_image_alloc(size,1,1);
+  cutilSafeCall(cudaMemcpy(test_gpu->image->data,a,sizeof(cufftComplex)*size,cudaMemcpyDeviceToHost));
+  for(int i =0 ;i<size;i++){
+    if(sp_cabs(test_golden->image->data[i]) != sp_cabs(test_gpu->image->data[i])){
+      fprintf(stderr,"error!\n");
+    }
+  }
+}
+
+static void sp_image_sort_cuda(cufftComplex * a, int size){
+  thrust::device_ptr<cufftComplex> beginc =  thrust::device_pointer_cast(a);
+  thrust::device_ptr<cufftComplex> endc =  thrust::device_pointer_cast((cufftComplex *)(a+size));
+  thrust::sort(beginc,endc,descend_real_cmpCufftComplex());
+}
+*/
+
+int sp_support_area_update_support_cuda(SpPhaser * ph){
+  SpSupportAreaParameters * params = (SpSupportAreaParameters *)ph->sup_algorithm->params;
+  real radius =  bezier_map_interpolation(params->blur_radius_map,ph->iteration);
+  cufftComplex * blur;
+  cutilSafeCall(cudaMalloc((void**)&blur, sizeof(cufftComplex)*ph->image_size));
+  float * sort;
+    cutilSafeCall(cudaMalloc((void**)&sort, sizeof(float)*ph->image_size));
+  cutilSafeCall(cudaMemcpy(blur,ph->d_g1,sizeof(cufftComplex)*ph->image_size,cudaMemcpyDeviceToDevice));
+  /* we need to dephase the image first */
+  CUDA_dephase<<<ph->number_of_blocks, ph->threads_per_block>>>(blur,ph->image_size);
+  sp_cuda_check_errors();
+  sp_gaussian_blur_cuda(blur,blur,sp_3matrix_x(ph->amplitudes),sp_3matrix_y(ph->amplitudes),sp_3matrix_z(ph->amplitudes),radius,ph->cufft_plan);
+
+  CUDA_complex_to_float<<<ph->number_of_blocks, ph->threads_per_block>>>(blur,sort,ph->image_size);
+  //  cutilSafeCall(cudaMemcpy(sort,blur,sizeof(cufftComplex)*ph->image_size,cudaMemcpyDeviceToDevice));
+  real area = bezier_map_interpolation(params->area,ph->iteration);
+
+  thrust::device_ptr<float> begin =  thrust::device_pointer_cast(sort);
+  thrust::device_ptr<float> end =  thrust::device_pointer_cast(sort+ph->image_size);
+  
+  thrust::sort(begin,end);
+
+  float v = 0;
+  cutilSafeCall(cudaMemcpy(&v,&sort[(int)(ph->image_size*area)],sizeof(float),cudaMemcpyDeviceToHost));
+  
+  real abs_threshold = v;
+  support_from_absolute_threshold_cuda(ph,blur,abs_threshold);
+  cutilSafeCall(cudaFree(blur));
+  cutilSafeCall(cudaFree(sort));
+  return 0;
+}
 
 int sp_support_threshold_update_support_cuda(SpPhaser * ph){
   SpSupportThresholdParameters * params = (SpSupportThresholdParameters *)ph->sup_algorithm->params;
   real radius =  bezier_map_interpolation(params->blur_radius_map,ph->iteration);
-  Image * blur = gaussian_blur(ph->g1, radius);
-  real rel_threshold = bezier_map_interpolation(params->threshold,ph->iteration);
-  real abs_threshold = sp_image_max(blur,NULL,NULL,NULL,NULL)*rel_threshold;  
+  cufftComplex * blur;
+  cutilSafeCall(cudaMalloc((void**)&blur, sizeof(cufftComplex)*ph->image_size));
+  cutilSafeCall(cudaMemcpy(blur,ph->d_g1,sizeof(cufftComplex)*ph->image_size,cudaMemcpyDeviceToDevice));
+  /* we need to dephase the image first */
+  CUDA_dephase<<<ph->number_of_blocks, ph->threads_per_block>>>(blur,ph->image_size);
+  sp_cuda_check_errors();
+  sp_gaussian_blur_cuda(blur,blur,sp_3matrix_x(ph->amplitudes),sp_3matrix_y(ph->amplitudes),sp_3matrix_z(ph->amplitudes),radius,ph->cufft_plan);
+  real rel_threshold = bezier_map_interpolation(params->threshold,ph->iteration);  
+  real abs_threshold = sp_image_max_cuda(blur,ph->image_size)*rel_threshold;  
   support_from_absolute_threshold_cuda(ph,blur,abs_threshold);
-  sp_image_free(blur);
+  cutilSafeCall(cudaFree(blur));
   return 0;
 }
 
-static void support_from_absolute_threshold_cuda(SpPhaser * ph, Image * blur, real abs_threshold){
-  for(int i =0 ;i<ph->image_size;i++){
-    if(sp_cabs(sp_image_get_by_index(blur,i)) > abs_threshold){
-      ph->pixel_flags->data[i] |= SpPixelInsideSupport;
-    }else{
-      ph->pixel_flags->data[i] &= ~SpPixelInsideSupport;
-    }
-  }
+static void support_from_absolute_threshold_cuda(SpPhaser * ph, cufftComplex * blur, real abs_threshold){
+  CUDA_support_from_threshold<<<ph->number_of_blocks, ph->threads_per_block>>>(blur,abs_threshold,ph->d_pixel_flags,ph->image_size);
+  sp_cuda_check_errors();
 }
 
 

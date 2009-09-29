@@ -45,23 +45,11 @@ void sp_phaser_free(SpPhaser * ph){
   }
 #ifdef _USE_CUDA
   if(ph->engine == SpEngineCUDA){
-    /*
-      cudaFreeHost(ph->g0->image->data);
-      cudaFreeHost(ph->g1->image->data);
-    sp_free(ph->g0->image);
-    sp_free(ph->g0->detector);
-    sp_free(ph->g0);
-    sp_free(ph->g1->image);
-    sp_free(ph->g1->detector);
-    sp_free(ph->g1);*/
+
     cudaFree(ph->d_amplitudes);
     cudaFree(ph->d_pixel_flags);
     cudaFree(ph->d_g0);
     cudaFree(ph->d_g1);
-    /*    cudaFree(ph->d_g0_transfer);
-	  cudaFree(ph->d_g1_transfer);*/
-    cudaStreamDestroy(ph->calc_stream);
-    cudaStreamDestroy(ph->transfer_stream);
   }else{
     sp_image_free(ph->g0);
     sp_image_free(ph->g1);
@@ -73,7 +61,42 @@ void sp_phaser_free(SpPhaser * ph){
   free(ph);
 }
 
-Image * sp_phaser_model(SpPhaser * ph){
+
+void sp_phaser_set_model(SpPhaser * ph,const Image * model){
+  ph->model_iteration = -1;
+  if(ph->engine == SpEngineCPU){
+    sp_image_memcpy(ph->g1,model);
+  }else if(ph->engine == SpEngineCUDA){
+#ifdef _USE_CUDA
+    /* transfer the model from the graphics card to the main memory */
+    cutilSafeCall(cudaMemcpy(ph->d_g1,model->image->data,sizeof(cufftComplex)*ph->image_size,cudaMemcpyHostToDevice));
+#else
+    return NULL;
+#endif    
+  }
+}
+
+
+void sp_phaser_set_support(SpPhaser * ph,const Image * support){
+  ph->support_iteration = -1;
+  for(int i = 0;i<ph->image_size;i++){
+    if(sp_real(support->image->data[i])){
+      ph->pixel_flags->data[i] |= SpPixelInsideSupport;
+    }else{
+      ph->pixel_flags->data[i] &= ~SpPixelInsideSupport;      
+    }
+  }
+  if(ph->engine == SpEngineCUDA){
+#ifdef _USE_CUDA
+    /* transfer the model from the graphics card to the main memory */
+    cutilSafeCall(cudaMemcpy(ph->d_pixel_flags,ph->pixel_flags->data,sizeof(int)*ph->image_size,cudaMemcpyHostToDevice));
+#else
+    return NULL;
+#endif    
+  }
+}
+
+const Image * sp_phaser_model(SpPhaser * ph){
   if(ph->model_iteration != ph->iteration){
     ph->model_iteration = ph->iteration;
     if(ph->engine == SpEngineCPU){
@@ -81,7 +104,6 @@ Image * sp_phaser_model(SpPhaser * ph){
     }else if(ph->engine == SpEngineCUDA){
 #ifdef _USE_CUDA
       /* transfer the model from the graphics card to the main memory */
-      cudaStreamSynchronize(ph->calc_stream);
       cutilSafeCall(cudaMemcpy(ph->model->image->data,ph->d_g1,sizeof(cufftComplex)*ph->image_size,cudaMemcpyDeviceToHost));
 #else
       return NULL;
@@ -103,7 +125,6 @@ Image * sp_phaser_model_change(SpPhaser * ph){
     }else if(ph->engine == SpEngineCUDA){
 #ifdef _USE_CUDA
       /* transfer the model from the graphics card to the main memory */
-      cudaStreamSynchronize(ph->calc_stream);
       cutilSafeCall(cudaMemcpy(ph->model_change->image->data,ph->d_g0,sizeof(cufftComplex)*ph->image_size,cudaMemcpyDeviceToHost));
       sp_image_scale(ph->model_change,-1.0f);
       sp_image_add(ph->model_change,ph->model);
@@ -284,9 +305,6 @@ int sp_phaser_init_model(SpPhaser * ph, const Image * user_model, int flags){
     }else{
       cufftSafeCall(cufftPlan3d(&ph->cufft_plan, sp_image_z(ph->model),sp_image_y(ph->model),sp_image_x(ph->model), CUFFT_C2C));
     }
-    cutilSafeCall(cudaStreamCreate(&ph->calc_stream));
-    cutilSafeCall(cudaStreamCreate(&ph->transfer_stream));
-    cufftSafeCall(cufftSetStream(ph->cufft_plan,ph->calc_stream));
   }
 #endif 
   return 0;
@@ -334,7 +352,7 @@ int sp_phaser_init_support(SpPhaser * ph, const Image * support, int flags, real
   }
   if(ph->engine == SpEngineCUDA){
 #ifdef _USE_CUDA
-  cutilSafeCall(cudaMemcpy(ph->d_pixel_flags, ph->pixel_flags->data, sizeof(int)*ph->image_size, cudaMemcpyHostToDevice));
+    cutilSafeCall(cudaMemcpy(ph->d_pixel_flags, ph->pixel_flags->data, sizeof(int)*ph->image_size, cudaMemcpyHostToDevice));
 #else
     return -1;
 #endif
@@ -342,13 +360,20 @@ int sp_phaser_init_support(SpPhaser * ph, const Image * support, int flags, real
   return 0;
 }
 
-Image * sp_phaser_support(SpPhaser * ph){
+const Image * sp_phaser_support(SpPhaser * ph){
   if(!ph->support){
     ph->support = sp_image_alloc(sp_3matrix_x(ph->amplitudes),sp_3matrix_y(ph->amplitudes),sp_3matrix_z(ph->amplitudes));    
   }
   if(ph->iteration != ph->support_iteration){
     ph->support_iteration = ph->iteration;
     sp_image_fill(ph->support,sp_cinit(0,0));
+    if(ph->engine == SpEngineCUDA){
+#ifdef _USE_CUDA
+      cutilSafeCall(cudaMemcpy(ph->pixel_flags->data,ph->d_pixel_flags,sizeof(int)*ph->image_size,cudaMemcpyDeviceToHost));
+#else
+      return NULL;
+#endif
+    }
     for(int i = 0;i<ph->image_size;i++){
       if(ph->pixel_flags->data[i] & SpPixelInsideSupport){
 	sp_real(ph->support->image->data[i]) = 1;
@@ -380,11 +405,24 @@ int sp_phaser_iterate(SpPhaser * ph, int iterations){
     return -6;
   }
   if(ph->sup_algorithm){
-    if(ph->sup_algorithm->type == SpSupportThreshold){
-      phaser_update_support_pointer = sp_support_threshold_update_support;
-    }
-    if(ph->sup_algorithm->type == SpSupportArea){
-      phaser_update_support_pointer = sp_support_area_update_support;
+    if(ph->engine == SpEngineCUDA){
+#ifdef _USE_CUDA
+      if(ph->sup_algorithm->type == SpSupportThreshold){
+	phaser_update_support_pointer = sp_support_threshold_update_support_cuda;
+      }
+      if(ph->sup_algorithm->type == SpSupportArea){
+	phaser_update_support_pointer = sp_support_area_update_support_cuda;
+      }
+#else
+      return -8;
+#endif
+    }else{
+      if(ph->sup_algorithm->type == SpSupportThreshold){
+	phaser_update_support_pointer = sp_support_threshold_update_support;
+      }
+      if(ph->sup_algorithm->type == SpSupportArea){
+	phaser_update_support_pointer = sp_support_area_update_support;
+      }
     }
   }
   if(ph->algorithm->type == SpHIO){
@@ -418,11 +456,13 @@ int sp_phaser_iterate(SpPhaser * ph, int iterations){
     while(iterations){
       int to_support_update = ph->sup_algorithm->update_period-1-(ph->iteration)%ph->sup_algorithm->update_period;
       int to_iterate = sp_min(iterations,to_support_update);
-      ret = phaser_iterate_pointer(ph,iterations);
+      ret = phaser_iterate_pointer(ph,to_iterate);
       iterations -= to_iterate;
       to_support_update -= to_iterate;
       if(to_support_update == 0 && iterations > 0){
 	phaser_update_support_pointer(ph);
+	ph->iteration++;
+	iterations -= 1;
       }
     }
   }else{
@@ -472,17 +512,19 @@ static void phaser_apply_constraints(SpPhaser * ph,Image * new_model, SpPhasingC
 static void phaser_module_projection(Image * a, sp_3matrix * amp, sp_i3matrix * pixel_flags){
   for(int i = 0;i<sp_image_size(a);i++){
     if(pixel_flags->data[i] & SpPixelMeasuredAmplitude){
-      if(sp_cabs2(a->image->data[i])){
-	a->image->data[i] = sp_cscale(a->image->data[i],amp->data[i]/sp_cabs(a->image->data[i]));
+      const float m = amp->data[i]/sp_cabs(a->image->data[i]);
+      if(isfinite(m)){
+	a->image->data[i] = sp_cscale(a->image->data[i],m);
       }else{
 	sp_real(a->image->data[i]) = amp->data[i];
+	sp_imag(a->image->data[i]) = 0;
       }
     }
   }  
 }
 
 static int phaser_iterate_hio(SpPhaser * ph,int iterations){
-  SpPhasingRAARParameters * params = ph->algorithm->params;
+  SpPhasingHIOParameters * params = ph->algorithm->params;
   const real beta = params->beta;
   for(int i = 0;i<iterations;i++){
     Image * swap = ph->g0;

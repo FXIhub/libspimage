@@ -1724,17 +1724,37 @@ void test_sp_matrix_rotate(CuTest * tc){
 
 void test_sp_image_cuda_ifft(CuTest * tc){
 #ifdef _USE_CUDA
+  int iter = 10;
   Image * a = sp_image_alloc(512,512,1);
   for(int i = 0;i<sp_image_size(a);i++){
     a->image->data[0] = sp_cinit((float)rand()/RAND_MAX,(float)rand()/RAND_MAX);
   }
   a->phased = 1;
   a->shifted = 1;
-  Image * cuda_out = sp_image_cuda_ifft(a);
-  Image * fftw_out = sp_image_ifft(a);
+  Image * cuda_out = a;
+  Image * fftw_out = a;  
+  Image * fast_fftw_out = sp_image_duplicate(a,SP_COPY_ALL);  
+  for(int i = 0;i<iter;i++){
+    Image * tmp;
+    tmp = cuda_out;
+    cuda_out = sp_image_cuda_ifft(tmp);
+    sp_image_ifft_fast(fast_fftw_out,fast_fftw_out);
+    tmp = fftw_out;
+    fftw_out = sp_image_cuda_ifft(tmp);
+    tmp = cuda_out;
+    cuda_out = sp_image_cuda_fft(tmp);
+    tmp = fftw_out;
+    fftw_out = sp_image_cuda_fft(tmp);
+    sp_image_fft_fast(fast_fftw_out,fast_fftw_out);
+    sp_image_scale(fftw_out,1.0/sp_image_size(fftw_out));
+    sp_image_scale(cuda_out,1.0/sp_image_size(cuda_out));
+    sp_image_scale(fast_fftw_out,1.0/sp_image_size(cuda_out));
+  }
   double error = 0;
   double sum = 0;
   for(int i= 0;i<sp_image_size(a);i++){
+    CuAssertComplexEquals(tc,cuda_out->image->data[i],fftw_out->image->data[i],REAL_EPSILON);  
+    CuAssertComplexEquals(tc,fast_fftw_out->image->data[i],fftw_out->image->data[i],REAL_EPSILON);  
     error += sp_cabs(sp_csub(cuda_out->image->data[i],fftw_out->image->data[i]));
     sum += sp_cabs(fftw_out->image->data[i]);
   }
@@ -1755,6 +1775,7 @@ void test_sp_image_cuda_fft(CuTest * tc){
   double error = 0;
   double sum = 0;
   for(int i= 0;i<sp_image_size(a);i++){
+    CuAssertComplexEquals(tc,cuda_out->image->data[i],fftw_out->image->data[i],REAL_EPSILON);  
     error += sp_cabs(sp_csub(cuda_out->image->data[i],fftw_out->image->data[i]));
     sum += sp_cabs(fftw_out->image->data[i]);
   }

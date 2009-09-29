@@ -42,10 +42,20 @@ __global__ void CUDA_module_projection(cufftComplex* g, const float* amp,const i
   const int i =  blockIdx.x*blockDim.x + threadIdx.x;
   if(i<size){
     if(pixel_flags[i] & SpPixelMeasuredAmplitude){
-      const float m = amp[i]*rsqrtf(g[i].x*g[i].x + g[i].y*g[i].y);     
+#ifndef _STRICT_IEEE_754      
+      const float m = amp[i]/sqrt(g[i].x*g[i].x + g[i].y*g[i].y);     
+#else
+      const float m = __fdiv_rn(amp[i],__fsqrt_rn(__fadd_rn(__fmul_rn(g[i].x,g[i].x),
+							    __fmul_rn( g[i].y,g[i].y))));     
+#endif
       if(isfinite(m)){
+#ifndef _STRICT_IEEE_754      
 	g[i].x *= m;
 	g[i].y *= m;
+#else
+	g[i].x = __fmul_rn(g[i].x,m);
+	g[i].y = __fmul_rn(g[i].y,m);;
+#endif
       }else{
 	g[i].x = amp[i];
 	g[i].y = 0;

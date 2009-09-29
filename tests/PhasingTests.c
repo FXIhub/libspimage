@@ -56,6 +56,54 @@ int test_sp_phasing_common(CuTest * tc,SpPhasingAlgorithm * alg,int size, real o
 } 
 
 
+int test_sp_phasing_cuda_common(CuTest * tc,SpPhasingAlgorithm * alg,int size, real oversampling, SpPhasingConstraints solution_constraints,
+				real tol){
+  Image * solution = create_test_image(size,oversampling,solution_constraints);
+  Image * f = sp_image_fft(solution);
+  sp_image_rephase(f,SP_ZERO_PHASE);
+  for(int i = 0;i<sp_image_size(f);i++){
+    f->mask->data[i] = 1;    
+  }
+    
+  Image * support = sp_image_duplicate(solution,SP_COPY_ALL);
+  for(int i =0;i<sp_image_size(support);i++){
+    if(sp_cabs(support->image->data[i])){
+      support->image->data[i] = sp_cinit(1,0);
+    }
+  }
+  SpPhaser * ph_cpu = sp_phaser_alloc();
+  SpPhaser * ph_cuda = sp_phaser_alloc();
+  CuAssertTrue(tc,sp_phaser_init(ph_cpu,alg,NULL,f,SpEngineCPU) == 0);
+  CuAssertTrue(tc,sp_phaser_init(ph_cuda,alg,NULL,f,SpEngineCUDA) == 0);
+  int i =0;
+  int max_iter = 10;
+  sp_srand(0);
+  CuAssertTrue(tc,sp_phaser_init_model(ph_cpu,NULL,SpModelRandomPhases) == 0); 
+  CuAssertTrue(tc,sp_phaser_init_model(ph_cuda,NULL,SpModelRandomPhases) == 0); 
+  sp_phaser_set_model(ph_cuda,sp_image_duplicate(sp_phaser_model(ph_cpu),SP_COPY_ALL));
+  CuAssertTrue(tc,sp_phaser_init_support(ph_cpu,support,0,0) == 0); 
+  CuAssertTrue(tc,sp_phaser_init_support(ph_cuda,support,0,0) == 0); 
+  do{
+    CuAssertTrue(tc,sp_phaser_iterate(ph_cpu,1) == 0);
+    CuAssertTrue(tc,sp_phaser_iterate(ph_cuda,1) == 0);
+    const Image * cpu_model = sp_phaser_model(ph_cpu);
+    const Image * cuda_model = sp_phaser_model(ph_cuda);
+    for(int i =0 ;i<ph_cpu->image_size;i++){
+      CuAssertComplexEquals(tc,cpu_model->image->data[i],
+			    cuda_model->image->data[i],
+			    sqrt(REAL_EPSILON)*sp_cabs(cuda_model->image->data[i]));  
+    }
+    i++;
+  }while(i < max_iter);
+  sp_phaser_free(ph_cpu);
+  sp_phaser_free(ph_cuda);
+  sp_image_free(f);
+  sp_image_free(solution);
+  sp_image_free(support);    
+  return 1;
+} 
+
+
 
 int test_sp_support_common(CuTest * tc,SpPhasingAlgorithm * alg,SpSupportAlgorithm * sup_alg, int size, real oversampling, SpPhasingConstraints solution_constraints,
 			   real beamstop,real tol){
@@ -116,8 +164,73 @@ int test_sp_support_common(CuTest * tc,SpPhasingAlgorithm * alg,SpSupportAlgorit
   return 1;
 } 
 
+void test_sp_support_cuda_common(CuTest * tc,SpSupportAlgorithm * sup_alg){
+  int size = 16;
+  real oversampling = 2;
+  sp_srand(0);
+  srand(0);
+  Image * solution = create_test_image(size,oversampling,SpNoConstraints);
+  Image * f = sp_image_fft(solution);
+  sp_image_rephase(f,SP_ZERO_PHASE);
+  for(int i = 0;i<sp_image_size(f);i++){
+    f->mask->data[i] = 1;    
+  }
+  real beta = 0.9;
+  SpPhaser * ph_cpu = sp_phaser_alloc();
+  SpPhaser * ph_cuda = sp_phaser_alloc();
+  SpPhasingAlgorithm * alg = sp_phasing_hio_alloc(beta,0);
+  CuAssertTrue(tc,sp_phaser_init(ph_cpu,alg,sup_alg,f,SpEngineCPU) == 0);
+  CuAssertTrue(tc,sp_phaser_init_model(ph_cpu,NULL,SpModelRandomPhases) == 0); 
+  CuAssertTrue(tc,sp_phaser_init_support(ph_cpu,NULL,SpSupportFromPatterson,0.004) == 0); 
 
-int test_sp_phasing_speed_common(CuTest * tc,SpPhasingAlgorithm * alg,int size, int oversampling, SpPhasingConstraints solution_constraints,
+  CuAssertTrue(tc,sp_phaser_init(ph_cuda,alg,sup_alg,f,SpEngineCUDA) == 0);
+  /* use previous model */
+  Image * cpu_model = sp_image_duplicate(sp_phaser_model(ph_cpu),SP_COPY_ALL);
+  CuAssertTrue(tc,sp_phaser_init_model(ph_cuda,cpu_model,0) == 0); 
+  CuAssertTrue(tc,sp_phaser_init_support(ph_cuda,NULL,SpSupportFromPatterson,0.004) == 0); 
+  sp_image_write(sp_phaser_support(ph_cpu),"debug_init_support_cpu.h5",0);
+  sp_image_write(sp_phaser_support(ph_cuda),"debug_init_support_cuda.h5",0);
+  const Image * sup_cpu = sp_phaser_support(ph_cpu);
+  const Image * sup_cuda = sp_phaser_support(ph_cuda);
+  int max_iter = 20;
+  for(int i = 0;i<sp_image_size(f);i++){
+    CuAssertComplexEquals(tc,sup_cuda->image->data[i],sup_cpu->image->data[i],sp_cabs(sup_cpu->image->data[i])*REAL_EPSILON);
+  }
+  real tol = REAL_EPSILON;
+  int step = 1;
+  for(int i = 0;i<max_iter;i+=step){
+
+    CuAssertTrue(tc,sp_phaser_iterate(ph_cpu,step) == 0);
+    CuAssertTrue(tc,sp_phaser_iterate(ph_cuda,step) == 0);
+    sup_cpu = sp_phaser_support(ph_cpu);
+    sup_cuda = sp_phaser_support(ph_cuda);
+    sp_image_write(sup_cpu,"debug_support_cpu.h5",0);
+    sp_image_write(sup_cuda,"debug_support_cuda.h5",0);
+    Image * model_cpu = sp_image_duplicate(sp_phaser_model(ph_cpu),SP_COPY_ALL);
+    const Image * model_cuda = sp_phaser_model(ph_cuda);
+    sp_image_write(model_cpu,"debug_model_cpu.h5",0);
+    sp_image_write(model_cuda,"debug_model_cuda.h5",0);
+    
+      /* the support will be different because of the the blurring is not binary equivalent.
+	 But the area must be the same */
+      //      CuAssertComplexEquals(tc,sup_cuda->image->data[j],sup_cpu->image->data[j],sp_cabs(sup_cpu->image->data[j])*REAL_EPSILON);
+    CuAssertDblEquals(tc,sp_image_integrate2(sup_cuda),sp_image_integrate2(sup_cpu),REAL_EPSILON);
+
+    sp_image_sub(model_cpu,model_cuda);
+    CuAssertDblEquals(tc,sp_image_integrate2(model_cpu),0,sp_image_integrate2(model_cuda)*tol);
+    /* make sure there's no cumulative divergence*/
+    sp_phaser_set_model(ph_cuda,sp_phaser_model(ph_cpu));
+    sp_phaser_set_support(ph_cuda,sp_phaser_support(ph_cpu));
+    sp_image_free(model_cpu);
+
+  }
+  sp_phaser_free(ph_cpu);
+  sp_phaser_free(ph_cuda);
+  sp_image_free(f);
+} 
+
+
+int test_sp_phasing_speed_common(CuTest * tc,SpPhasingAlgorithm * alg,SpSupportAlgorithm * sup_alg, int size, int oversampling, SpPhasingConstraints solution_constraints,
 				 int iterations,SpPhasingEngine engine){
   Image * solution = create_test_image(size,oversampling,solution_constraints);
   Image * f = sp_image_fft(solution);
@@ -133,7 +246,7 @@ int test_sp_phasing_speed_common(CuTest * tc,SpPhasingAlgorithm * alg,int size, 
     }
   }
   SpPhaser * ph = sp_phaser_alloc();
-  CuAssertTrue(tc,sp_phaser_init(ph,alg,NULL,f,engine) == 0);
+  CuAssertTrue(tc,sp_phaser_init(ph,alg,sup_alg,f,engine) == 0);
   CuAssertTrue(tc,sp_phaser_init_model(ph,NULL,SpModelRandomPhases) == 0); 
   CuAssertTrue(tc,sp_phaser_init_support(ph,support,0,0) == 0); 
   int timer = sp_timer_start();
@@ -182,7 +295,7 @@ int test_sp_phasing_success_common(CuTest * tc,SpPhasingAlgorithm * alg,Image * 
     //      printf("Iter = %d Delta = %g\n",i,change);
     i++;
   }while(change > stop_tol && i < max_iter);
-  Image * model = sp_phaser_model(ph);
+  Image * model = sp_image_duplicate(sp_phaser_model(ph),SP_COPY_ALL);
   sp_image_superimpose_fractional(solution,model,SpEnantiomorph|SpCorrectPhaseShift,1);
   int match = 1;
   for(int i =0;i<sp_image_size(solution);i++){
@@ -193,6 +306,7 @@ int test_sp_phasing_success_common(CuTest * tc,SpPhasingAlgorithm * alg,Image * 
       }
     }
   }
+  sp_image_free(model);
   sp_phaser_free(ph);
   sp_image_free(f);
   sp_image_free(support);
@@ -243,7 +357,7 @@ int test_sp_phasing_noisy_success_common(CuTest * tc,SpPhasingAlgorithm * alg,Im
     //      printf("Iter = %d Delta = %g\n",i,change);
     i++;
   }while(change > stop_tol && i < max_iter);
-  Image * model = sp_phaser_model(ph);
+  Image * model = sp_image_duplicate(sp_phaser_model(ph),SP_COPY_ALL);
   /* Scale the solution to match the model */
   double model_support_sum = 0;
   double solution_support_sum = 0;
@@ -267,6 +381,7 @@ int test_sp_phasing_noisy_success_common(CuTest * tc,SpPhasingAlgorithm * alg,Im
   if(total_error/sp_image_integrate2(solution) > match_tol){
     match = 0;
   }
+  sp_image_free(model);
   sp_phaser_free(ph);
   sp_image_free(f);
   sp_image_free(support);
@@ -704,7 +819,11 @@ void test_sp_phasing_hio(CuTest * tc){
   real beta = 0.8;
   real tol = 1e-10;
   SpPhasingAlgorithm * alg = sp_phasing_hio_alloc(beta,0);
-  CuAssertIntEquals(tc,test_sp_phasing_common(tc,alg,size,oversampling,SpNoConstraints,0,tol),1);
+  //  CuAssertIntEquals(tc,test_sp_phasing_common(tc,alg,size,oversampling,SpNoConstraints,0,tol),1);
+
+  srand(0);
+  CuAssertIntEquals(tc,test_sp_phasing_cuda_common(tc,alg,size,oversampling,SpNoConstraints,tol),1);
+
   alg = sp_phasing_hio_alloc(beta,SpPositiveRealObject);
   CuAssertIntEquals(tc,test_sp_phasing_common(tc,alg,size,oversampling,SpPositiveRealObject,0,tol),1);
   alg = sp_phasing_hio_alloc(beta,SpRealObject);
@@ -720,6 +839,40 @@ void test_sp_phasing_hio(CuTest * tc){
 }
 
 
+void test_sp_support_speed(CuTest * tc){
+#ifndef NDEBUG
+  /* Simple phasing example */
+  int size = 512;
+  int oversampling = 2;
+  real beta = 0.8;
+  SpPhasingAlgorithm * alg = sp_phasing_hio_alloc(beta,0);
+  int iterations = 500;
+  sp_smap * blur_radius = sp_smap_alloc(2);
+  sp_smap_insert(blur_radius,0,3);
+  sp_smap_insert(blur_radius,2000,0.7);
+  sp_smap * threshold = sp_smap_alloc(1);
+  sp_smap_insert(threshold,0,0.15);  
+  sp_smap * area = sp_smap_alloc(1);
+  sp_smap_insert(area,0,1.3*1.0/(oversampling*oversampling));  
+  SpSupportAlgorithm * sup_alg;
+  if(sp_cuda_get_device_type() == SpCUDAHardwareDevice){
+    sup_alg = sp_support_threshold_alloc(1,blur_radius,threshold);
+    int delta_t = test_sp_phasing_speed_common(tc,alg,sup_alg,size,oversampling,SpNoConstraints,iterations,SpEngineCUDA);
+    printf("CUDA %dx%d threshold support = %g iterations per second\n",size*oversampling,size*oversampling,(1.0e6*iterations)/delta_t);
+    sup_alg = sp_support_area_alloc(1,blur_radius,area);
+    delta_t = test_sp_phasing_speed_common(tc,alg,sup_alg,size,oversampling,SpNoConstraints,iterations,SpEngineCUDA);
+    printf("CUDA %dx%d area support = %g iterations per second\n",size*oversampling,size*oversampling,(1.0e6*iterations)/delta_t);
+  }
+  iterations = 4;
+  sup_alg = sp_support_threshold_alloc(1,blur_radius,threshold);
+  int delta_t = test_sp_phasing_speed_common(tc,alg,sup_alg,size,oversampling,SpNoConstraints,iterations,SpEngineCPU);
+  printf("CPU %dx%d with threshold support = %g iterations per second\n",size*oversampling,size*oversampling,(1.0e6*iterations)/delta_t);
+  sup_alg = sp_support_area_alloc(1,blur_radius,area);
+  delta_t = test_sp_phasing_speed_common(tc,alg,sup_alg,size,oversampling,SpNoConstraints,iterations,SpEngineCPU);
+  printf("CPU %dx%d with area support = %g iterations per second\n",size*oversampling,size*oversampling,(1.0e6*iterations)/delta_t);
+#endif
+}
+
 void test_sp_phasing_hio_speed(CuTest * tc){
 #ifndef NDEBUG
   /* Simple phasing example */
@@ -728,13 +881,39 @@ void test_sp_phasing_hio_speed(CuTest * tc){
   real beta = 0.8;
   SpPhasingAlgorithm * alg = sp_phasing_hio_alloc(beta,0);
   int iterations = 2000;
+  sp_smap * blur_radius = sp_smap_alloc(2);
+  sp_smap_insert(blur_radius,0,3);
+  sp_smap_insert(blur_radius,2000,0.7);
+  sp_smap * threshold = sp_smap_alloc(1);
+  sp_smap_insert(threshold,0,0.15);  
+  sp_smap * area = sp_smap_alloc(1);
+  sp_smap_insert(area,0,1.3*1.0/(oversampling*oversampling));  
+  SpSupportAlgorithm * sup_alg;
+
   if(sp_cuda_get_device_type() == SpCUDAHardwareDevice){
-    int delta_t = test_sp_phasing_speed_common(tc,alg,size,oversampling,SpNoConstraints,iterations,SpEngineCUDA);
+    int delta_t = test_sp_phasing_speed_common(tc,alg,NULL,size,oversampling,SpNoConstraints,iterations,SpEngineCUDA);
     printf("CUDA HIO %dx%d = %g iterations per second\n",size*oversampling,size*oversampling,(1.0e6*iterations)/delta_t);
+    sup_alg = sp_support_threshold_alloc(20,blur_radius,threshold);
+    delta_t = test_sp_phasing_speed_common(tc,alg,sup_alg,size,oversampling,SpNoConstraints,iterations,SpEngineCUDA);
+    printf("CUDA HIO %dx%d with threshold support every 20 = %g iterations per second\n",size*oversampling,size*oversampling,(1.0e6*iterations)/delta_t);
+    sup_alg = sp_support_area_alloc(20,blur_radius,area);
+    delta_t = test_sp_phasing_speed_common(tc,alg,sup_alg,size,oversampling,SpNoConstraints,iterations,SpEngineCUDA);
+    printf("CUDA HIO %dx%d with area support every 20 = %g iterations per second\n",size*oversampling,size*oversampling,(1.0e6*iterations)/delta_t);
+
+
+
+
   }
   iterations = 10;
-  int delta_t = test_sp_phasing_speed_common(tc,alg,size,oversampling,SpNoConstraints,iterations,SpEngineCPU);
+  int delta_t = test_sp_phasing_speed_common(tc,alg,NULL,size,oversampling,SpNoConstraints,iterations,SpEngineCPU);
   printf("CPU HIO %dx%d = %g iterations per second\n",size*oversampling,size*oversampling,(1.0e6*iterations)/delta_t);
+  sup_alg = sp_support_threshold_alloc(20,blur_radius,threshold);
+  delta_t = test_sp_phasing_speed_common(tc,alg,sup_alg,size,oversampling,SpNoConstraints,iterations,SpEngineCPU);
+  printf("CPU HIO %dx%d with threshold support every 20 = %g iterations per second\n",size*oversampling,size*oversampling,(1.0e6*iterations)/delta_t);
+  sup_alg = sp_support_area_alloc(20,blur_radius,area);
+  delta_t = test_sp_phasing_speed_common(tc,alg,sup_alg,size,oversampling,SpNoConstraints,iterations,SpEngineCPU);
+  printf("CPU HIO %dx%d with area support every 20 = %g iterations per second\n",size*oversampling,size*oversampling,(1.0e6*iterations)/delta_t);
+
 #endif
 }
 
@@ -769,11 +948,11 @@ void test_sp_phasing_raar_speed(CuTest * tc){
   SpPhasingAlgorithm * alg = sp_phasing_raar_alloc(beta,0);
   int iterations = 2000;
   if(sp_cuda_get_device_type() == SpCUDAHardwareDevice){
-    int delta_t = test_sp_phasing_speed_common(tc,alg,size,oversampling,SpNoConstraints,iterations,SpEngineCUDA);
+    int delta_t = test_sp_phasing_speed_common(tc,alg,NULL,size,oversampling,SpNoConstraints,iterations,SpEngineCUDA);
     printf("CUDA RAAR %dx%d = %g iterations per second\n",size*oversampling,size*oversampling,(1.0e6*iterations)/delta_t);
   }
   iterations = 10;
-  int delta_t = test_sp_phasing_speed_common(tc,alg,size,oversampling,SpNoConstraints,iterations,SpEngineCPU);
+  int delta_t = test_sp_phasing_speed_common(tc,alg,NULL,size,oversampling,SpNoConstraints,iterations,SpEngineCPU);
   printf("CPU RAAR %dx%d = %g iterations per second\n",size*oversampling,size*oversampling,(1.0e6*iterations)/delta_t);
 #endif
 }
@@ -819,10 +998,28 @@ void test_sp_support_raar(CuTest * tc){
   CuAssertIntEquals(tc,test_sp_support_common(tc,alg,sup_alg,size,oversampling,SpNoConstraints,0,tol),1);
 }
 
+
+void test_sp_support_cuda(CuTest * tc){
+  real oversampling = 2;
+  sp_smap * blur_radius = sp_smap_alloc(2);
+  sp_smap_insert(blur_radius,0,3);
+  sp_smap_insert(blur_radius,2000,0.7);
+  sp_smap * threshold = sp_smap_alloc(1);
+  sp_smap_insert(threshold,0,0.15);  
+  sp_smap * area = sp_smap_alloc(1);
+  sp_smap_insert(area,0,1.3*1.0/(oversampling*oversampling));  
+  SpSupportAlgorithm * sup_alg = sp_support_threshold_alloc(4,blur_radius,threshold);
+  test_sp_support_cuda_common(tc,sup_alg);
+  sup_alg = sp_support_area_alloc(4,blur_radius,area);
+  test_sp_support_cuda_common(tc,sup_alg);
+}
+
 CuSuite* phasing_get_suite(void)
 {
   CuSuite* suite = CuSuiteNew();
   SUITE_ADD_TEST(suite, test_sp_phasing_hio);
+  SUITE_ADD_TEST(suite, test_sp_support_cuda);    
+  SUITE_ADD_TEST(suite,test_sp_support_speed);
   SUITE_ADD_TEST(suite, test_sp_phasing_hio_speed);
   SUITE_ADD_TEST(suite, test_sp_support_hio);
   SUITE_ADD_TEST(suite,test_sp_phasing_hio_success_rate);

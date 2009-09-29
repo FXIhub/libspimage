@@ -26,3 +26,11 @@ SpCUDADeviceType sp_cuda_get_device_type(){
   return SpCUDANoDevice;
 #endif
 }
+
+#ifdef _USE_CUDA
+Image * sp_get_image_from_cuda(cufftComplex * a, int size){
+  Image * ret = sp_image_alloc(size,1,1);
+  cutilSafeCall(cudaMemcpy(ret->image->data,a,sizeof(cufftComplex)*size,cudaMemcpyDeviceToHost));
+  return ret;
+}
+#endif

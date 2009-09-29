@@ -2,7 +2,8 @@ LIST(APPEND OBJECTS  "../src/image_util.c" "../src/fft.c" "../src/linear_alg.c" 
   "../src/gaussianinv.c" "../src/image_noise.c" "../src/hashtable.c" "../src/interpolation_kernels.c" "../src/time_util.c" "../src/list.c" "../src/prtf.c" "../src/phasing.c" "../src/colormap.c" "../src/cuda_util.c" "../src/support_update.c")
 
 IF(CUDA_FOUND)
-  LIST(APPEND OBJECTS "../src/fft.cu" "../src/phasing.cu" "../src/phasing_kernels.cu" "../src/image_filter_cuda.cu")
+#  ADD_DEFINITIONS(-D_STRICT_IEEE_754)
+  LIST(APPEND OBJECTS "../src/fft.cu" "../src/phasing.cu" "../src/phasing_kernels.cu" "../src/image_filter_cuda.cu" "../src/support_update_cuda.cu")
 ENDIF(CUDA_FOUND)
 
 

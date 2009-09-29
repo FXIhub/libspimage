@@ -8,10 +8,9 @@ int RunAllTests(void)
 	CuString *output = CuStringNew();
 	CuSuite* suite = CuSuiteNew();
 
-
-	CuSuiteAddSuite(suite, image_get_suite());
+	//	CuSuiteAddSuite(suite, linear_alg_get_suite());
 	CuSuiteAddSuite(suite, phasing_get_suite());
-	CuSuiteAddSuite(suite, linear_alg_get_suite());
+	//		CuSuiteAddSuite(suite, image_get_suite());
 	CuSuiteAddSuite(suite, proj_get_suite());
 	CuSuiteAddSuite(suite, prtf_get_suite());
 	CuSuiteAddSuite(suite, container_get_suite());
