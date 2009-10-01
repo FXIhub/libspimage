@@ -52,9 +52,11 @@ int phaser_iterate_hio_cuda(SpPhaser * ph,int iterations){
     sp_cuda_check_errors();
     CUDA_support_projection_hio<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->d_g0,ph->d_pixel_flags,ph->image_size,beta);
     sp_cuda_check_errors();
+    if(params->constraints != SpNoConstraints){
+      CUDA_apply_constraints<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->d_pixel_flags,ph->image_size,params->constraints);
+    }
+    sp_cuda_check_errors();
   }
-  CUDA_apply_constraints<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->d_pixel_flags,ph->image_size,params->constraints);
-  sp_cuda_check_errors();
   ph->iteration += iterations;
   return 0;
 }
@@ -76,9 +78,11 @@ int phaser_iterate_raar_cuda(SpPhaser * ph,int iterations){
     sp_cuda_check_errors();
     CUDA_support_projection_raar<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->d_g0,ph->d_pixel_flags,ph->image_size,beta);
     sp_cuda_check_errors();
+    if(params->constraints != SpNoConstraints){
+      CUDA_apply_constraints<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->d_pixel_flags,ph->image_size,params->constraints);
+    }
+    sp_cuda_check_errors();
   }
-  CUDA_apply_constraints<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->d_pixel_flags,ph->image_size,params->constraints);
-  sp_cuda_check_errors();
   ph->iteration += iterations;
   return 0;
 }
