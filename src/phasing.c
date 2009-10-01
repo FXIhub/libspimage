@@ -159,6 +159,11 @@ const Image * sp_phaser_fmodel(SpPhaser * ph){
 
 const Image * sp_phaser_old_model(SpPhaser * ph){
   if(ph->old_model_iteration != ph->iteration){
+    if(!ph->old_model){
+      ph->old_model = sp_image_alloc(sp_3matrix_x(ph->amplitudes),
+				  sp_3matrix_y(ph->amplitudes),
+				  sp_3matrix_z(ph->amplitudes));
+    }
     ph->old_model_iteration = ph->iteration;
     if(ph->engine == SpEngineCPU){
       sp_image_memcpy(ph->old_model,ph->g0);

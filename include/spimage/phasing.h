@@ -87,13 +87,14 @@ spimage_EXPORT SpPhaser * sp_phaser_alloc();
 spimage_EXPORT void sp_phaser_free(SpPhaser * ph);
 
 spimage_EXPORT const Image * sp_phaser_model(SpPhaser * ph);
+spimage_EXPORT const Image * sp_phaser_old_model(SpPhaser * ph);
   /*! Returns the fourier transform of the current best model */
 spimage_EXPORT const Image * sp_phaser_fmodel(SpPhaser * ph);
   spimage_EXPORT void sp_phaser_set_model(SpPhaser * ph,const Image * model);
   spimage_EXPORT void sp_phaser_set_support(SpPhaser * ph,const Image * support);
 spimage_EXPORT Image * sp_phaser_model_change(SpPhaser * ph);
 spimage_EXPORT const Image * sp_phaser_support(SpPhaser * ph);
-spimage_EXPORT const Image * sp_phaser_amplitude(SpPhaser * ph);
+spimage_EXPORT const Image * sp_phaser_amplitudes(SpPhaser * ph);
 spimage_EXPORT int sp_phaser_init(SpPhaser * ph, SpPhasingAlgorithm * alg, SpSupportAlgorithm * sup_alg,Image * amplitudes, SpPhasingEngine engine);
   spimage_EXPORT int sp_phaser_init_model(SpPhaser * ph,const Image * model, int flags);
   spimage_EXPORT int sp_phaser_init_support(SpPhaser * ph,const Image * support, int flags, real value);
