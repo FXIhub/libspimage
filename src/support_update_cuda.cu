@@ -308,9 +308,9 @@ int sp_support_area_update_support_cuda(SpPhaser * ph){
   thrust::device_ptr<float> end =  thrust::device_pointer_cast(sort+ph->image_size);
   
   thrust::sort(begin,end);
-
+  /* sort in ascending order, that's the reason of 1.0-area */
   float v = 0;
-  cutilSafeCall(cudaMemcpy(&v,&sort[(int)(ph->image_size*area)],sizeof(float),cudaMemcpyDeviceToHost));
+  cutilSafeCall(cudaMemcpy(&v,&sort[(int)(ph->image_size*(1.0-area))],sizeof(float),cudaMemcpyDeviceToHost));
   
   real abs_threshold = v;
   support_from_absolute_threshold_cuda(ph,blur,abs_threshold);
