@@ -5,6 +5,7 @@ __global__ void CUDA_support_projection_hio(cufftComplex* g1, const cufftComplex
 __global__ void CUDA_complex_scale(cufftComplex * a, int size ,float scale);
 __global__ void CUDA_support_projection_raar(cufftComplex* g1, const cufftComplex* g0,const int * pixel_flags,const  int size,const float beta);
 __global__ void CUDA_apply_constraints(cufftComplex* g, const int * pixel_flags,const  int size,const SpPhasingConstraints constraints);
+__global__ void CUDA_phased_amplitudes_projection(cufftComplex* g, const cufftComplex* phased_amp,const int * pixel_flags, const  int size);
 
 int sp_proj_module_cuda(Image * a, Image * amp){
   cufftComplex * d_a;
@@ -44,7 +45,13 @@ int phaser_iterate_hio_cuda(SpPhaser * ph,int iterations){
     ph->d_g1 = swap;
     /* executes FFT processes */
     cufftSafeCall(cufftExecC2C(ph->cufft_plan, ph->d_g0, ph->d_g1, CUFFT_FORWARD));
-    CUDA_module_projection<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->d_amplitudes,ph->d_pixel_flags,ph->image_size);
+    if(ph->phasing_objective == SpRecoverPhases){
+      CUDA_module_projection<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->d_amplitudes,ph->d_pixel_flags,ph->image_size);
+    }else if(ph->phasing_objective == SpRecoverAmplitudes){
+      CUDA_phased_amplitudes_projection<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->d_phased_amplitudes,ph->d_pixel_flags,ph->image_size);
+    }else{
+      abort();
+    }
     sp_cuda_check_errors();
     cufftSafeCall(cufftExecC2C(ph->cufft_plan, ph->d_g1, ph->d_g1, CUFFT_INVERSE));
     /* normalize */
@@ -70,7 +77,13 @@ int phaser_iterate_raar_cuda(SpPhaser * ph,int iterations){
     ph->d_g1 = swap;
     /* executes FFT processes */
     cufftSafeCall(cufftExecC2C(ph->cufft_plan, ph->d_g0, ph->d_g1, CUFFT_FORWARD));
-    CUDA_module_projection<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->d_amplitudes,ph->d_pixel_flags,ph->image_size);
+    if(ph->phasing_objective == SpRecoverPhases){
+      CUDA_module_projection<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->d_amplitudes,ph->d_pixel_flags,ph->image_size);
+    }else if(ph->phasing_objective == SpRecoverAmplitudes){
+      CUDA_phased_amplitudes_projection<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->d_phased_amplitudes,ph->d_pixel_flags,ph->image_size);
+    }else{
+      abort();
+    }
     sp_cuda_check_errors();
     cufftSafeCall(cufftExecC2C(ph->cufft_plan, ph->d_g1, ph->d_g1, CUFFT_INVERSE));
     /* normalize */

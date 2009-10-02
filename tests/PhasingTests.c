@@ -3,6 +3,7 @@
 #include "AllTests.h"
 
 
+
 static Image * create_test_image(int size, real oversampling,SpPhasingConstraints c);
 
 int test_sp_phasing_common(CuTest * tc,SpPhasingAlgorithm * alg,int size, real oversampling, SpPhasingConstraints solution_constraints,
@@ -29,7 +30,8 @@ int test_sp_phasing_common(CuTest * tc,SpPhasingAlgorithm * alg,int size, real o
       }
     }
     SpPhaser * ph = sp_phaser_alloc();
-    CuAssertTrue(tc,sp_phaser_init(ph,alg,NULL,f,SpEngineAutomatic) == 0);
+    CuAssertTrue(tc,sp_phaser_init(ph,alg,NULL,SpEngineAutomatic) == 0);
+    sp_phaser_set_amplitudes(ph,f);
     int i =0;
     change = 0;
     int max_iter = 300;
@@ -73,8 +75,10 @@ int test_sp_phasing_cuda_common(CuTest * tc,SpPhasingAlgorithm * alg,int size, r
   }
   SpPhaser * ph_cpu = sp_phaser_alloc();
   SpPhaser * ph_cuda = sp_phaser_alloc();
-  CuAssertTrue(tc,sp_phaser_init(ph_cpu,alg,NULL,f,SpEngineCPU) == 0);
-  CuAssertTrue(tc,sp_phaser_init(ph_cuda,alg,NULL,f,SpEngineCUDA) == 0);
+  CuAssertTrue(tc,sp_phaser_init(ph_cpu,alg,NULL,SpEngineCPU) == 0);
+  sp_phaser_set_amplitudes(ph_cpu,f);
+  CuAssertTrue(tc,sp_phaser_init(ph_cuda,alg,NULL,SpEngineCUDA) == 0);
+  sp_phaser_set_amplitudes(ph_cuda,f);
   int i =0;
   int max_iter = 10;
   sp_srand(0);
@@ -135,7 +139,8 @@ int test_sp_support_common(CuTest * tc,SpPhasingAlgorithm * alg,SpSupportAlgorit
     }
     */
     SpPhaser * ph = sp_phaser_alloc();
-    CuAssertTrue(tc,sp_phaser_init(ph,alg,sup_alg,f,SpEngineCPU) == 0);
+    CuAssertTrue(tc,sp_phaser_init(ph,alg,sup_alg,SpEngineCPU) == 0);
+    sp_phaser_set_amplitudes(ph,f);
     int i =0;
     change = 0;
     int max_iter = 1000;
@@ -179,11 +184,13 @@ void test_sp_support_cuda_common(CuTest * tc,SpSupportAlgorithm * sup_alg){
   SpPhaser * ph_cpu = sp_phaser_alloc();
   SpPhaser * ph_cuda = sp_phaser_alloc();
   SpPhasingAlgorithm * alg = sp_phasing_hio_alloc(beta,0);
-  CuAssertTrue(tc,sp_phaser_init(ph_cpu,alg,sup_alg,f,SpEngineCPU) == 0);
+  CuAssertTrue(tc,sp_phaser_init(ph_cpu,alg,sup_alg,SpEngineCPU) == 0);
+  sp_phaser_set_amplitudes(ph_cpu,f);
   CuAssertTrue(tc,sp_phaser_init_model(ph_cpu,NULL,SpModelRandomPhases) == 0); 
   CuAssertTrue(tc,sp_phaser_init_support(ph_cpu,NULL,SpSupportFromPatterson,0.004) == 0); 
 
-  CuAssertTrue(tc,sp_phaser_init(ph_cuda,alg,sup_alg,f,SpEngineCUDA) == 0);
+  CuAssertTrue(tc,sp_phaser_init(ph_cuda,alg,sup_alg,SpEngineCUDA) == 0);
+  sp_phaser_set_amplitudes(ph_cuda,f);
   /* use previous model */
   Image * cpu_model = sp_image_duplicate(sp_phaser_model(ph_cpu),SP_COPY_ALL);
   CuAssertTrue(tc,sp_phaser_init_model(ph_cuda,cpu_model,0) == 0); 
@@ -246,7 +253,8 @@ int test_sp_phasing_speed_common(CuTest * tc,SpPhasingAlgorithm * alg,SpSupportA
     }
   }
   SpPhaser * ph = sp_phaser_alloc();
-  CuAssertTrue(tc,sp_phaser_init(ph,alg,sup_alg,f,engine) == 0);
+  CuAssertTrue(tc,sp_phaser_init(ph,alg,sup_alg,engine) == 0);
+  sp_phaser_set_amplitudes(ph,f);
   CuAssertTrue(tc,sp_phaser_init_model(ph,NULL,SpModelRandomPhases) == 0); 
   CuAssertTrue(tc,sp_phaser_init_support(ph,support,0,0) == 0); 
   int timer = sp_timer_start();
@@ -282,7 +290,8 @@ int test_sp_phasing_success_common(CuTest * tc,SpPhasingAlgorithm * alg,Image * 
     }
   }
   SpPhaser * ph = sp_phaser_alloc();
-  CuAssertTrue(tc,sp_phaser_init(ph,alg,NULL,f,SpEngineAutomatic) == 0);
+  CuAssertTrue(tc,sp_phaser_init(ph,alg,NULL,SpEngineAutomatic) == 0);
+  sp_phaser_set_amplitudes(ph,f);
 
   int i =0;
   double change = 0;
@@ -344,7 +353,8 @@ int test_sp_phasing_noisy_success_common(CuTest * tc,SpPhasingAlgorithm * alg,Im
   }
   sp_image_write(support,"support_noisy.h5",0);
   SpPhaser * ph = sp_phaser_alloc();
-  CuAssertTrue(tc,sp_phaser_init(ph,alg,NULL,f,SpEngineAutomatic) == 0);
+  CuAssertTrue(tc,sp_phaser_init(ph,alg,NULL,SpEngineAutomatic) == 0);
+  sp_phaser_set_amplitudes(ph,f);
 
   int i =0;
   double change = 0;
@@ -486,7 +496,7 @@ void test_sp_phasing_hio_success_rate(CuTest * tc){
   printf("HIO Flipping Positive Real success rate = %5.2f\n",(real)n_success/nruns);
 #endif
   CuAssertTrue(tc,n_success>0);
-
+  PRINT_DONE;
 }
 
 
@@ -615,7 +625,7 @@ void test_sp_phasing_hio_noisy_success_rate(CuTest * tc){
   printf("HIO Complex success rate with %g photons per pixel\nand beamstop radius %g = %5.2f\n",photons_per_pixel,beamstop,(real)n_success/nruns);
 #endif
   CuAssertTrue(tc,n_success>0);
-
+  PRINT_DONE;
 }
 
 
@@ -698,6 +708,7 @@ void test_sp_phasing_raar_success_rate(CuTest * tc){
   printf("RAAR Flipping Positive Real success rate = %5.2f\n",(real)n_success/nruns);
 #endif
   CuAssertTrue(tc,n_success>0);
+  PRINT_DONE;
 }
 
 
@@ -809,6 +820,7 @@ void test_sp_phasing_raar_noisy_success_rate(CuTest * tc){
   printf("RAAR Complex success rate with %g photons per pixel\nand beamstop radius %g = %5.2f\n",photons_per_pixel,beamstop,(real)n_success/nruns);
 #endif
   CuAssertTrue(tc,n_success>0);
+  PRINT_DONE;
 }
 
 
@@ -836,6 +848,7 @@ void test_sp_phasing_hio(CuTest * tc){
   CuAssertIntEquals(tc,test_sp_phasing_common(tc,alg,size,oversampling,SpNoConstraints,1,tol),1);
   alg = sp_phasing_hio_alloc(beta,SpPositiveRealObject);
   CuAssertIntEquals(tc,test_sp_phasing_common(tc,alg,size,oversampling,SpPositiveRealObject,1,tol),1);
+  PRINT_DONE;
 }
 
 
@@ -871,6 +884,7 @@ void test_sp_support_speed(CuTest * tc){
   delta_t = test_sp_phasing_speed_common(tc,alg,sup_alg,size,oversampling,SpNoConstraints,iterations,SpEngineCPU);
   printf("CPU %dx%d with area support = %g iterations per second\n",size*oversampling,size*oversampling,(1.0e6*iterations)/delta_t);
 #endif
+  PRINT_DONE;
 }
 
 void test_sp_phasing_hio_speed(CuTest * tc){
@@ -913,8 +927,8 @@ void test_sp_phasing_hio_speed(CuTest * tc){
   sup_alg = sp_support_area_alloc(20,blur_radius,area);
   delta_t = test_sp_phasing_speed_common(tc,alg,sup_alg,size,oversampling,SpNoConstraints,iterations,SpEngineCPU);
   printf("CPU HIO %dx%d with area support every 20 = %g iterations per second\n",size*oversampling,size*oversampling,(1.0e6*iterations)/delta_t);
-
 #endif
+  PRINT_DONE;
 }
 
 
@@ -937,6 +951,7 @@ void test_sp_phasing_raar(CuTest * tc){
   CuAssertIntEquals(tc,test_sp_phasing_common(tc,alg,size,oversampling,SpPositiveComplexObject,1,tol),1);
   alg = sp_phasing_raar_alloc(beta,SpPositiveRealObject);
   CuAssertIntEquals(tc,test_sp_phasing_common(tc,alg,size,oversampling,SpPositiveRealObject,1,tol),1);
+  PRINT_DONE;
 }
 
 void test_sp_phasing_raar_speed(CuTest * tc){
@@ -955,6 +970,7 @@ void test_sp_phasing_raar_speed(CuTest * tc){
   int delta_t = test_sp_phasing_speed_common(tc,alg,NULL,size,oversampling,SpNoConstraints,iterations,SpEngineCPU);
   printf("CPU RAAR %dx%d = %g iterations per second\n",size*oversampling,size*oversampling,(1.0e6*iterations)/delta_t);
 #endif
+  PRINT_DONE;
 }
 
 
@@ -976,6 +992,7 @@ void test_sp_support_hio(CuTest * tc){
   CuAssertIntEquals(tc,test_sp_support_common(tc,alg,sup_alg,size,oversampling,SpNoConstraints,0,tol),1);
   sup_alg = sp_support_area_alloc(20,blur_radius,area);
   CuAssertIntEquals(tc,test_sp_support_common(tc,alg,sup_alg,size,oversampling,SpNoConstraints,0,tol),1);
+  PRINT_DONE;
 }
 
 void test_sp_support_raar(CuTest * tc){
@@ -996,6 +1013,7 @@ void test_sp_support_raar(CuTest * tc){
   CuAssertIntEquals(tc,test_sp_support_common(tc,alg,sup_alg,size,oversampling,SpNoConstraints,0,tol),1);
   sup_alg = sp_support_area_alloc(20,blur_radius,area);
   CuAssertIntEquals(tc,test_sp_support_common(tc,alg,sup_alg,size,oversampling,SpNoConstraints,0,tol),1);
+  PRINT_DONE;
 }
 
 
@@ -1012,6 +1030,7 @@ void test_sp_support_cuda(CuTest * tc){
   test_sp_support_cuda_common(tc,sup_alg);
   sup_alg = sp_support_area_alloc(4,blur_radius,area);
   test_sp_support_cuda_common(tc,sup_alg);
+  PRINT_DONE;
 }
 
 CuSuite* phasing_get_suite(void)

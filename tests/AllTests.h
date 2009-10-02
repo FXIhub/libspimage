@@ -15,6 +15,9 @@
 #endif
 
 
+#define PRINT_DONE printf("%s completed successfully\n", __func__);
+
+
 #define CuAssertComplexEquals(__tc,___a,___b,__delta) do{\
     Complex __a = ___a;\
     Complex __b = ___b;\

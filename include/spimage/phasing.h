@@ -16,6 +16,7 @@ typedef enum{SpHIO=1,SpRAAR,SpDiffMap}SpPhasingAlgorithmType;
 typedef enum{SpNoConstraints=0,SpRealObject=1,SpPositiveRealObject=2,SpPositiveComplexObject=4,SpPositivityFlipping=8}SpPhasingConstraints;
 typedef enum{SpEngineAutomatic=0,SpEngineCPU=1,SpEngineCUDA=2}SpPhasingEngine;
 typedef enum{SpPixelInsideSupport=1,SpPixelMeasuredAmplitude=2}SpPhasingPixelFlags;
+typedef enum{SpRecoverPhases=0,SpRecoverAmplitudes=1}SpPhasingObjective;
 /*! This structure is private */
 typedef struct{
   real beta;
@@ -41,12 +42,20 @@ typedef struct{
 
 /*! This structure is private */
 typedef struct{
+  /* amplitudes are used for phase recovery */
   sp_3matrix * amplitudes;
+  /* phased_amplitudes are used for amplitude recovery */
+  sp_c3matrix * phased_amplitudes;
+
   sp_i3matrix * pixel_flags;
+  SpPhasingObjective phasing_objective;
   SpPhasingAlgorithm * algorithm;
   SpSupportAlgorithm * sup_algorithm;
   int iteration;
   int image_size;
+  int nx;
+  int ny;
+  int nz;
 
   /* These are images that are exposed to the user
    when sp_phaser_model() sp_phaser_model_change()
@@ -71,6 +80,7 @@ typedef struct{
 #ifdef _USE_CUDA
   cufftHandle cufft_plan;
   float * d_amplitudes;
+  cufftComplex * d_phased_amplitudes;
   int * d_pixel_flags;
   cufftComplex * d_g0;
   cufftComplex * d_g1;
@@ -92,10 +102,12 @@ spimage_EXPORT const Image * sp_phaser_old_model(SpPhaser * ph);
 spimage_EXPORT const Image * sp_phaser_fmodel(SpPhaser * ph);
   spimage_EXPORT void sp_phaser_set_model(SpPhaser * ph,const Image * model);
   spimage_EXPORT void sp_phaser_set_support(SpPhaser * ph,const Image * support);
+  spimage_EXPORT void sp_phaser_set_phased_amplitudes(SpPhaser * ph,const Image * phased_amplitudes);
+  spimage_EXPORT void sp_phaser_set_amplitudes(SpPhaser * ph,const Image * amplitudes);
 spimage_EXPORT Image * sp_phaser_model_change(SpPhaser * ph);
 spimage_EXPORT const Image * sp_phaser_support(SpPhaser * ph);
 spimage_EXPORT const Image * sp_phaser_amplitudes(SpPhaser * ph);
-spimage_EXPORT int sp_phaser_init(SpPhaser * ph, SpPhasingAlgorithm * alg, SpSupportAlgorithm * sup_alg,Image * amplitudes, SpPhasingEngine engine);
+spimage_EXPORT int sp_phaser_init(SpPhaser * ph, SpPhasingAlgorithm * alg, SpSupportAlgorithm * sup_alg, SpPhasingEngine engine);
   spimage_EXPORT int sp_phaser_init_model(SpPhaser * ph,const Image * model, int flags);
   spimage_EXPORT int sp_phaser_init_support(SpPhaser * ph,const Image * support, int flags, real value);
 spimage_EXPORT int sp_phaser_iterate(SpPhaser * ph, int iterations);

@@ -26,7 +26,7 @@ void test_sp_proj_module(CuTest* tc)
     /* Check that the phase is the same as the input */
     CuAssertDblEquals(tc,sp_carg(proj->image->data[i]),sp_carg(a->image->data[i]),fabs(2*REAL_EPSILON*sp_carg(a->image->data[i])));
   }
-
+  PRINT_DONE;
 }
 
 
@@ -56,12 +56,13 @@ void test_sp_proj_module_cuda(CuTest* tc)
   for(int i = 0;i<sp_image_size(a);i++){
     /* Check that the magnitude is the same as the experimental */
     CuAssertDblEquals(tc,sp_cabs(proj->image->data[i]),sp_cabs(exp->image->data[i]),fabs(2*REAL_EPSILON*sp_cabs(exp->image->data[i])));
-    CuAssertDblEquals(tc,sp_cabs(proj->image->data[i]),sp_cabs(proj_cuda->image->data[i]),fabs(2*REAL_EPSILON*sp_cabs(exp->image->data[i])));
+    CuAssertDblEquals(tc,sp_cabs(proj->image->data[i]),sp_cabs(proj_cuda->image->data[i]),fabs(10*REAL_EPSILON*sp_cabs(exp->image->data[i])));
     /* Check that the phase is the same as the input */
     CuAssertDblEquals(tc,sp_carg(proj->image->data[i]),sp_carg(a->image->data[i]),fabs(2*REAL_EPSILON*sp_carg(a->image->data[i])));
     CuAssertDblEquals(tc,sp_carg(proj->image->data[i]),sp_carg(proj_cuda->image->data[i]),fabs(2*REAL_EPSILON*sp_carg(a->image->data[i])));
   }
 #endif
+  PRINT_DONE;
 }
 
 
@@ -112,6 +113,7 @@ void test_sp_proj_module_histogram(CuTest* tc)
   variance /= sp_image_size(a);  
   CuAssertDblEquals(tc,average,0,1.0/size);
   CuAssertDblEquals(tc,variance,1,1.0/size);
+  PRINT_DONE;
 }
 
 

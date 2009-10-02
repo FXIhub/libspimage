@@ -65,6 +65,18 @@ __global__ void CUDA_module_projection(cufftComplex* g, const float* amp,const i
 }  
 
 
+__global__ void CUDA_phased_amplitudes_projection(cufftComplex* g, const cufftComplex* phased_amplitudes,const int * pixel_flags,const  int size)
+{	
+  const int i =  blockIdx.x*blockDim.x + threadIdx.x;
+  if(i<size){
+    if(pixel_flags[i] & SpPixelMeasuredAmplitude){
+      g[i].x = phased_amplitudes[i].x;
+      g[i].y = phased_amplitudes[i].y;
+    }
+  }
+}  
+
+
 __global__ void CUDA_apply_constraints(cufftComplex* g, const int * pixel_flags,const  int size,const SpPhasingConstraints constraints){
   const int i =  blockIdx.x*blockDim.x + threadIdx.x;
   if(i<size){
