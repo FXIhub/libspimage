@@ -12,7 +12,7 @@ extern "C"
 
 typedef enum{SpModelRandomPhases=1,SpModelZeroPhases=2,SpModelRandomValues=4,SpModelMaskedOutZeroed=256}SpModelInitialization;
 typedef enum{SpSupportFromPatterson=1}SpSupportInitialization;
-typedef enum{SpHIO=1,SpRAAR,SpDiffMap}SpPhasingAlgorithmType;
+typedef enum{SpHIO=1,SpRAAR,SpDiffMap,SpER}SpPhasingAlgorithmType;
 typedef enum{SpNoConstraints=0,SpRealObject=1,SpPositiveRealObject=2,SpPositiveComplexObject=4,SpPositivityFlipping=8}SpPhasingConstraints;
 typedef enum{SpEngineAutomatic=0,SpEngineCPU=1,SpEngineCUDA=2}SpPhasingEngine;
 typedef enum{SpPixelInsideSupport=1,SpPixelMeasuredAmplitude=2}SpPhasingPixelFlags;
@@ -22,6 +22,10 @@ typedef struct{
   real beta;
   SpPhasingConstraints constraints;
 }SpPhasingHIOParameters;
+
+typedef struct{
+  SpPhasingConstraints constraints;
+}SpPhasingERParameters;
 
 
 typedef SpPhasingHIOParameters SpPhasingRAARParameters;
@@ -92,6 +96,7 @@ typedef struct{
 
 spimage_EXPORT SpPhasingAlgorithm * sp_phasing_hio_alloc(real beta, SpPhasingConstraints constraints);
 spimage_EXPORT SpPhasingAlgorithm * sp_phasing_raar_alloc(real beta, SpPhasingConstraints constraints);
+spimage_EXPORT SpPhasingAlgorithm * sp_phasing_er_alloc(SpPhasingConstraints constraints);
 
 spimage_EXPORT SpPhaser * sp_phaser_alloc();
 spimage_EXPORT void sp_phaser_free(SpPhaser * ph);
@@ -115,6 +120,7 @@ spimage_EXPORT int sp_phaser_iterate(SpPhaser * ph, int iterations);
 #ifdef _USE_CUDA
   int phaser_iterate_hio_cuda(SpPhaser * ph,int iterations);  
   int phaser_iterate_raar_cuda(SpPhaser * ph,int iterations);  
+  int phaser_iterate_er_cuda(SpPhaser * ph,int iterations);  
   int sp_support_threshold_update_support_cuda(SpPhaser * ph);
   int sp_support_area_update_support_cuda(SpPhaser * ph);
   int sp_proj_module_cuda(Image * a, Image * amp);

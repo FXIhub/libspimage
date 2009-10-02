@@ -37,6 +37,17 @@ __global__ void CUDA_support_projection_hio(cufftComplex* g1, const cufftComplex
   }
 }      
 
+__global__ void CUDA_support_projection_er(cufftComplex* g1,const int * pixel_flags,const  int size)
+{
+  const int i = blockIdx.x*blockDim.x + threadIdx.x;
+  if(i<size){
+    if((pixel_flags[i] & SpPixelInsideSupport) == 0){
+      g1[i].x = 0;
+      g1[i].y = 0;
+    }
+  }
+}      
+
 __global__ void CUDA_module_projection(cufftComplex* g, const float* amp,const int * pixel_flags,const  int size)
 {	
   const int i =  blockIdx.x*blockDim.x + threadIdx.x;
