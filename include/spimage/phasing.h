@@ -111,7 +111,7 @@ spimage_EXPORT int sp_phaser_init(SpPhaser * ph, SpPhasingAlgorithm * alg, SpSup
   spimage_EXPORT int sp_phaser_init_model(SpPhaser * ph,const Image * model, int flags);
   spimage_EXPORT int sp_phaser_init_support(SpPhaser * ph,const Image * support, int flags, real value);
 spimage_EXPORT int sp_phaser_iterate(SpPhaser * ph, int iterations);
-
+  spimage_EXPORT void sp_phaser_set_objective(SpPhaser * ph, SpPhasingObjective obj);
 #ifdef _USE_CUDA
   int phaser_iterate_hio_cuda(SpPhaser * ph,int iterations);  
   int phaser_iterate_raar_cuda(SpPhaser * ph,int iterations);  
