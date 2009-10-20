@@ -435,23 +435,8 @@ int sp_phaser_init_model(SpPhaser * ph, const Image * user_model, int flags){
 #ifdef _USE_CUDA
   if(ph->engine == SpEngineCUDA){
     /* allocate GPU memory */
-    cutilSafeCall(cudaMalloc((void**)&ph->d_amplitudes, sizeof(float)*ph->image_size));
-    cutilSafeCall(cudaMalloc((void**)&ph->d_pixel_flags, sizeof(int)*ph->image_size));
     cutilSafeCall(cudaMalloc((void**)&ph->d_g0, sizeof(cufftComplex)*ph->image_size));
     cutilSafeCall(cudaMalloc((void**)&ph->d_g1, sizeof(cufftComplex)*ph->image_size));
-    /*    cutilSafeCall(cudaMalloc((void**)&ph->d_g0_transfer, sizeof(cufftComplex)*ph->image_size));
-	  cutilSafeCall(cudaMalloc((void**)&ph->d_g1_transfer, sizeof(cufftComplex)*ph->image_size));*/
-    /* Used for image transfer */
-    /*    ph->g0 = sp_image_duplicate(ph->model,SP_COPY_ALL);
-    sp_image_fill(ph->g0,sp_cinit(0,0));
-    ph->g1 = sp_image_duplicate(ph->model,SP_COPY_ALL);
-    sp_free(ph->g0->image->data);
-    sp_free(ph->g1->image->data);*/
-    /* allocate page locked memory for image transfer */
-    /*    cutilSafeCall(cudaMallocHost((void**)&ph->g0->image->data,ph->image_size*sizeof(cufftComplex)));
-	  cutilSafeCall(cudaMallocHost((void**)&ph->g1->image->data,ph->image_size*sizeof(cufftComplex)));*/
-
-
     
     cutilSafeCall(cudaMemcpy(ph->d_g1, ph->model->image->data, sizeof(cufftComplex)*ph->image_size, cudaMemcpyHostToDevice));
     cutilSafeCall(cudaMemset(ph->d_g0, 0, sizeof(cufftComplex)*ph->image_size));
