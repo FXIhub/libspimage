@@ -833,9 +833,9 @@ void test_sp_phasing_hio(CuTest * tc){
   SpPhasingAlgorithm * alg = sp_phasing_hio_alloc(beta,0);
   //  CuAssertIntEquals(tc,test_sp_phasing_common(tc,alg,size,oversampling,SpNoConstraints,0,tol),1);
 
-  srand(0);
-  CuAssertIntEquals(tc,test_sp_phasing_cuda_common(tc,alg,size,oversampling,SpNoConstraints,tol),1);
-
+  if(sp_cuda_get_device_type() == SpCUDAHardwareDevice){
+    CuAssertIntEquals(tc,test_sp_phasing_cuda_common(tc,alg,size,oversampling,SpNoConstraints,tol),1);
+  }
   alg = sp_phasing_hio_alloc(beta,SpPositiveRealObject);
   CuAssertIntEquals(tc,test_sp_phasing_common(tc,alg,size,oversampling,SpPositiveRealObject,0,tol),1);
   alg = sp_phasing_hio_alloc(beta,SpRealObject);
@@ -1037,7 +1037,11 @@ CuSuite* phasing_get_suite(void)
 {
   CuSuite* suite = CuSuiteNew();
   SUITE_ADD_TEST(suite, test_sp_phasing_hio);
-  SUITE_ADD_TEST(suite, test_sp_support_cuda);    
+  if(sp_cuda_get_device_type() == SpCUDAHardwareDevice){
+#ifdef _USE_CUDA
+    SUITE_ADD_TEST(suite, test_sp_support_cuda);    
+#endif
+  }
   SUITE_ADD_TEST(suite,test_sp_support_speed);
   SUITE_ADD_TEST(suite, test_sp_phasing_hio_speed);
   SUITE_ADD_TEST(suite, test_sp_support_hio);

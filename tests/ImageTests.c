@@ -1098,10 +1098,12 @@ CuSuite* image_get_suite(void)
   SUITE_ADD_TEST(suite,test_sp_image_convolute_fractional);
   SUITE_ADD_TEST(suite,test_sp_image_superimpose_fractional);
   SUITE_ADD_TEST(suite,test_sp_image_phase_shift);
+  if(sp_cuda_get_device_type() == SpCUDAHardwareDevice){
 #ifdef _USE_CUDA
     SUITE_ADD_TEST(suite,test_sp_gaussian_blur_cuda);
     SUITE_ADD_TEST(suite,test_sp_gaussian_blur_cuda_speed);
-#endif  
+#endif
+  }
   return suite;
 }
 
