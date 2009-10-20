@@ -91,7 +91,7 @@ void sp_phaser_set_model(SpPhaser * ph,const Image * model){
     /* transfer the model from the graphics card to the main memory */
     cutilSafeCall(cudaMemcpy(ph->d_g1,model->image->data,sizeof(cufftComplex)*ph->image_size,cudaMemcpyHostToDevice));
 #else
-    return NULL;
+    abort();
 #endif    
   }
 }
@@ -114,14 +114,14 @@ void sp_phaser_set_support(SpPhaser * ph,const Image * support){
     }
   }
   if(ph->engine == SpEngineCUDA){
+#ifdef _USE_CUDA
     if(!ph->d_pixel_flags){
       cutilSafeCall(cudaMalloc((void **)&ph->d_pixel_flags,sizeof(int)*ph->image_size));
     }
-#ifdef _USE_CUDA
     /* transfer the model from the graphics card to the main memory */
     cutilSafeCall(cudaMemcpy(ph->d_pixel_flags,ph->pixel_flags->data,sizeof(int)*ph->image_size,cudaMemcpyHostToDevice));
 #else
-    return NULL;
+    abort();
 #endif    
   }
 }
@@ -147,18 +147,18 @@ void sp_phaser_set_phased_amplitudes(SpPhaser * ph,const Image * phased_amplitud
     }
   }
   if(ph->engine == SpEngineCUDA){
+#ifdef _USE_CUDA
     if(!ph->d_phased_amplitudes){
       cutilSafeCall(cudaMalloc((void **)&ph->d_phased_amplitudes,sizeof(cufftComplex)*ph->image_size));
     }
     if(!ph->d_pixel_flags){
       cutilSafeCall(cudaMalloc((void **)&ph->d_pixel_flags,sizeof(int)*ph->image_size));
     }
-#ifdef _USE_CUDA
     /* transfer the model from the graphics card to the main memory */
     cutilSafeCall(cudaMemcpy(ph->d_pixel_flags,ph->pixel_flags->data,sizeof(int)*ph->image_size,cudaMemcpyHostToDevice));
     cutilSafeCall(cudaMemcpy(ph->d_phased_amplitudes,ph->phased_amplitudes->data,sizeof(cufftComplex)*ph->image_size,cudaMemcpyHostToDevice));
 #else
-    return NULL;
+    abort();
 #endif    
   }
 }
@@ -210,18 +210,18 @@ void sp_phaser_set_amplitudes(SpPhaser * ph,const Image * amplitudes){
     fprintf(stderr,"Amplitudes mask is all zeros!\n");
   }
   if(ph->engine == SpEngineCUDA){
+#ifdef _USE_CUDA
     if(!ph->d_amplitudes){
       cutilSafeCall(cudaMalloc((void **)&ph->d_amplitudes,sizeof(float)*ph->image_size));
     }
     if(!ph->d_pixel_flags){
       cutilSafeCall(cudaMalloc((void **)&ph->d_pixel_flags,sizeof(int)*ph->image_size));
     }
-#ifdef _USE_CUDA
     /* transfer the model from the graphics card to the main memory */
     cutilSafeCall(cudaMemcpy(ph->d_pixel_flags,ph->pixel_flags->data,sizeof(int)*ph->image_size,cudaMemcpyHostToDevice));
     cutilSafeCall(cudaMemcpy(ph->d_amplitudes,ph->amplitudes->data,sizeof(float)*ph->image_size,cudaMemcpyHostToDevice));
 #else
-    return NULL;
+    abort();
 #endif    
   }
 }
