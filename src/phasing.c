@@ -396,7 +396,7 @@ int sp_phaser_init_model(SpPhaser * ph, const Image * user_model, int flags){
     sp_image_free(tmp);
     sp_image_scale(ph->model,1.0/sp_image_size(ph->model));
   }else if(flags & SpModelRandomValues){
-    ph->model = sp_image_alloc(ph->nx,ph->ny,ph->ny);
+    ph->model = sp_image_alloc(ph->nx,ph->ny,ph->nz);
     /* try to start with reasonable random values */
     double sum = 0;
     for(int i= 0;i<sp_image_size(ph->model);i++){
