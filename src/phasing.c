@@ -285,6 +285,7 @@ const Image * sp_phaser_fmodel(SpPhaser * ph){
 #endif    
     }
   }
+  ph->fmodel->phased = 1;
   return ph->fmodel;
 }
 
