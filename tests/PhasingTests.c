@@ -81,7 +81,7 @@ int test_sp_phasing_cuda_common(CuTest * tc,SpPhasingAlgorithm * alg,int size, r
   sp_phaser_set_amplitudes(ph_cuda,f);
   int i =0;
   int max_iter = 10;
-  sp_srand(0);
+  //  sp_srand(0);
   CuAssertTrue(tc,sp_phaser_init_model(ph_cpu,NULL,SpModelRandomPhases) == 0); 
   CuAssertTrue(tc,sp_phaser_init_model(ph_cuda,NULL,SpModelRandomPhases) == 0); 
   sp_phaser_set_model(ph_cuda,sp_image_duplicate(sp_phaser_model(ph_cpu),SP_COPY_ALL));
@@ -172,8 +172,6 @@ int test_sp_support_common(CuTest * tc,SpPhasingAlgorithm * alg,SpSupportAlgorit
 void test_sp_support_cuda_common(CuTest * tc,SpSupportAlgorithm * sup_alg){
   int size = 16;
   real oversampling = 2;
-  sp_srand(0);
-  srand(0);
   Image * solution = create_test_image(size,oversampling,SpNoConstraints);
   Image * f = sp_image_fft(solution);
   sp_image_rephase(f,SP_ZERO_PHASE);
@@ -291,6 +289,7 @@ int test_sp_phasing_success_common(CuTest * tc,SpPhasingAlgorithm * alg,Image * 
   }
   SpPhaser * ph = sp_phaser_alloc();
   CuAssertTrue(tc,sp_phaser_init(ph,alg,NULL,SpEngineAutomatic) == 0);
+  //  CuAssertTrue(tc,sp_phaser_init(ph,alg,NULL,SpEngineCPU) == 0);
   sp_phaser_set_amplitudes(ph,f);
 
   int i =0;
@@ -301,7 +300,7 @@ int test_sp_phasing_success_common(CuTest * tc,SpPhasingAlgorithm * alg,Image * 
   do{
     CuAssertTrue(tc,sp_phaser_iterate(ph,1) == 0);
     change = sp_image_integrate2(sp_phaser_model_change(ph));
-    //      printf("Iter = %d Delta = %g\n",i,change);
+    //    printf("Iter = %d Delta = %g\n",i,change);
     i++;
   }while(change > stop_tol && i < max_iter);
   Image * model = sp_image_duplicate(sp_phaser_model(ph),SP_COPY_ALL);
@@ -824,6 +823,199 @@ void test_sp_phasing_raar_noisy_success_rate(CuTest * tc){
 }
 
 
+void test_sp_phasing_diff_map_success_rate(CuTest * tc){
+  /* Simple phasing example */
+  int size = 4;
+  int oversampling = 2;
+  real beta = 0.8;
+  real stop_tol = 1e-10;
+  real match_tol = 1e-4;
+  int nruns = 30;
+  Image * pada;
+  SpPhasingAlgorithm * alg;
+  int n_success = 0;
+  alg = sp_phasing_diff_map_alloc(beta,INFINITY,INFINITY,0);
+  n_success = 0;
+  for(int i = 0;i<nruns;i++){
+    pada = create_test_image(size,oversampling,0);
+    n_success += test_sp_phasing_success_common(tc,alg,pada,0,stop_tol,match_tol);  
+    sp_image_free(pada);
+  }
+#ifndef NDEBUG
+  printf("DIFF_MAP Complex success rate = %5.2f\n",(real)n_success/nruns);
+#endif
+  alg = sp_phasing_diff_map_alloc(beta,INFINITY,INFINITY,SpPositiveComplexObject);
+  CuAssertTrue(tc,n_success>0);
+  n_success = 0;
+  for(int i = 0;i<nruns;i++){
+    pada = create_test_image(size,oversampling,SpPositiveComplexObject);  
+    n_success += test_sp_phasing_success_common(tc,alg,pada,0,stop_tol,match_tol);  
+    sp_image_free(pada);
+  }
+#ifndef NDEBUG
+  printf("DIFF_MAP Positive Complex success rate = %5.2f\n",(real)n_success/nruns);
+#endif
+  alg = sp_phasing_diff_map_alloc(beta,INFINITY,INFINITY,SpPositiveComplexObject| SpPositivityFlipping);
+  CuAssertTrue(tc,n_success>0);
+  n_success = 0;
+  for(int i = 0;i<nruns;i++){
+    pada = create_test_image(size,oversampling,SpPositiveComplexObject);  
+    n_success += test_sp_phasing_success_common(tc,alg,pada,0,stop_tol,match_tol);  
+    sp_image_free(pada);
+  }
+#ifndef NDEBUG
+  printf("DIFF_MAP Flipping Positive Complex success rate = %5.2f\n",(real)n_success/nruns);
+#endif
+  alg = sp_phasing_diff_map_alloc(beta,INFINITY,INFINITY,SpRealObject);
+  CuAssertTrue(tc,n_success>0);
+  n_success = 0;
+  for(int i = 0;i<nruns;i++){
+    pada = create_test_image(size,oversampling,SpRealObject);  
+    n_success += test_sp_phasing_success_common(tc,alg,pada,0,stop_tol,match_tol);  
+    sp_image_free(pada);
+  }
+#ifndef NDEBUG
+  printf("DIFF_MAP Real success rate = %5.2f\n",(real)n_success/nruns);
+#endif
+  CuAssertTrue(tc,n_success>0);
+
+  n_success = 0;
+  alg = sp_phasing_diff_map_alloc(beta,INFINITY,INFINITY,SpPositiveRealObject);
+  for(int i = 0;i<nruns;i++){
+    pada = create_test_image(size,oversampling,SpPositiveRealObject);
+    n_success += test_sp_phasing_success_common(tc,alg,pada,0,stop_tol,match_tol);  
+    sp_image_free(pada); 
+  }
+#ifndef NDEBUG
+  printf("DIFF_MAP Positive Real success rate = %5.2f\n",(real)n_success/nruns);
+#endif
+  CuAssertTrue(tc,n_success>0);
+
+  n_success = 0;
+  alg = sp_phasing_diff_map_alloc(beta,INFINITY,INFINITY,SpPositiveRealObject| SpPositivityFlipping);
+  for(int i = 0;i<nruns;i++){
+    pada = create_test_image(size,oversampling,SpPositiveRealObject);
+    n_success += test_sp_phasing_success_common(tc,alg,pada,0,stop_tol,match_tol);  
+    sp_image_free(pada); 
+  }
+#ifndef NDEBUG
+  printf("DIFF_MAP Flipping Positive Real success rate = %5.2f\n",(real)n_success/nruns);
+#endif
+  CuAssertTrue(tc,n_success>0);
+  PRINT_DONE;
+}
+
+void test_sp_phasing_diff_map_noisy_success_rate(CuTest * tc){
+  /* Simple phasing example */
+  int size = 4;
+  int oversampling = 2;
+  real beta = 0.8;
+  real stop_tol = 1e-10;
+  real match_tol = 1e-2;
+  real photons_per_pixel = 1/(match_tol*match_tol*match_tol);
+  int nruns = 30;
+  Image * pada;
+  SpPhasingAlgorithm * alg;
+  gsl_rng * r = gsl_rng_alloc(gsl_rng_taus);
+  int n_success = 0;
+  real beamstop =0;
+  alg = sp_phasing_diff_map_alloc(beta,INFINITY,INFINITY,0);
+  n_success = 0;
+  for(int i = 0;i<nruns;i++){
+    pada = create_test_image(size,oversampling,0);
+    n_success += test_sp_phasing_noisy_success_common(tc,alg,pada,0,stop_tol,match_tol,photons_per_pixel,r);
+    sp_image_free(pada);
+  }
+#ifndef NDEBUG
+  printf("DIFF MAP Complex success rate with %g photons per pixel = %5.2f\n",photons_per_pixel,(real)n_success/nruns);
+#endif
+  alg = sp_phasing_diff_map_alloc(beta,INFINITY,INFINITY,SpPositiveComplexObject);
+  CuAssertTrue(tc,n_success>0);
+  n_success = 0;
+  for(int i = 0;i<nruns;i++){
+    pada = create_test_image(size,oversampling,SpPositiveComplexObject);  
+    n_success += test_sp_phasing_noisy_success_common(tc,alg,pada,0,stop_tol,match_tol,photons_per_pixel,r);  
+    sp_image_free(pada);
+  }
+#ifndef NDEBUG
+  printf("DIFF MAP Positive Complex success rate with %g photons per pixel = %5.2f\n",photons_per_pixel,(real)n_success/nruns);
+#endif
+  alg = sp_phasing_diff_map_alloc(beta,INFINITY,INFINITY,SpPositiveComplexObject| SpPositivityFlipping);
+  CuAssertTrue(tc,n_success>0);
+  n_success = 0;
+  for(int i = 0;i<nruns;i++){
+    pada = create_test_image(size,oversampling,SpPositiveComplexObject);  
+    n_success += test_sp_phasing_noisy_success_common(tc,alg,pada,0,stop_tol,match_tol,photons_per_pixel,r);  
+    sp_image_free(pada);
+  }
+#ifndef NDEBUG
+  printf("DIFF MAP Flipping Positive Complex success rate with %g photons per pixel = %5.2f\n",photons_per_pixel,(real)n_success/nruns);
+#endif
+  CuAssertTrue(tc,n_success>0);
+  alg = sp_phasing_diff_map_alloc(beta,INFINITY,INFINITY,SpRealObject);
+  n_success = 0;
+  for(int i = 0;i<nruns;i++){
+    pada = create_test_image(size,oversampling,SpRealObject);  
+    n_success += test_sp_phasing_noisy_success_common(tc,alg,pada,0,stop_tol,match_tol,photons_per_pixel,r);  
+    sp_image_free(pada);
+  }
+#ifndef NDEBUG
+  printf("DIFF MAP Real success rate with %g photons per pixel = %5.2f\n",photons_per_pixel,(real)n_success/nruns);
+#endif
+  CuAssertTrue(tc,n_success>0);
+  n_success = 0;
+  alg = sp_phasing_diff_map_alloc(beta,INFINITY,INFINITY,SpPositiveRealObject);
+  for(int i = 0;i<nruns;i++){
+    pada = create_test_image(size,oversampling,SpPositiveRealObject);
+    n_success += test_sp_phasing_noisy_success_common(tc,alg,pada,0,stop_tol,match_tol,photons_per_pixel,r);  
+    sp_image_free(pada); 
+  }
+#ifndef NDEBUG  
+  printf("DIFF MAP Positive Real success rate with %g photons per pixel = %5.2f\n",photons_per_pixel,(real)n_success/nruns);
+#endif
+  CuAssertTrue(tc,n_success>0);
+  n_success = 0;
+  alg = sp_phasing_diff_map_alloc(beta,INFINITY,INFINITY,SpPositiveRealObject| SpPositivityFlipping);
+  for(int i = 0;i<nruns;i++){
+    pada = create_test_image(size,oversampling,SpPositiveRealObject);
+    n_success += test_sp_phasing_noisy_success_common(tc,alg,pada,0,stop_tol,match_tol,photons_per_pixel,r);  
+    sp_image_free(pada); 
+  }
+#ifndef NDEBUG
+  printf("DIFF MAP Flipping Positive Real success rate with %g photons per pixel = %5.2f\n",photons_per_pixel,(real)n_success/nruns);
+#endif
+  CuAssertTrue(tc,n_success>0);
+
+  beamstop = 1;
+
+  n_success = 0;
+  alg = sp_phasing_diff_map_alloc(beta,INFINITY,INFINITY,SpRealObject);
+
+  for(int i = 0;i<nruns;i++){
+    pada = create_test_image(size,oversampling,SpRealObject);
+    n_success += test_sp_phasing_noisy_success_common(tc,alg,pada,beamstop,stop_tol,match_tol,photons_per_pixel,r);  
+    sp_image_free(pada); 
+  }
+#ifndef NDEBUG
+  printf("DIFF MAP Real success rate with %g photons per pixel\nand beamstop radius %g = %5.2f\n",photons_per_pixel,beamstop,(real)n_success/nruns);
+#endif
+  CuAssertTrue(tc,n_success>0);
+
+  n_success = 0;
+  alg = sp_phasing_diff_map_alloc(beta,INFINITY,INFINITY,0);
+
+  for(int i = 0;i<nruns;i++){
+    pada = create_test_image(size,oversampling,0);
+    n_success += test_sp_phasing_noisy_success_common(tc,alg,pada,beamstop,stop_tol,match_tol,photons_per_pixel,r);  
+    sp_image_free(pada); 
+  }
+#ifndef NDEBUG
+  printf("DIFF MAP Complex success rate with %g photons per pixel\nand beamstop radius %g = %5.2f\n",photons_per_pixel,beamstop,(real)n_success/nruns);
+#endif
+  CuAssertTrue(tc,n_success>0);
+  PRINT_DONE;
+}
+
 void test_sp_phasing_hio(CuTest * tc){
   /* Simple phasing example */
   int size = 4;
@@ -974,6 +1166,26 @@ void test_sp_phasing_raar_speed(CuTest * tc){
 }
 
 
+void test_sp_phasing_diff_map_speed(CuTest * tc){
+#ifndef NDEBUG
+  /* Simple phasing example */
+  int size = 512;
+  int oversampling = 2;
+  real beta = 0.8;
+  SpPhasingAlgorithm * alg = sp_phasing_diff_map_alloc(beta,INFINITY,INFINITY,0);
+  int iterations = 2000;
+  if(sp_cuda_get_device_type() == SpCUDAHardwareDevice){
+    int delta_t = test_sp_phasing_speed_common(tc,alg,NULL,size,oversampling,SpNoConstraints,iterations,SpEngineCUDA);
+    printf("CUDA DIFF MAP %dx%d = %g iterations per second\n",size*oversampling,size*oversampling,(1.0e6*iterations)/delta_t);
+  }
+  iterations = 10;
+  int delta_t = test_sp_phasing_speed_common(tc,alg,NULL,size,oversampling,SpNoConstraints,iterations,SpEngineCPU);
+  printf("CPU DIFF MAP %dx%d = %g iterations per second\n",size*oversampling,size*oversampling,(1.0e6*iterations)/delta_t);
+#endif
+  PRINT_DONE;
+}
+
+
 void test_sp_support_hio(CuTest * tc){
   /* Simple phasing example */
   int size = 4;
@@ -1016,6 +1228,27 @@ void test_sp_support_raar(CuTest * tc){
   PRINT_DONE;
 }
 
+void test_sp_support_diff_map(CuTest * tc){
+  /* Simple phasing example */
+  int size = 4;
+  int oversampling = 2;
+  real beta = 0.8;
+  real tol = 1e-5;
+  SpPhasingAlgorithm * alg = sp_phasing_diff_map_alloc(beta,INFINITY,INFINITY,0);
+  sp_smap * blur_radius = sp_smap_alloc(2);
+  sp_smap_insert(blur_radius,0,3);
+  sp_smap_insert(blur_radius,2000,0.7);
+  sp_smap * threshold = sp_smap_alloc(1);
+  sp_smap_insert(threshold,0,0.15);  
+  sp_smap * area = sp_smap_alloc(1);
+  sp_smap_insert(area,0,1.3*1.0/(oversampling*oversampling));  
+  SpSupportAlgorithm * sup_alg = sp_support_threshold_alloc(20,blur_radius,threshold);
+  CuAssertIntEquals(tc,test_sp_support_common(tc,alg,sup_alg,size,oversampling,SpNoConstraints,0,tol),1);
+  sup_alg = sp_support_area_alloc(20,blur_radius,area);
+  CuAssertIntEquals(tc,test_sp_support_common(tc,alg,sup_alg,size,oversampling,SpNoConstraints,0,tol),1);
+  PRINT_DONE;
+}
+
 
 void test_sp_support_cuda(CuTest * tc){
   real oversampling = 2;
@@ -1036,12 +1269,12 @@ void test_sp_support_cuda(CuTest * tc){
 CuSuite* phasing_get_suite(void)
 {
   CuSuite* suite = CuSuiteNew();
-  SUITE_ADD_TEST(suite, test_sp_phasing_hio);
   if(sp_cuda_get_device_type() == SpCUDAHardwareDevice){
 #ifdef _USE_CUDA
-    SUITE_ADD_TEST(suite, test_sp_support_cuda);    
+    SUITE_ADD_TEST(suite, test_sp_support_cuda);
 #endif
   }
+  SUITE_ADD_TEST(suite, test_sp_phasing_hio);
   SUITE_ADD_TEST(suite,test_sp_support_speed);
   SUITE_ADD_TEST(suite, test_sp_phasing_hio_speed);
   SUITE_ADD_TEST(suite, test_sp_support_hio);
@@ -1052,5 +1285,10 @@ CuSuite* phasing_get_suite(void)
   SUITE_ADD_TEST(suite, test_sp_support_raar);
   SUITE_ADD_TEST(suite,test_sp_phasing_raar_success_rate);
   SUITE_ADD_TEST(suite,test_sp_phasing_raar_noisy_success_rate);
+  SUITE_ADD_TEST(suite, test_sp_phasing_diff_map_speed); 
+  SUITE_ADD_TEST(suite, test_sp_support_diff_map);
+  SUITE_ADD_TEST(suite,test_sp_phasing_diff_map_success_rate);
+  SUITE_ADD_TEST(suite,test_sp_phasing_diff_map_noisy_success_rate);  
+
   return suite;
 }

@@ -96,6 +96,7 @@ typedef struct{
 
 spimage_EXPORT SpPhasingAlgorithm * sp_phasing_hio_alloc(real beta, SpPhasingConstraints constraints);
 spimage_EXPORT SpPhasingAlgorithm * sp_phasing_raar_alloc(real beta, SpPhasingConstraints constraints);
+spimage_EXPORT SpPhasingAlgorithm * sp_phasing_diff_map_alloc(real beta,real gamma1,real gamma2, SpPhasingConstraints constraints);
 spimage_EXPORT SpPhasingAlgorithm * sp_phasing_er_alloc(SpPhasingConstraints constraints);
 
 spimage_EXPORT SpPhaser * sp_phaser_alloc();
@@ -120,6 +121,7 @@ spimage_EXPORT int sp_phaser_iterate(SpPhaser * ph, int iterations);
 #ifdef _USE_CUDA
   int phaser_iterate_hio_cuda(SpPhaser * ph,int iterations);  
   int phaser_iterate_raar_cuda(SpPhaser * ph,int iterations);  
+  int phaser_iterate_diff_map_cuda(SpPhaser * ph,int iterations);  
   int phaser_iterate_er_cuda(SpPhaser * ph,int iterations);  
   int sp_support_threshold_update_support_cuda(SpPhaser * ph);
   int sp_support_area_update_support_cuda(SpPhaser * ph);

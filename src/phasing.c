@@ -3,6 +3,8 @@
 
 static int phaser_iterate_hio(SpPhaser * ph, int iterations);
 static int phaser_iterate_raar(SpPhaser * ph, int iterations);
+static int phaser_iterate_diff_map(SpPhaser * ph, int iterations);
+static Image * phaser_iterate_diff_map_f1(Image * real_in,sp_i3matrix * pixel_flags,real gamma1);
 static int phaser_iterate_er(SpPhaser * ph,int iterations);
 static void phaser_apply_constraints(SpPhaser * ph,Image * new_model, SpPhasingConstraints constraints);
 
@@ -11,6 +13,34 @@ static void phaser_phased_amplitudes_projection(Image * a, sp_c3matrix * phased_
 
 
 static void phaser_check_dimensions(SpPhaser * ph,const Image * a);
+
+SpPhasingAlgorithm * sp_phasing_diff_map_alloc(real beta, real gamma1, real gamma2, SpPhasingConstraints constraints){
+  SpPhasingAlgorithm * ret = sp_malloc(sizeof(SpPhasingAlgorithm));
+  ret->type = SpDiffMap;
+  SpPhasingDiffMapParameters * params = sp_malloc(sizeof(SpPhasingDiffMapParameters));
+  params->beta = beta;
+  if(isinf(gamma1)){
+    /* Automatically calculate the gamma1 value*/
+    /* Optimal value according to 
+       Veit Elser 2003 "Random projections and the optimization of an algorithm for phase retrieval 
+    */
+    real sigma = 0.1;
+    params->gamma1 = -(4+(2+beta)*sigma + beta*sigma*sigma)/(beta*(4-sigma+sigma*sigma));
+  }else{
+    params->gamma1 = gamma1;
+  }
+  if(isinf(gamma1)){
+    /* Optimal value according to 
+       Veit Elser 2003 "Random projections and the optimization of an algorithm for phase retrieval 
+    */
+    params->gamma2 = (3-beta)/(2*beta);
+  }else{
+    params->gamma2 = gamma2;
+  }
+  params->constraints = constraints;
+  ret->params = params;
+  return ret;
+}
 
 SpPhasingAlgorithm * sp_phasing_raar_alloc(real beta, SpPhasingConstraints constraints){
   SpPhasingAlgorithm * ret = sp_malloc(sizeof(SpPhasingAlgorithm));
@@ -592,6 +622,17 @@ int sp_phaser_iterate(SpPhaser * ph, int iterations){
     }else{
       phaser_iterate_pointer = phaser_iterate_raar;
     }
+  }else if(ph->algorithm->type == SpDiffMap){
+    if(ph->engine == SpEngineCUDA){
+#ifdef _USE_CUDA
+      //      phaser_iterate_pointer = phaser_iterate_diff_map_cuda;
+      phaser_iterate_pointer = phaser_iterate_diff_map_cuda;
+#else
+      return -8;
+#endif
+    }else{
+      phaser_iterate_pointer = phaser_iterate_diff_map;
+    }
   }else if(ph->algorithm->type == SpER){
     if(ph->engine == SpEngineCUDA){
 #ifdef _USE_CUDA
@@ -791,3 +832,58 @@ static int phaser_iterate_raar(SpPhaser * ph,int iterations){
   ph->iteration += iterations;
   return 0;
 }
+
+
+static int phaser_iterate_diff_map(SpPhaser * ph,int iterations){
+  SpPhasingDiffMapParameters * params = ph->algorithm->params;
+  const real beta = params->beta;
+  const real gamma1 = params->gamma1;
+  const real gamma2 = params->gamma2;
+  for(int i = 0;i<iterations;i++){
+    Image * swap = ph->g0;
+    ph->g0 = ph->g1;
+    ph->g1 = swap;
+    sp_image_fft_fast(ph->g0,ph->g1);
+    Image * f1 = phaser_iterate_diff_map_f1(ph->g0,ph->pixel_flags,gamma1);
+    sp_image_fft_fast(f1,f1);
+    phaser_module_projection(f1,ph->amplitudes,ph->pixel_flags);
+    sp_image_ifft_fast(f1,f1);
+    Image * Pi2f1 = f1;
+    phaser_module_projection(ph->g1,ph->amplitudes,ph->pixel_flags);
+    sp_image_ifft_fast(ph->g1,ph->g1);
+    Image * Pi2rho = ph->g1;
+    
+    int size = ph->image_size;
+    for(int i = 0;i<size;i++){
+      if(ph->pixel_flags->data[i] & SpPixelInsideSupport){
+	sp_real(ph->g1->image->data[i]) = sp_real(ph->g0->image->data[i])+(beta)*((1+gamma2)*sp_real(Pi2rho->image->data[i])/size-gamma2*sp_real(ph->g0->image->data[i]));
+	sp_imag(ph->g1->image->data[i]) = sp_imag(ph->g0->image->data[i])+(beta)*((1+gamma2)*sp_imag(Pi2rho->image->data[i])/size-gamma2*sp_imag(ph->g0->image->data[i]));
+      }else{
+	ph->g1->image->data[i] = ph->g0->image->data[i];
+      }
+      sp_real(ph->g1->image->data[i]) -= beta*sp_real(Pi2f1->image->data[i])/size;
+      sp_imag(ph->g1->image->data[i]) -= beta*sp_imag(Pi2f1->image->data[i])/size;
+    }
+    sp_image_free(Pi2f1);
+    phaser_apply_constraints(ph,ph->g1,params->constraints);
+  }
+  ph->iteration += iterations;
+  return 0;
+}
+
+Image * phaser_iterate_diff_map_f1(Image * real_in,sp_i3matrix * pixel_flags,real gamma1){
+  Image * out = sp_image_duplicate(real_in,SP_COPY_DATA|SP_COPY_MASK);
+  for(int i = 0;i<sp_image_size(out);i++){
+    if(pixel_flags->data[i] & SpPixelInsideSupport){
+      /* inside support */
+      /* 1+gamma1-gamma1 is 1 so  do nothing */
+    }else{
+      /* outside support */
+      sp_real(out->image->data[i]) = -gamma1*sp_real(out->image->data[i]);
+      sp_imag(out->image->data[i]) = -gamma1*sp_imag(out->image->data[i]);
+
+    }
+  }
+  return out;
+}
+

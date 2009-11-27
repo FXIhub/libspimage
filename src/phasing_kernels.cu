@@ -2,6 +2,31 @@
 #include <cuda_runtime.h>
 #include <spimage.h>
 
+__global__ void CUDA_diff_map_f1(cufftComplex* f1, const cufftComplex* g0,const int * pixel_flags,const float gamma1,const  int size){
+  const int i = blockIdx.x*blockDim.x + threadIdx.x;
+  if(i<size){
+    f1[i] = g0[i];
+    if((pixel_flags[i] & SpPixelInsideSupport) == 0){
+      f1[i].x = -gamma1*g0[i].x;
+      f1[i].y = -gamma1*g0[i].y;
+    }
+  }
+}
+
+__global__ void CUDA_diff_map(cufftComplex* Pi2f1,cufftComplex* Pi2rho, const cufftComplex* g0, cufftComplex* g1,const int * pixel_flags,const float gamma2,const float beta,const  int size){
+  const int i = blockIdx.x*blockDim.x + threadIdx.x;
+  if(i<size){
+    if((pixel_flags[i] & SpPixelInsideSupport)){
+      g1[i].x = g0[i].x +(beta)*((1+gamma2)*Pi2rho[i].x-gamma2*g0[i].x);
+      g1[i].y = g0[i].y +(beta)*((1+gamma2)*Pi2rho[i].y-gamma2*g0[i].y);
+    }else{
+      g1[i] = g0[i];
+    }
+    g1[i].x -= beta*Pi2f1[i].x;
+    g1[i].y -= beta*Pi2f1[i].y;
+  }
+}
+
 __global__ void CUDA_support_projection_raar(cufftComplex* g1, const cufftComplex* g0,const int * pixel_flags,const  int size,const float beta)
 {
   /* A bit of documentation about the equation:
