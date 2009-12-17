@@ -56,7 +56,7 @@ static int write_vtk(const Image * img,const char * filename);
 static int write_xplor(const Image * img,const char * filename);
 static Image * read_smv(const char * filename);
 static void hsv_to_rgb(float H,float S,float V,float * R,float *G,float *B);
-
+static Image * read_anton_datafile(hid_t file_id,hid_t dataset_id, const char * filename);
 
 static void hsv_to_rgb(float H,float S,float V,float * R,float *G,float *B){
   if( V == 0 ){ *R 
@@ -1821,6 +1821,12 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
   }
   
 
+  dataset_id = H5Dopen(file_id, "/data/data");
+  if(dataset_id >= 0){
+    /* we have Anton's simple data format */
+    return read_anton_datafile(file_id,dataset_id,filename);
+  }
+
   dataset_id = H5Dopen(file_id, "/version");
   /* File includes version information */
   if(dataset_id>=0){
@@ -2476,6 +2482,75 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
   
 }
 
+
+Image * read_anton_datafile(hid_t file_id,hid_t dataset_id,const char * filename){
+  hid_t mem_type_id;
+  int status = 0;
+  if(sizeof(real) == sizeof(float)){
+    mem_type_id = H5T_NATIVE_FLOAT;
+  }else if(sizeof(real) == sizeof(double)){
+    mem_type_id = H5T_NATIVE_DOUBLE;
+  }else{
+    abort();
+  }
+  int nframes;
+  /* read number of frames and put them together in just 1 image */
+  H5Dclose(dataset_id);
+  dataset_id = H5Dopen(file_id, "/data/nframes");
+  status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL,
+		   H5P_DEFAULT, &nframes);
+  int total_dims[3] = {0,0,1};
+  hsize_t dims[nframes][3];
+  for(int i = 0;i<nframes;i++){
+    dims[i][0] = 1;
+    dims[i][1] = 1;
+    dims[i][2] = 1;
+  }
+  
+  real * data[nframes];
+  for(int frame = 0;frame<nframes;frame++){
+    char fieldname[100]; 
+    sprintf(fieldname,"/data/data%i",frame);
+    dataset_id = H5Dopen(file_id,fieldname);
+    hid_t space = H5Dget_space(dataset_id);
+    if(space < 0){
+      sp_error_warning("Unable to get space in file %s",filename);
+      return NULL;
+    }
+    if(H5Sget_simple_extent_ndims(space) == 3 ||
+       H5Sget_simple_extent_ndims(space) == 2){
+    }else{
+      sp_error_warning("File has unsupported number of dimensions!\n");
+      return NULL;
+    }
+    if(H5Sget_simple_extent_dims(space,dims[frame],NULL) < 0){
+      sp_error_warning("Unable to get dimensions extent in file %s",filename);
+      return NULL;
+    }
+    total_dims[0] +=dims[frame][0];
+    total_dims[1] = sp_max(dims[frame][1],total_dims[1]);
+
+    data[frame] = malloc(sizeof(real)*(dims[frame][0]*dims[frame][1]*dims[frame][2]));
+    status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
+		     H5P_DEFAULT, data[frame]);
+    
+  }
+  Image * ret = sp_image_alloc(total_dims[0],total_dims[1],total_dims[2]);
+  
+  for(int x = 0;x<total_dims[0];x++){
+    int frame = 0;
+    int rel_x = x;
+    while(rel_x >= dims[frame][0]){
+      rel_x -= dims[frame][0];
+      frame++;
+    }
+    for(int y = 0;y<total_dims[1];y++){
+      sp_image_set(ret,x,y,0,sp_cinit(data[frame][y*dims[frame][0]+rel_x],0));
+      sp_image_mask_set(ret,x,y,0,1);
+    }
+  }
+  return ret;  
+}
 
 
 Image * read_tiff(const char * filename){
