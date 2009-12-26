@@ -1824,6 +1824,7 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
   dataset_id = H5Dopen(file_id, "/data/data");
   if(dataset_id >= 0){
     /* we have Anton's simple data format */
+    H5Eset_auto(func,client_data);
     return read_anton_datafile(file_id,dataset_id,filename);
   }
 
@@ -2531,9 +2532,25 @@ Image * read_anton_datafile(hid_t file_id,hid_t dataset_id,const char * filename
     total_dims[1] = sp_max(dims[frame][1],total_dims[1]);
 
     data[frame] = malloc(sizeof(real)*(dims[frame][0]*dims[frame][1]*dims[frame][2]));
+#if H5_VERS_MAJOR < 2 && H5_VERS_MINOR < 8
+    /* HDF5 1.6 does not support int -> double conversion so we'll need a buffer */
+    if(H5Tget_class(H5Dget_type(dataset_id)) == H5T_INTEGER){
+      int * buffer =  malloc(sizeof(int)*(dims[frame][0]*dims[frame][1]*dims[frame][2]));
+      status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL,
+		       H5P_DEFAULT, buffer);
+      for(int i = 0;i<dims[frame][0]*dims[frame][1]*dims[frame][2];i++){
+	data[frame][i] = buffer[i];      
+      }
+      free(buffer);
+    }else{
+      status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
+		       H5P_DEFAULT, data[frame]);
+    }
+#else
     status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		     H5P_DEFAULT, data[frame]);
-    
+#endif
+
   }
   Image * ret = sp_image_alloc(total_dims[0],total_dims[1],total_dims[2]);
   
