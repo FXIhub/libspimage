@@ -5750,3 +5750,89 @@ int sp_image_contains_coordinates(const Image *a, real x, real y, real z){
   }
   return 1;
 }
+
+spimage_EXPORT void sp_image_image_to_mask(Image *in, Image *out)
+{
+  if (sp_image_x(in) != sp_image_x(out) ||
+      sp_image_y(in) != sp_image_y(out) ||
+      sp_image_z(in) != sp_image_z(out)) {
+    printf("incompatible sizes in sp_image_image_to_mask\n");
+    return;
+  }
+  const int i_max = sp_image_size(in);
+  for (int i = 0; i < i_max; i++) {
+    if (sp_real(in->image->data[i]) == 0.0 ||
+	sp_imag(in->image->data[i]) == 0.0) {
+      out->mask->data[i] = 0;
+    } else {
+      out->mask->data[i] = 1;
+    }
+  }
+}
+/* out will get a new image that is zero when in->mask is zero
+     and (1.0,0.0) where it is nonzero */
+spimage_EXPORT void sp_image_mask_to_image(Image *in, Image *out)
+{
+  if (sp_image_x(in) != sp_image_x(out) ||
+      sp_image_y(in) != sp_image_y(out) ||
+      sp_image_z(in) != sp_image_z(out)) {
+    printf("incompatible sizes in sp_image_mask_to_image\n");
+    return;
+  }
+  const int i_max = sp_image_size(in);
+  for (int i = 0; i < i_max; i++) {
+    if (in->mask->data[i] == 0) {
+      out->image->data[i] = sp_cinit(0.0,0.0);
+    } else {
+      out->image->data[i] = sp_cinit(1.0,0.0);
+    }
+  }
+}
+/* copies the image from in to out */
+spimage_EXPORT void sp_image_image_to_image(Image *in, Image *out)
+{
+  if (sp_image_x(in) != sp_image_x(out) ||
+      sp_image_y(in) != sp_image_y(out) ||
+      sp_image_z(in) != sp_image_z(out)) {
+    printf("incompatible sizes in sp_image_image_to_image\n");
+    return;
+  }
+  const int i_max = sp_image_size(in);
+  for (int i = 0; i < i_max; i++) {
+    out->image->data[i] = in->image->data[i];
+  }
+}
+/* copies the mask from in to out */
+spimage_EXPORT void sp_image_mask_to_mask(Image *in, Image *out)
+{
+  if (sp_image_x(in) != sp_image_x(out) ||
+      sp_image_y(in) != sp_image_y(out) ||
+      sp_image_z(in) != sp_image_z(out)) {
+    printf("incompatible sizes in sp_image_mask_to_mask\n");
+    return;
+  }
+  const int i_max = sp_image_size(in);
+  for (int i = 0; i < i_max; i++) {
+    out->mask->data[i] = in->mask->data[i];
+  }
+}
+
+/* out gets a new mask that is zero where in->image is nonzero
+   and one wher it is zero */
+spimage_EXPORT void sp_image_invert_mask(Image *in, Image *out)
+{
+  if (sp_image_x(in) != sp_image_x(out) ||
+      sp_image_y(in) != sp_image_y(out) ||
+      sp_image_z(in) != sp_image_z(out)) {
+    printf("incompatible sizes in sp_image_mask_to_mask\n");
+    return;
+  }
+  const int i_max = sp_image_size(in);
+  for (int i = 0; i < i_max; i++) {
+    if (in->mask->data[i] == 0) {
+      out->mask->data[i] = 1;
+    } else {
+      out->mask->data[i] = 0;
+    }
+  }
+}
