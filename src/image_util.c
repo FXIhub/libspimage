@@ -2550,7 +2550,6 @@ Image * read_anton_datafile(hid_t file_id,hid_t dataset_id,const char * filename
     status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		     H5P_DEFAULT, data[frame]);
 #endif
-
   }
   Image * ret = sp_image_alloc(total_dims[0],total_dims[1],total_dims[2]);
   
@@ -2566,6 +2565,9 @@ Image * read_anton_datafile(hid_t file_id,hid_t dataset_id,const char * filename
       sp_image_mask_set(ret,x,y,0,1);
     }
   }
+  /* For some reason the image is upside down so we'll turn it around */
+  sp_image_reflect(ret,1,SP_AXIS_X);
+
   return ret;  
 }
 
