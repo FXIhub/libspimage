@@ -589,6 +589,9 @@ int sp_phaser_iterate(SpPhaser * ph, int iterations){
       if(ph->sup_algorithm->type == SpSupportArea){
 	phaser_update_support_pointer = sp_support_area_update_support_cuda;
       }
+      if (ph->sup_algorithm->type == SpSupportTemplate){
+	phaser_update_support_pointer = sp_support_template_update_support_cuda;
+      }
 #else
       return -8;
 #endif
@@ -598,6 +601,9 @@ int sp_phaser_iterate(SpPhaser * ph, int iterations){
       }
       if(ph->sup_algorithm->type == SpSupportArea){
 	phaser_update_support_pointer = sp_support_area_update_support;
+      }
+      if(ph->sup_algorithm->type == SpSupportTemplate){
+	phaser_update_support_pointer = sp_support_template_update_support;
       }
     }
   }

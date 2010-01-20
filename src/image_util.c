@@ -3050,6 +3050,77 @@ Image * gaussian_blur(Image * in, real radius){
   return res;
 }
 
+Image * gaussian_blur_sensitive(Image * in, real radius){
+  /* Lets make this convolution using a fourier transform shallw we... good....*/
+  int x,y,z;
+  int i,j,k;
+  //int filter_side = ceil(radius)*3*2+1;
+  real radius_z;
+  if(in->num_dimensions == SP_2D){
+    radius_z = 0;
+  }else if(in->num_dimensions == SP_3D){
+    radius_z = radius;
+  }else{
+    radius_z = 0;
+    abort();
+  }
+  real total_filter = 0;
+  Image * filter_img = sp_image_alloc(sp_image_x(in),sp_image_y(in),sp_image_z(in));
+  //Image * filter_img = sp_image_alloc(filter_side,filter_side, ceil(radius_z)*3*2+1);
+
+  Image * centered_filter;
+  Image * res;
+  Image * tmp;
+  filter_img->detector->image_center[0] = (sp_image_x(filter_img)-1)/2.0;
+  filter_img->detector->image_center[1] = (sp_image_y(filter_img)-1)/2.0;
+  filter_img->detector->image_center[2] = (sp_image_z(filter_img)-1)/2.0;
+  
+  sp_image_dephase(filter_img);
+  for(x = 0; x < sp_image_x(filter_img); x++) {
+    for(y = 0; y < sp_image_y(filter_img); y++) {
+      for(z = 0; z < sp_image_z(filter_img); z++) {
+	sp_real(filter_img->image->data[z*sp_image_y(filter_img)*sp_image_x(filter_img) +
+					y*sp_image_x(filter_img) + x]) = 
+	  1.0/sqrt(2.0*M_PI*radius) *
+	  exp(-(pow((double)x-filter_img->detector->image_center[0],2)+
+		pow((double)y-filter_img->detector->image_center[1],2)+
+		pow((double)z-filter_img->detector->image_center[2],2))/
+	      (2.0*pow(radius,2)));
+	sp_imag(filter_img->image->data[z*sp_image_y(filter_img)*sp_image_x(filter_img) +
+					y*sp_image_x(filter_img) + x]) = 0.0;
+	total_filter += 
+	  sp_real(filter_img->image->data[z*sp_image_y(filter_img)*sp_image_x(filter_img) +
+					  y*sp_image_x(filter_img) + x]);
+      }
+    }
+  }
+  for(i = 0;i<sp_image_size(filter_img);i++){
+    filter_img->image->data[i] = sp_cscale(filter_img->image->data[i],1.0/total_filter);
+  }
+  centered_filter = shift_center_to_top_left(filter_img);
+  centered_filter->shifted = 1;
+  sp_image_free(filter_img);
+  res = sp_image_convolute(in, centered_filter,NULL);
+  sp_image_free(centered_filter);
+  /* we should crop the result if it's bigger than the input */
+  if(sp_image_size(res) > sp_image_size(in)){
+    /*tmp = cube_crop(res, (sp_c3matrix_x(res->image)-sp_c3matrix_x(in->image))/2,
+		    (sp_c3matrix_y(res->image)-sp_c3matrix_y(in->image))/2,
+		    (sp_c3matrix_z(res->image)-sp_c3matrix_z(in->image))/2,
+		    sp_c3matrix_x(in->image)/2-1+(sp_c3matrix_x(res->image)-sp_c3matrix_x(in->image))/2,
+		    sp_c3matrix_x(in->image)/2-1+(sp_c3matrix_y(res->image)-sp_c3matrix_y(in->image))/2,
+		    sp_c3matrix_x(in->image)/2-1+(sp_c3matrix_z(res->image)-sp_c3matrix_z(in->image))/2);*/
+    tmp = cube_crop(res, (sp_c3matrix_x(res->image)-sp_c3matrix_x(in->image))/2,
+		    (sp_c3matrix_y(res->image)-sp_c3matrix_y(in->image))/2,
+		    (sp_c3matrix_z(res->image)-sp_c3matrix_z(in->image))/2,
+		    (sp_c3matrix_x(res->image)+sp_c3matrix_x(in->image))/2-1,
+		    (sp_c3matrix_y(res->image)+sp_c3matrix_y(in->image))/2-1,
+		    (sp_c3matrix_z(res->image)+sp_c3matrix_z(in->image))/2-1);
+    sp_image_free(res);
+    res = tmp;
+  }
+  return res;
+}
 
 /* Convolute the image with a square window.
  The filter function is given by:
@@ -5763,7 +5834,7 @@ spimage_EXPORT void sp_image_image_to_mask(Image *in, Image *out)
   }
   const int i_max = sp_image_size(in);
   for (int i = 0; i < i_max; i++) {
-    if (sp_real(in->image->data[i]) == 0.0 ||
+    if (sp_real(in->image->data[i]) == 0.0 &&
 	sp_imag(in->image->data[i]) == 0.0) {
       out->mask->data[i] = 0;
     } else {

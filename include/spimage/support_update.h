@@ -1,14 +1,12 @@
 #ifndef _SP_SUPPORT_UPDATE_H_
 #define _SP_SUPPORT_UPDATE_H_ 1
 
-
-
 #ifdef __cplusplus
 extern "C"
 {
 #endif /* __cplusplus */
 
-  typedef enum{SpSupportThreshold=1,SpSupportArea}SpSupportAlgorithmType;
+  typedef enum{SpSupportThreshold=1,SpSupportArea,SpSupportTemplate}SpSupportAlgorithmType;
 
 /*! This structure is private */
 typedef struct{
@@ -24,6 +22,15 @@ typedef struct{
 
 /*! This structure is private */
 typedef struct{
+  //real blur_radius;
+  Image *blured;
+  Image *sorted;
+  sp_smap *area;
+  real original_area;
+}SpSupportTemplateParameters;
+
+/*! This structure is private */
+typedef struct{
   SpSupportAlgorithmType type;
   int update_period;
   void * params;
@@ -31,6 +38,7 @@ typedef struct{
 
   SpSupportAlgorithm * sp_support_threshold_alloc(int update_period, sp_smap * blur_radius,sp_smap * threshold);
   SpSupportAlgorithm * sp_support_area_alloc(int update_period, sp_smap * blur_radius,sp_smap * area);
+  SpSupportAlgorithm * sp_support_template_alloc(int update_period, Image *initial_support, real blur_radius, sp_smap *area);
 
 #ifdef __cplusplus
 }  /* extern "C" */

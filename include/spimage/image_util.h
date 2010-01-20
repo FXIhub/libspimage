@@ -503,6 +503,10 @@ spimage_EXPORT real sp_image_interp(const Image * img, real v_x, real v_y, real 
  *  The mask will not be blurred.
  */
 spimage_EXPORT Image * gaussian_blur(Image * in, real radius);
+
+/* Same as above but with an uncropped gaussian function.
+ */
+spimage_EXPORT Image * gaussian_blur_sensitive(Image * in, real radius);
 /*! Multiplies the image with a gaussian centered in the image center of a given radius 
  *
  *   The mask will not be multiplied.

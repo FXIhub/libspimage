@@ -125,11 +125,13 @@ spimage_EXPORT int sp_phaser_iterate(SpPhaser * ph, int iterations);
   int phaser_iterate_er_cuda(SpPhaser * ph,int iterations);  
   int sp_support_threshold_update_support_cuda(SpPhaser * ph);
   int sp_support_area_update_support_cuda(SpPhaser * ph);
+  int sp_support_template_update_support_cuda(SpPhaser * ph);
   int sp_proj_module_cuda(Image * a, Image * amp);
 #endif
 
   int sp_support_area_update_support(SpPhaser * ph);
   int sp_support_threshold_update_support(SpPhaser * ph);
+  int sp_support_template_update_support(SpPhaser * ph);
 
 
 #ifdef __cplusplus

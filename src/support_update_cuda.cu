@@ -319,6 +319,18 @@ int sp_support_area_update_support_cuda(SpPhaser * ph){
   return 0;
 }
 
+int sp_support_template_update_support_cuda(SpPhaser *ph){
+  SpSupportTemplateParameters *params = (SpSupportTemplateParameters *)ph->sup_algorithm->params;
+  cufftComplex *blured;
+  cutilSafeCall(cudaMalloc((void**)&blured, sizeof(cufftComplex)*ph->image_size));
+  cutilSafeCall(cudaMemcpy(blured,params->blured->image->data,sizeof(cufftComplex)*ph->image_size,cudaMemcpyHostToDevice)); //should this be device to host?
+  real area = bezier_map_interpolation(params->area,ph->iteration);
+  real abs_threshold = sp_cabs(params->sorted->image->data[(int)(sp_image_size(params->sorted)*area*params->original_area)]);
+  support_from_absolute_threshold_cuda(ph,blured,abs_threshold);
+  cutilSafeCall(cudaFree(blured));
+  return 0;
+}
+
 int sp_support_threshold_update_support_cuda(SpPhaser * ph){
   SpSupportThresholdParameters * params = (SpSupportThresholdParameters *)ph->sup_algorithm->params;
   real radius =  bezier_map_interpolation(params->blur_radius_map,ph->iteration);

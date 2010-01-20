@@ -26,6 +26,29 @@ SpSupportAlgorithm * sp_support_area_alloc(int update_period, sp_smap * blur_rad
   return ret;
 }
 
+SpSupportAlgorithm * sp_support_template_alloc(int update_period, Image *initial_support, real blur_radius, sp_smap *area){
+  SpSupportAlgorithm *ret = sp_malloc(sizeof(SpSupportAlgorithm));
+  ret->type = SpSupportTemplate;
+  ret->update_period = update_period;
+  SpSupportTemplateParameters * params = sp_malloc(sizeof(SpSupportTemplateParameters));
+  //params->blured = gaussian_blur(initial_support,blur_radius);
+  params->blured = gaussian_blur_sensitive(initial_support,blur_radius);
+  params->sorted = sp_image_duplicate(params->blured,SP_COPY_DATA);
+  qsort(params->sorted->image->data,sp_c3matrix_size(params->sorted->image),sizeof(Complex),descend_complex_compare);
+  //params->blur_radius = blur_radius;
+  params->area = area;
+  params->original_area = 0.0;
+  for (int i = 0; i < sp_image_size(initial_support); i++) {
+    if (sp_real(initial_support->image->data[i]) != 0.0 ||
+	sp_imag(initial_support->image->data[i]) != 0.0) {
+      params->original_area += 1.0;
+    }
+  }
+  params->original_area /= (real)sp_image_size(initial_support);
+  ret->params = params;
+  return ret;
+}
+
 int sp_support_area_update_support(SpPhaser * ph){
   SpSupportAreaParameters * params = ph->sup_algorithm->params;
   real radius =  bezier_map_interpolation(params->blur_radius_map,ph->iteration);
@@ -54,6 +77,22 @@ int sp_support_threshold_update_support(SpPhaser * ph){
   real abs_threshold = sp_image_max(blur,NULL,NULL,NULL,NULL)*rel_threshold;  
   support_from_absolute_threshold(ph,blur,abs_threshold);
   sp_image_free(blur);
+  return 0;
+}
+
+int sp_support_template_update_support(SpPhaser * ph){
+  SpSupportTemplateParameters * params = ph->sup_algorithm->params;
+  //real radius = params->blur_radius;
+  //Image *blur = gaussian_blur(params->template,params->blur_radius);
+  Image *support = sp_image_duplicate(params->blured,SP_COPY_DATA);
+  real area = bezier_map_interpolation(params->area,ph->iteration);
+  //qsort(blur->image->data,sp_c3matrix_size(blur->image),sizeof(Complex),descend_real_compare);
+  //real abs_threshold = sp_cabs(blur->image->data[(int)(sp_image_size(blur)*area)]);area
+  real abs_threshold = sp_cabs(params->sorted->image->data[(int)(sp_image_size(params->sorted)*area*params->original_area)]);
+  //sp_image_free(blur);
+  //support_from_absolute_threshold(ph,support,abs_threshold);
+  support_from_absolute_threshold(ph,params->blured,abs_threshold);
+  //sp_image_free(support);
   return 0;
 }
 
