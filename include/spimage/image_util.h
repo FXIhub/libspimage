@@ -183,7 +183,7 @@ spimage_EXPORT int write_mask_to_png(const Image * img, char * filename, int col
  *  @{
  */
 
-/*! Allocates an image of width x and height y
+/*! Allocates an image of width x and height y and depth z
  */
 spimage_EXPORT Image * _sp_image_alloc(int x, int y, int z, const char * file, int line);
 #ifndef SWIG
