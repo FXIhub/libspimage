@@ -1,7 +1,3 @@
-#LIST(APPEND OBJECTS  "image_util.c" "fft.c" "linear_alg.c" "mem_util.c" "image_sphere.c" "sperror.c")
-#LIST(APPEND OBJECTS  "gaussianinv.c" "image_noise.c" "hashtable.c" "interpolation_kernels.c" "time_util.c")
-#LIST(APPEND OBJECTS  "list.c" "prtf.c" "phasing.c" "colormap.c" "cuda_util.c" "support_update.c")
-#LIST(APPEND OBJECTS  "image_io.c")
 LIST(APPEND OBJECTS ${SPIMAGE_SRC})
 
 IF(CUDA_FOUND)

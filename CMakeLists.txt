@@ -107,7 +107,7 @@ LIST(APPEND SPIMAGE_SRC "${CMAKE_SOURCE_DIR}/src/gaussianinv.c" "${CMAKE_SOURCE_
 LIST(APPEND SPIMAGE_SRC "${CMAKE_SOURCE_DIR}/src/interpolation_kernels.c" "${CMAKE_SOURCE_DIR}/src/time_util.c")
 LIST(APPEND SPIMAGE_SRC "${CMAKE_SOURCE_DIR}/src/list.c" "${CMAKE_SOURCE_DIR}/src/prtf.c" "${CMAKE_SOURCE_DIR}/src/phasing.c")
 LIST(APPEND SPIMAGE_SRC "${CMAKE_SOURCE_DIR}/src/colormap.c" "${CMAKE_SOURCE_DIR}/src/cuda_util.c" "${CMAKE_SOURCE_DIR}/src/support_update.c")
-LIST(APPEND SPIMAGE_SRC "${CMAKE_SOURCE_DIR}/src/image_io.c")
+LIST(APPEND SPIMAGE_SRC "${CMAKE_SOURCE_DIR}/src/image_io.c" "${CMAKE_SOURCE_DIR}/src/image_filter.c")
 
 ADD_SUBDIRECTORY(src)
 ADD_SUBDIRECTORY(include)
