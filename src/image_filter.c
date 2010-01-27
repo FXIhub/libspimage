@@ -10,7 +10,7 @@
  The filter function is given by:
 
 f(x,y) = 1/sqrt(2*M_PI*radius) * exp(-(x^2+y^2)/(2*radius^2)) */
-Image * gaussian_blur(Image * in, real radius){
+Image * sp_gaussian_blur(Image * in, real radius){
   /* Lets make this convolution using a fourier transform shallw we... good....*/
   int x,y,z;
   int i,j,k;
@@ -82,7 +82,7 @@ Image * gaussian_blur(Image * in, real radius){
  The filter function is given by:
 
 f(x,y) = 1/((2*radius+1)^2)) */
-Image * square_blur(Image * in, real radius, int type){
+Image * sp_square_blur(Image * in, real radius, int type){
   /* Lets make this convolution using a fourier transform shallw we... good....*/
   int x,y,z;
   int i,j,k;
@@ -124,7 +124,7 @@ Image * square_blur(Image * in, real radius, int type){
 
 
 /* Low pass filter using a centered square window of side edge_size */
-Image * low_pass_square_filter(Image * in, int edge_size){
+Image * sp_low_pass_square_filter(Image * in, int edge_size){
   Image * fft_img = sp_image_fft(in);
   Image * res;
   Image * tmp;
@@ -160,12 +160,12 @@ Image * low_pass_square_filter(Image * in, int edge_size){
 
 //I am here
 /* Low pass filter using a centered gaussian window of side edge_size */
-Image * low_pass_gaussian_filter(Image * in, int edge_size){
+Image * sp_low_pass_gaussian_filter(Image * in, int edge_size){
   Image * fft_img = sp_image_fft(in);
   Image * res;
   Image * mask;
   int i = 0;
-  gaussian_filter(fft_img,edge_size/2.0,1);
+  sp_gaussian_filter(fft_img,edge_size/2.0,1);
   res = sp_image_ifft(fft_img);
   sp_image_free(fft_img);
   /* scale appropriately */
@@ -179,7 +179,7 @@ Image * low_pass_gaussian_filter(Image * in, int edge_size){
   mask = sp_image_duplicate(in,SP_COPY_DATA|SP_COPY_MASK);
   memcpy(mask->image,in->mask,sp_image_size(in)*sizeof(real)); 
   fft_img = sp_image_fft(mask);
-  gaussian_filter(fft_img,edge_size/2.0,1);
+  sp_gaussian_filter(fft_img,edge_size/2.0,1);
   sp_image_free(mask);
   mask = sp_image_ifft(fft_img);
   sp_image_free(fft_img);
@@ -198,7 +198,7 @@ Image * low_pass_gaussian_filter(Image * in, int edge_size){
 }
 
 /* Filter using a centered gaussian window of side edge_size */
-Image * gaussian_filter(Image * in, real radius,int in_place){
+Image * sp_gaussian_filter(Image * in, real radius,int in_place){
   Image * res;
   const real scaling_factor = 7;
   int i;
@@ -218,7 +218,7 @@ Image * gaussian_filter(Image * in, real radius,int in_place){
 }
 
 
-Image * rectangular_window(int image_x, int image_y, int width, int height, int shifted){
+Image * sp_rectangular_window(int image_x, int image_y, int width, int height, int shifted){
   Image * res = sp_image_alloc(image_x,image_y,1);
   int x,y,i;
   int center[2];
@@ -255,7 +255,7 @@ Image * rectangular_window(int image_x, int image_y, int width, int height, int 
   return res;
 }
 
-Image * cube_window(int image_x, int image_y, int image_z, int dx, int dy, int dz, int shifted){
+Image * sp_cube_window(int image_x, int image_y, int image_z, int dx, int dy, int dz, int shifted){
   Image * res = sp_image_alloc(image_x,image_y,image_z);
   int x,y,z,i;
   int center[3];
@@ -299,7 +299,7 @@ Image * cube_window(int image_x, int image_y, int image_z, int dx, int dy, int d
   return res;
 }
 
-Image * circular_window(int x, int y, int radius, int shifted){
+Image * sp_circular_window(int x, int y, int radius, int shifted){
   Image * res = sp_image_alloc(x,y,1);
   int i;
   if(shifted){
@@ -320,7 +320,7 @@ Image * circular_window(int x, int y, int radius, int shifted){
   return res;
 }
 
-Image * spherical_window(int x, int y, int z, int radius, int shifted){
+Image * sp_spherical_window(int x, int y, int z, int radius, int shifted){
   Image * res = sp_image_alloc(x,y,z);
   int i;
   if(shifted){

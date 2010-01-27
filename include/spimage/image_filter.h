@@ -20,12 +20,13 @@ extern "C"
  * \f$ f(x,y) = (2 \pi \times radius)^{-0.5} \times \exp{\frac{-(x^2+y^2)}{(2 \times radius^2)}} \f$
  *  The mask will not be blurred.
  */
-spimage_EXPORT Image * gaussian_blur(Image * in, real radius);
+spimage_EXPORT Image * sp_gaussian_blur(Image * in, real radius);
+
 /*! Multiplies the image with a gaussian centered in the image center of a given radius 
  *
  *   The mask will not be multiplied.
  */
-spimage_EXPORT Image * gaussian_filter(Image * in, real radius, int in_place);
+spimage_EXPORT Image * sp_gaussian_filter(Image * in, real radius, int in_place);
 
 /*! Convolutes Image a with Image b 
  *
@@ -55,13 +56,13 @@ spimage_EXPORT Image * sp_image_convolute(Image * a, Image * b, int * size);
  *
  *  The mask is also low pass filtered.
  */
+spimage_EXPORT Image * sp_low_pass_square_filter(Image * in, int edge_size);
 
-spimage_EXPORT Image * low_pass_square_filter(Image * in, int edge_size);
 /*! Low pass filter using a centered gaussian window of side edge_size 
  *
  * The mask is also low pass filtered.
  */
-spimage_EXPORT Image * low_pass_gaussian_filter(Image * in, int edge_size);
+spimage_EXPORT Image * sp_low_pass_gaussian_filter(Image * in, int edge_size);
 
 /*! Correlates Image a with Image b 
  *
@@ -77,16 +78,28 @@ spimage_EXPORT Image * sp_image_cross_correlate(Image * a, Image * b, int * size
  * with the given width and height. If shifted, the center is in the upper left corner
  * and the window wraps around the image
  */
-spimage_EXPORT Image * rectangular_window(int image_x, int image_y, int width, int height, int shifted);
+spimage_EXPORT Image * sp_rectangular_window(int image_x, int image_y, int width, int height, int shifted);
 
-spimage_EXPORT Image * cube_window(int image_x, int image_y, int image_z, int dx, int dy, int dz, int shifted); 
+/*! Returns a cubic window centered on the middle of the image
+ * with the given width and height and depth. 
+ * If shifted, the center is in the upper left corner
+ * and the window wraps around the image.
+ */
+spimage_EXPORT Image * sp_cube_window(int image_x, int image_y, int image_z, int width, int height, int depth, int shifted); 
 
 /*! Returns a circular window centered on the image center
- * with the given radius
+ * with the given radius.
+ * If shifted, the center is in the upper left corner
+ * and the window wraps around the image.
  */
-spimage_EXPORT Image * circular_window(int x, int y, int radius, int shifted);
- 
-spimage_EXPORT Image * spherical_window(int x, int y, int z, int radius, int shifted); 
+spimage_EXPORT Image * sp_circular_window(int x, int y, int radius, int shifted);
+
+/*! Returns a spherical window centered on the image center
+ *  with the given radius.
+ * If shifted, the center is in the upper left corner
+ * and the window wraps around the image.
+ */ 
+spimage_EXPORT Image * sp_spherical_window(int x, int y, int z, int radius, int shifted); 
 
 /*! Convolutes Image a with Image b at point i
  *

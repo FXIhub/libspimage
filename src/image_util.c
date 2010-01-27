@@ -841,7 +841,7 @@ void sp_image_smooth_edges(Image * img, sp_i3matrix * mask, int flags, real * va
       sp_imag(tmp->image->data[i]) = 0;
     }
     printf("img (%i,%i,%i)\n",sp_image_x(img),sp_image_y(img),sp_image_z(img));
-    Image * blur_mask = gaussian_blur(tmp,*value);
+    Image * blur_mask = sp_gaussian_blur(tmp,*value);
 
     printf("blur_mask (%i,%i,%i)\n",sp_image_x(blur_mask),sp_image_y(blur_mask),sp_image_z(blur_mask));
     /* eat out the edge of the mask*/
@@ -854,7 +854,7 @@ void sp_image_smooth_edges(Image * img, sp_i3matrix * mask, int flags, real * va
       
     sp_image_free(tmp);
     tmp = blur_mask;
-    blur_mask = gaussian_blur(tmp,*value);
+    blur_mask = sp_gaussian_blur(tmp,*value);
     printf("blur_mask (%i,%i,%i)\n",sp_image_x(blur_mask),sp_image_y(blur_mask),sp_image_z(blur_mask));
 
     sp_c3matrix_mul_elements(img->image,blur_mask->image);
