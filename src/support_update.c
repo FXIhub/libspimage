@@ -54,12 +54,12 @@ int sp_support_area_update_support(SpPhaser * ph){
   real radius =  bezier_map_interpolation(params->blur_radius_map,ph->iteration);
   Image * tmp = sp_image_duplicate(ph->g1,SP_COPY_DATA);
   sp_image_dephase(tmp);
-  Image * blur = gaussian_blur(tmp, radius);
+  Image * blur = sp_gaussian_blur(tmp, radius);
   real area = bezier_map_interpolation(params->area,ph->iteration);
   qsort(blur->image->data,sp_c3matrix_size(blur->image),sizeof(Complex),descend_complex_compare);
   real abs_threshold = sp_cabs(blur->image->data[(int)(sp_image_size(blur)*area)]);
   sp_image_free(blur);
-  blur = gaussian_blur(tmp, radius);
+  blur = sp_gaussian_blur(tmp, radius);
   sp_image_free(tmp);
   support_from_absolute_threshold(ph,blur,abs_threshold);
   sp_image_free(blur);
@@ -71,7 +71,7 @@ int sp_support_threshold_update_support(SpPhaser * ph){
   real radius =  bezier_map_interpolation(params->blur_radius_map,ph->iteration);
   Image * tmp = sp_image_duplicate(ph->g1,SP_COPY_DATA);
   sp_image_dephase(tmp);
-  Image * blur = gaussian_blur(tmp, radius);  
+  Image * blur = sp_gaussian_blur(tmp, radius);  
   sp_image_free(tmp);
   real rel_threshold = bezier_map_interpolation(params->threshold,ph->iteration);
   real abs_threshold = sp_image_max(blur,NULL,NULL,NULL,NULL)*rel_threshold;  

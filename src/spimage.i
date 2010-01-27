@@ -38,8 +38,15 @@
 
 
 %typemap(out) sp_i3matrix * {
-  npy_intp dims[3] = {$1->x,$1->y,$1->z};
-  $result = PyArray_SimpleNewFromData(3, dims, PyArray_INT, $1->data);
+  if($1->z == 1){
+    /* Swap the order of the dimensions so we can plot things easily in imshow.
+       This is bound to create confusion at some point in the future. */
+    npy_intp dims[2] = {$1->y,$1->x};
+    $result = PyArray_SimpleNewFromData(2, dims, PyArray_INT, $1->data);
+  }else{
+    npy_intp dims[3] = {$1->x,$1->y,$1->z};
+    $result = PyArray_SimpleNewFromData(3, dims, PyArray_INT, $1->data);
+  }
 }
 
 %typemap(in) sp_i3matrix * {
@@ -60,13 +67,27 @@
 }
 
 %typemap(out) sp_c3matrix * {
-  npy_intp dims[3] = {$1->x,$1->y,$1->z};
-  $result = PyArray_SimpleNewFromData(3, dims, PyArray_CFLOAT, $1->data);
+  if($1->z == 1){
+    /* Swap the order of the dimensions so we can plot things easily in imshow.
+       This is bound to create confusion at some point in the future. */
+    npy_intp dims[2] = {$1->y,$1->x};
+    $result = PyArray_SimpleNewFromData(2, dims, PyArray_CFLOAT, $1->data);
+  }else{
+    npy_intp dims[3] = {$1->x,$1->y,$1->z};
+    $result = PyArray_SimpleNewFromData(3, dims, PyArray_CFLOAT, $1->data);
+  }
 }
 
 %typemap(out) sp_3matrix * {
-  npy_intp dims[3] = {$1->x,$1->y,$1->z};
-  $result = PyArray_SimpleNewFromData(3, dims, PyArray_FLOAT, $1->data);
+  if($1->z == 1){
+    /* Swap the order of the dimensions so we can plot things easily in imshow.
+       This is bound to create confusion at some point in the future. */
+    npy_intp dims[2] = {$1->y,$1->x};
+    $result = PyArray_SimpleNewFromData(2, dims, PyArray_FLOAT, $1->data);
+  }else{
+    npy_intp dims[3] = {$1->x,$1->y,$1->z};
+    $result = PyArray_SimpleNewFromData(3, dims, PyArray_FLOAT, $1->data);
+  }
 }
 
 %typemap(out) float[3] {

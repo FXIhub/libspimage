@@ -25,5 +25,7 @@
 #include "spimage/cuda_util.h"
 #include "spimage/support_update.h"
 #include "spimage/image_filter_cuda.h"
+#include "spimage/image_io.h"
+#include "spimage/image_filter.h"
 #endif
 

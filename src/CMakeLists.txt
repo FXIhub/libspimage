@@ -1,6 +1,4 @@
-LIST(APPEND OBJECTS  "image_util.c" "fft.c" "linear_alg.c" "mem_util.c" "image_sphere.c" "sperror.c" 
-  "gaussianinv.c" "image_noise.c" "hashtable.c" "interpolation_kernels.c" "time_util.c" "list.c" "prtf.c" "phasing.c" "colormap.c" "cuda_util.c" "support_update.c")
-
+LIST(APPEND OBJECTS ${SPIMAGE_SRC})
 
 IF(CUDA_FOUND)
   LIST(APPEND OBJECTS "fft.cu" "phasing.cu" "phasing_kernels.cu" "support_update_cuda.cu" "image_filter_cuda.cu")

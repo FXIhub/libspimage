@@ -183,7 +183,7 @@ spimage_EXPORT int write_mask_to_png(const Image * img, char * filename, int col
  *  @{
  */
 
-/*! Allocates an image of width x and height y
+/*! Allocates an image of width x and height y and depth z
  */
 spimage_EXPORT Image * _sp_image_alloc(int x, int y, int z, const char * file, int line);
 #ifndef SWIG
@@ -491,6 +491,7 @@ spimage_EXPORT real sp_image_interp(const Image * img, real v_x, real v_y, real 
 /*@}*/
 
 
+<<<<<<< HEAD
 /** @defgroup ImageFilter Image Filtering
  *  Convolutions, Correlations and Filtering functions
  *  @{
@@ -593,6 +594,8 @@ spimage_EXPORT Image * sp_image_local_variance(Image * img, Image * window);
 /*@}*/
 
 
+=======
+>>>>>>> a33a3a44b3221dde01ddb023cd2a2855bf8bf497
 /** @defgroup Projectors Projector Operators
  *  Projector Operators for fixed point iterative algorithms
  *  @{

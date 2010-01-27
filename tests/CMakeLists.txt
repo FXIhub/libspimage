@@ -1,5 +1,4 @@
-LIST(APPEND OBJECTS  "../src/image_util.c" "../src/fft.c" "../src/linear_alg.c" "../src/mem_util.c" "../src/image_sphere.c" "../src/sperror.c" 
-  "../src/gaussianinv.c" "../src/image_noise.c" "../src/hashtable.c" "../src/interpolation_kernels.c" "../src/time_util.c" "../src/list.c" "../src/prtf.c" "../src/phasing.c" "../src/colormap.c" "../src/cuda_util.c" "../src/support_update.c")
+LIST(APPEND OBJECTS ${SPIMAGE_SRC})
 
 IF(CUDA_FOUND)
 #  ADD_DEFINITIONS(-D_STRICT_IEEE_754)

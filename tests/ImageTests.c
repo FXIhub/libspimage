@@ -195,7 +195,7 @@ void test_sp_image_gaussian_blur(CuTest * tc){
   Image * a = sp_image_alloc(11,11,1);
   sp_image_fill(a,sp_cinit(0,0));
   sp_image_set(a,5,5,0,sp_cinit(1,0));
-  Image * b = gaussian_blur(a,1);
+  Image * b = sp_gaussian_blur(a,1);
   /* Check if integral over image is mantained */
   Complex a_sum = {0,0};
   Complex b_sum = {0,0};
@@ -220,7 +220,7 @@ void test_sp_image_gaussian_blur(CuTest * tc){
   sp_image_set(a,3,5,5,sp_cinit(1,0));
   sp_image_set(a,5,1,5,sp_cinit(1,0)); */
   sp_image_set(a,1,5,3,sp_cinit(1,0));
-  b = gaussian_blur(a,1);
+  b = sp_gaussian_blur(a,1);
   sp_image_write(a,"3D_gaussian_blur_test_original.vtk",0);
   sp_image_write(b,"3D_gaussian_blur_test_blurred.vtk",0);
   /* Check if integral over image is mantained */
