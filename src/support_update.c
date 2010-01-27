@@ -31,8 +31,8 @@ SpSupportAlgorithm * sp_support_template_alloc(int update_period, Image *initial
   ret->type = SpSupportTemplate;
   ret->update_period = update_period;
   SpSupportTemplateParameters * params = sp_malloc(sizeof(SpSupportTemplateParameters));
-  //params->blured = gaussian_blur(initial_support,blur_radius);
-  params->blured = gaussian_blur_sensitive(initial_support,blur_radius);
+  params->blured = sp_gaussian_blur(initial_support,blur_radius);
+  //params->blured = gaussian_blur_sensitive(initial_support,blur_radius);
   params->sorted = sp_image_duplicate(params->blured,SP_COPY_DATA);
   qsort(params->sorted->image->data,sp_c3matrix_size(params->sorted->image),sizeof(Complex),descend_complex_compare);
   //params->blur_radius = blur_radius;
@@ -84,7 +84,7 @@ int sp_support_template_update_support(SpPhaser * ph){
   SpSupportTemplateParameters * params = ph->sup_algorithm->params;
   //real radius = params->blur_radius;
   //Image *blur = gaussian_blur(params->template,params->blur_radius);
-  Image *support = sp_image_duplicate(params->blured,SP_COPY_DATA);
+  //Image *support = sp_image_duplicate(params->blured,SP_COPY_DATA);
   real area = bezier_map_interpolation(params->area,ph->iteration);
   //qsort(blur->image->data,sp_c3matrix_size(blur->image),sizeof(Complex),descend_real_compare);
   //real abs_threshold = sp_cabs(blur->image->data[(int)(sp_image_size(blur)*area)]);area
