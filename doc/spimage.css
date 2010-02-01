@@ -1,15 +1,15 @@
 /*BODY,H1,H2,H3,H4,H5,H6,P,CENTER,TD,TH,UL,DL,DIV {
 	font-family: Geneva, Arial, Helvetica, sans-serif;
 }*/
-H1 {
-	text-align: center;
+h1 {
+    text-align: center;
     padding-top: 50px;
     font-size: 160%;
 }
-H2 {
-       font-size: 120%;
+h2 {
+       font-size: 140%;
 }
-H3 {
+h3 {
        font-size: 100%;
 }
 
@@ -22,8 +22,7 @@ code {
     display: block;
 
 }
-
-CAPTION { font-weight: bold }
+/*
 DIV.qindex {
 	width: 100%;
 	background-color: #e8eef2;
@@ -54,41 +53,12 @@ DIV.navtab {
 TD.navtab {
        font-size: 70%;
 }
-A.qindex {
-       text-decoration: none;
-       font-weight: bold;
-       color: #1A419D;
-}
-A.qindex:visited {
-       text-decoration: none;
-       font-weight: bold;
-       color: #1A419D
-}
-A.qindex:hover {
-	text-decoration: none;
-	background-color: #ddddff;
-}
-A.qindexHL {
-	text-decoration: none;
-	font-weight: bold;
-	background-color: #6666cc;
-	color: #ffffff;
-	border: 1px double #9295C2;
-}
-A.qindexHL:hover {
-	text-decoration: none;
-	background-color: #6666cc;
-	color: #ffffff;
-}
-A.qindexHL:visited { text-decoration: none; background-color: #6666cc; color: #ffffff }
+*/
+a{color: #1A41A8;text-decoration: none;}
+a:hover { text-decoration: none; color: #FFFFFF; background-color: #84B0C7 }
+a:visited:hover { text-decoration: none; color: #FFFFFF; background-color: #84B0C7 }
+a:visited {color: #2A3798;}
 
-A.el { text-decoration: none; font-weight: normal}
-A.elRef { font-weight: bold }
-A.code:link { text-decoration: none; font-weight: normal; color: #0000FF}
-A.code:visited { text-decoration: none; font-weight: normal; color: #0000FF}
-A.codeRef:link { font-weight: normal; color: #0000FF}
-A.codeRef:visited { font-weight: normal; color: #0000FF}
-A:hover { text-decoration: none; background-color: #f2f2ff }
 DL.el { margin-left: -1cm }
 .fragment {
        font-family: Fixed, monospace;
@@ -122,55 +92,30 @@ DIV.groupHeader {
        font-weight: bold;
 }
 DIV.groupText { margin-left: 16px; font-style: italic; font-size: 90% }
+
 BODY {
 	background: white;
 	color: black;
 	margin-right: 20px;
 	margin-left: 20px;
 }
-TD.indexkey {
-	background-color: #e8eef2;
-	font-weight: bold;
-	padding-right  : 10px;
-	padding-top    : 2px;
-	padding-left   : 10px;
-	padding-bottom : 2px;
-	margin-left    : 0px;
-	margin-right   : 0px;
-	margin-top     : 2px;
-	margin-bottom  : 2px;
-	border: 1px solid #CCCCCC;
+
+
+td.indexkey {
+    background-color: #E5F5FF;
+    font-weight: bold;
+    padding: 5px;
 }
 TD.indexvalue {
-	background-color: #e8eef2;
-	font-style: italic;
-	padding-right  : 10px;
-	padding-top    : 2px;
-	padding-left   : 10px;
-	padding-bottom : 2px;
-	margin-left    : 0px;
-	margin-right   : 0px;
-	margin-top     : 2px;
-	margin-bottom  : 2px;
-	border: 1px solid #CCCCCC;
 }
+
 TR.memlist {
    background-color: #f0f0f0; 
 }
-P.formulaDsp { text-align: center; }
-IMG.formulaDsp { }
-IMG.formulaInl { vertical-align: middle; }
-SPAN.keyword       { color: #008000 }
-SPAN.keywordtype   { color: #604020 }
-SPAN.keywordflow   { color: #e08000 }
-SPAN.comment       { color: #800000 }
-SPAN.preprocessor  { color: #806020 }
-SPAN.stringliteral { color: #002080 }
-SPAN.charliteral   { color: #008080 }
+
 .mdTable {
 	border: 2px solid #DDDDF9;
         background-color: #EEEEF9;
-/*	background-color: #F4F4FB;*/
 }
 .mdRow {
 	padding: 8px 10px;
@@ -199,95 +144,58 @@ SPAN.charliteral   { color: #008080 }
 }
 
 
-.memItemLeft{
-    background-color: #EEEEF9;
+tbody > tr:first-child + tr + tr td.memItemLeft{
+    border-top: 1px solid #84B0C7;
+}
+
+tbody > tr:first-child + tr + tr td.memItemRight{
+    border-top: 1px solid #84B0C7;
+}
+
+tbody > tr:last-child td.memItemRight{
+    border-bottom: 1px solid #84B0C7;
+}
+
+tbody > tr:last-child td.memItemLeft{
+    border-bottom: 1px solid #84B0C7;
+}
+
+
+table.memname{
+    border: 1px solid #84B0C7;
     padding: 5px;
-    border-left: 2px solid #DDDDF9;
+    margin: 50px 5px 10px 5px;
+    background-color: #E5F5FF;
+    font-weight: bold;
+}
+
+.memitem{
+   align: center;
+}
+
+.memdoc{
+    width: 800px;
+}
+
+.paramname{
+    font-style: italic;
+}
+
+.memItemLeft{
+    background: #E5F5FF;
+    padding: 5px 5px 5px 20px;
+    border-left: 1px solid #84B0C7;
 
 }
 
 .memItemRight {
-    background-color: #EEEEF9;
-    padding: 5px;
-    border-right: 2px solid #DDDDF9;
+    background-color: #E5F5FF;
+    padding: 5px 20px 5px 5px;
+    border-right: 1px solid #84B0C7;
 
 }
 
-.memTemplItemLeft {
-	padding: 1px 0px 0px 8px;
-	margin: 4px;
-	border-top-width: 1px;
-	border-right-width: 1px;
-	border-bottom-width: 1px;
-	border-left-width: 1px;
-	border-top-color: #E0E0E0;
-	border-right-color: #E0E0E0;
-	border-bottom-color: #E0E0E0;
-	border-left-color: #E0E0E0;
-	border-top-style: none;
-	border-right-style: none;
-	border-bottom-style: none;
-	border-left-style: none;
-	background-color: #FAFAFA;
-	font-size: 80%;
-}
-.memTemplItemRight {
-	padding: 1px 8px 0px 8px;
-	margin: 4px;
-	border-top-width: 1px;
-	border-right-width: 1px;
-	border-bottom-width: 1px;
-	border-left-width: 1px;
-	border-top-color: #E0E0E0;
-	border-right-color: #E0E0E0;
-	border-bottom-color: #E0E0E0;
-	border-left-color: #E0E0E0;
-	border-top-style: none;
-	border-right-style: none;
-	border-bottom-style: none;
-	border-left-style: none;
-	background-color: #FAFAFA;
-	font-size: 80%;
-}
-.memTemplParams {
-	padding: 1px 0px 0px 8px;
-	margin: 4px;
-	border-top-width: 1px;
-	border-right-width: 1px;
-	border-bottom-width: 1px;
-	border-left-width: 1px;
-	border-top-color: #E0E0E0;
-	border-right-color: #E0E0E0;
-	border-bottom-color: #E0E0E0;
-	border-left-color: #E0E0E0;
-	border-top-style: solid;
-	border-right-style: none;
-	border-bottom-style: none;
-	border-left-style: none;
-       color: #606060;
-	background-color: #FAFAFA;
-	font-size: 80%;
-}
-.search     { color: #003399;
-              font-weight: bold;
-}
-FORM.search {
-              margin-bottom: 0px;
-              margin-top: 0px;
-}
-INPUT.search { font-size: 75%;
-               color: #000080;
-               font-weight: normal;
-               background-color: #e8eef2;
-}
-TD.tiny      { font-size: 75%;
-}
-a {
-	color: #1A41A8;
-}
-a:visited {
-	color: #2A3798;
-}
+
 .dirtab { padding: 4px;
           border-collapse: collapse;
           border: 1px solid #84b0c7;
@@ -295,10 +203,32 @@ a:visited {
 TH.dirtab { background: #e8eef2;
             font-weight: bold;
 }
-HR { height: 1px;
+hr { height: 1px;
      border: none;
      border-top: 1px solid black;
 }
+
+div.contents ul li a.el{
+    font-size: 120%;
+/*    background-color: #E5F5FF;*/
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /* tabs styles, based on http://www.alistapart.com/articles/slidingdoors */
 

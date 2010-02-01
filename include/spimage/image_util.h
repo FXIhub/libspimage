@@ -249,6 +249,9 @@ spimage_EXPORT Image * sp_image_low_pass(Image * img, int resolution, int type);
   and lower right corner (x2,y2).
  */
 spimage_EXPORT Image * rectangle_crop(Image * in, int x1, int y1, int x2, int y2); 
+/*! Creates a new image from the cube define by the upper left corner (x1,y1,z1)
+  and lower right corner (x2,y2,z2).
+ */
 spimage_EXPORT Image * cube_crop(Image * in, int x1, int y1, int z1, int x2, int y2, int z2);
 
 /*! Returns a ray from the image along a given direction
