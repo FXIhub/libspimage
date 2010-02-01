@@ -45,7 +45,7 @@ static Image * reflect_xy(Image * in, int in_place);
 static Image * reflect_x(Image * in, int in_place);
 static Image * reflect_y(Image * in, int in_place);
 static Image * reflect_origo(Image * in, int in_place);
-static void hsv_to_rgb(float H,float S,float V,float * R,float *G,float *B);
+/*static void hsv_to_rgb(float H,float S,float V,float * R,float *G,float *B);
 
 static void hsv_to_rgb(float H,float S,float V,float * R,float *G,float *B){
   if( V == 0 ){ *R 
@@ -111,7 +111,7 @@ static void hsv_to_rgb(float H,float S,float V,float * R,float *G,float *B){
   *G *= 255.0F;                                                        
   *B *= 255.0F;  
 }
-
+*/
 
 
 
@@ -1599,9 +1599,22 @@ unsigned char * sp_image_get_false_color(Image * img, int color, double min, dou
 	if(value){
 	  value = 255;
 	}
-	out[y*sp_image_x(img)*4+x*4+2] = color_table[(int)value].r;
-	out[y*sp_image_x(img)*4+x*4+1] = color_table[(int)value].g;
-	out[y*sp_image_x(img)*4+x*4] = color_table[(int)value].b;
+	if(value){
+	  out[y*sp_image_x(img)*4+x*4+2] = color_table[(int)value].r;
+	  out[y*sp_image_x(img)*4+x*4+1] = color_table[(int)value].g;
+	  out[y*sp_image_x(img)*4+x*4] = color_table[(int)value].b;
+	}else{
+	  /* use a checkered pattern to indicate no mask */
+	  if(((x%16)/8 + (y%16)/8) != 1){
+	    out[y*sp_image_x(img)*4+x*4+2] = 0x99;
+	    out[y*sp_image_x(img)*4+x*4+1] = 0x99;
+	    out[y*sp_image_x(img)*4+x*4] = 0x99;
+	  }else{
+	    out[y*sp_image_x(img)*4+x*4+2] = 0x66;
+	    out[y*sp_image_x(img)*4+x*4+1] = 0x66;
+	    out[y*sp_image_x(img)*4+x*4] = 0x66;
+	  }
+	}
       }else{
 	value *= 255;
 	out[y*sp_image_x(img)*4+x*4+2] =  color_table[(int)value].r;
