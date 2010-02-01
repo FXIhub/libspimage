@@ -543,7 +543,6 @@ spimage_EXPORT Image * sp_image_get_phases(Image * img);
 spimage_EXPORT Image * zero_pad_image(Image * a, int newx, int newy, int newz, int pad_mask);
 spimage_EXPORT Image * shift_center_to_top_left(Image * a);
 spimage_EXPORT real I_divergenge(Image * a, Image * b);
-spimage_EXPORT Image * square_blur(Image * in, real radius, int type);
 spimage_EXPORT Image * sp_image_patterson(Image * a);
 spimage_EXPORT void find_center(Image * img, real * center_x, real * center_y, real * center_z);
 spimage_EXPORT long long pixel_to_index(Image * img, real * point);
