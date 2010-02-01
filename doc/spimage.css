@@ -1,17 +1,48 @@
-/*BODY,H1,H2,H3,H4,H5,H6,P,CENTER,TD,TH,UL,DL,DIV {
-	font-family: Geneva, Arial, Helvetica, sans-serif;
-}*/
+body{
+    font-size:70%;
+    color:#000000;
+    background-color:#1d1d1d;
+/*    background-color:#f1f1ed;*/
+    margin:0px;
+    overflow:auto;
+}
+
+.maintable {
+    border-spacing: 0px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+.maincell{
+    background: white;
+    color: black;
+    padding-left: 20px;
+    padding-right: 20px;
+}
+
+td.bottom_corner{
+    padding: 0px;
+    margin: 0px;
+    background: #1d1d1d;
+    background-color: #1d1d1d;
+}
+
+td.top_corner{
+    padding: 0px;
+    margin: 0px;
+    background: #1d1d1d;
+    background-color: #1d1d1d;
+}
+
+
+
 h1 {
     text-align: center;
     padding-top: 50px;
-    font-size: 160%;
 }
 h2 {
-    font-size: 140%;
-    padding: 10px;
-}
-h3 {
-    font-size: 100%;
+    padding: 20px 50px 10px 50px;
+    margin: 0px;
 }
 
 
@@ -29,24 +60,6 @@ a:hover { text-decoration: none; color: #FFFFFF; background-color: #84B0C7 }
 a:visited:hover { text-decoration: none; color: #FFFFFF; background-color: #84B0C7 }
 a:visited {color: #2A3798;}
 
-/*
-DIV.ah { background-color: black; font-weight: bold; color: #ffffff; margin-bottom: 3px; margin-top: 3px }
-TD.md { font-weight: bold; }
-TD.mdname { font-weight: bold; color: #602020; width: 100px}
-DIV.groupHeader {
-       margin-left: 16px;
-       margin-top: 12px;
-       margin-bottom: 6px;
-       font-weight: bold;
-}
-DIV.groupText { margin-left: 16px; font-style: italic; font-size: 90% }
-*/
-BODY {
-	background: white;
-	color: black;
-	margin-right: 20px;
-	margin-left: 20px;
-}
 
 
 td.indexkey {
@@ -58,62 +71,24 @@ td.indexkey {
 td.indexvalue {
 }
 
-/*
-TR.memlist {
-   background-color: #f0f0f0; 
-}
-
-.mdTable {
-    border: 1px solid #84B0C7;
-    background-color: #EEEEF9;
-    margin-top: 50px;
-}
-.mdRow {
-    padding: 8px 10px;
-}
-.mdescLeft {
-       padding: 0px 8px 4px 8px;
-	font-size: 80%;
-	font-style: italic;
-	background-color: #FAFAFA;
-	border-top: 1px none #E0E0E0;
-	border-right: 1px none #E0E0E0;
-	border-bottom: 1px none #E0E0E0;
-	border-left: 1px none #E0E0E0;
-	margin: 0px;
-}
-.mdescRight {
-    padding: 0px 8px 4px 8px;
-    font-size: 80%;
-    font-style: italic;
-    background-color: #FAFAFA;
-    border-top: 1px none #E0E0E0;
-    border-right: 1px none #E0E0E0;
-    border-bottom: 1px none #E0E0E0;
-    border-left: 1px none #E0E0E0;
-    margin: 0px;
-}
-   */
-
-
-tr + tr > td[colspan="2"]{
+td tr + tr > td[colspan="2"]{
     border-bottom: 1px solid #84B0C7;    
     border-top: 1px solid #84B0C7;    
 }
 
-tbody > tr:first-child + tr td.memItemLeft{
+td table > tbody > tr:first-child + tr td.memItemLeft{
     border-top: 1px solid #84B0C7;
 }
 
-tbody > tr:first-child + tr td.memItemRight{
+td tbody > tr:first-child + tr td.memItemRight{
     border-top: 1px solid #84B0C7;
 }
 
-tbody > tr:last-child td.memItemRight{
+td table > tbody > tr:last-child td.memItemRight{
     border-bottom: 1px solid #84B0C7;
 }
 
-tbody > tr:last-child td.memItemLeft{
+td tbody > tr:last-child td.memItemLeft{
     border-bottom: 1px solid #84B0C7;
 }
 
@@ -121,7 +96,6 @@ tbody > tr:last-child td.memItemLeft{
 table.memname{
     border: 1px solid #84B0C7;
     padding: 5px;
-    margin-top: 30px;
     background-color: #EEEEF9;
     font-weight: bold;
 } 
@@ -133,6 +107,7 @@ table.memname{
 
 .memdoc{
     width: 800px;
+    padding-bottom: 50px;
 }
 
 .paramname{
@@ -163,10 +138,16 @@ table.memname{
 TH.dirtab { background: #e8eef2;
             font-weight: bold;
 }
-hr { height: 1px;
-     border: none;
-     border-top: 1px solid black;
+hr {
+/*    color:  #84b0c7;*/
+    height: 0px;
+    border-top: 1px solid #84b0c7;
+    border-bottom: 0px;
+    margin-top: 20px;
+    margin-left: 20px;
+    margin-right: 20px;
 }
+
 
 div.contents ul li a.el{
     font-size: 120%;
