@@ -29,6 +29,7 @@ static int write_vtk(const Image * img,const char * filename);
 static int write_xplor(const Image * img,const char * filename);
 static Image * read_smv(const char * filename);
 static Image * read_anton_datafile(hid_t file_id,hid_t dataset_id, const char * filename);
+static void write_anton_datafile(const Image * img,const char * filename);
 
 static void hsv_to_rgb(float H,float S,float V,float * R,float *G,float *B){
   if( V == 0 ){ 
@@ -124,6 +125,8 @@ void sp_image_write(const Image * img, const const char * filename, int flags){
       fprintf(stderr,"Can only export 3D files to xplor");
     }
     write_xplor(img,filename);
+  }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".cxdi") == 0)){
+    write_anton_datafile(img,filename);
   }else{
     fprintf(stderr,"Unsupported file type: %s\n",filename);
     abort();
@@ -1291,6 +1294,28 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
 
   return res;
   
+}
+
+void write_anton_datafile(const Image * img,const char * filename){
+  hsize_t  dims[3];
+  hid_t dataspace_id;
+  hid_t dataset_id;
+  hid_t file_id;
+  float * buffer = sp_malloc(sp_image_size(img)*sizeof(float));
+  for(int i = 0;i<sp_image_size(img);i++){
+    buffer[i] = sp_real(img->image->data[i]);
+  }
+  dims[0] = sp_c3matrix_x(img->image);
+  dims[1] = sp_c3matrix_y(img->image);
+  dims[2] = sp_c3matrix_z(img->image);
+
+  file_id = H5Fcreate(filename,  H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+  dataspace_id = H5Screate_simple( 3, dims, NULL );
+  H5Gcreate(file_id,"data",0);
+  dataset_id = H5Dcreate(file_id, "/data/data", H5T_NATIVE_FLOAT,dataspace_id,H5P_DEFAULT);
+  H5Dwrite(dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL,
+		    H5P_DEFAULT, buffer);
+  H5close();
 }
 
 
