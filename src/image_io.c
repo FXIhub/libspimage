@@ -29,7 +29,8 @@ static int write_vtk(const Image * img,const char * filename);
 static int write_xplor(const Image * img,const char * filename);
 static Image * read_smv(const char * filename);
 static Image * read_anton_datafile(hid_t file_id,hid_t dataset_id, const char * filename);
-static void write_anton_datafile(const Image * img,const char * filename);
+static void write_cxdi(const Image * img,const char * filename);
+static Image * read_cxdi(const char * filename);
 
 static void hsv_to_rgb(float H,float S,float V,float * R,float *G,float *B){
   if( V == 0 ){ 
@@ -126,7 +127,7 @@ void sp_image_write(const Image * img, const const char * filename, int flags){
     }
     write_xplor(img,filename);
   }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".cxdi") == 0)){
-    write_anton_datafile(img,filename);
+    write_cxdi(img,filename);
   }else{
     fprintf(stderr,"Unsupported file type: %s\n",filename);
     abort();
@@ -156,6 +157,9 @@ Image * _sp_image_read(const char * filename, int flags, const char * file, int 
   }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".smv") == 0 ||strcmp(strrchr(buffer,'.'),".SMV") == 0 )){
     /* we have an smv file */
     return read_smv(filename);
+  }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".cxdi") == 0 ||strcmp(strrchr(buffer,'.'),".CXDI") == 0 )){
+    /* we have an hdf5 simple data file file */
+    return read_cxdi(filename);
   }else{
     fprintf(stderr,"Unsupported file type: %s\n",filename);
     abort();
@@ -1296,7 +1300,7 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
   
 }
 
-void write_anton_datafile(const Image * img,const char * filename){
+void write_cxdi(const Image * img,const char * filename){
   hsize_t  dims[3];
   hid_t dataspace_id;
   hid_t dataset_id;
@@ -1316,6 +1320,38 @@ void write_anton_datafile(const Image * img,const char * filename){
   H5Dwrite(dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL,
 		    H5P_DEFAULT, buffer);
   H5close();
+}
+
+Image * read_cxdi(const char * filename){
+  hid_t dataset_id;
+  hid_t file_id;
+  int status;
+  file_id = H5Fopen(filename, H5F_ACC_RDONLY,H5P_DEFAULT);
+  dataset_id = H5Dopen(file_id,"/data/data");
+  hid_t space = H5Dget_space(dataset_id);
+  if(H5Sget_simple_extent_ndims(space) == 3 ||
+     H5Sget_simple_extent_ndims(space) == 2){
+  }else{
+    sp_error_warning("File has unsupported number of dimensions!\n");
+    return NULL;
+  }
+  hsize_t dims[3] = {1,1,1};
+  if(H5Sget_simple_extent_dims(space,dims,NULL) < 0){
+    sp_error_warning("Unable to get dimensions extent in file %s",filename);
+    return NULL;
+  }
+
+  Image * ret = sp_image_alloc(dims[0],dims[1],dims[2]);
+  float * buffer = sp_malloc(dims[0]*dims[1]*dims[2]*sizeof(float));
+  status = H5Dread(dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL,
+		   H5P_DEFAULT, buffer);
+  for(int i = 0;i<sp_image_size(ret);i++){
+    ret->image->data[i] = sp_cinit(buffer[i],0);
+    ret->mask->data[i] = 1;
+  }  
+
+  H5close();
+  return ret;
 }
 
 
