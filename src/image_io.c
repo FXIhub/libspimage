@@ -1499,8 +1499,8 @@ void write_tiff(const Image * img,const char * filename){
   TIFFSetField(tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
   TIFFSetField(tif, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_IEEEFP);
   data = sp_malloc(nstrips*stripsize);
-  for(y = 0;y<sp_image_x(img);y++){
-    for(x = 0;x<sp_image_y(img);x++){
+  for(y = 0;y<sp_image_y(img);y++){
+    for(x = 0;x<sp_image_x(img);x++){
       data[x] =sp_cabs(sp_image_get(img,x,y,0));      
     }
     TIFFWriteEncodedStrip(tif,y,data,stripsize);

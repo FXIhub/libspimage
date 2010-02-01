@@ -185,13 +185,14 @@ table.memname{
     background: #E5F5FF;
     padding: 5px 5px 5px 20px;
     border-left: 1px solid #84B0C7;
-
+    font-weight: bold;
 }
 
 .memItemRight {
     background-color: #E5F5FF;
     padding: 5px 20px 5px 5px;
     border-right: 1px solid #84B0C7;
+    font-weight: bold;
 
 }
 
