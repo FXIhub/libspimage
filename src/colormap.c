@@ -70,6 +70,87 @@ static void hsv_to_rgb(float H,float S,float V,float * R,float *G,float *B){
   *B *= 255.0F;  
 }
 
+real sp_colormap_scale_value(real input,int colormap,real max_v, real min_v){
+  real scale,offset;
+  if(min_v < 0){
+    min_v = 0;
+  }
+  if(max_v < 0){
+    max_v = 0;
+  }
+  if(max_v-min_v){
+    scale = 65535/(max_v-min_v);
+  }else{
+    scale = 1;
+  }
+  offset = min_v;
+  const real log_of_scale = log(65536);
+  real value = sp_min(input,max_v);
+  value = sp_max(value,min_v);
+  value -= offset;
+  value *= scale;
+      
+  if(colormap & SpColormapLogScale){
+    value = log(value+1)/log_of_scale;
+  }else{
+    value /= 65535;
+  }
+  return value;
+}
+
+
+void sp_colormap_write_rgb(unsigned char * out,Image * img, int colormap,sp_rgb * color_table,real max_v, real min_v, int x, int y, int z,int red_blue_swap){
+  Complex cvalue = sp_image_get(img,x,y,z);
+  real value = sp_colormap_scale_value(sp_cabs(cvalue),colormap,max_v,min_v);
+  if(colormap & SpColormapPhase){
+    real phase = (256*(sp_carg(cvalue)+3.1416)/(2*3.1416));
+    out[0] =  sqrt(value)*color_table[(int)phase].r;
+    out[1] = sqrt(value)*color_table[(int)phase].g;
+    out[2] = sqrt(value)*color_table[(int)phase].b;
+  }else if(colormap & SpColormapMask){
+    value = sp_image_mask_get(img,x,y,z);
+    if(value){
+      value = 255;
+    }
+    if(value){
+      out[0] = color_table[(int)value].r;
+      out[1] = color_table[(int)value].g;
+      out[2] = color_table[(int)value].b;
+    }else{
+      /* use a checkered pattern to indicate no mask */
+      if(((x%16)/8 + (y%16)/8) != 1){
+	out[0] = 0x99;
+	out[1] = 0x99;
+	out[2] = 0x99;
+      }else{
+	out[0] = 0x66;
+	out[1] = 0x66;
+	out[2] = 0x66;
+      }
+    }    
+  }else if(colormap & SpColormapShadedMask){    
+    value *= 255;
+    if(sp_image_mask_get(img,x,y,z)){
+      out[0] = color_table[(int)value].r;
+      out[1] = color_table[(int)value].g;
+      out[2] = color_table[(int)value].b;
+    }else{
+      out[0] = color_table[(int)value].r/2;
+      out[1] = color_table[(int)value].g/2;
+      out[2] = color_table[(int)value].b/2;
+    }
+  }else{
+    value *= 255;
+    out[0] =  color_table[(int)value].r;
+    out[1] = color_table[(int)value].g;
+    out[2] = color_table[(int)value].b;    
+  }  
+  if(red_blue_swap){
+    unsigned char tmp = out[0];
+    out[0] = out[2];
+    out[2] = tmp;
+  }
+}
 
 sp_rgb sp_colormap_rgb_from_value(real value, int colormap){
   sp_rgb ret = {0,0,0};
@@ -135,4 +216,35 @@ void sp_colormap_create_table(sp_rgb color_table[256],int colormap){
     real value = i/255.0;
     color_table[i] = sp_colormap_rgb_from_value(value,colormap);
   }
+}
+
+unsigned char * sp_image_get_false_color(Image * img, int color, double min, double max){
+
+  int x,y,z;
+  sp_rgb color_table[256];
+  real max_v,min_v;
+  unsigned char * out = sp_malloc(sizeof(unsigned char)*sp_image_x(img)*sp_image_y(img)*sp_image_z(img)*4);
+
+  max_v = 0;
+  min_v = REAL_MAX;
+
+  sp_colormap_create_table(color_table,color);
+
+  if(min == max){
+    /* We're gonna scale the image so that it fits on the 8 bits */
+    min_v = sp_c3matrix_min(img->image,NULL);
+    max_v = sp_c3matrix_max(img->image,NULL);
+  }
+  for(z = 0;z<sp_image_z(img);z++){
+    for(y = 0;y<sp_image_y(img);y++){
+      for(x = 0;x<sp_image_x(img);x++){
+	sp_colormap_write_rgb(&(out[4*(x+sp_image_x(img)*y+
+				       z*sp_image_x(img)*
+				       sp_image_y(img))]),img,color,
+			      color_table,max_v,min_v,x,y,0,1);
+	
+      }
+    }
+  }
+  return out;
 }

@@ -88,17 +88,40 @@ void sp_phaser_set_objective(SpPhaser * ph, SpPhasingObjective obj){
 void sp_phaser_free(SpPhaser * ph){
   if(ph->model){
     sp_image_free(ph->model);
+    ph->model = 0;
   }
   if(ph->model_change){
     sp_image_free(ph->model_change);
+    ph->model_change = 0;
+  }
+  if(ph->amplitudes){
+    sp_3matrix_free(ph->amplitudes);
+    ph->amplitudes = 0;
+  }
+  if(ph->pixel_flags){
+    sp_i3matrix_free(ph->pixel_flags);
+    ph->pixel_flags = 0;
+    
   }
 #ifdef _USE_CUDA
   if(ph->engine == SpEngineCUDA){
 
     cudaFree(ph->d_amplitudes);
+    ph->d_amplitudes = 0;
     cudaFree(ph->d_pixel_flags);
+    ph->d_pixel_flags = 0;
     cudaFree(ph->d_g0);
+    ph->d_g0 = 0;
     cudaFree(ph->d_g1);
+    ph->d_g1 = 0;
+    if(ph->d_phased_amplitudes){
+      cudaFree(ph->d_phased_amplitudes);
+      ph->d_phased_amplitudes = 0;
+    }
+    if(ph->cufft_plan){
+      cufftDestroy(ph->cufft_plan);
+      ph->cufft_plan = 0;
+    }
   }else{
     sp_image_free(ph->g0);
     sp_image_free(ph->g1);
@@ -146,10 +169,10 @@ void sp_phaser_set_support(SpPhaser * ph,const Image * support){
   if(ph->engine == SpEngineCUDA){
 #ifdef _USE_CUDA
     if(!ph->d_pixel_flags){
-      cutilSafeCall(cudaMalloc((void **)&ph->d_pixel_flags,sizeof(int)*ph->image_size));
+      cudaMalloc((void **)&ph->d_pixel_flags,sizeof(int)*ph->image_size);
     }
     /* transfer the model from the graphics card to the main memory */
-    cutilSafeCall(cudaMemcpy(ph->d_pixel_flags,ph->pixel_flags->data,sizeof(int)*ph->image_size,cudaMemcpyHostToDevice));
+    cudaMemcpy(ph->d_pixel_flags,ph->pixel_flags->data,sizeof(int)*ph->image_size,cudaMemcpyHostToDevice);
 #else
     abort();
 #endif    
@@ -179,14 +202,14 @@ void sp_phaser_set_phased_amplitudes(SpPhaser * ph,const Image * phased_amplitud
   if(ph->engine == SpEngineCUDA){
 #ifdef _USE_CUDA
     if(!ph->d_phased_amplitudes){
-      cutilSafeCall(cudaMalloc((void **)&ph->d_phased_amplitudes,sizeof(cufftComplex)*ph->image_size));
+      cudaMalloc((void **)&ph->d_phased_amplitudes,sizeof(cufftComplex)*ph->image_size);
     }
     if(!ph->d_pixel_flags){
-      cutilSafeCall(cudaMalloc((void **)&ph->d_pixel_flags,sizeof(int)*ph->image_size));
+      cudaMalloc((void **)&ph->d_pixel_flags,sizeof(int)*ph->image_size);
     }
     /* transfer the model from the graphics card to the main memory */
-    cutilSafeCall(cudaMemcpy(ph->d_pixel_flags,ph->pixel_flags->data,sizeof(int)*ph->image_size,cudaMemcpyHostToDevice));
-    cutilSafeCall(cudaMemcpy(ph->d_phased_amplitudes,ph->phased_amplitudes->data,sizeof(cufftComplex)*ph->image_size,cudaMemcpyHostToDevice));
+    cudaMemcpy(ph->d_pixel_flags,ph->pixel_flags->data,sizeof(int)*ph->image_size,cudaMemcpyHostToDevice);
+    cudaMemcpy(ph->d_phased_amplitudes,ph->phased_amplitudes->data,sizeof(cufftComplex)*ph->image_size,cudaMemcpyHostToDevice);
 #else
     abort();
 #endif    
@@ -242,10 +265,10 @@ void sp_phaser_set_amplitudes(SpPhaser * ph,const Image * amplitudes){
   if(ph->engine == SpEngineCUDA){
 #ifdef _USE_CUDA
     if(!ph->d_amplitudes){
-      cutilSafeCall(cudaMalloc((void **)&ph->d_amplitudes,sizeof(float)*ph->image_size));
+      cudaMalloc((void **)&ph->d_amplitudes,sizeof(float)*ph->image_size);
     }
     if(!ph->d_pixel_flags){
-      cutilSafeCall(cudaMalloc((void **)&ph->d_pixel_flags,sizeof(int)*ph->image_size));
+      cudaMalloc((void **)&ph->d_pixel_flags,sizeof(int)*ph->image_size);
     }
     /* transfer the model from the graphics card to the main memory */
     cutilSafeCall(cudaMemcpy(ph->d_pixel_flags,ph->pixel_flags->data,sizeof(int)*ph->image_size,cudaMemcpyHostToDevice));
@@ -466,15 +489,15 @@ int sp_phaser_init_model(SpPhaser * ph, const Image * user_model, int flags){
 #ifdef _USE_CUDA
   if(ph->engine == SpEngineCUDA){
     /* allocate GPU memory */
-    cutilSafeCall(cudaMalloc((void**)&ph->d_g0, sizeof(cufftComplex)*ph->image_size));
-    cutilSafeCall(cudaMalloc((void**)&ph->d_g1, sizeof(cufftComplex)*ph->image_size));
+    cudaMalloc((void**)&ph->d_g0, sizeof(cufftComplex)*ph->image_size);
+    cudaMalloc((void**)&ph->d_g1, sizeof(cufftComplex)*ph->image_size);
     
     cutilSafeCall(cudaMemcpy(ph->d_g1, ph->model->image->data, sizeof(cufftComplex)*ph->image_size, cudaMemcpyHostToDevice));
     cutilSafeCall(cudaMemset(ph->d_g0, 0, sizeof(cufftComplex)*ph->image_size));
     if(sp_image_z(ph->model) == 1){
-      cufftSafeCall(cufftPlan2d(&ph->cufft_plan, sp_image_y(ph->model),sp_image_x(ph->model), CUFFT_C2C));
+      cufftPlan2d(&ph->cufft_plan, sp_image_y(ph->model),sp_image_x(ph->model), CUFFT_C2C);
     }else{
-      cufftSafeCall(cufftPlan3d(&ph->cufft_plan, sp_image_z(ph->model),sp_image_y(ph->model),sp_image_x(ph->model), CUFFT_C2C));
+      cufftPlan3d(&ph->cufft_plan, sp_image_z(ph->model),sp_image_y(ph->model),sp_image_x(ph->model), CUFFT_C2C);
     }
   }
 #endif 
@@ -524,9 +547,9 @@ int sp_phaser_init_support(SpPhaser * ph, const Image * support, int flags, real
   if(ph->engine == SpEngineCUDA){
 #ifdef _USE_CUDA
     if(!ph->d_pixel_flags){
-      cutilSafeCall(cudaMalloc((void **)&ph->d_pixel_flags,sizeof(int)*ph->image_size));
+      cudaMalloc((void **)&ph->d_pixel_flags,sizeof(int)*ph->image_size);
     }
-    cutilSafeCall(cudaMemcpy(ph->d_pixel_flags, ph->pixel_flags->data, sizeof(int)*ph->image_size, cudaMemcpyHostToDevice));
+    cudaMemcpy(ph->d_pixel_flags, ph->pixel_flags->data, sizeof(int)*ph->image_size, cudaMemcpyHostToDevice);
 #else
     return -1;
 #endif

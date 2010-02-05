@@ -1729,10 +1729,8 @@ int write_png(const Image * img,const char * filename, int color){
   int png_transforms = PNG_TRANSFORM_IDENTITY/*|PNG_TRANSFORM_INVERT_MONO*/;
   int pixel_size = 0;
   int i,x,y;
-  real log_of_2;
   sp_rgb color_table[256];
-  real scale,offset,max_v,min_v,value;
-  real phase;
+  real max_v,min_v;
   png_byte ** row_pointers;
 
   /*fclose(fp);
@@ -1790,48 +1788,18 @@ int write_png(const Image * img,const char * filename, int color){
 
   row_pointers = png_malloc(png_ptr,sp_c3matrix_y(img->image)*sizeof(png_byte *));
   for (i=0; i<sp_c3matrix_y(img->image); i++){
-    row_pointers[i] = png_malloc(png_ptr,sp_c3matrix_x(img->image)*pixel_size*sizeof(png_byte));
+    row_pointers[i] = png_malloc(png_ptr,sp_c3matrix_x(img->image)*
+				 pixel_size*sizeof(png_byte));
   }
   
   /* We're gonna scale the image so that it fits on the 8 bits */
   min_v = sp_c3matrix_min(img->image,NULL);
   max_v = sp_c3matrix_max(img->image,NULL);
-  if(max_v-min_v){
-    scale = 1/(max_v-min_v);
-  }else{
-    scale = 1;
-  }
-  offset = min_v;
-  i = 0;
-  log_of_2 = log(2.0);
-  /* this is a special kind of color */
+
   for(y = 0;y<sp_c3matrix_y(img->image);y++){
     for(x = 0;x<sp_c3matrix_x(img->image);x++){
-      /* traditional color scale taken from gnuplot manual */
-      if(color & SpColormapLogScale){
-	value = 1-log((sp_cabs(img->image->data[i])-offset)*scale+FLT_EPSILON)/log(FLT_EPSILON);
-      }else{
-	value = ((sp_cabs(img->image->data[i])-offset)*scale);
-      }
-      if(color & SpColormapPhase){
-	phase = (256*(sp_carg(img->image->data[i])+3.1416)/(2*3.1416));
-	row_pointers[y][x*3] =  (value)*color_table[(int)phase].r;
-	row_pointers[y][x*3+1] = (value)*color_table[(int)phase].g;
-	row_pointers[y][x*3+2] = (value)*color_table[(int)phase].b;
-      }else if(color & SpColormapWeightedPhase){
-	phase = (256*(sp_carg(img->image->data[i])+3.1416)/(2*3.1416));
-	float rgb[3] = {0,0,0};
-	hsv_to_rgb(360.0*phase/256.0,1.0,value,&(rgb[0]),&(rgb[1]),&(rgb[2]));
-	row_pointers[y][x*3] = rgb[0];
-	row_pointers[y][x*3+1] = rgb[1];
-	row_pointers[y][x*3+2] = rgb[2];
-      }else{
-	value *= 255;
-	row_pointers[y][x*3] =  color_table[(int)value].r;
-	row_pointers[y][x*3+1] = color_table[(int)value].g;
-	row_pointers[y][x*3+2] = color_table[(int)value].b;
-      }
-      i++;
+      sp_colormap_write_rgb(&(row_pointers[y][x*3]),img,color,
+			    color_table,max_v,min_v,x,y,0,0);
     }
   }
   png_set_rows(png_ptr, info_ptr, row_pointers);

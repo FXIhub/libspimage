@@ -14,10 +14,10 @@ int sp_proj_module_cuda(Image * a, Image * amp){
   cufftComplex * d_a;
   int * d_pixel_flags;
   float * d_amp;
-  cutilSafeCall(cudaMalloc((void **)&d_a,sizeof(cufftComplex)*sp_image_size(a)));
-  cutilSafeCall(cudaMalloc((void **)&d_pixel_flags,sizeof(int)*sp_image_size(a)));
-  cutilSafeCall(cudaMalloc((void **)&d_amp,sizeof(float)*sp_image_size(a)));
-  cutilSafeCall(cudaMemcpy(d_a,a->image->data,sizeof(cufftComplex)*sp_image_size(a),cudaMemcpyHostToDevice));
+  cudaMalloc((void **)&d_a,sizeof(cufftComplex)*sp_image_size(a));
+  cudaMalloc((void **)&d_pixel_flags,sizeof(int)*sp_image_size(a));
+  cudaMalloc((void **)&d_amp,sizeof(float)*sp_image_size(a));
+  cudaMemcpy(d_a,a->image->data,sizeof(cufftComplex)*sp_image_size(a),cudaMemcpyHostToDevice);
   sp_i3matrix * pixel_flags = sp_i3matrix_alloc(sp_image_x(a),sp_image_y(a),sp_image_z(a));
   sp_3matrix * h_amp = sp_3matrix_alloc(sp_image_x(a),sp_image_y(a),sp_image_z(a));
   for(int i =0 ;i<sp_image_size(a);i++){
@@ -27,15 +27,16 @@ int sp_proj_module_cuda(Image * a, Image * amp){
       pixel_flags->data[i] |= SpPixelMeasuredAmplitude;
     }
   }
-  cutilSafeCall(cudaMemcpy(d_amp,h_amp->data,sizeof(float)*sp_image_size(a),cudaMemcpyHostToDevice));
-  cutilSafeCall(cudaMemcpy(d_pixel_flags,pixel_flags->data,sizeof(int)*sp_image_size(a),cudaMemcpyHostToDevice));
+  cudaMemcpy(d_amp,h_amp->data,sizeof(float)*sp_image_size(a),cudaMemcpyHostToDevice);
+  cudaMemcpy(d_pixel_flags,pixel_flags->data,sizeof(int)*sp_image_size(a),cudaMemcpyHostToDevice);
   int threads_per_block = 64;
   int number_of_blocks = (sp_image_size(a)+threads_per_block-1)/threads_per_block;
   CUDA_module_projection<<<number_of_blocks, threads_per_block>>>(d_a,d_amp,d_pixel_flags,sp_image_size(a));
-  cutilSafeCall(cudaMemcpy(a->image->data,d_a,sizeof(cufftComplex)*sp_image_size(a),cudaMemcpyDeviceToHost));
-  cutilSafeCall(cudaFree(d_amp));
-  cutilSafeCall(cudaFree(d_pixel_flags));
-  cutilSafeCall(cudaFree(d_a));
+  cudaMemcpy(a->image->data,d_a,sizeof(cufftComplex)*sp_image_size(a),cudaMemcpyDeviceToHost);
+  cudaFree(d_amp);
+  cudaFree(d_pixel_flags);
+  cudaFree(d_a);
+  sp_cuda_check_errors();
   return 0;
 }
 
@@ -46,7 +47,7 @@ int phaser_iterate_er_cuda(SpPhaser * ph,int iterations){
     ph->d_g0 = ph->d_g1;
     ph->d_g1 = swap;
     /* executes FFT processes */
-    cufftSafeCall(cufftExecC2C(ph->cufft_plan, ph->d_g0, ph->d_g1, CUFFT_FORWARD));
+    cufftExecC2C(ph->cufft_plan, ph->d_g0, ph->d_g1, CUFFT_FORWARD);
     if(ph->phasing_objective == SpRecoverPhases){
       CUDA_module_projection<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->d_amplitudes,ph->d_pixel_flags,ph->image_size);
     }else if(ph->phasing_objective == SpRecoverAmplitudes){
@@ -55,7 +56,7 @@ int phaser_iterate_er_cuda(SpPhaser * ph,int iterations){
       abort();
     }
     sp_cuda_check_errors();
-    cufftSafeCall(cufftExecC2C(ph->cufft_plan, ph->d_g1, ph->d_g1, CUFFT_INVERSE));
+    cufftExecC2C(ph->cufft_plan, ph->d_g1, ph->d_g1, CUFFT_INVERSE);
     /* normalize */
     CUDA_complex_scale<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->image_size, 1.0f / (ph->image_size));
     sp_cuda_check_errors();
@@ -78,7 +79,8 @@ int phaser_iterate_hio_cuda(SpPhaser * ph,int iterations){
     ph->d_g0 = ph->d_g1;
     ph->d_g1 = swap;
     /* executes FFT processes */
-    cufftSafeCall(cufftExecC2C(ph->cufft_plan, ph->d_g0, ph->d_g1, CUFFT_FORWARD));
+    cufftExecC2C(ph->cufft_plan, ph->d_g0, ph->d_g1, CUFFT_FORWARD);
+    sp_cuda_check_errors();
     if(ph->phasing_objective == SpRecoverPhases){
       CUDA_module_projection<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->d_amplitudes,ph->d_pixel_flags,ph->image_size);
     }else if(ph->phasing_objective == SpRecoverAmplitudes){
@@ -87,7 +89,7 @@ int phaser_iterate_hio_cuda(SpPhaser * ph,int iterations){
       abort();
     }
     sp_cuda_check_errors();
-    cufftSafeCall(cufftExecC2C(ph->cufft_plan, ph->d_g1, ph->d_g1, CUFFT_INVERSE));
+    cufftExecC2C(ph->cufft_plan, ph->d_g1, ph->d_g1, CUFFT_INVERSE);
     /* normalize */
     CUDA_complex_scale<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->image_size, 1.0f / (ph->image_size));
     sp_cuda_check_errors();
@@ -108,19 +110,19 @@ int phaser_iterate_diff_map_cuda(SpPhaser * ph,int iterations){
   const real gamma1 = params->gamma1;
   const real gamma2 = params->gamma2;
   cufftComplex * f1;
-  cutilSafeCall(cudaMalloc((void **)&f1,sizeof(cufftComplex)*ph->image_size));
+  cudaMalloc((void **)&f1,sizeof(cufftComplex)*ph->image_size);
   for(int i = 0;i<iterations;i++){
     cufftComplex * swap = ph->d_g0;
     ph->d_g0 = ph->d_g1;
     ph->d_g1 = swap;
     /* executes FFT processes */
-    cufftSafeCall(cufftExecC2C(ph->cufft_plan, ph->d_g0, ph->d_g1, CUFFT_FORWARD));
+    cufftExecC2C(ph->cufft_plan, ph->d_g0, ph->d_g1, CUFFT_FORWARD);
     CUDA_diff_map_f1<<<ph->number_of_blocks, ph->threads_per_block>>>(f1,ph->d_g0,ph->d_pixel_flags,gamma1,ph->image_size);
-    cufftSafeCall(cufftExecC2C(ph->cufft_plan, f1, f1, CUFFT_FORWARD));
+    cufftExecC2C(ph->cufft_plan, f1, f1, CUFFT_FORWARD);
     CUDA_module_projection<<<ph->number_of_blocks, ph->threads_per_block>>>(f1,ph->d_amplitudes,ph->d_pixel_flags,ph->image_size);
-    cufftSafeCall(cufftExecC2C(ph->cufft_plan, f1, f1, CUFFT_INVERSE));
+    cufftExecC2C(ph->cufft_plan, f1, f1, CUFFT_INVERSE);
     CUDA_module_projection<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->d_amplitudes,ph->d_pixel_flags,ph->image_size);
-    cufftSafeCall(cufftExecC2C(ph->cufft_plan, ph->d_g1, ph->d_g1, CUFFT_INVERSE));
+    cufftExecC2C(ph->cufft_plan, ph->d_g1, ph->d_g1, CUFFT_INVERSE);
     sp_cuda_check_errors();
     /* normalize */
     CUDA_complex_scale<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->image_size, 1.0f / (ph->image_size));
@@ -146,7 +148,7 @@ int phaser_iterate_raar_cuda(SpPhaser * ph,int iterations){
     ph->d_g0 = ph->d_g1;
     ph->d_g1 = swap;
     /* executes FFT processes */
-    cufftSafeCall(cufftExecC2C(ph->cufft_plan, ph->d_g0, ph->d_g1, CUFFT_FORWARD));
+    cufftExecC2C(ph->cufft_plan, ph->d_g0, ph->d_g1, CUFFT_FORWARD);
 
     if(ph->phasing_objective == SpRecoverPhases){
       CUDA_module_projection<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->d_amplitudes,ph->d_pixel_flags,ph->image_size);
@@ -156,7 +158,7 @@ int phaser_iterate_raar_cuda(SpPhaser * ph,int iterations){
       abort();
     }
     sp_cuda_check_errors();
-    cufftSafeCall(cufftExecC2C(ph->cufft_plan, ph->d_g1, ph->d_g1, CUFFT_INVERSE));
+    cufftExecC2C(ph->cufft_plan, ph->d_g1, ph->d_g1, CUFFT_INVERSE);
     /* normalize */
     CUDA_complex_scale<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->image_size, 1.0f / (ph->image_size));
     sp_cuda_check_errors();
