@@ -32,12 +32,9 @@ SpSupportAlgorithm * sp_support_template_alloc(int update_period, Image *initial
   ret->update_period = update_period;
   SpSupportTemplateParameters * params = sp_malloc(sizeof(SpSupportTemplateParameters));
   params->blured = sp_gaussian_blur(initial_support,blur_radius);
-  //params->blured = gaussian_blur_sensitive(initial_support,blur_radius);
-  params->sorted = sp_image_duplicate(params->blured,SP_COPY_DATA);
-  qsort(params->sorted->image->data,sp_c3matrix_size(params->sorted->image),sizeof(Complex),descend_complex_compare);
-  //params->blur_radius = blur_radius;
   params->area = area;
   params->original_area = 0.0;
+  //params->blur_radius = blur_radius;
   for (int i = 0; i < sp_image_size(initial_support); i++) {
     if (sp_real(initial_support->image->data[i]) != 0.0 ||
 	sp_imag(initial_support->image->data[i]) != 0.0) {
@@ -45,6 +42,20 @@ SpSupportAlgorithm * sp_support_template_alloc(int update_period, Image *initial
     }
   }
   params->original_area /= (real)sp_image_size(initial_support);
+  //params->blured = gaussian_blur_sensitive(initial_support,blur_radius);
+  params->sorted = sp_image_duplicate(params->blured,SP_COPY_DATA);
+  qsort(params->sorted->image->data,sp_c3matrix_size(params->sorted->image),sizeof(Complex),descend_complex_compare);
+
+  real max_threshold = sp_cabs(params->sorted->image->data[(int)(((real)sp_image_size(params->sorted))*sp_smap_max(params->area)*params->original_area)]);
+  real min_threshold = sp_cabs(params->sorted->image->data[(int)(((real)sp_image_size(params->sorted))*sp_smap_min(params->area)*params->original_area)]);
+
+  if (max_threshold < 1e-8) {
+    fprintf(stderr,"Dangerously large template area with this threshold!\n");
+  }
+  if (min_threshold > 1.0-1e-8) {
+    fprintf(stderr,"Dangerously small template area with this threshold!\n");
+  }
+
   ret->params = params;
   return ret;
 }
