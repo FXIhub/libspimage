@@ -342,6 +342,15 @@ const Image * sp_phaser_fmodel(SpPhaser * ph){
   return ph->fmodel;
 }
 
+const Image * sp_phaser_fmodel_with_mask(SpPhaser * ph){
+  Image *fmodel = sp_phaser_fmodel(ph);
+  Image *amplitudes = sp_phaser_amplitudes(ph);
+  for (int i = 0; i < sp_image_size(fmodel); i++) {
+    fmodel->mask->data[i] = amplitudes->mask->data[i];
+  }
+  return fmodel;
+}
+
 const Image * sp_phaser_old_model(SpPhaser * ph){
   if(ph->old_model_iteration != ph->iteration){
     if(!ph->old_model){
@@ -615,6 +624,9 @@ int sp_phaser_iterate(SpPhaser * ph, int iterations){
       if (ph->sup_algorithm->type == SpSupportTemplate){
 	phaser_update_support_pointer = sp_support_template_update_support_cuda;
       }
+      if (ph->sup_algorithm->type == SpSupportStatic){
+	phaser_update_support_pointer = sp_support_static_update_support_cuda;
+      }
 #else
       return -8;
 #endif
@@ -627,6 +639,9 @@ int sp_phaser_iterate(SpPhaser * ph, int iterations){
       }
       if(ph->sup_algorithm->type == SpSupportTemplate){
 	phaser_update_support_pointer = sp_support_template_update_support;
+      }
+      if(ph->sup_algorithm->type == SpSupportStatic){
+	phaser_update_support_pointer = sp_support_static_update_support;
       }
     }
   }

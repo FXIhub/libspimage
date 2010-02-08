@@ -49,6 +49,15 @@ SpSupportAlgorithm * sp_support_template_alloc(int update_period, Image *initial
   return ret;
 }
 
+SpSupportAlgorithm * sp_support_static_alloc(int update_period){
+  SpSupportAlgorithm * ret = sp_malloc(sizeof(SpSupportAlgorithm));
+  ret->type = SpSupportStatic;
+  ret->update_period = update_period;
+  SpSupportStaticParameters * params = sp_malloc(sizeof(SpSupportStaticParameters));
+  ret->params = params;
+  return ret;
+}
+
 int sp_support_area_update_support(SpPhaser * ph){
   SpSupportAreaParameters * params = ph->sup_algorithm->params;
   real radius =  bezier_map_interpolation(params->blur_radius_map,ph->iteration);
@@ -95,6 +104,11 @@ int sp_support_template_update_support(SpPhaser * ph){
   //sp_image_free(support);
   return 0;
 }
+
+int sp_support_static_update_support(SpPhaser * ph){
+  return 0;
+}
+
 
 static void support_from_absolute_threshold(SpPhaser * ph, Image * blur, real abs_threshold){
   for(int i =0 ;i<ph->image_size;i++){

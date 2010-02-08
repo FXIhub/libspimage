@@ -6,7 +6,7 @@ extern "C"
 {
 #endif /* __cplusplus */
 
-  typedef enum{SpSupportThreshold=1,SpSupportArea,SpSupportTemplate}SpSupportAlgorithmType;
+  typedef enum{SpSupportThreshold=1,SpSupportArea,SpSupportTemplate,SpSupportStatic}SpSupportAlgorithmType;
 
 /*! This structure is private */
 typedef struct{
@@ -29,6 +29,9 @@ typedef struct{
   real original_area;
 }SpSupportTemplateParameters;
 
+typedef struct{
+}SpSupportStaticParameters;
+
 /*! This structure is private */
 typedef struct{
   SpSupportAlgorithmType type;
@@ -39,6 +42,7 @@ typedef struct{
   SpSupportAlgorithm * sp_support_threshold_alloc(int update_period, sp_smap * blur_radius,sp_smap * threshold);
   SpSupportAlgorithm * sp_support_area_alloc(int update_period, sp_smap * blur_radius,sp_smap * area);
   SpSupportAlgorithm * sp_support_template_alloc(int update_period, Image *initial_support, real blur_radius, sp_smap *area);
+  SpSupportAlgorithm * sp_support_static_alloc(int update_period);
 
 #ifdef __cplusplus
 }  /* extern "C" */

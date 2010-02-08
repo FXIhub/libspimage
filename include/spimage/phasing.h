@@ -106,6 +106,7 @@ spimage_EXPORT const Image * sp_phaser_model(SpPhaser * ph);
 spimage_EXPORT const Image * sp_phaser_old_model(SpPhaser * ph);
   /*! Returns the fourier transform of the current best model */
 spimage_EXPORT const Image * sp_phaser_fmodel(SpPhaser * ph);
+spimage_EXPORT const Image * sp_phaser_fmodel_with_mask(SpPhaser * ph);
   spimage_EXPORT void sp_phaser_set_model(SpPhaser * ph,const Image * model);
   spimage_EXPORT void sp_phaser_set_support(SpPhaser * ph,const Image * support);
   spimage_EXPORT void sp_phaser_set_phased_amplitudes(SpPhaser * ph,const Image * phased_amplitudes);
@@ -126,12 +127,14 @@ spimage_EXPORT int sp_phaser_iterate(SpPhaser * ph, int iterations);
   int sp_support_threshold_update_support_cuda(SpPhaser * ph);
   int sp_support_area_update_support_cuda(SpPhaser * ph);
   int sp_support_template_update_support_cuda(SpPhaser * ph);
+  int sp_support_static_update_support_cuda(SpPhaser * ph);
   int sp_proj_module_cuda(Image * a, Image * amp);
 #endif
 
   int sp_support_area_update_support(SpPhaser * ph);
   int sp_support_threshold_update_support(SpPhaser * ph);
   int sp_support_template_update_support(SpPhaser * ph);
+  int sp_support_static_update_support(SpPhaser * ph);
 
 
 #ifdef __cplusplus
