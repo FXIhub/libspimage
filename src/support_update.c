@@ -49,9 +49,6 @@ SpSupportAlgorithm * sp_support_template_alloc(int update_period, Image *initial
   real max_threshold = sp_cabs(params->sorted->image->data[(int)(((real)sp_image_size(params->sorted))*sp_smap_max(params->area)*params->original_area)]);
   real min_threshold = sp_cabs(params->sorted->image->data[(int)(((real)sp_image_size(params->sorted))*sp_smap_min(params->area)*params->original_area)]);
 
-  fprintf(stderr,"max_threshold = %g\n",max_threshold);
-  fprintf(stderr,"min_threshold = %g\n",min_threshold);
-
   if (max_threshold < 1e-4) {
     fprintf(stderr,"Dangerously large template area with this threshold!\n");
   }
