@@ -103,6 +103,7 @@ spimage_EXPORT SpPhaser * sp_phaser_alloc();
 spimage_EXPORT void sp_phaser_free(SpPhaser * ph);
 
 spimage_EXPORT const Image * sp_phaser_model(SpPhaser * ph);
+spimage_EXPORT const Image * sp_phaser_model_with_support(SpPhaser * ph);
 spimage_EXPORT const Image * sp_phaser_old_model(SpPhaser * ph);
   /*! Returns the fourier transform of the current best model */
 spimage_EXPORT const Image * sp_phaser_fmodel(SpPhaser * ph);

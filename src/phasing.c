@@ -317,6 +317,12 @@ const Image * sp_phaser_model(SpPhaser * ph){
   return ph->model;
 }
 
+const Image * sp_phaser_model_with_support(SpPhaser * ph){
+  Image * model = sp_phaser_model(ph);
+  Image * support = sp_phaser_support(ph);
+  sp_image_image_to_mask(support,model);
+  return model;
+}
 
 const Image * sp_phaser_fmodel(SpPhaser * ph){
   if(ph->fmodel_iteration != ph->iteration){
@@ -345,9 +351,12 @@ const Image * sp_phaser_fmodel(SpPhaser * ph){
 const Image * sp_phaser_fmodel_with_mask(SpPhaser * ph){
   Image *fmodel = sp_phaser_fmodel(ph);
   Image *amplitudes = sp_phaser_amplitudes(ph);
+  sp_image_mask_to_mask(amplitudes,fmodel);
+  /*
   for (int i = 0; i < sp_image_size(fmodel); i++) {
     fmodel->mask->data[i] = amplitudes->mask->data[i];
   }
+  */
   return fmodel;
 }
 
