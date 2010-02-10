@@ -1,22 +1,28 @@
 %module spimage
  %{
  /* Includes the header in the wrapper code */
-#include "../include/spimage/image.h"
+#include "../include/spimage/colormap.h"
+#include "../include/spimage/cuda_util.h"
 #include "../include/spimage/fft.h"
-#include "../include/spimage/image_util.h"
-#include "../include/spimage/linear_alg.h"
-#include "../include/spimage/mem_util.h"
-#include "../include/spimage/image_sphere.h"
-#include "../include/spimage/sperror.h"
-#include "../include/spimage/statistics.h"
-#include "../include/spimage/image_noise.h"
 #include "../include/spimage/hashtable.h"
+#include "../include/spimage/image_filter_cuda.h"
+#include "../include/spimage/image_filter.h"
+#include "../include/spimage/image.h"
+#include "../include/spimage/image_io.h"
+#include "../include/spimage/image_noise.h"
+#include "../include/spimage/image_sphere.h"
+#include "../include/spimage/image_util.h"
 #include "../include/spimage/interpolation_kernels.h"
-#include "../include/spimage/time_util.h"
+#include "../include/spimage/linear_alg.h"
 #include "../include/spimage/list.h"
 #include "../include/spimage/map.h"
-#include "../include/spimage/prtf.h"
+#include "../include/spimage/mem_util.h"
 #include "../include/spimage/phasing.h"
+#include "../include/spimage/prtf.h"
+#include "../include/spimage/sperror.h"
+#include "../include/spimage/statistics.h"
+#include "../include/spimage/support_update.h"	
+#include "../include/spimage/time_util.h"
   //#include <numpy/npy_common.h>
 #include <numpy/arrayobject.h>
 
@@ -99,20 +105,43 @@
 
 
 %include "../include/spimage/image.h"
+%include "../include/spimage/colormap.h"
+%include "../include/spimage/cuda_util.h"
 %include "../include/spimage/fft.h"
-%include "../include/spimage/image_util.h"
-%include "../include/spimage/linear_alg.h"
-%include "../include/spimage/mem_util.h"
-%include "../include/spimage/image_sphere.h"
-%include "../include/spimage/sperror.h"
-%include "../include/spimage/statistics.h"
-%include "../include/spimage/image_noise.h"
 %include "../include/spimage/hashtable.h"
+%include "../include/spimage/image_filter_cuda.h"
+%include "../include/spimage/image_filter.h"
+%include "../include/spimage/image_io.h"
+%include "../include/spimage/image_noise.h"
+%include "../include/spimage/image_sphere.h"
+%include "../include/spimage/image_util.h"
 %include "../include/spimage/interpolation_kernels.h"
-%include "../include/spimage/time_util.h"
+%include "../include/spimage/linear_alg.h"
 %include "../include/spimage/list.h"
 %include "../include/spimage/map.h"
-%include "../include/spimage/prtf.h"
+%include "../include/spimage/mem_util.h"
 %include "../include/spimage/phasing.h"
+%include "../include/spimage/prtf.h"
+%include "../include/spimage/sperror.h"
+%include "../include/spimage/statistics.h"
+%include "../include/spimage/support_update.h"	
+%include "../include/spimage/time_util.h"
+
+/* %include "../include/spimage/image.h" */
+/* %include "../include/spimage/fft.h" */
+/* %include "../include/spimage/image_util.h" */
+/* %include "../include/spimage/linear_alg.h" */
+/* %include "../include/spimage/mem_util.h" */
+/* %include "../include/spimage/image_sphere.h" */
+/* %include "../include/spimage/sperror.h" */
+/* %include "../include/spimage/statistics.h" */
+/* %include "../include/spimage/image_noise.h" */
+/* %include "../include/spimage/hashtable.h" */
+/* %include "../include/spimage/interpolation_kernels.h" */
+/* %include "../include/spimage/time_util.h" */
+/* %include "../include/spimage/list.h" */
+/* %include "../include/spimage/map.h" */
+/* %include "../include/spimage/prtf.h" */
+/* %include "../include/spimage/phasing.h" */
 
 
