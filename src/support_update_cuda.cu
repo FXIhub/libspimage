@@ -348,6 +348,11 @@ int sp_support_threshold_update_support_cuda(SpPhaser * ph){
   return 0;
 }
 
+int sp_support_static_update_support_cuda(SpPhaser * ph){
+  return 0;
+}
+
+
 static void support_from_absolute_threshold_cuda(SpPhaser * ph, cufftComplex * blur, real abs_threshold){
   CUDA_support_from_threshold<<<ph->number_of_blocks, ph->threads_per_block>>>(blur,abs_threshold,ph->d_pixel_flags,ph->image_size);
   sp_cuda_check_errors();

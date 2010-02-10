@@ -32,12 +32,9 @@ SpSupportAlgorithm * sp_support_template_alloc(int update_period, Image *initial
   ret->update_period = update_period;
   SpSupportTemplateParameters * params = sp_malloc(sizeof(SpSupportTemplateParameters));
   params->blured = sp_gaussian_blur(initial_support,blur_radius);
-  //params->blured = gaussian_blur_sensitive(initial_support,blur_radius);
-  params->sorted = sp_image_duplicate(params->blured,SP_COPY_DATA);
-  qsort(params->sorted->image->data,sp_c3matrix_size(params->sorted->image),sizeof(Complex),descend_complex_compare);
-  //params->blur_radius = blur_radius;
   params->area = area;
   params->original_area = 0.0;
+  //params->blur_radius = blur_radius;
   for (int i = 0; i < sp_image_size(initial_support); i++) {
     if (sp_real(initial_support->image->data[i]) != 0.0 ||
 	sp_imag(initial_support->image->data[i]) != 0.0) {
@@ -45,6 +42,29 @@ SpSupportAlgorithm * sp_support_template_alloc(int update_period, Image *initial
     }
   }
   params->original_area /= (real)sp_image_size(initial_support);
+  //params->blured = gaussian_blur_sensitive(initial_support,blur_radius);
+  params->sorted = sp_image_duplicate(params->blured,SP_COPY_DATA);
+  qsort(params->sorted->image->data,sp_c3matrix_size(params->sorted->image),sizeof(Complex),descend_complex_compare);
+
+  real max_threshold = sp_cabs(params->sorted->image->data[(int)(((real)sp_image_size(params->sorted))*sp_smap_max(params->area)*params->original_area)]);
+  real min_threshold = sp_cabs(params->sorted->image->data[(int)(((real)sp_image_size(params->sorted))*sp_smap_min(params->area)*params->original_area)]);
+
+  if (max_threshold < 1e-4) {
+    fprintf(stderr,"Dangerously large template area with this threshold!\n");
+  }
+  if (1.0-min_threshold < 1e-4) {
+    fprintf(stderr,"Dangerously small template area with this threshold!\n");
+  }
+
+  ret->params = params;
+  return ret;
+}
+
+SpSupportAlgorithm * sp_support_static_alloc(int update_period){
+  SpSupportAlgorithm * ret = sp_malloc(sizeof(SpSupportAlgorithm));
+  ret->type = SpSupportStatic;
+  ret->update_period = update_period;
+  SpSupportStaticParameters * params = sp_malloc(sizeof(SpSupportStaticParameters));
   ret->params = params;
   return ret;
 }
@@ -95,6 +115,11 @@ int sp_support_template_update_support(SpPhaser * ph){
   //sp_image_free(support);
   return 0;
 }
+
+int sp_support_static_update_support(SpPhaser * ph){
+  return 0;
+}
+
 
 static void support_from_absolute_threshold(SpPhaser * ph, Image * blur, real abs_threshold){
   for(int i =0 ;i<ph->image_size;i++){

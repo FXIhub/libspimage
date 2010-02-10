@@ -69,6 +69,29 @@ static inline void sp_smap_insert(sp_smap * m, real key,real value){
   sp_list_insert(m->values,index,value);
 }
 
+static inline real sp_smap_max(sp_smap *m){
+  unsigned int index;
+  real value;
+  real max = sp_list_get(m->values,0);
+  for (index = 1; index < sp_list_size(m->values); index++) {
+    value = sp_list_get(m->values,index);
+    if (value > max) max = value;
+  }
+  return max;
+}
+
+static inline real sp_smap_min(sp_smap *m){
+  unsigned int index;
+  real value;
+  real min = sp_list_get(m->values,0);
+  for (index = 1; index < sp_list_size(m->values); index++) {
+    value = sp_list_get(m->values,index);
+    if (value < min) min = value;
+  }
+  return min;
+}
+
+
 #ifdef __cplusplus
 }  /* extern "C" */
 #endif /* __cplusplus */
