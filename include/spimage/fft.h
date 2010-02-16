@@ -6,6 +6,12 @@ extern "C"
 {
 #endif /* __cplusplus */
 
+/** @defgroup FFT Fast Fourier Transform
+ *  Forward and Backward fourier transform
+
+ *  The forward transform is define as \f$ F(h) = \int_{-\infty}^{\infty}f(r) \exp(- 2 \pi i h \cdot r) {\textrm d} r \f$
+ *  @{
+ */
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932846
@@ -88,6 +94,11 @@ spimage_EXPORT void sp_image_fft_fast(Image * in, Image * out);
    * works for 2d images.
    */
 spimage_EXPORT Image * sp_image_1d_fft(Image *img,int axis);
+
+  /*!Returns the 1d back fourier transform of img along the specified axis. 
+   * axis = 0,1,2 corresponds to x,y,z respectively. (axis = 1 only
+   * works for 2d images.
+   */
 spimage_EXPORT Image * sp_image_1d_ifft(Image *img,int axis);
 /*! Returns the forward FFT of m.
  */
@@ -120,6 +131,7 @@ spimage_EXPORT int sp_init_fft(int nthreads);
   spimage_EXPORT Image * sp_image_cuda_fft(Image * img);
 #endif
 
+/*@}*/
 #ifdef __cplusplus
 }  /* extern "C" */
 #endif /* __cplusplus */

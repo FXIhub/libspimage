@@ -8,10 +8,11 @@ extern "C"
 {
 #endif /* __cplusplus */
 
-struct sp_hashtable;
-
-/* Example of use:
+/** @defgroup Containers Containers
+ *  Implement hashtables, list and maps
  *
+ * Example of use of hashtables:
+ *<pre>
  *      struct sp_hashtable  *h;
  *      struct some_key   *k;
  *      struct some_value *v;
@@ -32,9 +33,13 @@ struct sp_hashtable;
  *      {    printf("not found!");                  }
  *
  *      if (NULL == (found = hashtable_remove(h,k) ))
- *      {    printf("Not found\n");                 }
- *
+ *      {    printf("Not found\n");                 } </pre>
+ *  @{
  */
+
+
+struct sp_hashtable;
+
 
 /* Macros may be used to define type-safe(r) hashtable access functions, with
  * methods specialized to take known key and value types as parameters.
@@ -66,10 +71,7 @@ struct sp_hashtable;
  *
  */
 
-/*****************************************************************************
- * sp_create_hashtable
-   
- * @name                    sp_create_hashtable
+/*!
  * @param   minsize         minimum initial size of hashtable
  * @param   hashfunction    function for hashing keys
  * @param   key_eq_fn       function for determining key equality
@@ -81,10 +83,7 @@ sp_create_hashtable(unsigned int minsize,
                  unsigned int (*hashfunction) (void*),
                  int (*key_eq_fn) (void*,void*));
 
-/*****************************************************************************
- * sp_hashtable_insert
-   
- * @name        hashtable_insert
+/*!
  * @param   h   the hashtable to insert into
  * @param   k   the key - hashtable claims ownership and will free on removal
  * @param   v   the value - does not claim ownership
@@ -109,17 +108,12 @@ int fnname (struct sp_hashtable *h, keytype *k, valuetype *v) \
     return sp_hashtable_insert(h,k,v); \
 }
 
-/*****************************************************************************
- * sp_hashtable_search
-   
- * @name        sp_hashtable_search
+/*!
  * @param   h   the hashtable to search
  * @param   k   the key to search for  - does not claim ownership
  * @return      the value associated with the key, or NULL if none found
  */
-
-spimage_EXPORT void *
-sp_hashtable_search(struct sp_hashtable *h, void *k);
+spimage_EXPORT void * sp_hashtable_search(struct sp_hashtable *h, void *k);
 
 #define DEFINE_HASHTABLE_SEARCH(fnname, keytype, valuetype) \
 valuetype * fnname (struct sp_hashtable *h, keytype *k) \
@@ -127,17 +121,13 @@ valuetype * fnname (struct sp_hashtable *h, keytype *k) \
     return (valuetype *) (sp_hashtable_search(h,k)); \
 }
 
-/*****************************************************************************
- * sp_hashtable_remove
-   
- * @name        sp_hashtable_remove
+/*! Removes an item, by key, from a hashtable
+ *
  * @param   h   the hashtable to remove the item from
  * @param   k   the key to search for  - does not claim ownership
  * @return      the value associated with the key, or NULL if none found
  */
-
-spimage_EXPORT void * /* returns value */
-sp_hashtable_remove(struct sp_hashtable *h, void *k);
+spimage_EXPORT void * sp_hashtable_remove(struct sp_hashtable *h, void *k);
 
 #define DEFINE_HASHTABLE_REMOVE(fnname, keytype, valuetype) \
 valuetype * fnname (struct sp_hashtable *h, keytype *k) \
@@ -146,10 +136,7 @@ valuetype * fnname (struct sp_hashtable *h, keytype *k) \
 }
 
 
-/*****************************************************************************
- * sp_hashtable_count
-   
- * @name        sp_hashtable_count
+/*! 
  * @param   h   the hashtable
  * @return      the number of items stored in the hashtable
  */
@@ -157,16 +144,14 @@ spimage_EXPORT unsigned int
 sp_hashtable_count(struct sp_hashtable *h);
 
 
-/*****************************************************************************
- * sp_hashtable_destroy
-   
- * @name        sp_hashtable_destroy
+/*!
+ *
  * @param   h   the hashtable
  * @param       free_values     whether to call 'free' on the remaining values
  */
+spimage_EXPORT void sp_hashtable_destroy(struct sp_hashtable *h, int free_values);
 
-spimage_EXPORT void
-sp_hashtable_destroy(struct sp_hashtable *h, int free_values);
+/*@}*/
 
 #ifdef __cplusplus
 }  /* extern "C" */

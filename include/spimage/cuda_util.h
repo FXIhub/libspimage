@@ -1,11 +1,18 @@
 #ifndef _SP_CUDA_UTIL_H_
 #define _SP_CUDA_UTIL_H_ 1
 
+/** @defgroup CudaUtils CUDA Utils
+ *  This module helps to interface with CUDA
+ *  It's mostly for internal use.
+ *  @{
+ */
+
 #ifdef _USE_CUDA
 
 #include <cuda_runtime_api.h>
 #include <cufft.h>
 #include <spimage/sperror.h>
+
 
 
 #ifndef NDEBUG
@@ -67,6 +74,10 @@ static inline void __sp_cuda_check_errors(const char * file, const int line){
   }
 }
 
+/*! Creates an image from a cufftComplex.
+
+   The output image will be 1 dimensional.
+ */
 spimage_EXPORT Image * sp_get_image_from_cuda(cufftComplex * a, int size);
 #endif /* _USE_CUDA */
 
@@ -74,10 +85,17 @@ spimage_EXPORT Image * sp_get_image_from_cuda(cufftComplex * a, int size);
 extern "C"
 {
 #endif /* __cplusplus */
+
+  /*! Types of CUDA devices.
+   */
   typedef enum{SpCUDANoDevice=0,SpCUDAEmulatedDevice=1,SpCUDAHardwareDevice=2}SpCUDADeviceType;
 
+  /*! Returns the CUDA device currently being used if any.
+   */
 spimage_EXPORT  SpCUDADeviceType sp_cuda_get_device_type();
   //  spimage_EXPORT void __sp_cuda_check_errors(const char * file,const int line);
+
+/*@}*/
 #ifdef __cplusplus
 }  /* extern "C" */
 #endif /* __cplusplus */

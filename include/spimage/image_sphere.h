@@ -20,7 +20,7 @@ typedef struct{
   sp_matrix * R;
 }Rotation;
 
-/** @defgroup direction
+/** @defgroup direction Direction
  *  Functions that handle direction objects.
  *  @{
  */
@@ -53,7 +53,7 @@ spimage_EXPORT Rotation * sp_rot_uniform();
 
 
 
-/** @defgroup Spheres
+/** @defgroup Spheres Sphere
  *  Methoods for handlinge ewald spheres.
  *  @{
  */

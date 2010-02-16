@@ -255,12 +255,19 @@ spimage_EXPORT int sp_complex_descend_compare(const void * pa,const void * pb);
  */
 spimage_EXPORT int sp_complex_ascend_compare(const void * pa,const void * pb);
 
+
+/** @defgroup MatrixAlgebra Matrix Algebra
+ *  Basic algebra with matrices
+ *  @{
+ */
+
 /*! This function allocates memory for a 3matrix of size nrows rows by ncols columns and initializes all the elements of the matrix to zero.
  *
  */
 spimage_EXPORT sp_3matrix * _sp_3matrix_alloc(unsigned int nx, unsigned int ny, unsigned int nz,const char * file, int line);
 #define sp_3matrix_alloc(nx,ny,nz) _sp_3matrix_alloc(nx,ny,nz,__FILE__,__LINE__)
 
+/*@}*/
 /*! This function allocates memory for a i3matrix of size nrows rows by ncols columns and initializes all the elements of the matrix to zero.
  *
  */

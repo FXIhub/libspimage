@@ -16,14 +16,18 @@ extern "C"
 
 /*! Write the given file to the specified filename
  * 
+ * \param img The image to be output
+ * \param filename The name of the file to be created
+ * \param flags describe the colormap
+ *
  * The file type is infered from the filename extension.
  * Supported extensions are:
  *
- * .h5 - Create an hdf5 file
- * .tiff or .tif - Create a TIFF file
- * .png - Create a png file
- * .vtk - Create a VTK file
- * .csv - Create a CSV file
+ *   - .h5 - Create an hdf5 file
+ *   - .tiff or .tif - Create a TIFF file
+ *   - .png - Create a png file
+ *   - .vtk - Create a VTK file
+ *   - .csv - Create a CSV file
  *
  * It creates an spimage file with all the informations contained
  * in the Image structure with the specified precision.
@@ -32,27 +36,31 @@ extern "C"
  * There are only flags for .h5 and .png files, for the others this
  * value is ignored 
  * 
- *   File type    Flag Value          Meaning
+ <table>
+ <tr> <td>File type</td>    <td>Flag Value</td><td>          Meaning</td></tr>
  *
- *      .h5
- *              sizeof(float)      Data should be written in single precision
- *              sizeof(double)     Data should be written in double precision
- *
- *      .png
- *              SpColormapGrayScale    Image will use a grayscale color palete
- *              SpColormapTraditional  Image will use the traditional color map
- *              SpColormapHot          Image will use the hot color map
- *              SpColormapRainbow      Image will use the rainbow color map
- *              SpColormapJet          Image will use the jet color map
- *              SpColormapWheel        Image will use the color wheel color map
- *              SpColormapLogScale     Image will be written in log scale
- *
+ *<tr><td>       .h5</td></tr>
+ *<tr><td></td><td>              sizeof(float)</td><td>      Data should be written in single precision</td></tr>
+  <tr><td></td><td>              sizeof(double)</td><td>     Data should be written in double precision</td></tr>
+ *<tr><td>       .png</td></tr>
+ *<tr><td></td><td>              SpColormapGrayScale    </td><td>Image will use a grayscale color palete</td></tr>
+ *<tr><td></td><td>              SpColormapTraditional  </td><td>Image will use the traditional color map</td></tr>
+ *<tr><td></td><td>              SpColormapHot          </td><td>Image will use the hot color map</td></tr>
+ *<tr><td></td><td>              SpColormapRainbow      </td><td>Image will use the rainbow color map</td></tr>
+ *<tr><td></td><td>              SpColormapJet          </td><td>Image will use the jet color map</td></tr>
+ *<tr><td></td><td>              SpColormapWheel        </td><td>Image will use the color wheel color map</td></tr>
+ *<tr><td></td><td>              SpColormapLogScale     </td><td>Image will be written in log scale</td></tr>
+ *  </table>
  */
 spimage_EXPORT void sp_image_write(const Image * img,const char * filename, int flags);
 
 
 /*! Reads an image from the specified filename
  * 
+ *
+ * \param filename The name of the file to be read
+ * \param flags currently unused
+ * \return The image that was read, or NULL if there was an error
  * The file type is infered from the filename extension.
  * Supported extensions are:
  *
@@ -75,6 +83,10 @@ spimage_EXPORT Image * _sp_image_read(const char * filename,int flags, const cha
 
 /*! Write the mask of the image to a file in png format, using 
   the specified color map
+  
+ * \param img The image to be output
+ * \param filename The name of the file to be created
+ * \param color describe the colormap
 */
 spimage_EXPORT int write_mask_to_png(const Image * img, char * filename, int color);
 /*@}*/

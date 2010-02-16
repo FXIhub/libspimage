@@ -1,19 +1,3 @@
-/*
-
-A few remarks about coordinate systems.
-
-The top left pixel of a detector is called the pixel (0,0) and the lower right the pixel (max_x,max_y)
-The top left corner of a detector has the following coordinates: (-0.5, -0.5)
-The bottom right corner of a detector has the following coordinates: (max_x+0.5, max_y+0.5)
-This results from the finite size of a pixel.
-
-The coordinate units are pixels.
-
-So it follows that the center of the detector is (max_x/2,max_y/2) and its dimensions are (max_x+1,max_y+1)
-
-Please note that max_x == sp_image_x()-1.
-*/
-
 #ifndef _IMAGE_H_
 #define _IMAGE_H_ 1
 
@@ -47,36 +31,54 @@ typedef enum{SP_1D=1,SP_2D=2,SP_3D=3} Dimensions;
 
 */
 typedef struct{
-  real image_center[3];
-  real pixel_size[3];
+  /*! Center of the image in pixels */
+  real image_center[3]; 
+  /*! Size of the pixels in meters*/
+  real pixel_size[3]; 
+  /*! Distance between the scatterer and the detector in meters   */
   real detector_distance;
+  /*! Photon wavelength used in meters */
   real wavelength;
 }Detector;
 
 
 /*! Main structure that keeps all the information about an image.
 
+A few remarks about coordinate systems.
+
+The top left pixel of a detector is called the pixel (0,0) and the lower right the pixel (max_x,max_y)
+The top left corner of a detector has the following coordinates: (-0.5, -0.5)
+The bottom right corner of a detector has the following coordinates: (max_x+0.5, max_y+0.5)
+This results from the finite size of a pixel.
+
+The coordinate units are pixels.
+
+So it follows that the center of the detector is (max_x/2,max_y/2) and its dimensions are (max_x+1,max_y+1)
+
+Please note that max_x == sp_image_x()-1.
+
 */
 typedef struct{
-  /* this flag tell us whether we should try to access
+  /*! tells us whether we should try to access
    the real and complex part of the image seperately or
    just the amplitudes */
   int phased;  
-  /* this flag tell us whether we should try to access
+  /*! tells us whether we should try to access
    the amplitudes (when scaled) or the intensities
   (when unscalled) */
   int scaled;
-  /* The actual image */
+  /*! The actual image */
   sp_c3matrix * image;
-  /* The integer mask */
+  /*! The integer mask */
   sp_i3matrix * mask;
   Detector * detector;
-  /* this flag tells wether the image is shifted 
+  /*! this flag tells wether the image is shifted 
      (in FFTW format, center on the corners) or not*/
   int shifted;
+  /*! if set, contain the coordinates in reciprocal space, in \f$ m^{-1} \f$ */
   sp_3matrix * rec_coords;
+  /*! the dimensionality of the image */
   Dimensions num_dimensions;
-
 }Image;
 
 #ifdef __cplusplus
