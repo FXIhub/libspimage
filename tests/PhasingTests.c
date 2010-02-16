@@ -178,7 +178,7 @@ void test_sp_support_cuda_common(CuTest * tc,SpSupportAlgorithm * sup_alg){
   for(int i = 0;i<sp_image_size(f);i++){
     f->mask->data[i] = 1;    
   }
-  real beta = 0.9;
+  sp_smap * beta = sp_smap_create_from_pair(0,0.9);
   SpPhaser * ph_cpu = sp_phaser_alloc();
   SpPhaser * ph_cuda = sp_phaser_alloc();
   SpPhasingAlgorithm * alg = sp_phasing_hio_alloc(beta,0);
@@ -422,7 +422,7 @@ void test_sp_phasing_hio_success_rate(CuTest * tc){
   /* Simple phasing example */
   int size = 4;
   int oversampling = 2;
-  real beta = 0.8;
+  sp_smap * beta = sp_smap_create_from_pair(0,0.8);
   real stop_tol = 1e-10;
   real match_tol = 1e-4;
   int nruns = 30;
@@ -504,7 +504,7 @@ void test_sp_phasing_hio_noisy_success_rate(CuTest * tc){
   /* Simple phasing example */
   int size = 4;
   int oversampling = 2;
-  real beta = 0.8;
+  sp_smap * beta = sp_smap_create_from_pair(0,0.8);
   real stop_tol = 1e-10;
   real match_tol = 1e-2;
   //  real photons_per_pixel = 1/(match_tol*match_tol*match_tol);
@@ -632,7 +632,7 @@ void test_sp_phasing_raar_success_rate(CuTest * tc){
   /* Simple phasing example */
   int size = 4;
   int oversampling = 2;
-  real beta = 0.8;
+  sp_smap * beta = sp_smap_create_from_pair(0,0.8);
   real stop_tol = 1e-10;
   real match_tol = 1e-4;
   int nruns = 30;
@@ -715,7 +715,7 @@ void test_sp_phasing_raar_noisy_success_rate(CuTest * tc){
   /* Simple phasing example */
   int size = 4;
   int oversampling = 2;
-  real beta = 0.8;
+  sp_smap * beta = sp_smap_create_from_pair(0,0.8);
   real stop_tol = 1e-10;
   real match_tol = 1e-2;
   real photons_per_pixel = 1/(match_tol*match_tol*match_tol);
@@ -827,7 +827,7 @@ void test_sp_phasing_diff_map_success_rate(CuTest * tc){
   /* Simple phasing example */
   int size = 4;
   int oversampling = 2;
-  real beta = 0.8;
+  sp_smap * beta = sp_smap_create_from_pair(0,0.8);
   real stop_tol = 1e-10;
   real match_tol = 1e-4;
   int nruns = 30;
@@ -909,7 +909,7 @@ void test_sp_phasing_diff_map_noisy_success_rate(CuTest * tc){
   /* Simple phasing example */
   int size = 4;
   int oversampling = 2;
-  real beta = 0.8;
+  sp_smap * beta = sp_smap_create_from_pair(0,0.8);
   real stop_tol = 1e-10;
   real match_tol = 1e-2;
   real photons_per_pixel = 1/(match_tol*match_tol*match_tol);
@@ -1020,7 +1020,7 @@ void test_sp_phasing_hio(CuTest * tc){
   /* Simple phasing example */
   int size = 4;
   int oversampling = 2;
-  real beta = 0.8;
+  sp_smap * beta = sp_smap_create_from_pair(0,0.8);
   real tol = 1e-10;
   SpPhasingAlgorithm * alg = sp_phasing_hio_alloc(beta,0);
   //  CuAssertIntEquals(tc,test_sp_phasing_common(tc,alg,size,oversampling,SpNoConstraints,0,tol),1);
@@ -1049,7 +1049,7 @@ void test_sp_support_speed(CuTest * tc){
   /* Simple phasing example */
   int size = 512;
   int oversampling = 2;
-  real beta = 0.8;
+  sp_smap * beta = sp_smap_create_from_pair(0,0.8);
   SpPhasingAlgorithm * alg = sp_phasing_hio_alloc(beta,0);
   int iterations = 500;
   sp_smap * blur_radius = sp_smap_alloc(2);
@@ -1084,7 +1084,7 @@ void test_sp_phasing_hio_speed(CuTest * tc){
   /* Simple phasing example */
   int size = 512;
   int oversampling = 2;
-  real beta = 0.8;
+  sp_smap * beta = sp_smap_create_from_pair(0,0.8);
   SpPhasingAlgorithm * alg = sp_phasing_hio_alloc(beta,0);
   int iterations = 2000;
   sp_smap * blur_radius = sp_smap_alloc(2);
@@ -1130,7 +1130,7 @@ void test_sp_phasing_raar(CuTest * tc){
   int size = 4;
   int oversampling = 2;
   real tol = 1e-10;
-  real beta = 0.8;
+  sp_smap * beta = sp_smap_create_from_pair(0,0.8);
   SpPhasingAlgorithm * alg = sp_phasing_raar_alloc(beta,0);
   CuAssertIntEquals(tc,test_sp_phasing_common(tc,alg,size,oversampling,SpNoConstraints,0,tol),1);
   alg = sp_phasing_raar_alloc(beta,SpPositiveRealObject);
@@ -1151,7 +1151,7 @@ void test_sp_phasing_raar_speed(CuTest * tc){
   /* Simple phasing example */
   int size = 512;
   int oversampling = 2;
-  real beta = 0.8;
+  sp_smap * beta = sp_smap_create_from_pair(0,0.8);
   SpPhasingAlgorithm * alg = sp_phasing_raar_alloc(beta,0);
   int iterations = 2000;
   if(sp_cuda_get_device_type() == SpCUDAHardwareDevice){
@@ -1171,7 +1171,7 @@ void test_sp_phasing_diff_map_speed(CuTest * tc){
   /* Simple phasing example */
   int size = 512;
   int oversampling = 2;
-  real beta = 0.8;
+  sp_smap * beta = sp_smap_create_from_pair(0,0.8);
   SpPhasingAlgorithm * alg = sp_phasing_diff_map_alloc(beta,INFINITY,INFINITY,0);
   int iterations = 2000;
   if(sp_cuda_get_device_type() == SpCUDAHardwareDevice){
@@ -1190,7 +1190,7 @@ void test_sp_support_hio(CuTest * tc){
   /* Simple phasing example */
   int size = 4;
   int oversampling = 2;
-  real beta = 0.8;
+  sp_smap * beta = sp_smap_create_from_pair(0,0.8);
   real tol = 1e-5;
   SpPhasingAlgorithm * alg = sp_phasing_hio_alloc(beta,0);
   sp_smap * blur_radius = sp_smap_alloc(2);
@@ -1211,7 +1211,7 @@ void test_sp_support_raar(CuTest * tc){
   /* Simple phasing example */
   int size = 4;
   int oversampling = 2;
-  real beta = 0.8;
+  sp_smap * beta = sp_smap_create_from_pair(0,0.8);
   real tol = 1e-5;
   SpPhasingAlgorithm * alg = sp_phasing_raar_alloc(beta,0);
   sp_smap * blur_radius = sp_smap_alloc(2);
@@ -1232,7 +1232,7 @@ void test_sp_support_diff_map(CuTest * tc){
   /* Simple phasing example */
   int size = 4;
   int oversampling = 2;
-  real beta = 0.8;
+  sp_smap * beta = sp_smap_create_from_pair(0,0.8);
   real tol = 1e-5;
   SpPhasingAlgorithm * alg = sp_phasing_diff_map_alloc(beta,INFINITY,INFINITY,0);
   sp_smap * blur_radius = sp_smap_alloc(2);

@@ -4,6 +4,7 @@
 #include "image.h"
 #include "cuda_util.h"
 #include "support_update.h"
+#include "map.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -19,7 +20,7 @@ typedef enum{SpPixelInsideSupport=1,SpPixelMeasuredAmplitude=2}SpPhasingPixelFla
 typedef enum{SpRecoverPhases=0,SpRecoverAmplitudes=1}SpPhasingObjective;
 /*! This structure is private */
 typedef struct{
-  real beta;
+  sp_smap * beta;
   SpPhasingConstraints constraints;
 }SpPhasingHIOParameters;
 
@@ -32,7 +33,7 @@ typedef SpPhasingHIOParameters SpPhasingRAARParameters;
 
 /*! This structure is private */
 typedef struct{
-  real beta;
+  sp_smap * beta;
   real gamma1;
   real gamma2;
   SpPhasingConstraints constraints;
@@ -94,9 +95,9 @@ typedef struct{
 }SpPhaser;
 
 
-spimage_EXPORT SpPhasingAlgorithm * sp_phasing_hio_alloc(real beta, SpPhasingConstraints constraints);
-spimage_EXPORT SpPhasingAlgorithm * sp_phasing_raar_alloc(real beta, SpPhasingConstraints constraints);
-spimage_EXPORT SpPhasingAlgorithm * sp_phasing_diff_map_alloc(real beta,real gamma1,real gamma2, SpPhasingConstraints constraints);
+spimage_EXPORT SpPhasingAlgorithm * sp_phasing_hio_alloc(sp_smap * beta, SpPhasingConstraints constraints);
+spimage_EXPORT SpPhasingAlgorithm * sp_phasing_raar_alloc(sp_smap * beta, SpPhasingConstraints constraints);
+spimage_EXPORT SpPhasingAlgorithm * sp_phasing_diff_map_alloc(sp_smap * beta,real gamma1,real gamma2, SpPhasingConstraints constraints);
 spimage_EXPORT SpPhasingAlgorithm * sp_phasing_er_alloc(SpPhasingConstraints constraints);
 
 spimage_EXPORT SpPhaser * sp_phaser_alloc();

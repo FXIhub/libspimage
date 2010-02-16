@@ -14,12 +14,15 @@ static void phaser_phased_amplitudes_projection(Image * a, sp_c3matrix * phased_
 
 static void phaser_check_dimensions(SpPhaser * ph,const Image * a);
 
-SpPhasingAlgorithm * sp_phasing_diff_map_alloc(real beta, real gamma1, real gamma2, SpPhasingConstraints constraints){
+SpPhasingAlgorithm * sp_phasing_diff_map_alloc(sp_smap * beta, real gamma1, real gamma2, SpPhasingConstraints constraints){
   SpPhasingAlgorithm * ret = sp_malloc(sizeof(SpPhasingAlgorithm));
   ret->type = SpDiffMap;
   SpPhasingDiffMapParameters * params = sp_malloc(sizeof(SpPhasingDiffMapParameters));
   params->beta = beta;
-  if(isinf(gamma1)){
+  if(isinf(gamma1)){    
+    /* BUG: At the moment the gammas don't change with beta*/
+    real beta = sp_smap_interpolate(params->beta,0);
+
     /* Automatically calculate the gamma1 value*/
     /* Optimal value according to 
        Veit Elser 2003 "Random projections and the optimization of an algorithm for phase retrieval 
@@ -30,6 +33,8 @@ SpPhasingAlgorithm * sp_phasing_diff_map_alloc(real beta, real gamma1, real gamm
     params->gamma1 = gamma1;
   }
   if(isinf(gamma1)){
+    /* BUG: At the moment the gammas don't change with beta*/
+    real beta = sp_smap_interpolate(params->beta,0);
     /* Optimal value according to 
        Veit Elser 2003 "Random projections and the optimization of an algorithm for phase retrieval 
     */
@@ -42,7 +47,7 @@ SpPhasingAlgorithm * sp_phasing_diff_map_alloc(real beta, real gamma1, real gamm
   return ret;
 }
 
-SpPhasingAlgorithm * sp_phasing_raar_alloc(real beta, SpPhasingConstraints constraints){
+SpPhasingAlgorithm * sp_phasing_raar_alloc(sp_smap * beta, SpPhasingConstraints constraints){
   SpPhasingAlgorithm * ret = sp_malloc(sizeof(SpPhasingAlgorithm));
   ret->type = SpRAAR;
   SpPhasingRAARParameters * params = sp_malloc(sizeof(SpPhasingRAARParameters));
@@ -52,7 +57,7 @@ SpPhasingAlgorithm * sp_phasing_raar_alloc(real beta, SpPhasingConstraints const
   return ret;
 }
 
-SpPhasingAlgorithm * sp_phasing_hio_alloc(real beta, SpPhasingConstraints constraints){
+SpPhasingAlgorithm * sp_phasing_hio_alloc(sp_smap * beta, SpPhasingConstraints constraints){
   SpPhasingAlgorithm * ret = sp_malloc(sizeof(SpPhasingAlgorithm));
   ret->type = SpHIO;
   SpPhasingHIOParameters * params = sp_malloc(sizeof(SpPhasingHIOParameters));
@@ -806,15 +811,15 @@ static int phaser_iterate_er(SpPhaser * ph,int iterations){
       }
     }
     phaser_apply_constraints(ph,ph->g1,params->constraints);
+    ph->iteration++;
   }
-  ph->iteration += iterations;
   return 0;
 }
 
 static int phaser_iterate_hio(SpPhaser * ph,int iterations){
   SpPhasingHIOParameters * params = ph->algorithm->params;
-  const real beta = params->beta;
   for(int i = 0;i<iterations;i++){
+    real beta = sp_smap_interpolate(params->beta,ph->iteration);
     Image * swap = ph->g0;
     ph->g0 = ph->g1;
     ph->g1 = swap;
@@ -836,16 +841,16 @@ static int phaser_iterate_hio(SpPhaser * ph,int iterations){
       }
     }
     phaser_apply_constraints(ph,ph->g1,params->constraints);
+    ph->iteration++;
   }
-  ph->iteration += iterations;
   return 0;
 }
 
 
 static int phaser_iterate_raar(SpPhaser * ph,int iterations){
   SpPhasingRAARParameters * params = ph->algorithm->params;
-  const real beta = params->beta;
   for(int i = 0;i<iterations;i++){
+    real beta = sp_smap_interpolate(params->beta,ph->iteration);
     Image * swap = ph->g0;
     ph->g0 = ph->g1;
     ph->g1 = swap;
@@ -881,18 +886,18 @@ static int phaser_iterate_raar(SpPhaser * ph,int iterations){
       }
     }
     phaser_apply_constraints(ph,ph->g1,params->constraints);
+    ph->iteration++;
   }
-  ph->iteration += iterations;
   return 0;
 }
 
 
 static int phaser_iterate_diff_map(SpPhaser * ph,int iterations){
   SpPhasingDiffMapParameters * params = ph->algorithm->params;
-  const real beta = params->beta;
   const real gamma1 = params->gamma1;
   const real gamma2 = params->gamma2;
   for(int i = 0;i<iterations;i++){
+    real beta = sp_smap_interpolate(params->beta,ph->iteration);
     Image * swap = ph->g0;
     ph->g0 = ph->g1;
     ph->g1 = swap;
@@ -919,8 +924,8 @@ static int phaser_iterate_diff_map(SpPhaser * ph,int iterations){
     }
     sp_image_free(Pi2f1);
     phaser_apply_constraints(ph,ph->g1,params->constraints);
+    ph->iteration++;
   }
-  ph->iteration += iterations;
   return 0;
 }
 

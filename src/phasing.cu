@@ -73,8 +73,8 @@ int phaser_iterate_er_cuda(SpPhaser * ph,int iterations){
 
 int phaser_iterate_hio_cuda(SpPhaser * ph,int iterations){
   SpPhasingHIOParameters * params = (SpPhasingHIOParameters *)ph->algorithm->params;
-  const real beta = params->beta;
   for(int i = 0;i<iterations;i++){
+    real beta = sp_smap_interpolate(params->beta,ph->iteration);
     cufftComplex * swap = ph->d_g0;
     ph->d_g0 = ph->d_g1;
     ph->d_g1 = swap;
@@ -99,19 +99,19 @@ int phaser_iterate_hio_cuda(SpPhaser * ph,int iterations){
       CUDA_apply_constraints<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->d_pixel_flags,ph->image_size,params->constraints);
     }
     sp_cuda_check_errors();
+    ph->iteration++; 
   }
-  ph->iteration += iterations;
   return 0;
 }
 
 int phaser_iterate_diff_map_cuda(SpPhaser * ph,int iterations){
   SpPhasingDiffMapParameters * params = (SpPhasingDiffMapParameters *)ph->algorithm->params;
-  const real beta = params->beta;
   const real gamma1 = params->gamma1;
   const real gamma2 = params->gamma2;
   cufftComplex * f1;
   cudaMalloc((void **)&f1,sizeof(cufftComplex)*ph->image_size);
   for(int i = 0;i<iterations;i++){
+    real beta = sp_smap_interpolate(params->beta,ph->iteration);
     cufftComplex * swap = ph->d_g0;
     ph->d_g0 = ph->d_g1;
     ph->d_g1 = swap;
@@ -134,16 +134,16 @@ int phaser_iterate_diff_map_cuda(SpPhaser * ph,int iterations){
       CUDA_apply_constraints<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->d_pixel_flags,ph->image_size,params->constraints);
     }
     sp_cuda_check_errors();
+    ph->iteration++; 
   }
   cudaFree(f1);
-  ph->iteration += iterations;
   return 0;
 }
 
 int phaser_iterate_raar_cuda(SpPhaser * ph,int iterations){
   SpPhasingRAARParameters * params = (SpPhasingRAARParameters *)ph->algorithm->params;
-  const real beta = params->beta;
   for(int i = 0;i<iterations;i++){
+    real beta = sp_smap_interpolate(params->beta,ph->iteration);
     cufftComplex * swap = ph->d_g0;
     ph->d_g0 = ph->d_g1;
     ph->d_g1 = swap;
@@ -168,8 +168,8 @@ int phaser_iterate_raar_cuda(SpPhaser * ph,int iterations){
       CUDA_apply_constraints<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->d_pixel_flags,ph->image_size,params->constraints);
     }
     sp_cuda_check_errors();
+    ph->iteration++;
   }
-  ph->iteration += iterations;
   return 0;
 
 }
