@@ -28,76 +28,10 @@ static int write_png(const Image * img,const char * filename, int color);
 static int write_vtk(const Image * img,const char * filename);
 static int write_xplor(const Image * img,const char * filename);
 static Image * read_smv(const char * filename);
+static Image * read_mrc(const char * filename);
 static Image * read_anton_datafile(hid_t file_id,hid_t dataset_id, const char * filename);
 static void write_cxdi(const Image * img,const char * filename);
 static Image * read_cxdi(const char * filename);
-
-static void hsv_to_rgb(float H,float S,float V,float * R,float *G,float *B){
-  if( V == 0 ){ 
-    *R = 0;
-    *G = 0;
-    *B = 0; 
-  }else if( S == 0 ) {                                                                   
-    *R = V;                                                            
-    *G = V;                                                            
-    *B = V;                                                            
-  } else {                                                                   
-    const double hf = H / 60.0;                                       
-    const int    i  = (int) floor( hf );                              
-    const double f  = hf - i;                                         
-    const double pv  = V * ( 1 - S );                                 
-    const double qv  = V * ( 1 - S * f );                             
-    const double tv  = V * ( 1 - S * ( 1 - f ) );                     
-    switch( i ){                                                               
-    case 0: 
-      *R = V; 
-      *G = tv;
-      *B = pv;
-      break; 
-    case 1:
-      *R = qv;
-      *G = V;
-      *B = pv;
-      break;
-    case 2:
-      *R = pv; 
-      *G = V;
-      *B = tv;
-      break; 
-    case 3: 
-      *R = pv;
-      *G = qv;
-      *B = V;
-      break;
-    case 4:  
-      *R = tv; 
-      *G = pv;
-      *B = V;
-      break;  
-    case 5:
-      *R = V;
-      *G = pv;
-      *B = qv; 
-      break;
-    case 6: 
-      *R = V;
-      *G = tv;    
-      *B = pv; 
-      break; 
-    case -1:  
-      *R = V;
-      *G = pv; 
-      *B = qv;
-      break;
-    default:
-      sp_error_fatal("i Value error in HSV to *R*G*B conversion, Value is %d",i);
-      break;
-    }									
-  }									
-  *R *= 255.0F;                                                        
-  *G *= 255.0F;                                                        
-  *B *= 255.0F;  
-}
 
 
 void sp_image_write(const Image * img, const const char * filename, int flags){
@@ -160,6 +94,9 @@ Image * _sp_image_read(const char * filename, int flags, const char * file, int 
   }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".cxdi") == 0 ||strcmp(strrchr(buffer,'.'),".CXDI") == 0 )){
     /* we have an hdf5 simple data file file */
     return read_cxdi(filename);
+  }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".mrc") == 0 ||strcmp(strrchr(buffer,'.'),".MRC") == 0 )){
+    /* we have an hdf5 simple data file file */
+    return read_mrc(filename);
   }else{
     fprintf(stderr,"Unsupported file type: %s\n",filename);
     abort();
@@ -1857,6 +1794,57 @@ static Image * read_smv(const char * filename){
     }
   }
   return res;
+}
+
+
+static Image * read_mrc(const char * filename){
+  FILE * fp = fopen(filename,"rb");
+  if(!fp){
+    return NULL;
+  }
+  const int header_size = 1024;
+  int dims[3];
+  int type;
+  /* read image size */
+  fread((void *)dims,sizeof(int),3,fp);
+  fread((void *)&type,sizeof(int),1,fp);
+  fseek(fp,header_size,SEEK_SET);
+  Image * ret = sp_image_alloc(dims[0],dims[1],dims[2]);
+  if(type == 1){
+    int size = sizeof(short)*dims[0]*dims[1]*dims[2];
+    short *  buffer = sp_malloc(size);
+    fread((void *)buffer,size,1,fp);
+    int index = 0;
+    for(int z = 0;z<dims[2];z++){
+      for(int y = 0;y<dims[1];y++){
+	for(int x = 0;x<dims[0];x++){
+	  real value = buffer[index++];
+	  sp_image_set(ret,x,y,z,sp_cinit(value,0));
+	  sp_image_mask_set(ret,x,y,z,1);
+	}
+      }
+    }
+    sp_free(buffer);
+  }else if(type == 2){
+    int size = sizeof(float)*dims[0]*dims[1]*dims[2];
+    float *  buffer = sp_malloc(size);
+    fread((void *)buffer,size,1,fp);
+    int index = 0;
+    for(int z = 0;z<dims[2];z++){
+      for(int y = 0;y<dims[1];y++){
+	for(int x = 0;x<dims[0];x++){
+	  real value = buffer[index++];
+	  sp_image_set(ret,x,y,z,sp_cinit(value,0));
+	  sp_image_mask_set(ret,x,y,z,1);
+	}
+      }
+    }
+    sp_free(buffer);
+  }else{
+    sp_image_free(ret);
+    return NULL;
+  }
+  return ret;
 }
 
 /* Superseeded by the new write_vtk */
