@@ -29,6 +29,7 @@ static int write_vtk(const Image * img,const char * filename);
 static int write_xplor(const Image * img,const char * filename);
 static Image * read_smv(const char * filename);
 static Image * read_mrc(const char * filename);
+static int write_mrc(const Image * img,const char * filename);
 static Image * read_anton_datafile(hid_t file_id,hid_t dataset_id, const char * filename);
 static void write_cxdi(const Image * img,const char * filename);
 static Image * read_cxdi(const char * filename);
@@ -62,6 +63,8 @@ void sp_image_write(const Image * img, const const char * filename, int flags){
     write_xplor(img,filename);
   }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".cxdi") == 0)){
     write_cxdi(img,filename);
+  }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".mrc") == 0)){
+    write_mrc(img,filename);
   }else{
     fprintf(stderr,"Unsupported file type: %s\n",filename);
     abort();
@@ -1844,7 +1847,38 @@ static Image * read_mrc(const char * filename){
     sp_image_free(ret);
     return NULL;
   }
+  fclose(fp);
   return ret;
+}
+
+
+int write_mrc(const Image * img,const char * filename){
+  FILE * fp = fopen(filename,"w");
+  if(!fp){
+    return -1;
+  }
+  int dims[256];
+  memset(dims,0,sizeof(int)*256);
+  dims[0] = sp_image_x(img);
+  dims[1] = sp_image_y(img);
+  dims[2] = sp_image_z(img);
+  dims[3] = 2;
+  fwrite(dims,sizeof(int),256,fp);
+  int size = sizeof(float)*sp_image_size(img);
+  float *  buffer = sp_malloc(size);
+  int index = 0;
+  for(int z = 0;z<dims[2];z++){
+    for(int y = 0;y<dims[1];y++){
+      for(int x = 0;x<dims[0];x++){
+	buffer[index] = sp_real(sp_image_get(img,x,y,z));
+	index++;
+      }
+    }
+  }
+  fwrite(buffer,sizeof(float),sp_image_size(img),fp);
+  fclose(fp);
+  sp_free(buffer);
+  return 0;
 }
 
 /* Superseeded by the new write_vtk */
