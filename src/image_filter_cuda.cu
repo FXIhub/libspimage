@@ -90,21 +90,26 @@ static __global__ void CUDA_Complex_multiply(cufftComplex * a,cufftComplex * b, 
 static __global__ void CUDA_create_gaussian_kernel(cufftComplex * a,const int x,const int y, const int z,const float radius){
   const int my_x = blockIdx.x*blockDim.x + threadIdx.x;
   const int my_y = blockIdx.y*blockDim.y + threadIdx.y;
-  const int my_z = blockIdx.z*blockDim.z + threadIdx.z;
-  if(my_x < x && my_y < y && my_z < z){
-    const int delta_z = min(my_z,z-my_z);
-    const int delta_y = min(my_y,y-my_y);
-    const int delta_x = min(my_x,x-my_x);
+  /*  
+      const int my_z = blockIdx.z*blockDim.z + threadIdx.z;
+  */
+  /* we're gonna have to do all z due to hardware limitations */
+  for(int my_z = 0;my_z<z;my_z++){
+    if(my_x < x && my_y < y && my_z < z){
+      const int delta_z = min(my_z,z-my_z);
+      const int delta_y = min(my_y,y-my_y);
+      const int delta_x = min(my_x,x-my_x);
 #ifdef _STRICT_IEEE_754
-    const float d2 = __fadd_rn(__fadd_rn(__fmul_rn(delta_z,delta_z),__fmul_rn(delta_y,delta_y)),__fmul_rn(delta_x,delta_x));
-    /* no IEEE strict exp unfortunately */
-    const float f = exp(__fdiv_rn(-d2,(__fmul_rn(2,__fmul_rn(radius,radius)))));
+      const float d2 = __fadd_rn(__fadd_rn(__fmul_rn(delta_z,delta_z),__fmul_rn(delta_y,delta_y)),__fmul_rn(delta_x,delta_x));
+      /* no IEEE strict exp unfortunately */
+      const float f = exp(__fdiv_rn(-d2,(__fmul_rn(2,__fmul_rn(radius,radius)))));
 #else
-    const float d2 = delta_z*delta_z+delta_y*delta_y+delta_x*delta_x;
-    const float f = exp(-d2/(2*radius*radius));
+      const float d2 = delta_z*delta_z+delta_y*delta_y+delta_x*delta_x;
+      const float f = exp(-d2/(2*radius*radius));
 #endif
-    a[my_z*(x*y)+my_y*x+my_x].x = f;
-    a[my_z*(x*y)+my_y*x+my_x].y = 0;
+      a[my_z*(x*y)+my_y*x+my_x].x = f;
+      a[my_z*(x*y)+my_y*x+my_x].y = 0;
+    }
   }
 }
 
@@ -113,13 +118,14 @@ static __global__ void CUDA_create_gaussian_kernel(cufftComplex * a,const int x,
 f(x,y) = 1/sqrt(2*M_PI*radius) * exp(-(x^2+y^2)/(2*radius^2)) */
 void sp_create_gaussian_kernel_cuda(cufftComplex * a,int x, int y, int z, float radius){
   dim3 dimBlock(16,16,1);
+  /* We have to use a grid size of 1 on z due to hardware limitations*/
   dim3 dimGrid((x+dimBlock.x-1)/dimBlock.x,
 	       (y+dimBlock.y-1)/dimBlock.y,
-	       (z+dimBlock.z-1)/dimBlock.z);
+	       1);
   CUDA_create_gaussian_kernel<<<dimGrid,dimBlock>>>(a,x,y,z,radius);
   sp_cuda_check_errors();
   int blockSize = 256;
-  int gridSize = (x*y*z+blockSize-1)/blockSize;
+  int gridSize = ((x+dimBlock.x-1)/dimBlock.x) * ((y+dimBlock.y-1)/dimBlock.y);
   thrust::device_ptr<cufftComplex> beginc =  thrust::device_pointer_cast(a);
   thrust::device_ptr<cufftComplex> endc =  thrust::device_pointer_cast((cufftComplex *)(a+x*y*z));
   cufftComplex sum = {0,0};
