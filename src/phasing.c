@@ -764,6 +764,15 @@ static void phaser_apply_constraints(SpPhaser * ph,Image * new_model, SpPhasingC
   }
 }
 
+static void phaser_apply_fourier_constraints(SpPhaser * ph,Image * new_amplitudes, SpPhasingConstraints constraints){
+  /* Apply constraints */
+  for(int i =0;i<sp_image_size(new_amplitudes);i++){
+    if(constraints & SpCentrosymmetricObject){
+      sp_imag(new_amplitudes->image->data[i]) = 0;
+    }
+  }
+}
+
 static void phaser_module_projection(Image * a, sp_3matrix * amp, sp_i3matrix * pixel_flags){
   for(int i = 0;i<sp_image_size(a);i++){
     if(pixel_flags->data[i] & SpPixelMeasuredAmplitude){
@@ -831,6 +840,7 @@ static int phaser_iterate_hio(SpPhaser * ph,int iterations){
     }else{
       abort();
     }
+    phaser_apply_fourier_constraints(ph,ph->g1,params->constraints);
     sp_image_ifft_fast(ph->g1,ph->g1);
     sp_image_scale(ph->g1,1.0/sp_image_size(ph->g1));
     for(int i =0;i<sp_image_size(ph->g1);i++){
@@ -863,6 +873,7 @@ static int phaser_iterate_raar(SpPhaser * ph,int iterations){
     }else{
       abort();
     }
+    phaser_apply_fourier_constraints(ph,ph->g1,params->constraints);
     sp_image_ifft_fast(ph->g1,ph->g1);
     sp_image_scale(ph->g1,1.0/sp_image_size(ph->g1));
     for(int i =0;i<sp_image_size(ph->g1);i++){
@@ -908,6 +919,7 @@ static int phaser_iterate_diff_map(SpPhaser * ph,int iterations){
     sp_image_ifft_fast(f1,f1);
     Image * Pi2f1 = f1;
     phaser_module_projection(ph->g1,ph->amplitudes,ph->pixel_flags);
+    phaser_apply_fourier_constraints(ph,ph->g1,params->constraints);
     sp_image_ifft_fast(ph->g1,ph->g1);
     Image * Pi2rho = ph->g1;
     

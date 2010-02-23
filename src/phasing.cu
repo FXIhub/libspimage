@@ -6,6 +6,7 @@ __global__ void CUDA_support_projection_er(cufftComplex* g1,const int * pixel_fl
 __global__ void CUDA_complex_scale(cufftComplex * a, int size ,float scale);
 __global__ void CUDA_support_projection_raar(cufftComplex* g1, const cufftComplex* g0,const int * pixel_flags,const  int size,const float beta);
 __global__ void CUDA_apply_constraints(cufftComplex* g, const int * pixel_flags,const  int size,const SpPhasingConstraints constraints);
+__global__ void CUDA_apply_fourier_constraints(cufftComplex* g, const  int size,const SpPhasingConstraints constraints);
 __global__ void CUDA_phased_amplitudes_projection(cufftComplex* g, const cufftComplex* phased_amp,const int * pixel_flags, const  int size);
 __global__ void CUDA_diff_map_f1(cufftComplex* f1, const cufftComplex* g0,const int * pixel_flags,const float gamma1,const  int size);
 __global__ void CUDA_diff_map(cufftComplex* Pi2f1,cufftComplex* Pi2rho, const cufftComplex* g0,cufftComplex* g1,const int * pixel_flags,const float gamma2,const float beta,const  int size);
@@ -56,6 +57,8 @@ int phaser_iterate_er_cuda(SpPhaser * ph,int iterations){
       abort();
     }
     sp_cuda_check_errors();
+    CUDA_apply_fourier_constraints<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->image_size,params->constraints);
+    sp_cuda_check_errors();
     cufftExecC2C(ph->cufft_plan, ph->d_g1, ph->d_g1, CUFFT_INVERSE);
     /* normalize */
     CUDA_complex_scale<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->image_size, 1.0f / (ph->image_size));
@@ -89,6 +92,7 @@ int phaser_iterate_hio_cuda(SpPhaser * ph,int iterations){
       abort();
     }
     sp_cuda_check_errors();
+    CUDA_apply_fourier_constraints<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->image_size,params->constraints);
     cufftExecC2C(ph->cufft_plan, ph->d_g1, ph->d_g1, CUFFT_INVERSE);
     /* normalize */
     CUDA_complex_scale<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->image_size, 1.0f / (ph->image_size));
@@ -122,6 +126,7 @@ int phaser_iterate_diff_map_cuda(SpPhaser * ph,int iterations){
     CUDA_module_projection<<<ph->number_of_blocks, ph->threads_per_block>>>(f1,ph->d_amplitudes,ph->d_pixel_flags,ph->image_size);
     cufftExecC2C(ph->cufft_plan, f1, f1, CUFFT_INVERSE);
     CUDA_module_projection<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->d_amplitudes,ph->d_pixel_flags,ph->image_size);
+    CUDA_apply_fourier_constraints<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->image_size,params->constraints);
     cufftExecC2C(ph->cufft_plan, ph->d_g1, ph->d_g1, CUFFT_INVERSE);
     sp_cuda_check_errors();
     /* normalize */
@@ -158,6 +163,7 @@ int phaser_iterate_raar_cuda(SpPhaser * ph,int iterations){
       abort();
     }
     sp_cuda_check_errors();
+    CUDA_apply_fourier_constraints<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->image_size,params->constraints);
     cufftExecC2C(ph->cufft_plan, ph->d_g1, ph->d_g1, CUFFT_INVERSE);
     /* normalize */
     CUDA_complex_scale<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->image_size, 1.0f / (ph->image_size));

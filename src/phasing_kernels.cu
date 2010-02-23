@@ -112,6 +112,14 @@ __global__ void CUDA_phased_amplitudes_projection(cufftComplex* g, const cufftCo
   }
 }  
 
+__global__ void CUDA_apply_fourier_constraints(cufftComplex* g,const  int size,const SpPhasingConstraints constraints){
+  const int i =  blockIdx.x*blockDim.x + threadIdx.x;
+  if(i<size){
+    if(constraints & SpCentrosymmetricObject){
+      g[i].y = 0;
+    }
+  }
+}
 
 __global__ void CUDA_apply_constraints(cufftComplex* g, const int * pixel_flags,const  int size,const SpPhasingConstraints constraints){
   const int i =  blockIdx.x*blockDim.x + threadIdx.x;
