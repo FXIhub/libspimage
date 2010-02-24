@@ -1,11 +1,11 @@
 #include <spimage.h>
 
 
+static int phaser_iterate_er(SpPhaser * ph,int iterations);
 static int phaser_iterate_hio(SpPhaser * ph, int iterations);
 static int phaser_iterate_raar(SpPhaser * ph, int iterations);
 static int phaser_iterate_diff_map(SpPhaser * ph, int iterations);
 static Image * phaser_iterate_diff_map_f1(Image * real_in,sp_i3matrix * pixel_flags,real gamma1);
-static int phaser_iterate_er(SpPhaser * ph,int iterations);
 static void phaser_apply_constraints(SpPhaser * ph,Image * new_model, SpPhasingConstraints constraints);
 
 static void phaser_module_projection(Image * a, sp_3matrix * amp, sp_i3matrix * pixel_flags);
@@ -803,6 +803,7 @@ static int phaser_iterate_er(SpPhaser * ph,int iterations){
     ph->g0 = ph->g1;
     ph->g1 = swap;
     sp_image_fft_fast(ph->g0,ph->g1);
+    phaser_apply_fourier_constraints(ph,ph->g1,params->constraints);
     if(ph->phasing_objective == SpRecoverPhases){
       phaser_module_projection(ph->g1,ph->amplitudes,ph->pixel_flags);
     }else if(ph->phasing_objective == SpRecoverAmplitudes){
@@ -833,6 +834,7 @@ static int phaser_iterate_hio(SpPhaser * ph,int iterations){
     ph->g0 = ph->g1;
     ph->g1 = swap;
     sp_image_fft_fast(ph->g0,ph->g1);
+    phaser_apply_fourier_constraints(ph,ph->g1,params->constraints);
     if(ph->phasing_objective == SpRecoverPhases){
       phaser_module_projection(ph->g1,ph->amplitudes,ph->pixel_flags);
     }else if(ph->phasing_objective == SpRecoverAmplitudes){
@@ -840,7 +842,6 @@ static int phaser_iterate_hio(SpPhaser * ph,int iterations){
     }else{
       abort();
     }
-    phaser_apply_fourier_constraints(ph,ph->g1,params->constraints);
     sp_image_ifft_fast(ph->g1,ph->g1);
     sp_image_scale(ph->g1,1.0/sp_image_size(ph->g1));
     for(int i =0;i<sp_image_size(ph->g1);i++){
@@ -865,6 +866,7 @@ static int phaser_iterate_raar(SpPhaser * ph,int iterations){
     ph->g0 = ph->g1;
     ph->g1 = swap;
     sp_image_fft_fast(ph->g0,ph->g1);
+    phaser_apply_fourier_constraints(ph,ph->g1,params->constraints);
     SpPhasingHIOParameters * params = ph->algorithm->params;
     if(ph->phasing_objective == SpRecoverPhases){
       phaser_module_projection(ph->g1,ph->amplitudes,ph->pixel_flags);
@@ -873,7 +875,6 @@ static int phaser_iterate_raar(SpPhaser * ph,int iterations){
     }else{
       abort();
     }
-    phaser_apply_fourier_constraints(ph,ph->g1,params->constraints);
     sp_image_ifft_fast(ph->g1,ph->g1);
     sp_image_scale(ph->g1,1.0/sp_image_size(ph->g1));
     for(int i =0;i<sp_image_size(ph->g1);i++){
@@ -913,13 +914,13 @@ static int phaser_iterate_diff_map(SpPhaser * ph,int iterations){
     ph->g0 = ph->g1;
     ph->g1 = swap;
     sp_image_fft_fast(ph->g0,ph->g1);
+    phaser_apply_fourier_constraints(ph,ph->g1,params->constraints);
     Image * f1 = phaser_iterate_diff_map_f1(ph->g0,ph->pixel_flags,gamma1);
     sp_image_fft_fast(f1,f1);
     phaser_module_projection(f1,ph->amplitudes,ph->pixel_flags);
     sp_image_ifft_fast(f1,f1);
     Image * Pi2f1 = f1;
     phaser_module_projection(ph->g1,ph->amplitudes,ph->pixel_flags);
-    phaser_apply_fourier_constraints(ph,ph->g1,params->constraints);
     sp_image_ifft_fast(ph->g1,ph->g1);
     Image * Pi2rho = ph->g1;
     

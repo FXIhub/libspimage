@@ -49,6 +49,7 @@ int phaser_iterate_er_cuda(SpPhaser * ph,int iterations){
     ph->d_g1 = swap;
     /* executes FFT processes */
     cufftExecC2C(ph->cufft_plan, ph->d_g0, ph->d_g1, CUFFT_FORWARD);
+    CUDA_apply_fourier_constraints<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->image_size,params->constraints);    
     if(ph->phasing_objective == SpRecoverPhases){
       CUDA_module_projection<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->d_amplitudes,ph->d_pixel_flags,ph->image_size);
     }else if(ph->phasing_objective == SpRecoverAmplitudes){
@@ -57,7 +58,6 @@ int phaser_iterate_er_cuda(SpPhaser * ph,int iterations){
       abort();
     }
     sp_cuda_check_errors();
-    CUDA_apply_fourier_constraints<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->image_size,params->constraints);
     sp_cuda_check_errors();
     cufftExecC2C(ph->cufft_plan, ph->d_g1, ph->d_g1, CUFFT_INVERSE);
     /* normalize */
@@ -83,6 +83,9 @@ int phaser_iterate_hio_cuda(SpPhaser * ph,int iterations){
     ph->d_g1 = swap;
     /* executes FFT processes */
     cufftExecC2C(ph->cufft_plan, ph->d_g0, ph->d_g1, CUFFT_FORWARD);
+    /* The fourier constraints have to be applied before the amplitude projection otherwise the algorithm never converges,
+     probably because there is a deficit of power after the constraints */
+    CUDA_apply_fourier_constraints<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->image_size,params->constraints);
     sp_cuda_check_errors();
     if(ph->phasing_objective == SpRecoverPhases){
       CUDA_module_projection<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->d_amplitudes,ph->d_pixel_flags,ph->image_size);
@@ -92,7 +95,8 @@ int phaser_iterate_hio_cuda(SpPhaser * ph,int iterations){
       abort();
     }
     sp_cuda_check_errors();
-    CUDA_apply_fourier_constraints<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->image_size,params->constraints);
+
+    /* The fourier constraints cannot be applied in this location! See comment above */
     cufftExecC2C(ph->cufft_plan, ph->d_g1, ph->d_g1, CUFFT_INVERSE);
     /* normalize */
     CUDA_complex_scale<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->image_size, 1.0f / (ph->image_size));
@@ -121,12 +125,12 @@ int phaser_iterate_diff_map_cuda(SpPhaser * ph,int iterations){
     ph->d_g1 = swap;
     /* executes FFT processes */
     cufftExecC2C(ph->cufft_plan, ph->d_g0, ph->d_g1, CUFFT_FORWARD);
+    CUDA_apply_fourier_constraints<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->image_size,params->constraints);
     CUDA_diff_map_f1<<<ph->number_of_blocks, ph->threads_per_block>>>(f1,ph->d_g0,ph->d_pixel_flags,gamma1,ph->image_size);
     cufftExecC2C(ph->cufft_plan, f1, f1, CUFFT_FORWARD);
     CUDA_module_projection<<<ph->number_of_blocks, ph->threads_per_block>>>(f1,ph->d_amplitudes,ph->d_pixel_flags,ph->image_size);
     cufftExecC2C(ph->cufft_plan, f1, f1, CUFFT_INVERSE);
     CUDA_module_projection<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->d_amplitudes,ph->d_pixel_flags,ph->image_size);
-    CUDA_apply_fourier_constraints<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->image_size,params->constraints);
     cufftExecC2C(ph->cufft_plan, ph->d_g1, ph->d_g1, CUFFT_INVERSE);
     sp_cuda_check_errors();
     /* normalize */
@@ -154,6 +158,7 @@ int phaser_iterate_raar_cuda(SpPhaser * ph,int iterations){
     ph->d_g1 = swap;
     /* executes FFT processes */
     cufftExecC2C(ph->cufft_plan, ph->d_g0, ph->d_g1, CUFFT_FORWARD);
+    CUDA_apply_fourier_constraints<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->image_size,params->constraints);
 
     if(ph->phasing_objective == SpRecoverPhases){
       CUDA_module_projection<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->d_amplitudes,ph->d_pixel_flags,ph->image_size);
@@ -163,7 +168,6 @@ int phaser_iterate_raar_cuda(SpPhaser * ph,int iterations){
       abort();
     }
     sp_cuda_check_errors();
-    CUDA_apply_fourier_constraints<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->image_size,params->constraints);
     cufftExecC2C(ph->cufft_plan, ph->d_g1, ph->d_g1, CUFFT_INVERSE);
     /* normalize */
     CUDA_complex_scale<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->image_size, 1.0f / (ph->image_size));

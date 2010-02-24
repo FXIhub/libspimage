@@ -295,10 +295,11 @@ int test_sp_phasing_success_common(CuTest * tc,SpPhasingAlgorithm * alg,Image * 
   int i =0;
   double change = 0;
   int max_iter = 300;
+  int step = 50;
   CuAssertTrue(tc,sp_phaser_init_model(ph,NULL,SpModelRandomPhases) == 0); 
   CuAssertTrue(tc,sp_phaser_init_support(ph,support,0,0) == 0); 
   do{
-    CuAssertTrue(tc,sp_phaser_iterate(ph,1) == 0);
+    CuAssertTrue(tc,sp_phaser_iterate(ph,step) == 0);
     change = sp_image_integrate2(sp_phaser_model_change(ph));
     //    printf("Iter = %d Delta = %g\n",i,change);
     i++;
@@ -413,6 +414,16 @@ static Image * create_test_image(int size, real oversampling,SpPhasingConstraint
 	sp_image_set(a,x,y,0,sp_cinit(p_drand48()-0.5,p_drand48()-0.5));
       }
     }
+  }
+  if(c & SpCentrosymmetricObject){
+    size = size*oversampling;
+    for(int x = 0;x<size;x++){
+      for(int y = 0;y<size;y++){
+	
+	sp_image_set(a,(size-x)%size,(size-y)%size,0,sp_cconj(sp_image_get(a,x,y,0)));
+      }
+    }    
+    sp_imag(a->image->data[0]) = 0;
   }
   a->phased = 1;
   return a;  
@@ -1266,9 +1277,48 @@ void test_sp_support_cuda(CuTest * tc){
   PRINT_DONE;
 }
 
+
+void test_sp_phasing_fourier_constraints(CuTest * tc){
+  /* Simple phasing example */
+  int size = 4;
+  int oversampling = 3;
+  sp_smap * beta = sp_smap_create_from_pair(0,0.8);
+  real stop_tol = 1e-10;
+  real match_tol = 1e-4;
+  int nruns = 30;
+  Image * pada;
+  SpPhasingAlgorithm * alg;
+  int n_success = 0;
+  alg = sp_phasing_hio_alloc(beta,SpCentrosymmetricObject);
+  n_success = 0;
+  for(int i = 0;i<nruns;i++){
+    pada = create_test_image(size,oversampling,SpCentrosymmetricObject);
+    sp_image_write(pada,"out.png",SpColormapGrayScale);
+    n_success += test_sp_phasing_success_common(tc,alg,pada,0,stop_tol,match_tol);  
+    sp_image_free(pada);
+  }
+#ifndef NDEBUG
+  printf("Centrosymmetric HIO object success rate = %5.4f\n",(real)n_success/nruns);
+#endif
+  /*
+  alg = sp_phasing_hio_alloc(beta,0);
+  n_success = 0;
+  for(int i = 0;i<nruns;i++){
+    pada = create_test_image(size,oversampling,SpCentrosymmetricObject);
+    sp_image_write(pada,"out.png",SpColormapGrayScale);
+    n_success += test_sp_phasing_success_common(tc,alg,pada,0,stop_tol,match_tol);  
+    sp_image_free(pada);
+  }
+  //#ifndef NDEBUG
+  printf("Complex HIO object success rate = %5.4f\n",(real)n_success/nruns);
+  //#endif
+  */
+}
+
 CuSuite* phasing_get_suite(void)
 {
   CuSuite* suite = CuSuiteNew();
+
   if(sp_cuda_get_device_type() == SpCUDAHardwareDevice){
 #ifdef _USE_CUDA
     SUITE_ADD_TEST(suite, test_sp_support_cuda);
@@ -1289,6 +1339,6 @@ CuSuite* phasing_get_suite(void)
   SUITE_ADD_TEST(suite, test_sp_support_diff_map);
   SUITE_ADD_TEST(suite,test_sp_phasing_diff_map_success_rate);
   SUITE_ADD_TEST(suite,test_sp_phasing_diff_map_noisy_success_rate);  
-
+  SUITE_ADD_TEST(suite, test_sp_phasing_fourier_constraints);
   return suite;
 }
