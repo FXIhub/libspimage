@@ -3399,7 +3399,7 @@ int sp_image_contains_coordinates(const Image *a, real x, real y, real z){
   return 1;
 }
 
-spimage_EXPORT void sp_image_image_to_mask(Image *in, Image *out)
+void sp_image_image_to_mask(Image *in, Image *out)
 {
   if (sp_image_x(in) != sp_image_x(out) ||
       sp_image_y(in) != sp_image_y(out) ||
@@ -3419,7 +3419,7 @@ spimage_EXPORT void sp_image_image_to_mask(Image *in, Image *out)
 }
 /* out will get a new image that is zero when in->mask is zero
      and (1.0,0.0) where it is nonzero */
-spimage_EXPORT void sp_image_mask_to_image(Image *in, Image *out)
+void sp_image_mask_to_image(Image *in, Image *out)
 {
   if (sp_image_x(in) != sp_image_x(out) ||
       sp_image_y(in) != sp_image_y(out) ||
@@ -3437,7 +3437,7 @@ spimage_EXPORT void sp_image_mask_to_image(Image *in, Image *out)
   }
 }
 /* copies the image from in to out */
-spimage_EXPORT void sp_image_image_to_image(Image *in, Image *out)
+void sp_image_image_to_image(Image *in, Image *out)
 {
   if (sp_image_x(in) != sp_image_x(out) ||
       sp_image_y(in) != sp_image_y(out) ||
@@ -3451,7 +3451,7 @@ spimage_EXPORT void sp_image_image_to_image(Image *in, Image *out)
   }
 }
 /* copies the mask from in to out */
-spimage_EXPORT void sp_image_mask_to_mask(Image *in, Image *out)
+void sp_image_mask_to_mask(Image *in, Image *out)
 {
   if (sp_image_x(in) != sp_image_x(out) ||
       sp_image_y(in) != sp_image_y(out) ||
@@ -3467,7 +3467,7 @@ spimage_EXPORT void sp_image_mask_to_mask(Image *in, Image *out)
 
 /* out gets a new mask that is zero where in->image is nonzero
    and one wher it is zero */
-spimage_EXPORT void sp_image_invert_mask(Image *in, Image *out)
+void sp_image_invert_mask(Image *in, Image *out)
 {
   if (sp_image_x(in) != sp_image_x(out) ||
       sp_image_y(in) != sp_image_y(out) ||
@@ -3483,4 +3483,69 @@ spimage_EXPORT void sp_image_invert_mask(Image *in, Image *out)
       out->mask->data[i] = 0;
     }
   }
+}
+
+void sp_image_grow_mask(Image *in, int pixels){
+  Image *tmp1 = sp_image_duplicate(in,SP_COPY_DATA|SP_COPY_MASK|SP_COPY_DETECTOR);
+  Image *tmp2 = sp_image_duplicate(in,SP_COPY_DATA|SP_COPY_MASK|SP_COPY_DETECTOR);
+  Image *foo;
+
+  for (int i = 0; i < pixels; i++) {
+    for (int x = 0; x < sp_image_x(in); x++) {
+      for (int y = 0; y < sp_image_y(in); y++) {
+	for (int z = 0; z < sp_image_z(in); z++) {
+	  
+	  if ((sp_image_mask_get(tmp1,x,y,z) == 1) ||
+	      ((x != 0 && sp_image_mask_get(tmp1,x-1,y,z) != 0) ||
+	       (x != sp_image_x(tmp1)-1 && sp_image_mask_get(tmp1,x+1,y,z) != 0) ||
+	       (y != 0 && sp_image_mask_get(tmp1,x,y-1,z) != 0) ||
+	       (y != sp_image_y(tmp1)-1 && sp_image_mask_get(tmp1,x,y+1,z) != 0) ||
+	       (z != 0 && sp_image_mask_get(tmp1,x,y,z-1) != 0) ||
+	       (z != sp_image_z(tmp1)-1 && sp_image_mask_get(tmp1,x,y,z+1) != 0))) {
+	    sp_image_mask_set(tmp2,x,y,z,1);
+	  } else {
+	    sp_image_mask_set(tmp2,x,y,z,0);
+	  }
+	}
+      }
+    }
+    foo = tmp1;
+    tmp1 = tmp2;
+    tmp2 = foo;
+  }
+  sp_image_mask_to_mask(tmp1,in);
+  sp_image_free(tmp1);
+  sp_image_free(tmp2);
+}
+
+void sp_image_shrink_mask(Image *in, int pixels){
+  Image *tmp1 = sp_image_duplicate(in,SP_COPY_DATA|SP_COPY_MASK|SP_COPY_DETECTOR);
+  Image *tmp2 = sp_image_duplicate(in,SP_COPY_DATA|SP_COPY_MASK|SP_COPY_DETECTOR);
+  Image *foo;
+
+  for (int i = 0; i < pixels; i++) {
+    for (int x = 0; x < sp_image_x(in); x++) {
+      for (int y = 0; y < sp_image_y(in); y++) {
+	for (int z = 0; z < sp_image_z(in); z++) {
+	  if ((sp_image_mask_get(tmp1,x,y,z) == 0) ||
+	      ((x != 0 && sp_image_mask_get(tmp1,x-1,y,z) == 0) ||
+	       (x != sp_image_x(tmp1)-1 && sp_image_mask_get(tmp1,x+1,y,z) == 0) ||
+	       (y != 0 && sp_image_mask_get(tmp1,x,y-1,z) == 0) ||
+	       (y != sp_image_y(tmp1)-1 && sp_image_mask_get(tmp1,x,y+1,z) == 0) ||
+	       (z != 0 && sp_image_mask_get(tmp1,x,y,z-1) == 0) ||
+	       (z != sp_image_z(tmp1)-1 && sp_image_mask_get(tmp1,x,y,z+1) == 0))) {
+	    sp_image_mask_set(tmp2,x,y,z,0);
+	  } else {
+	    sp_image_mask_set(tmp2,x,y,z,1);
+	  }
+	}
+      }
+    }
+    foo = tmp1;
+    tmp1 = tmp2;
+    tmp2 = foo;
+  }
+  sp_image_mask_to_mask(tmp1,in);
+  sp_image_free(tmp1);
+  sp_image_free(tmp2);
 }
