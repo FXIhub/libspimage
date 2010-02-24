@@ -225,8 +225,8 @@ unsigned char * sp_image_get_false_color(Image * img, int color, double min, dou
   real max_v,min_v;
   unsigned char * out = sp_malloc(sizeof(unsigned char)*sp_image_x(img)*sp_image_y(img)*sp_image_z(img)*4);
 
-  max_v = 0;
-  min_v = REAL_MAX;
+  max_v = max;
+  min_v = min;
 
   sp_colormap_create_table(color_table,color);
 
