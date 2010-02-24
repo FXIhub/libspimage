@@ -158,8 +158,9 @@ int phaser_iterate_raar_cuda(SpPhaser * ph,int iterations){
     ph->d_g1 = swap;
     /* executes FFT processes */
     cufftExecC2C(ph->cufft_plan, ph->d_g0, ph->d_g1, CUFFT_FORWARD);
+    sp_cuda_check_errors();
     CUDA_apply_fourier_constraints<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->image_size,params->constraints);
-
+    sp_cuda_check_errors();
     if(ph->phasing_objective == SpRecoverPhases){
       CUDA_module_projection<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->d_amplitudes,ph->d_pixel_flags,ph->image_size);
     }else if(ph->phasing_objective == SpRecoverAmplitudes){
