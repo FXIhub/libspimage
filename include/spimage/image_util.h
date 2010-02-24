@@ -709,6 +709,9 @@ spimage_EXPORT int sp_image_get_coords_from_index(const Image * in,int index,rea
      and one wher it is zero */
   spimage_EXPORT void sp_image_invert_mask(Image *in, Image *out);
 
+  spimage_EXPORT void sp_image_grow_mask(Image *in, int pixels);
+  spimage_EXPORT void sp_image_shrink_mask(Image *in, int pixels);
+
 #ifdef __cplusplus
 }  /* extern "C" */
 #endif /* __cplusplus */
