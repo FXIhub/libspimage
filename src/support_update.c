@@ -3,6 +3,10 @@
 static real bezier_map_interpolation(sp_smap * map, real x);
 static void support_from_absolute_threshold(SpPhaser * ph, Image * blur, real abs_threshold);
 static int descend_complex_compare(const void * pa,const void * pb);
+int sp_support_static_update_cuda(void *ph);
+int sp_support_area_update_cuda(void *ph);
+int sp_support_threshold_update_cuda(void *ph);
+int sp_support_template_update_cuda(void *ph);
 
 SpSupportAlgorithm * sp_support_threshold_alloc(int update_period, sp_smap * blur_radius,sp_smap * threshold){
   SpSupportAlgorithm * ret = sp_malloc(sizeof(SpSupportAlgorithm));
@@ -12,6 +16,11 @@ SpSupportAlgorithm * sp_support_threshold_alloc(int update_period, sp_smap * blu
   params->blur_radius_map = blur_radius;
   params->threshold = threshold;
   ret->params = params;
+#ifdef _USE_CUDA
+  ret->function = sp_support_threshold_update_cuda;
+#else
+  ret->function = sp_support_threshold_update;
+#endif
   return ret;
 }
 
@@ -23,6 +32,11 @@ SpSupportAlgorithm * sp_support_area_alloc(int update_period, sp_smap * blur_rad
   params->blur_radius_map = blur_radius;
   params->area = area;
   ret->params = params;
+#ifdef _USE_CUDA
+  ret->function = sp_support_area_update_cuda;
+#else
+  ret->function = sp_support_area_update;
+#endif
   return ret;
 }
 
@@ -56,6 +70,12 @@ SpSupportAlgorithm * sp_support_template_alloc(int update_period, Image *initial
     fprintf(stderr,"Dangerously small template area with this threshold!\n");
   }
 
+#ifdef _USE_CUDA
+  ret->function = sp_support_template_update_cuda;
+#else
+  ret->function = sp_support_template_update;
+#endif
+
   ret->params = params;
   return ret;
 }
@@ -66,6 +86,11 @@ SpSupportAlgorithm * sp_support_static_alloc(int update_period){
   ret->update_period = update_period;
   SpSupportStaticParameters * params = sp_malloc(sizeof(SpSupportStaticParameters));
   ret->params = params;
+#ifdef _USE_CUDA
+  ret->function = sp_support_static_update_cuda;
+#else
+  ret->function = sp_support_static_update;
+#endif
   return ret;
 }
 
@@ -130,7 +155,6 @@ static void support_from_absolute_threshold(SpPhaser * ph, Image * blur, real ab
     }
   }
 }
-
 
 static real bezier_map_interpolation(sp_smap * map, real x){
   sp_list * keys = sp_smap_get_keys(map);

@@ -358,7 +358,6 @@ static void support_from_absolute_threshold_cuda(SpPhaser * ph, cufftComplex * b
   sp_cuda_check_errors();
 }
 
-
 static real bezier_map_interpolation(sp_smap * map, real x){
   sp_list * keys = sp_smap_get_keys(map);
   sp_list * values = sp_smap_get_values(map);
