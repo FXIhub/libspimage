@@ -626,6 +626,7 @@ int sp_phaser_iterate(SpPhaser * ph, int iterations){
   if(!ph->model_change){
     return -6;
   }
+  /*
   if(ph->sup_algorithm){
     if(ph->engine == SpEngineCUDA){
 #ifdef _USE_CUDA
@@ -659,6 +660,7 @@ int sp_phaser_iterate(SpPhaser * ph, int iterations){
       }
     }
   }
+  */
   if(ph->algorithm->type == SpHIO){
     if(ph->engine == SpEngineCUDA){
 #ifdef _USE_CUDA
@@ -708,14 +710,15 @@ int sp_phaser_iterate(SpPhaser * ph, int iterations){
   int ret = 0;
   if(phaser_update_support_pointer){
     /* iterate up to the point of the support update */
-    while(iterations){
+    while(iterations){ 
       int to_support_update = ph->sup_algorithm->update_period-1-(ph->iteration)%ph->sup_algorithm->update_period;
       int to_iterate = sp_min(iterations,to_support_update);
       ret = phaser_iterate_pointer(ph,to_iterate);
       iterations -= to_iterate;
       to_support_update -= to_iterate;
       if(to_support_update == 0 && iterations > 0){
-	phaser_update_support_pointer(ph);
+	//phaser_update_support_pointer(ph);
+	ph->sup_algorithm->function(ph);
 	ph->iteration++;
 	iterations -= 1;
       }
