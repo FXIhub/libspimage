@@ -287,8 +287,8 @@ static void sp_image_sort_cuda(cufftComplex * a, int size){
 }
 */
 
-int sp_support_area_update_support_cuda(SpPhaser * ph){
-  SpSupportAreaParameters * params = (SpSupportAreaParameters *)ph->sup_algorithm->params;
+int sp_support_area_update_support_cuda(SpSupportAlgorithm *alg, SpPhaser * ph){
+  SpSupportAreaParameters * params = (SpSupportAreaParameters *)alg->params;
   real radius =  bezier_map_interpolation(params->blur_radius_map,ph->iteration);
   cufftComplex * blur;
   cutilSafeCall(cudaMalloc((void**)&blur, sizeof(cufftComplex)*ph->image_size));
@@ -319,8 +319,8 @@ int sp_support_area_update_support_cuda(SpPhaser * ph){
   return 0;
 }
 
-int sp_support_template_update_support_cuda(SpPhaser *ph){
-  SpSupportTemplateParameters *params = (SpSupportTemplateParameters *)ph->sup_algorithm->params;
+int sp_support_template_update_support_cuda(SpSupportAlgorithm *alg, SpPhaser *ph){
+  SpSupportTemplateParameters *params = (SpSupportTemplateParameters *)alg->params;
   cufftComplex *blured;
   cutilSafeCall(cudaMalloc((void**)&blured, sizeof(cufftComplex)*ph->image_size));
   cutilSafeCall(cudaMemcpy(blured,params->blured->image->data,sizeof(cufftComplex)*ph->image_size,cudaMemcpyHostToDevice)); //should this be device to host?
@@ -331,8 +331,8 @@ int sp_support_template_update_support_cuda(SpPhaser *ph){
   return 0;
 }
 
-int sp_support_threshold_update_support_cuda(SpPhaser * ph){
-  SpSupportThresholdParameters * params = (SpSupportThresholdParameters *)ph->sup_algorithm->params;
+int sp_support_threshold_update_support_cuda(SpSupportAlgorithm *alg, SpPhaser * ph){
+  SpSupportThresholdParameters * params = (SpSupportThresholdParameters *)alg->params;
   real radius =  bezier_map_interpolation(params->blur_radius_map,ph->iteration);
   cufftComplex * blur;
   cutilSafeCall(cudaMalloc((void**)&blur, sizeof(cufftComplex)*ph->image_size));
@@ -348,7 +348,7 @@ int sp_support_threshold_update_support_cuda(SpPhaser * ph){
   return 0;
 }
 
-int sp_support_static_update_support_cuda(SpPhaser * ph){
+int sp_support_static_update_support_cuda(SpSupportAlgorithm *alg, SpPhaser * ph){
   return 0;
 }
 

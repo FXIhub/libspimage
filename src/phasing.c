@@ -412,7 +412,8 @@ Image * sp_phaser_model_change(SpPhaser * ph){
 }
  
 
-int sp_phaser_init(SpPhaser * ph, SpPhasingAlgorithm * alg,SpSupportAlgorithm * sup_alg,SpPhasingEngine engine){
+
+int sp_phaser_init(SpPhaser * ph, SpPhasingAlgorithm * alg,SpSupportArray * sup_alg,SpPhasingEngine engine){
   if(!ph){
     fprintf(stderr,"Phaser is NULL!\n");
     return -1;
@@ -718,7 +719,9 @@ int sp_phaser_iterate(SpPhaser * ph, int iterations){
       to_support_update -= to_iterate;
       if(to_support_update == 0 && iterations > 0){
 	//phaser_update_support_pointer(ph);
-	ph->sup_algorithm->function(ph);
+	//ph->sup_algorithm->function(ph);
+	//((int(*)(SpPhaser *))ph->sup_algorithm->function)(ph);
+	sp_support_array_update(ph->sup_algorithm,ph);
 	ph->iteration++;
 	iterations -= 1;
       }
