@@ -3,10 +3,14 @@
 static real bezier_map_interpolation(sp_smap * map, real x);
 static void support_from_absolute_threshold(SpPhaser * ph, Image * blur, real abs_threshold);
 static int descend_complex_compare(const void * pa,const void * pb);
-int sp_support_static_update_cuda(void *ph);
-int sp_support_area_update_cuda(void *ph);
-int sp_support_threshold_update_cuda(void *ph);
-int sp_support_template_update_cuda(void *ph);
+int sp_support_static_update_cuda(SpPhaser *ph);
+int sp_support_area_update_cuda(SpPhaser *ph);
+int sp_support_threshold_update_cuda(SpPhaser *ph);
+int sp_support_template_update_cuda(SpPhaser *ph);
+int sp_support_static_update(SpPhaser *ph);
+int sp_support_area_update(SpPhaser *ph);
+int sp_support_threshold_update(SpPhaser *ph);
+int sp_support_template_update(SpPhaser *ph);
 
 SpSupportAlgorithm * sp_support_threshold_alloc(int update_period, sp_smap * blur_radius,sp_smap * threshold){
   SpSupportAlgorithm * ret = sp_malloc(sizeof(SpSupportAlgorithm));
