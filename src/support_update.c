@@ -3,6 +3,7 @@
 static real bezier_map_interpolation(sp_smap * map, real x);
 static void support_from_absolute_threshold(SpPhaser * ph, Image * blur, real abs_threshold);
 static int descend_complex_compare(const void * pa,const void * pb);
+/*
 int sp_support_static_update_cuda(SpPhaser *ph);
 int sp_support_area_update_cuda(SpPhaser *ph);
 int sp_support_threshold_update_cuda(SpPhaser *ph);
@@ -11,43 +12,41 @@ int sp_support_static_update(SpPhaser *ph);
 int sp_support_area_update(SpPhaser *ph);
 int sp_support_threshold_update(SpPhaser *ph);
 int sp_support_template_update(SpPhaser *ph);
+*/
 
-SpSupportAlgorithm * sp_support_threshold_alloc(int update_period, sp_smap * blur_radius,sp_smap * threshold){
+SpSupportAlgorithm * sp_support_threshold_alloc(sp_smap * blur_radius,sp_smap * threshold){
   SpSupportAlgorithm * ret = sp_malloc(sizeof(SpSupportAlgorithm));
   ret->type = SpSupportThreshold;
-  ret->update_period = update_period;
   SpSupportThresholdParameters * params = sp_malloc(sizeof(SpSupportThresholdParameters));
   params->blur_radius_map = blur_radius;
   params->threshold = threshold;
   ret->params = params;
 #ifdef _USE_CUDA
-  ret->function = sp_support_threshold_update_cuda;
+  ret->function = sp_support_threshold_update_support_cuda;
 #else
-  ret->function = sp_support_threshold_update;
+  ret->function = sp_support_threshold_update_support;
 #endif
   return ret;
 }
 
-SpSupportAlgorithm * sp_support_area_alloc(int update_period, sp_smap * blur_radius,sp_smap * area){
+SpSupportAlgorithm * sp_support_area_alloc(sp_smap * blur_radius,sp_smap * area){
   SpSupportAlgorithm * ret = sp_malloc(sizeof(SpSupportAlgorithm));
   ret->type = SpSupportArea;
-  ret->update_period = update_period;
   SpSupportAreaParameters * params = sp_malloc(sizeof(SpSupportAreaParameters));
   params->blur_radius_map = blur_radius;
   params->area = area;
   ret->params = params;
 #ifdef _USE_CUDA
-  ret->function = sp_support_area_update_cuda;
+  ret->function = sp_support_area_update_support_cuda;
 #else
-  ret->function = sp_support_area_update;
+  ret->function = sp_support_area_update_support;
 #endif
   return ret;
 }
 
-SpSupportAlgorithm * sp_support_template_alloc(int update_period, Image *initial_support, real blur_radius, sp_smap *area){
+SpSupportAlgorithm * sp_support_template_alloc(Image *initial_support, real blur_radius, sp_smap *area){
   SpSupportAlgorithm *ret = sp_malloc(sizeof(SpSupportAlgorithm));
   ret->type = SpSupportTemplate;
-  ret->update_period = update_period;
   SpSupportTemplateParameters * params = sp_malloc(sizeof(SpSupportTemplateParameters));
   params->blured = sp_gaussian_blur(initial_support,blur_radius);
   params->area = area;
@@ -75,31 +74,43 @@ SpSupportAlgorithm * sp_support_template_alloc(int update_period, Image *initial
   }
 
 #ifdef _USE_CUDA
-  ret->function = sp_support_template_update_cuda;
+  ret->function = sp_support_template_update_support_cuda;
 #else
-  ret->function = sp_support_template_update;
+  ret->function = sp_support_template_update_support;
 #endif
 
   ret->params = params;
   return ret;
 }
 
-SpSupportAlgorithm * sp_support_static_alloc(int update_period){
+SpSupportAlgorithm * sp_support_static_alloc(){
   SpSupportAlgorithm * ret = sp_malloc(sizeof(SpSupportAlgorithm));
   ret->type = SpSupportStatic;
-  ret->update_period = update_period;
   SpSupportStaticParameters * params = sp_malloc(sizeof(SpSupportStaticParameters));
   ret->params = params;
 #ifdef _USE_CUDA
-  ret->function = sp_support_static_update_cuda;
+  ret->function = sp_support_static_update_support_cuda;
 #else
-  ret->function = sp_support_static_update;
+  ret->function = sp_support_static_update_support;
 #endif
   return ret;
 }
 
-int sp_support_area_update_support(SpPhaser * ph){
-  SpSupportAreaParameters * params = ph->sup_algorithm->params;
+SpSupportAlgorithm * sp_support_close_alloc(int size) {
+  SpSupportAlgorithm *ret = sp_malloc(sizeof(SpSupportAlgorithm));
+  ret->type = SpSupportClose;
+  SpSupportStaticParameters * params = sp_malloc(sizeof(SpSupportCloseParameters));
+  ret->params = params;
+#ifdef _USE_CUDA
+  //ret->function = sp_support_close_support_cuda;
+#else
+  ret->function = sp_support_close_support;
+#endif
+  return ret;
+}
+
+int sp_support_area_update_support(SpSupportAlgorithm *alg, SpPhaser * ph){
+  SpSupportAreaParameters * params = alg->params;
   real radius =  bezier_map_interpolation(params->blur_radius_map,ph->iteration);
   Image * tmp = sp_image_duplicate(ph->g1,SP_COPY_DATA);
   sp_image_dephase(tmp);
@@ -115,8 +126,8 @@ int sp_support_area_update_support(SpPhaser * ph){
   return 0;
 }
 
-int sp_support_threshold_update_support(SpPhaser * ph){
-  SpSupportThresholdParameters * params = ph->sup_algorithm->params;
+int sp_support_threshold_update_support(SpSupportAlgorithm *alg, SpPhaser * ph){
+  SpSupportThresholdParameters * params = alg->params;
   real radius =  bezier_map_interpolation(params->blur_radius_map,ph->iteration);
   Image * tmp = sp_image_duplicate(ph->g1,SP_COPY_DATA);
   sp_image_dephase(tmp);
@@ -129,8 +140,8 @@ int sp_support_threshold_update_support(SpPhaser * ph){
   return 0;
 }
 
-int sp_support_template_update_support(SpPhaser * ph){
-  SpSupportTemplateParameters * params = ph->sup_algorithm->params;
+int sp_support_template_update_support(SpSupportAlgorithm *alg, SpPhaser * ph){
+  SpSupportTemplateParameters * params = alg->params;
   //real radius = params->blur_radius;
   //Image *blur = gaussian_blur(params->template,params->blur_radius);
   //Image *support = sp_image_duplicate(params->blured,SP_COPY_DATA);
@@ -145,10 +156,14 @@ int sp_support_template_update_support(SpPhaser * ph){
   return 0;
 }
 
-int sp_support_static_update_support(SpPhaser * ph){
+int sp_support_static_update_support(SpSupportAlgorithm *alg, SpPhaser * ph){
   return 0;
 }
 
+int sp_support_close_support(SpSupportAlgorithm *alg, SpPhaser * ph){
+  //SpSupportTemplateParameters * params = 
+  return 0;
+}
 
 static void support_from_absolute_threshold(SpPhaser * ph, Image * blur, real abs_threshold){
   for(int i =0 ;i<ph->image_size;i++){
@@ -212,4 +227,43 @@ static int descend_complex_compare(const void * pa,const void * pb){
   }else{
     return -1;
   }
+}
+
+/* Alloc an array with a certain size. After this the elemnets
+   of the array needs to be set */
+SpSupportArray * sp_support_array_alloc(int size, int update_period){
+  SpSupportArray *ret = sp_malloc(sizeof(SpSupportArray));
+  ret->size = size;
+  ret->algorithms = sp_malloc(ret->size*sizeof(SpSupportAlgorithm *));
+  ret->update_period = update_period;
+  return ret;
+}
+
+/* Insert an elemnet in the array (doesn't change the size) */
+void sp_support_array_set(SpSupportArray *array, int i, SpSupportAlgorithm *algorithm){
+  array->algorithms[i] = algorithm;
+}
+
+/* Create an array with one element */
+SpSupportArray * sp_support_array_init(SpSupportAlgorithm *algorithm, int update_period){
+  SpSupportArray *ret = sp_support_array_alloc(1,update_period);
+  sp_support_array_set(ret,0,algorithm);
+  return ret;
+}
+
+/* Append an element to the array */
+void sp_support_array_append(SpSupportArray *array, SpSupportAlgorithm *algorithm){
+  SpSupportAlgorithm **alg = sp_malloc((array->size+1)*sizeof(SpSupportAlgorithm *));
+  memcpy(alg,array->algorithms,array->size*sizeof(SpSupportAlgorithm *));
+  alg[array->size] = algorithm;
+  sp_free(array->algorithms);
+  array->algorithms = alg;
+  array->size += 1;
+}
+
+int sp_support_array_update(SpSupportArray *array, SpPhaser *ph){
+  for (int i = 0; i < array->size; i++) {
+    ((int(*)(SpPhaser *))array->algorithms[i]->function)(ph);
+  }
+  return 0;
 }

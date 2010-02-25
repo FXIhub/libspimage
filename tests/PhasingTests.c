@@ -107,9 +107,7 @@ int test_sp_phasing_cuda_common(CuTest * tc,SpPhasingAlgorithm * alg,int size, r
   return 1;
 } 
 
-
-
-int test_sp_support_common(CuTest * tc,SpPhasingAlgorithm * alg,SpSupportAlgorithm * sup_alg, int size, real oversampling, SpPhasingConstraints solution_constraints,
+int test_sp_support_common(CuTest * tc,SpPhasingAlgorithm * alg,SpSupportArray * sup_alg, int size, real oversampling, SpPhasingConstraints solution_constraints,
 			   real beamstop,real tol){
   int attempts = 0;
   double change = 0;
@@ -169,7 +167,7 @@ int test_sp_support_common(CuTest * tc,SpPhasingAlgorithm * alg,SpSupportAlgorit
   return 1;
 } 
 
-void test_sp_support_cuda_common(CuTest * tc,SpSupportAlgorithm * sup_alg){
+void test_sp_support_cuda_common(CuTest * tc,SpSupportArray * sup_alg){
   int size = 16;
   real oversampling = 2;
   Image * solution = create_test_image(size,oversampling,SpNoConstraints);
@@ -235,7 +233,7 @@ void test_sp_support_cuda_common(CuTest * tc,SpSupportAlgorithm * sup_alg){
 } 
 
 
-int test_sp_phasing_speed_common(CuTest * tc,SpPhasingAlgorithm * alg,SpSupportAlgorithm * sup_alg, int size, int oversampling, SpPhasingConstraints solution_constraints,
+int test_sp_phasing_speed_common(CuTest * tc,SpPhasingAlgorithm * alg,SpSupportArray * sup_alg, int size, int oversampling, SpPhasingConstraints solution_constraints,
 				 int iterations,SpPhasingEngine engine){
   Image * solution = create_test_image(size,oversampling,solution_constraints);
   Image * f = sp_image_fft(solution);
@@ -1070,20 +1068,20 @@ void test_sp_support_speed(CuTest * tc){
   sp_smap_insert(threshold,0,0.15);  
   sp_smap * area = sp_smap_alloc(1);
   sp_smap_insert(area,0,1.3*1.0/(oversampling*oversampling));  
-  SpSupportAlgorithm * sup_alg;
+  SpSupportArray * sup_alg;
   if(sp_cuda_get_device_type() == SpCUDAHardwareDevice){
-    sup_alg = sp_support_threshold_alloc(1,blur_radius,threshold);
+    sup_alg = sp_support_array_init(sp_support_threshold_alloc(blur_radius,threshold),1);
     int delta_t = test_sp_phasing_speed_common(tc,alg,sup_alg,size,oversampling,SpNoConstraints,iterations,SpEngineCUDA);
     printf("CUDA %dx%d threshold support = %g iterations per second\n",size*oversampling,size*oversampling,(1.0e6*iterations)/delta_t);
-    sup_alg = sp_support_area_alloc(1,blur_radius,area);
+    sup_alg = sp_support_array_init(sp_support_area_alloc(blur_radius,area),1);
     delta_t = test_sp_phasing_speed_common(tc,alg,sup_alg,size,oversampling,SpNoConstraints,iterations,SpEngineCUDA);
     printf("CUDA %dx%d area support = %g iterations per second\n",size*oversampling,size*oversampling,(1.0e6*iterations)/delta_t);
   }
   iterations = 4;
-  sup_alg = sp_support_threshold_alloc(1,blur_radius,threshold);
+  sup_alg = sp_support_array_init(sp_support_threshold_alloc(blur_radius,threshold),1);
   int delta_t = test_sp_phasing_speed_common(tc,alg,sup_alg,size,oversampling,SpNoConstraints,iterations,SpEngineCPU);
   printf("CPU %dx%d with threshold support = %g iterations per second\n",size*oversampling,size*oversampling,(1.0e6*iterations)/delta_t);
-  sup_alg = sp_support_area_alloc(1,blur_radius,area);
+  sup_alg = sp_support_array_init(sp_support_area_alloc(blur_radius,area),1);
   delta_t = test_sp_phasing_speed_common(tc,alg,sup_alg,size,oversampling,SpNoConstraints,iterations,SpEngineCPU);
   printf("CPU %dx%d with area support = %g iterations per second\n",size*oversampling,size*oversampling,(1.0e6*iterations)/delta_t);
 #endif
@@ -1105,15 +1103,15 @@ void test_sp_phasing_hio_speed(CuTest * tc){
   sp_smap_insert(threshold,0,0.15);  
   sp_smap * area = sp_smap_alloc(1);
   sp_smap_insert(area,0,1.3*1.0/(oversampling*oversampling));  
-  SpSupportAlgorithm * sup_alg;
+  SpSupportArray * sup_alg;
 
   if(sp_cuda_get_device_type() == SpCUDAHardwareDevice){
     int delta_t = test_sp_phasing_speed_common(tc,alg,NULL,size,oversampling,SpNoConstraints,iterations,SpEngineCUDA);
     printf("CUDA HIO %dx%d = %g iterations per second\n",size*oversampling,size*oversampling,(1.0e6*iterations)/delta_t);
-    sup_alg = sp_support_threshold_alloc(20,blur_radius,threshold);
+    sup_alg = sp_support_array_init(sp_support_threshold_alloc(blur_radius,threshold),20);
     delta_t = test_sp_phasing_speed_common(tc,alg,sup_alg,size,oversampling,SpNoConstraints,iterations,SpEngineCUDA);
     printf("CUDA HIO %dx%d with threshold support every 20 = %g iterations per second\n",size*oversampling,size*oversampling,(1.0e6*iterations)/delta_t);
-    sup_alg = sp_support_area_alloc(20,blur_radius,area);
+    sup_alg = sp_support_array_init(sp_support_area_alloc(blur_radius,area),20);
     delta_t = test_sp_phasing_speed_common(tc,alg,sup_alg,size,oversampling,SpNoConstraints,iterations,SpEngineCUDA);
     printf("CUDA HIO %dx%d with area support every 20 = %g iterations per second\n",size*oversampling,size*oversampling,(1.0e6*iterations)/delta_t);
 
@@ -1124,10 +1122,10 @@ void test_sp_phasing_hio_speed(CuTest * tc){
   iterations = 10;
   int delta_t = test_sp_phasing_speed_common(tc,alg,NULL,size,oversampling,SpNoConstraints,iterations,SpEngineCPU);
   printf("CPU HIO %dx%d = %g iterations per second\n",size*oversampling,size*oversampling,(1.0e6*iterations)/delta_t);
-  sup_alg = sp_support_threshold_alloc(20,blur_radius,threshold);
+  sup_alg = sp_support_array_init(sp_support_threshold_alloc(blur_radius,threshold),20);
   delta_t = test_sp_phasing_speed_common(tc,alg,sup_alg,size,oversampling,SpNoConstraints,iterations,SpEngineCPU);
   printf("CPU HIO %dx%d with threshold support every 20 = %g iterations per second\n",size*oversampling,size*oversampling,(1.0e6*iterations)/delta_t);
-  sup_alg = sp_support_area_alloc(20,blur_radius,area);
+  sup_alg = sp_support_array_init(sp_support_area_alloc(blur_radius,area),20);
   delta_t = test_sp_phasing_speed_common(tc,alg,sup_alg,size,oversampling,SpNoConstraints,iterations,SpEngineCPU);
   printf("CPU HIO %dx%d with area support every 20 = %g iterations per second\n",size*oversampling,size*oversampling,(1.0e6*iterations)/delta_t);
 #endif
@@ -1211,9 +1209,9 @@ void test_sp_support_hio(CuTest * tc){
   sp_smap_insert(threshold,0,0.15);  
   sp_smap * area = sp_smap_alloc(1);
   sp_smap_insert(area,0,1.3*1.0/(oversampling*oversampling));  
-  SpSupportAlgorithm * sup_alg = sp_support_threshold_alloc(20,blur_radius,threshold);
+  SpSupportArray * sup_alg = sp_support_array_init(sp_support_threshold_alloc(blur_radius,threshold),20);
   CuAssertIntEquals(tc,test_sp_support_common(tc,alg,sup_alg,size,oversampling,SpNoConstraints,0,tol),1);
-  sup_alg = sp_support_area_alloc(20,blur_radius,area);
+  sup_alg = sp_support_array_init(sp_support_area_alloc(blur_radius,area),20);
   CuAssertIntEquals(tc,test_sp_support_common(tc,alg,sup_alg,size,oversampling,SpNoConstraints,0,tol),1);
   PRINT_DONE;
 }
@@ -1232,9 +1230,9 @@ void test_sp_support_raar(CuTest * tc){
   sp_smap_insert(threshold,0,0.15);  
   sp_smap * area = sp_smap_alloc(1);
   sp_smap_insert(area,0,1.3*1.0/(oversampling*oversampling));  
-  SpSupportAlgorithm * sup_alg = sp_support_threshold_alloc(20,blur_radius,threshold);
+  SpSupportArray * sup_alg = sp_support_array_init(sp_support_threshold_alloc(blur_radius,threshold),20);
   CuAssertIntEquals(tc,test_sp_support_common(tc,alg,sup_alg,size,oversampling,SpNoConstraints,0,tol),1);
-  sup_alg = sp_support_area_alloc(20,blur_radius,area);
+  sup_alg = sp_support_array_init(sp_support_area_alloc(blur_radius,area),20);
   CuAssertIntEquals(tc,test_sp_support_common(tc,alg,sup_alg,size,oversampling,SpNoConstraints,0,tol),1);
   PRINT_DONE;
 }
@@ -1253,9 +1251,9 @@ void test_sp_support_diff_map(CuTest * tc){
   sp_smap_insert(threshold,0,0.15);  
   sp_smap * area = sp_smap_alloc(1);
   sp_smap_insert(area,0,1.3*1.0/(oversampling*oversampling));  
-  SpSupportAlgorithm * sup_alg = sp_support_threshold_alloc(20,blur_radius,threshold);
+  SpSupportArray * sup_alg = sp_support_array_init(sp_support_threshold_alloc(blur_radius,threshold),20);
   CuAssertIntEquals(tc,test_sp_support_common(tc,alg,sup_alg,size,oversampling,SpNoConstraints,0,tol),1);
-  sup_alg = sp_support_area_alloc(20,blur_radius,area);
+  sup_alg = sp_support_array_init(sp_support_area_alloc(blur_radius,area),20);
   CuAssertIntEquals(tc,test_sp_support_common(tc,alg,sup_alg,size,oversampling,SpNoConstraints,0,tol),1);
   PRINT_DONE;
 }
@@ -1270,9 +1268,9 @@ void test_sp_support_cuda(CuTest * tc){
   sp_smap_insert(threshold,0,0.15);  
   sp_smap * area = sp_smap_alloc(1);
   sp_smap_insert(area,0,1.3*1.0/(oversampling*oversampling));  
-  SpSupportAlgorithm * sup_alg = sp_support_threshold_alloc(4,blur_radius,threshold);
+  SpSupportArray * sup_alg = sp_support_array_init(sp_support_threshold_alloc(blur_radius,threshold),4);
   test_sp_support_cuda_common(tc,sup_alg);
-  sup_alg = sp_support_area_alloc(4,blur_radius,area);
+  sup_alg = sp_support_array_init(sp_support_area_alloc(blur_radius,area),4);
   test_sp_support_cuda_common(tc,sup_alg);
   PRINT_DONE;
 }

@@ -55,7 +55,8 @@ typedef struct{
   sp_i3matrix * pixel_flags;
   SpPhasingObjective phasing_objective;
   SpPhasingAlgorithm * algorithm;
-  SpSupportAlgorithm * sup_algorithm;
+  //SpSupportAlgorithm * sup_algorithm;
+  SpSupportArray * sup_algorithm;
   int iteration;
   int image_size;
   int nx;
@@ -116,7 +117,7 @@ spimage_EXPORT const Image * sp_phaser_fmodel_with_mask(SpPhaser * ph);
 spimage_EXPORT Image * sp_phaser_model_change(SpPhaser * ph);
 spimage_EXPORT const Image * sp_phaser_support(SpPhaser * ph);
 spimage_EXPORT const Image * sp_phaser_amplitudes(SpPhaser * ph);
-spimage_EXPORT int sp_phaser_init(SpPhaser * ph, SpPhasingAlgorithm * alg, SpSupportAlgorithm * sup_alg, SpPhasingEngine engine);
+spimage_EXPORT int sp_phaser_init(SpPhaser * ph, SpPhasingAlgorithm * alg, SpSupportArray * sup_alg, SpPhasingEngine engine);
   spimage_EXPORT int sp_phaser_init_model(SpPhaser * ph,const Image * model, int flags);
   spimage_EXPORT int sp_phaser_init_support(SpPhaser * ph,const Image * support, int flags, real value);
 spimage_EXPORT int sp_phaser_iterate(SpPhaser * ph, int iterations);
@@ -126,18 +127,19 @@ spimage_EXPORT int sp_phaser_iterate(SpPhaser * ph, int iterations);
   int phaser_iterate_raar_cuda(SpPhaser * ph,int iterations);  
   int phaser_iterate_diff_map_cuda(SpPhaser * ph,int iterations);  
   int phaser_iterate_er_cuda(SpPhaser * ph,int iterations);  
-  int sp_support_threshold_update_support_cuda(SpPhaser * ph);
-  int sp_support_area_update_support_cuda(SpPhaser * ph);
-  int sp_support_template_update_support_cuda(SpPhaser * ph);
-  int sp_support_static_update_support_cuda(SpPhaser * ph);
+  int sp_support_threshold_update_support_cuda(SpSupportAlgorithm *alg, SpPhaser * ph);
+  int sp_support_area_update_support_cuda(SpSupportAlgorithm *alg, SpPhaser * ph);
+  int sp_support_template_update_support_cuda(SpSupportAlgorithm *alg, SpPhaser * ph);
+  int sp_support_static_update_support_cuda(SpSupportAlgorithm *alg, SpPhaser * ph);
   int sp_proj_module_cuda(Image * a, Image * amp);
 #endif
 
-  int sp_support_area_update_support(SpPhaser * ph);
-  int sp_support_threshold_update_support(SpPhaser * ph);
-  int sp_support_template_update_support(SpPhaser * ph);
-  int sp_support_static_update_support(SpPhaser * ph);
+  int sp_support_area_update_support(SpSupportAlgorithm *alg, SpPhaser * ph);
+  int sp_support_threshold_update_support(SpSupportAlgorithm *alg, SpPhaser * ph);
+  int sp_support_template_update_support(SpSupportAlgorithm *alg, SpPhaser * ph);
+  int sp_support_static_update_support(SpSupportAlgorithm *alg, SpPhaser * ph);
 
+  int sp_support_array_update(SpSupportArray *array, SpPhaser *ph);
 
 #ifdef __cplusplus
 }  /* extern "C" */
