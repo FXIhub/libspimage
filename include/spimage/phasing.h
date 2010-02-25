@@ -138,6 +138,7 @@ spimage_EXPORT int sp_phaser_iterate(SpPhaser * ph, int iterations);
   int sp_support_threshold_update_support(SpSupportAlgorithm *alg, SpPhaser * ph);
   int sp_support_template_update_support(SpSupportAlgorithm *alg, SpPhaser * ph);
   int sp_support_static_update_support(SpSupportAlgorithm *alg, SpPhaser * ph);
+  int sp_support_close_update_support(SpSupportAlgorithm *alg, SpPhaser * ph);
 
   int sp_support_array_update(SpSupportArray *array, SpPhaser *ph);
 
