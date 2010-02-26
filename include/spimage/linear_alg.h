@@ -286,6 +286,11 @@ spimage_EXPORT sp_c3matrix * _sp_c3matrix_alloc(unsigned int nx, unsigned int ny
 spimage_EXPORT sp_c3matrix * _sp_c3matrix_duplicate(const sp_c3matrix * m, const char * file, int line);
 #define sp_c3matrix_duplicate(m) _sp_c3matrix_duplicate(m,__FILE__,__LINE__)
 
+spimage_EXPORT sp_i3matrix * _sp_i3matrix_duplicate(const sp_i3matrix * m, const char * file, int line);
+#define sp_i3matrix_duplicate(m) _sp_i3matrix_duplicate(m,__FILE__,__LINE__)
+
+
+
 /*! This function creates a duplicate of it's argument and returns a pointer to it
  *
  */

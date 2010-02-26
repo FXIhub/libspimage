@@ -352,6 +352,81 @@ int sp_support_static_update_support_cuda(SpSupportAlgorithm *alg, SpPhaser * ph
   return 0;
 }
 
+int sp_support_close_update_support_cuda(SpSupportAlgorithm *alg, SpPhaser * ph){
+  SpSupportCloseParameters *params = alg->params;
+  cutilSafeCall(cudaMemcpy(pixel_flags->data,d_pixel_flags,sizeof(int)*ph->image_size,cudaMemcpyDeviceToHost));
+  sp_i3matrix *in = ph->pixel_flags;
+  sp_i3matrix *tmp1 = sp_i3matrix_duplicate(ph->pixel_flags);
+  sp_i3matrix *tmp2 = sp_i3matrix_duplicate(ph->pixel_flags);
+  sp_i3matrix *foo;
+
+  for (int i = 0; i < params->size; i++) {
+    for (int x = 0; x < sp_i3matrix_x(in); x++) {
+      for (int y = 0; y < sp_i3matrix_y(in); y++) {
+	for (int z = 0; z < sp_i3matrix_z(in); z++) {
+	  if ((sp_i3matrix_get(tmp1,x,y,z) == SpPixelInsideSupport) ||
+	      ((x != 0 && sp_i3matrix_get(tmp1,x-1,y,z) ==
+		SpPixelInsideSupport) ||
+	       (x != sp_image_x(tmp1)-1 && sp_i3matrix_get(tmp1,x+1,y,z) ==
+		SpPixelInsideSupport) ||
+	       (y != 0 && sp_i3matrix_get(tmp1,x,y-1,z) == 
+		SpPixelInsideSupport) ||
+	       (y != sp_image_y(tmp1)-1 && sp_i3matrix_get(tmp1,x,y+1,z) ==
+		SpPixelInsideSupport) ||
+	       (z != 0 && sp_i3matrix_get(tmp1,x,y,z-1) ==
+		SpPixelInsideSupport) ||
+	       (z != sp_image_z(tmp1)-1 && sp_i3matrix_get(tmp1,x,y,z+1) ==
+		SpPixelInsideSupport))) {
+	    tmp2->data[z*sp_i3matrix_y(in)*sp_i3matrix_x(in)+
+		       y*sp_i3matrix_x(in)+x] |= SpPixelInsideSupport;
+	  } else {
+	    tmp2->data[z*sp_i3matrix_y(in)*sp_i3matrix_x(in)+
+		       y*sp_i3matrix_x(in)+x] &= ~SpPixelInsideSupport;
+	  }
+	}
+      }
+    }
+    foo = tmp1;
+    tmp1 = tmp2;
+    tmp2 = foo;
+  }
+
+  for (int i = 0; i < params->size; i++) {
+    for (int x = 0; x < sp_i3matrix_x(in); x++) {
+      for (int y = 0; y < sp_i3matrix_y(in); y++) {
+	for (int z = 0; z < sp_i3matrix_z(in); z++) {
+	  if ((sp_i3matrix_get(tmp1,x,y,z) == ~SpPixelInsideSupport) ||
+	      ((x != 0 && sp_i3matrix_get(tmp1,x-1,y,z) ==
+		~SpPixelInsideSupport) ||
+	       (x != sp_image_x(tmp1)-1 && sp_i3matrix_get(tmp1,x+1,y,z) ==
+		~SpPixelInsideSupport) ||
+	       (y != 0 && sp_i3matrix_get(tmp1,x,y-1,z) == 
+		~SpPixelInsideSupport) ||
+	       (y != sp_image_y(tmp1)-1 && sp_i3matrix_get(tmp1,x,y+1,z) ==
+		~SpPixelInsideSupport) ||
+	       (z != 0 && sp_i3matrix_get(tmp1,x,y,z-1) ==
+		~SpPixelInsideSupport) ||
+	       (z != sp_image_z(tmp1)-1 && sp_i3matrix_get(tmp1,x,y,z+1) ==
+		~SpPixelInsideSupport))) {
+	    tmp2->data[z*sp_i3matrix_y(in)*sp_i3matrix_x(in)+
+		       y*sp_i3matrix_x(in)+x] &= ~SpPixelInsideSupport;
+	  } else {
+	    tmp2->data[z*sp_i3matrix_y(in)*sp_i3matrix_x(in)+
+		       y*sp_i3matrix_x(in)+x] |= SpPixelInsideSupport;
+	  }
+	}
+      }
+    }
+    foo = tmp1;
+    tmp1 = tmp2;
+    tmp2 = foo;
+  }
+  sp_i3matrix_free(tmp1);
+  sp_i3matrix_free(tmp2);
+
+  return 0;
+  cutilSafeCall(cudaMemcpy(d_pixel_flags,d_pixel_flags->data,sizeof(int)*ph->image_size,cudaMemcpyHostToDevice));
+}
 
 static void support_from_absolute_threshold_cuda(SpPhaser * ph, cufftComplex * blur, real abs_threshold){
   CUDA_support_from_threshold<<<ph->number_of_blocks, ph->threads_per_block>>>(blur,abs_threshold,ph->d_pixel_flags,ph->image_size);
