@@ -101,11 +101,11 @@ SpSupportAlgorithm * sp_support_close_alloc(int size) {
   ret->type = SpSupportClose;
   SpSupportStaticParameters * params = sp_malloc(sizeof(SpSupportCloseParameters));
   ret->params = params;
-  //#ifdef _USE_CUDA
-  //ret->function = sp_support_close_support_cuda;
-  //#else
+#ifdef _USE_CUDA
+  ret->function = sp_support_close_support_cuda;
+#else
   ret->function = sp_support_close_update_support;
-  //#endif
+#endif
   return ret;
 }
 
@@ -161,17 +161,18 @@ int sp_support_static_update_support(SpSupportAlgorithm *alg, SpPhaser * ph){
 }
 
 int sp_support_close_update_support(SpSupportAlgorithm *alg, SpPhaser * ph){
+  SpSupportCloseParameters *params = alg->params;
   sp_i3matrix *in = ph->pixel_flags;
   sp_i3matrix *tmp1 = sp_i3matrix_duplicate(ph->pixel_flags);
   sp_i3matrix *tmp2 = sp_i3matrix_duplicate(ph->pixel_flags);
   sp_i3matrix *foo;
 
-  for (int i = 0; i < alg->params->size; i++) {
+  for (int i = 0; i < params->size; i++) {
     for (int x = 0; x < sp_i3matrix_x(in); x++) {
       for (int y = 0; y < sp_i3matrix_y(in); y++) {
 	for (int z = 0; z < sp_i3matrix_z(in); z++) {
 	  if ((sp_i3matrix_get(tmp1,x,y,z) == SpPixelInsideSupport) ||
-	      ((x != 0 && sp_i3matrix_mask_get(tmp1,x-1,y,z) ==
+	      ((x != 0 && sp_i3matrix_get(tmp1,x-1,y,z) ==
 		SpPixelInsideSupport) ||
 	       (x != sp_image_x(tmp1)-1 && sp_i3matrix_get(tmp1,x+1,y,z) ==
 		SpPixelInsideSupport) ||
@@ -197,12 +198,12 @@ int sp_support_close_update_support(SpSupportAlgorithm *alg, SpPhaser * ph){
     tmp2 = foo;
   }
 
-  for (int i = 0; i < alg->params->size; i++) {
+  for (int i = 0; i < params->size; i++) {
     for (int x = 0; x < sp_i3matrix_x(in); x++) {
       for (int y = 0; y < sp_i3matrix_y(in); y++) {
 	for (int z = 0; z < sp_i3matrix_z(in); z++) {
 	  if ((sp_i3matrix_get(tmp1,x,y,z) == ~SpPixelInsideSupport) ||
-	      ((x != 0 && sp_i3matrix_mask_get(tmp1,x-1,y,z) ==
+	      ((x != 0 && sp_i3matrix_get(tmp1,x-1,y,z) ==
 		~SpPixelInsideSupport) ||
 	       (x != sp_image_x(tmp1)-1 && sp_i3matrix_get(tmp1,x+1,y,z) ==
 		~SpPixelInsideSupport) ||
@@ -316,6 +317,7 @@ void sp_support_array_set(SpSupportArray *array, int i, SpSupportAlgorithm *algo
 SpSupportArray * sp_support_array_init(SpSupportAlgorithm *algorithm, int update_period){
   SpSupportArray *ret = sp_support_array_alloc(1,update_period);
   sp_support_array_set(ret,0,algorithm);
+  ret->update_period = update_period;
   return ret;
 }
 

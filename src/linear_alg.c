@@ -59,6 +59,7 @@ sp_cmatrix * _sp_cmatrix_alloc(unsigned int nrows, unsigned int ncols,const char
 }
 
 
+
 sp_cmatrix * _sp_cmatrix_duplicate(const sp_cmatrix * m,const char * file, int line){
   sp_cmatrix * res = _sp_cmatrix_alloc(sp_cmatrix_rows(m),sp_cmatrix_cols(m),file,line);
   sp_cmatrix_memcpy(res,m);
@@ -99,6 +100,12 @@ sp_i3matrix * _sp_i3matrix_alloc(unsigned int nx, unsigned int ny, unsigned int 
   res->y = ny;
   res->z = nz;
   res->data = _sp_calloc(nx*ny*nz,sizeof(int),file,line);
+  return res;
+}
+
+sp_i3matrix * _sp_i3matrix_duplicate(const sp_i3matrix * m, const char * file, int line){
+  sp_i3matrix * res = _sp_i3matrix_alloc(sp_i3matrix_x(m),sp_i3matrix_y(m),sp_i3matrix_z(m),file,line);
+  sp_i3matrix_memcpy(res,m);
   return res;
 }
 
