@@ -527,6 +527,32 @@ static void write_h5_img(const Image * img,const char * filename, int output_pre
   }
 
 
+  if(img->detector->orientation.R){
+    dims[0] = 3;
+    dims[1] = 3;
+    dataspace_id = H5Screate_simple( 2, dims, NULL );
+    if(dataspace_id < 0){
+      goto error;
+    }
+    dataset_id = H5Dcreate(file_id, "/orientation",out_type_id ,
+			   dataspace_id, H5P_DEFAULT);
+    if(dataset_id < 0){
+      goto error;
+    }
+    status = H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
+		      H5P_DEFAULT, img->detector->orientation.R->data);
+    if(status < 0){
+      goto error;
+    }
+    status = H5Dclose(dataset_id);
+    if(status < 0){
+      goto error;
+    }
+    status = H5Sclose(dataspace_id);
+    if(status < 0){
+      goto error;
+    }
+  }
   status = H5Fclose(file_id);
   if(status < 0){
     goto error;
