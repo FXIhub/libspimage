@@ -110,6 +110,11 @@ typedef struct{
   Complex * data;
 } sp_c3matrix;
 
+typedef struct {
+  sp_matrix * R;
+}Rotation;
+
+
 
 static inline real sp_min(real a,real b){
   if(a< b){

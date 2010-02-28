@@ -39,6 +39,8 @@ typedef struct{
   real detector_distance;
   /*! Photon wavelength used in meters */
   real wavelength;
+  /*! The orientation of the detector */
+  Rotation orientation;
 }Detector;
 
 

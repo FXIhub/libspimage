@@ -2,7 +2,7 @@
 #define _IMAGE_SPHERE_H_
 
 #include "image.h"
-//#include "linear_algebra.h"
+#include "linear_alg.h"
 
 /*
  *Structure that contains the orientation of an ewald sphere.
@@ -14,11 +14,6 @@
 #define SP_QSPLINE_KERNEL 3
 #define SP_CSPLINE_KERNEL 4
 #define SP_4SPLINE_KERNEL 5
-
-
-typedef struct{
-  sp_matrix * R;
-}Rotation;
 
 /** @defgroup direction Direction
  *  Functions that handle direction objects.
