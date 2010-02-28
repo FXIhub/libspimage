@@ -123,14 +123,14 @@ static inline real sp_smap_min(sp_smap *m){
   real t = (2 - 2*(p0x - p3x)*
 	    pow(8*p0x*p3x*x - 2*p3x*pow(p0x,2) - 4*x*pow(p0x,2) + 
 		2*pow(p0x,3) - 2*p0x*pow(p3x,2) - 4*x*pow(p3x,2) + 
-		2*pow(p3x,3) + pow(pow(p0x - p3x,4)*
+		2*pow(p3x,3) + pow((double)pow(p0x - p3x,4)*
 				   (6*p0x*p3x - 16*p0x*x - 16*p3x*x + 5*pow(p0x,2) +
 				    5*pow(p3x,2) + 16*pow(x,2)),0.5),
 		-0.3333333333333333) +
 	    2*pow(p0x - p3x,-1)*
 	    pow(8*p0x*p3x*x - 2*p3x*pow(p0x,2) - 4*x*pow(p0x,2) +
 		2*pow(p0x,3) - 2*p0x*pow(p3x,2) - 4*x*pow(p3x,2) +
-		2*pow(p3x,3) + pow(pow(p0x - p3x,4)*
+		2*pow(p3x,3) + pow((double)pow(p0x - p3x,4)*
 				   (6*p0x*p3x - 16*p0x*x -
 				    16*p3x*x + 5*pow(p0x,2) + 
 				     5*pow(p3x,2) + 16*pow(x,2)),0.5)
