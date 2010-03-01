@@ -40,7 +40,7 @@ typedef struct{
   /*! Photon wavelength used in meters */
   real wavelength;
   /*! The orientation of the detector */
-  Rotation orientation;
+  SpRotation * orientation;
 }Detector;
 
 

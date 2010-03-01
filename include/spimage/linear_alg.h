@@ -110,9 +110,7 @@ typedef struct{
   Complex * data;
 } sp_c3matrix;
 
-typedef struct {
-  sp_matrix * R;
-}Rotation;
+typedef sp_matrix SpRotation;
 
 
 

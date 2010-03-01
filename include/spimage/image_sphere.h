@@ -19,31 +19,31 @@
  *  Functions that handle direction objects.
  *  @{
  */
-spimage_EXPORT Rotation * sp_rot_alloc();
+spimage_EXPORT SpRotation * sp_rot_alloc();
 
-spimage_EXPORT void sp_rot_free(Rotation * rot);
+spimage_EXPORT void sp_rot_free(SpRotation * rot);
 
-spimage_EXPORT Rotation * sp_rot_euler(real a1, real a2, real a3);
+spimage_EXPORT SpRotation * sp_rot_euler(real a1, real a2, real a3);
 
-spimage_EXPORT void sp_rot_get_euler(Rotation * rot, real *alpha, real *beta, real *gamma);
+spimage_EXPORT void sp_rot_get_euler(SpRotation * rot, real *alpha, real *beta, real *gamma);
 
-spimage_EXPORT Rotation * sp_rot_multiply(Rotation * a, Rotation * b);
+spimage_EXPORT SpRotation * sp_rot_multiply(SpRotation * a, SpRotation * b);
 
-spimage_EXPORT Rotation * sp_rot_transpose(Rotation * a);
+spimage_EXPORT SpRotation * sp_rot_transpose(SpRotation * a);
 
-spimage_EXPORT Rotation * sp_rot_inverse();
+spimage_EXPORT SpRotation * sp_rot_inverse();
 
-spimage_EXPORT Rotation * sp_rot_disturb(Rotation * a, real sigma);
+spimage_EXPORT SpRotation * sp_rot_disturb(SpRotation * a, real sigma);
 
-spimage_EXPORT real sp_rot_difference(Rotation * a, Rotation * b);
+spimage_EXPORT real sp_rot_difference(SpRotation * a, SpRotation * b);
 
-//spimage_EXPORT Rotation * sp_rotation_by_axis(real v1, real v2, real v3,real angle);
+//spimage_EXPORT SpRotation * sp_rotation_by_axis(real v1, real v2, real v3,real angle);
 
-spimage_EXPORT real sp_rot_determinant(Rotation * rot);
+spimage_EXPORT real sp_rot_determinant(SpRotation * rot);
 
-spimage_EXPORT void sp_rot_draw(Rotation * rot);
+spimage_EXPORT void sp_rot_draw(SpRotation * rot);
 
-spimage_EXPORT Rotation * sp_rot_uniform();
+spimage_EXPORT SpRotation * sp_rot_uniform();
 /*@}*/
 
 
@@ -69,20 +69,20 @@ spimage_EXPORT sp_3matrix * sp_image_sphere_z(Image * img);
 
 /*! Adds the values of the 2D image ewald_xy to the 3D image img.
  */
-spimage_EXPORT void sp_image_insert_ewald(Image * img, sp_3matrix * weight, Image * slice, sp_3matrix * curvature, Rotation * rot, int kernel, real sigma, int radius);
+spimage_EXPORT void sp_image_insert_ewald(Image * img, sp_3matrix * weight, Image * slice, sp_3matrix * curvature, SpRotation * rot, int kernel, real sigma, int radius);
 
 /*! Generates a simple diffraction pattern.
  */
 Image * sp_image_generate_pattern(int side);
 
 
-void sp_image_get_2dpattern(Image * pattern, Image * slice, sp_3matrix * curvature, Rotation * rot, int kernel);
+void sp_image_get_2dpattern(Image * pattern, Image * slice, sp_3matrix * curvature, SpRotation * rot, int kernel);
 
 /*! This function takes a slice of an existing 3D diffraction pattern.
  *  Make sure that the pixel size and detector distance variables are
  *  set correctly to get the curvature right.
  */
-spimage_EXPORT void sp_image_get_slice(Image * space, Image * slice, sp_3matrix * slice_z, real a, Rotation * rot);
+spimage_EXPORT void sp_image_get_slice(Image * space, Image * slice, sp_3matrix * slice_z, real a, SpRotation * rot);
 
-//spimage_EXPORT void sp_image_nfft_slice(Image * space, Image * slice, sp_3matrix * curvature, Rotation * rot);
+//spimage_EXPORT void sp_image_nfft_slice(Image * space, Image * slice, sp_3matrix * curvature, SpRotation * rot);
 #endif

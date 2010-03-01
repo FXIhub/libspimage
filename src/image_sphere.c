@@ -10,20 +10,20 @@
 
 /*! This function calculates a rotation from three euler angles.
  */
-Rotation * sp_rot_alloc()
+SpRotation * sp_rot_alloc()
 {
-  Rotation * rot = malloc(sizeof(Rotation));
-  rot->R = sp_matrix_alloc(3,3);
+  SpRotation * rot = malloc(sizeof(SpRotation));
+  rot = sp_matrix_alloc(3,3);
   return rot;
 }
 
-void sp_rot_free(Rotation * rot)
+void sp_rot_free(SpRotation * rot)
 {
-  sp_matrix_free(rot->R);
+  sp_matrix_free(rot);
   free(rot);
 }
 
-Rotation * sp_rot_euler(real a1, real a2, real a3)
+SpRotation * sp_rot_euler(real a1, real a2, real a3)
 {
   sp_matrix * R1 = sp_matrix_alloc(3,3);
   sp_matrix * R2 = sp_matrix_alloc(3,3);
@@ -44,11 +44,11 @@ Rotation * sp_rot_euler(real a1, real a2, real a3)
   sp_matrix_set(R3,1,0,-sin(a3));
   sp_matrix_set(R3,2,2,1.0);
   
-  Rotation * rot = sp_rot_alloc();
-  sp_matrix_free(rot->R);
+  SpRotation * rot = sp_rot_alloc();
+  sp_matrix_free(rot);
 
   sp_matrix * R4 = sp_matrix_mul(R2,R1);
-  rot->R = sp_matrix_mul(R3,R4);
+  rot = sp_matrix_mul(R3,R4);
 
   sp_matrix_free(R1);
   sp_matrix_free(R2);
@@ -62,46 +62,46 @@ Rotation * sp_rot_euler(real a1, real a2, real a3)
 /* Taken from http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToEuler/index.htm
  * might not work very well
  */
-void sp_rot_get_euler(Rotation * rot, real *alpha, real *beta, real *gamma)
+void sp_rot_get_euler(SpRotation * rot, real *alpha, real *beta, real *gamma)
 {
-  if (sp_matrix_get(rot->R,2,2) == 1.0) {
+  if (sp_matrix_get(rot,2,2) == 1.0) {
     *beta = M_PI;
-    *alpha = atan2(sp_matrix_get(rot->R,0,1),sp_matrix_get(rot->R,1,1));
+    *alpha = atan2(sp_matrix_get(rot,0,1),sp_matrix_get(rot,1,1));
     *gamma = 0;
-  } else if (sp_matrix_get(rot->R,2,2) == -1.0) {
+  } else if (sp_matrix_get(rot,2,2) == -1.0) {
     *beta = M_PI;
-    *alpha = atan2(sp_matrix_get(rot->R,1,0),sp_matrix_get(rot->R,0,0));
+    *alpha = atan2(sp_matrix_get(rot,1,0),sp_matrix_get(rot,0,0));
     *gamma = 0;
   } else {
-    *alpha = atan2(sp_matrix_get(rot->R,2,0),-sp_matrix_get(rot->R,2,1));
-    *beta = acos(sp_matrix_get(rot->R,2,2));
-    *gamma = atan2(sp_matrix_get(rot->R,0,2),sp_matrix_get(rot->R,1,2));
+    *alpha = atan2(sp_matrix_get(rot,2,0),-sp_matrix_get(rot,2,1));
+    *beta = acos(sp_matrix_get(rot,2,2));
+    *gamma = atan2(sp_matrix_get(rot,0,2),sp_matrix_get(rot,1,2));
   }
 }
 
-Rotation * sp_rot_multiply(Rotation * a, Rotation * b)
+SpRotation * sp_rot_multiply(SpRotation * a, SpRotation * b)
 {
-  Rotation * rot = sp_rot_alloc();
-  sp_matrix_free(rot->R);
-  rot->R = sp_matrix_mul(a->R,b->R);
+  SpRotation * rot = sp_rot_alloc();
+  sp_matrix_free(rot);
+  rot = sp_matrix_mul(a,b);
   return rot;
 }
 
-Rotation * sp_rot_transpose(Rotation * a)
+SpRotation * sp_rot_transpose(SpRotation * a)
 {
-  Rotation * b = sp_rot_alloc();
+  SpRotation * b = sp_rot_alloc();
   for (int i = 0; i < 3; i++)
     for (int j = 0; j < 3; j++)
-      sp_matrix_set(b->R,i,j,sp_matrix_get(a->R,j,i));
+      sp_matrix_set(b,i,j,sp_matrix_get(a,j,i));
   return b;
 }
 
-Rotation * sp_rot_inverse()
+SpRotation * sp_rot_inverse()
 {
   int i;
-  Rotation * rot = sp_rot_alloc();
+  SpRotation * rot = sp_rot_alloc();
   for (i = 0; i < 3; i++) {
-    sp_matrix_set(rot->R,i,i,-1.0);
+    sp_matrix_set(rot,i,i,-1.0);
   }
   return rot;
 }
@@ -110,7 +110,7 @@ Rotation * sp_rot_inverse()
  * the two degrees of freedom. They are both normally distributed with a standard deviation
  * of sigma (in radians)
  */
-Rotation * sp_rot_disturb(Rotation * a, real sigma)
+SpRotation * sp_rot_disturb(SpRotation * a, real sigma)
 {
   int i;
   real theta = 0; //theta is normally idstributed
@@ -136,46 +136,46 @@ Rotation * sp_rot_disturb(Rotation * a, real sigma)
   sp_matrix_set(R2,0,1,sin(kappa));
   sp_matrix_set(R2,1,0,-sin(kappa));
 
-  Rotation * rot = sp_rot_alloc();
-  sp_matrix_free(rot->R);
-  rot->R = sp_matrix_mul(sp_matrix_mul(R1,R2),a->R);
+  SpRotation * rot = sp_rot_alloc();
+  sp_matrix_free(rot);
+  rot = sp_matrix_mul(sp_matrix_mul(R1,R2),a);
   return rot;
 }
 
-real sp_rot_difference(Rotation * a, Rotation * b)
+real sp_rot_difference(SpRotation * a, SpRotation * b)
 {
-  Rotation * diff = sp_rot_multiply(a,sp_rot_transpose(b));
-  real ret = (sp_matrix_get(diff->R,0,0)+sp_matrix_get(diff->R,1,1)+sp_matrix_get(diff->R,2,2))/3.0;
+  SpRotation * diff = sp_rot_multiply(a,sp_rot_transpose(b));
+  real ret = (sp_matrix_get(diff,0,0)+sp_matrix_get(diff,1,1)+sp_matrix_get(diff,2,2))/3.0;
   sp_rot_free(diff);
   return ret;
 }
 
-real sp_rot_determinant(Rotation * rot)
+real sp_rot_determinant(SpRotation * rot)
 {
   return
-    sp_matrix_get(rot->R,0,0)*sp_matrix_get(rot->R,1,1)*sp_matrix_get(rot->R,2,2)+
-    sp_matrix_get(rot->R,1,0)*sp_matrix_get(rot->R,2,1)*sp_matrix_get(rot->R,0,2)+
-    sp_matrix_get(rot->R,2,0)*sp_matrix_get(rot->R,0,1)*sp_matrix_get(rot->R,1,2)-
-    sp_matrix_get(rot->R,0,0)*sp_matrix_get(rot->R,2,1)*sp_matrix_get(rot->R,1,2)-
-    sp_matrix_get(rot->R,1,0)*sp_matrix_get(rot->R,0,1)*sp_matrix_get(rot->R,2,2)-
-    sp_matrix_get(rot->R,2,0)*sp_matrix_get(rot->R,1,1)*sp_matrix_get(rot->R,0,2);
+    sp_matrix_get(rot,0,0)*sp_matrix_get(rot,1,1)*sp_matrix_get(rot,2,2)+
+    sp_matrix_get(rot,1,0)*sp_matrix_get(rot,2,1)*sp_matrix_get(rot,0,2)+
+    sp_matrix_get(rot,2,0)*sp_matrix_get(rot,0,1)*sp_matrix_get(rot,1,2)-
+    sp_matrix_get(rot,0,0)*sp_matrix_get(rot,2,1)*sp_matrix_get(rot,1,2)-
+    sp_matrix_get(rot,1,0)*sp_matrix_get(rot,0,1)*sp_matrix_get(rot,2,2)-
+    sp_matrix_get(rot,2,0)*sp_matrix_get(rot,1,1)*sp_matrix_get(rot,0,2);
 }
 
-void sp_rot_draw(Rotation * rot)
+void sp_rot_draw(SpRotation * rot)
 {
   printf("%f %f %f\n%f %f %f\n%f %f %f\n",
-	 sp_matrix_get(rot->R,0,0),
-	 sp_matrix_get(rot->R,0,1),
-	 sp_matrix_get(rot->R,0,2),
-	 sp_matrix_get(rot->R,1,0),
-	 sp_matrix_get(rot->R,1,1),
-	 sp_matrix_get(rot->R,1,2),
-	 sp_matrix_get(rot->R,2,0),
-	 sp_matrix_get(rot->R,2,1),
-	 sp_matrix_get(rot->R,2,2));
+	 sp_matrix_get(rot,0,0),
+	 sp_matrix_get(rot,0,1),
+	 sp_matrix_get(rot,0,2),
+	 sp_matrix_get(rot,1,0),
+	 sp_matrix_get(rot,1,1),
+	 sp_matrix_get(rot,1,2),
+	 sp_matrix_get(rot,2,0),
+	 sp_matrix_get(rot,2,1),
+	 sp_matrix_get(rot,2,2));
 }
 
-Rotation * sp_rot_uniform()
+SpRotation * sp_rot_uniform()
 {
   real x1, x2, x3;
   sp_matrix * R = sp_matrix_alloc(3,3);
@@ -200,10 +200,10 @@ Rotation * sp_rot_uniform()
   sp_matrix_set(H,2,1,2.0*sin(2.0*M_PI*x2)*sqrt(x3-x3*x3));
   sp_matrix_set(H,2,2,2.0*(1.0-x3) - 1.0);
   
-  Rotation * rot = sp_rot_alloc();
-  sp_matrix_free(rot->R);
+  SpRotation * rot = sp_rot_alloc();
+  sp_matrix_free(rot);
 
-  rot->R = sp_matrix_mul(H,R);
+  rot = sp_matrix_mul(H,R);
   
   sp_matrix_free(R);
   sp_matrix_free(H);
@@ -241,7 +241,7 @@ sp_3matrix * sp_image_sphere_z(Image * img)
   }
 }
 
-void sp_image_insert_ewald(Image * img, sp_3matrix * weight, Image * slice, sp_3matrix * curvature, Rotation * rot, int kernel, real sigma, int radius) {
+void sp_image_insert_ewald(Image * img, sp_3matrix * weight, Image * slice, sp_3matrix * curvature, SpRotation * rot, int kernel, real sigma, int radius) {
   int x,y;
   int xk,yk,zk;
   real nx,ny,nz;
@@ -256,16 +256,16 @@ void sp_image_insert_ewald(Image * img, sp_3matrix * weight, Image * slice, sp_3
     for (y = 0; y < sp_3matrix_y(curvature); y++) {
       //printf("-----------\n");
       //printf("%g, %g, %g\n",(real)x-cx,(real)y-cy,sp_3matrix_get(curvature,x,y,0));
-      //printf("(%g %g %g)\n",sp_matrix_get(rot->R,0,0),sp_matrix_get(rot->R,1,0),sp_matrix_get(rot->R,2,0));
+      //printf("(%g %g %g)\n",sp_matrix_get(rot,0,0),sp_matrix_get(rot,1,0),sp_matrix_get(rot,2,0));
     
-      //printf("%g %g %g\n",((real)x-cx)*px*sp_matrix_get(rot->R,0,0) + ((real)y-cy)*py*sp_matrix_get(rot->R,1,0) + sp_3matrix_get(curvature,x,y,0)*sp_matrix_get(rot->R,2,0),
-      //((real)x-cx)*px*sp_matrix_get(rot->R,0,1) + ((real)y-cy)*py*sp_matrix_get(rot->R,1,1) + sp_3matrix_get(curvature,x,y,0)*sp_matrix_get(rot->R,2,1),
-      //((real)x-cx)*px*sp_matrix_get(rot->R,0,2) + ((real)y-cy)*py*sp_matrix_get(rot->R,1,2) + sp_3matrix_get(curvature,x,y,0)*sp_matrix_get(rot->R,2,2));
-      nx = (((real)x-cx)*px*sp_matrix_get(rot->R,0,0) + ((real)y-cy)*py*sp_matrix_get(rot->R,1,0) + sp_3matrix_get(curvature,x,y,0)*sp_matrix_get(rot->R,2,0))/
+      //printf("%g %g %g\n",((real)x-cx)*px*sp_matrix_get(rot,0,0) + ((real)y-cy)*py*sp_matrix_get(rot,1,0) + sp_3matrix_get(curvature,x,y,0)*sp_matrix_get(rot,2,0),
+      //((real)x-cx)*px*sp_matrix_get(rot,0,1) + ((real)y-cy)*py*sp_matrix_get(rot,1,1) + sp_3matrix_get(curvature,x,y,0)*sp_matrix_get(rot,2,1),
+      //((real)x-cx)*px*sp_matrix_get(rot,0,2) + ((real)y-cy)*py*sp_matrix_get(rot,1,2) + sp_3matrix_get(curvature,x,y,0)*sp_matrix_get(rot,2,2));
+      nx = (((real)x-cx)*px*sp_matrix_get(rot,0,0) + ((real)y-cy)*py*sp_matrix_get(rot,1,0) + sp_3matrix_get(curvature,x,y,0)*sp_matrix_get(rot,2,0))/
 	img->detector->pixel_size[0] + img->detector->image_center[0];
-      ny = (((real)x-cx)*px*sp_matrix_get(rot->R,0,1) + ((real)y-cy)*py*sp_matrix_get(rot->R,1,1) + sp_3matrix_get(curvature,x,y,0)*sp_matrix_get(rot->R,2,1))/
+      ny = (((real)x-cx)*px*sp_matrix_get(rot,0,1) + ((real)y-cy)*py*sp_matrix_get(rot,1,1) + sp_3matrix_get(curvature,x,y,0)*sp_matrix_get(rot,2,1))/
 	img->detector->pixel_size[1] + img->detector->image_center[1];
-      nz = (((real)x-cx)*px*sp_matrix_get(rot->R,0,2) + ((real)y-cy)*py*sp_matrix_get(rot->R,1,2) + sp_3matrix_get(curvature,x,y,0)*sp_matrix_get(rot->R,2,2))/
+      nz = (((real)x-cx)*px*sp_matrix_get(rot,0,2) + ((real)y-cy)*py*sp_matrix_get(rot,1,2) + sp_3matrix_get(curvature,x,y,0)*sp_matrix_get(rot,2,2))/
 	img->detector->pixel_size[2] + img->detector->image_center[2];
 
       nx_int = (int)(nx+0.5);
@@ -360,7 +360,7 @@ Image * sp_image_generate_pattern(int side)
   return fourier;
 }
 
-void sp_image_get_2dpattern(Image * pattern, Image * slice, sp_3matrix * curvature,  Rotation * rot, int kernel)
+void sp_image_get_2dpattern(Image * pattern, Image * slice, sp_3matrix * curvature,  SpRotation * rot, int kernel)
 {
   int x,y;
   real nx,ny,nz;
@@ -385,11 +385,11 @@ void sp_image_get_2dpattern(Image * pattern, Image * slice, sp_3matrix * curvatu
   }
   for (x = 0; x < sp_image_x(slice); x++) {
     for (y = 0; y < sp_image_y(slice); y++) {
-      nx = (((real)x-cx)*px*sp_matrix_get(rot->R,0,0) + ((real)y-cy)*py*sp_matrix_get(rot->R,1,0) + sp_3matrix_get(curvature,x,y,0)*sp_matrix_get(rot->R,2,0))/
+      nx = (((real)x-cx)*px*sp_matrix_get(rot,0,0) + ((real)y-cy)*py*sp_matrix_get(rot,1,0) + sp_3matrix_get(curvature,x,y,0)*sp_matrix_get(rot,2,0))/
 	pattern->detector->pixel_size[0] + pattern->detector->image_center[0];
-      ny = (((real)x-cx)*px*sp_matrix_get(rot->R,0,1) + ((real)y-cy)*py*sp_matrix_get(rot->R,1,1) + sp_3matrix_get(curvature,x,y,0)*sp_matrix_get(rot->R,2,1))/
+      ny = (((real)x-cx)*px*sp_matrix_get(rot,0,1) + ((real)y-cy)*py*sp_matrix_get(rot,1,1) + sp_3matrix_get(curvature,x,y,0)*sp_matrix_get(rot,2,1))/
 	pattern->detector->pixel_size[1] + pattern->detector->image_center[1];
-      nz = (((real)x-cx)*px*sp_matrix_get(rot->R,0,2) + ((real)y-cy)*py*sp_matrix_get(rot->R,1,2) + sp_3matrix_get(curvature,x,y,0)*sp_matrix_get(rot->R,2,2))/
+      nz = (((real)x-cx)*px*sp_matrix_get(rot,0,2) + ((real)y-cy)*py*sp_matrix_get(rot,1,2) + sp_3matrix_get(curvature,x,y,0)*sp_matrix_get(rot,2,2))/
 	pattern->detector->pixel_size[2] + pattern->detector->image_center[2];
       
       nx_int = (int)(nx+0.5);
@@ -439,7 +439,7 @@ void sp_image_get_2dpattern(Image * pattern, Image * slice, sp_3matrix * curvatu
 }
 
 // I want to make it possible to up/downsample when slicing. a is the downsampling factor
-void sp_image_get_slice(Image * space, Image * slice, sp_3matrix * slice_z, real a, Rotation * rot)
+void sp_image_get_slice(Image * space, Image * slice, sp_3matrix * slice_z, real a, SpRotation * rot)
 {
   int x,y;
   real nx,ny,nz;
@@ -455,9 +455,9 @@ void sp_image_get_slice(Image * space, Image * slice, sp_3matrix * slice_z, real
 
   for(x=0; x<sp_c3matrix_x(local); x++){
     for(y=0; y<sp_c3matrix_y(local); y++){
-      nx = a*(x-cx)*sp_matrix_get(rot->R,0,0)+a*(y-cy)*sp_matrix_get(rot->R,1,0)+a*sp_3matrix_get(slice_z,x,y,0)/slice->detector->pixel_size[0]*sp_matrix_get(rot->R,2,0);
-      ny = a*(x-cx)*sp_matrix_get(rot->R,0,1)+a*(y-cy)*sp_matrix_get(rot->R,1,1)+a*sp_3matrix_get(slice_z,x,y,0)/slice->detector->pixel_size[0]*sp_matrix_get(rot->R,2,1);
-      nz = a*(x-cx)*sp_matrix_get(rot->R,0,2)+a*(y-cy)*sp_matrix_get(rot->R,1,2)+a*sp_3matrix_get(slice_z,x,y,0)/slice->detector->pixel_size[0]*sp_matrix_get(rot->R,2,2);
+      nx = a*(x-cx)*sp_matrix_get(rot,0,0)+a*(y-cy)*sp_matrix_get(rot,1,0)+a*sp_3matrix_get(slice_z,x,y,0)/slice->detector->pixel_size[0]*sp_matrix_get(rot,2,0);
+      ny = a*(x-cx)*sp_matrix_get(rot,0,1)+a*(y-cy)*sp_matrix_get(rot,1,1)+a*sp_3matrix_get(slice_z,x,y,0)/slice->detector->pixel_size[0]*sp_matrix_get(rot,2,1);
+      nz = a*(x-cx)*sp_matrix_get(rot,0,2)+a*(y-cy)*sp_matrix_get(rot,1,2)+a*sp_3matrix_get(slice_z,x,y,0)/slice->detector->pixel_size[0]*sp_matrix_get(rot,2,2);
       if(nx+space_cx>=0 && nx+space_cx<sp_image_x(space) &&
 	 ny+space_cy>=0 && ny+space_cy<sp_image_y(space) &&
 	 nz+space_cz>=0 && nz+space_cz<sp_image_z(space)){

@@ -1256,7 +1256,7 @@ Image * _sp_image_alloc(int x, int y, int z,const char * file, int line){
   res->detector->image_center[0] = (x-1)/2.0;
   res->detector->image_center[1] = (y-1)/2.0;
   res->detector->image_center[2] = (z-1)/2.0;
-  res->detector->orientation.R = NULL;
+  res->detector->orientation = NULL;
   res->mask = _sp_i3matrix_alloc(x,y,z,file,line);
   res->scaled = 0;
   res->shifted = 0;
