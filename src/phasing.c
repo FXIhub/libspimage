@@ -709,14 +709,10 @@ int sp_phaser_iterate(SpPhaser * ph, int iterations){
     return -7;
   }
   int ret = 0;
-  //if(phaser_update_support_pointer){
-  if (1) {
+  if(ph->sup_algorithm->algorithms[0]->function){
     /* iterate up to the point of the support update */
     while(iterations){ 
-      printf("hey\n");
       int to_support_update = ph->sup_algorithm->update_period-1-(ph->iteration)%ph->sup_algorithm->update_period;
-      printf("to_support_update = %d\n",to_support_update);
-      printf("ph->sup_algorithm->update_period = %d\n",ph->sup_algorithm->update_period);
       int to_iterate = sp_min(iterations,to_support_update);
       ret = phaser_iterate_pointer(ph,to_iterate);
       iterations -= to_iterate;
@@ -726,7 +722,6 @@ int sp_phaser_iterate(SpPhaser * ph, int iterations){
 	//ph->sup_algorithm->function(ph);
 	//((int(*)(SpPhaser *))ph->sup_algorithm->function)(ph);
 	sp_support_array_update(ph->sup_algorithm,ph);
-	printf("update support\n");
 	ph->iteration++;
 	iterations -= 1;
       }

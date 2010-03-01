@@ -131,6 +131,7 @@ spimage_EXPORT int sp_phaser_iterate(SpPhaser * ph, int iterations);
   int sp_support_area_update_support_cuda(SpSupportAlgorithm *alg, SpPhaser * ph);
   int sp_support_template_update_support_cuda(SpSupportAlgorithm *alg, SpPhaser * ph);
   int sp_support_static_update_support_cuda(SpSupportAlgorithm *alg, SpPhaser * ph);
+  int sp_support_close_update_support_cuda(SpSupportAlgorithm *alg, SpPhaser * ph);
   int sp_proj_module_cuda(Image * a, Image * amp);
 #endif
 

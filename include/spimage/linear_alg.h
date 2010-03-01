@@ -277,6 +277,12 @@ spimage_EXPORT sp_3matrix * _sp_3matrix_alloc(unsigned int nx, unsigned int ny, 
 spimage_EXPORT sp_i3matrix * _sp_i3matrix_alloc(unsigned int nx, unsigned int ny, unsigned int nz,const char * file,int line);
 #define sp_i3matrix_alloc(nx,ny,nz) _sp_i3matrix_alloc(nx,ny,nz,__FILE__,__LINE__)
 
+/*! This function creates a duplicate of it's argument and returns a pointer to it
+ *
+ */
+spimage_EXPORT sp_i3matrix * _sp_i3matrix_duplicate(const sp_i3matrix * m, const char * file, int line);
+#define sp_i3matrix_duplicate(m) _sp_i3matrix_duplicate(m,__FILE__,__LINE__)
+
 /*! This function allocates memory for a Complex 3matrix of size nrows rows by ncols columns and initializes all the elements of the matrix to zero.
  *
  */
@@ -288,11 +294,6 @@ spimage_EXPORT sp_c3matrix * _sp_c3matrix_alloc(unsigned int nx, unsigned int ny
  */
 spimage_EXPORT sp_c3matrix * _sp_c3matrix_duplicate(const sp_c3matrix * m, const char * file, int line);
 #define sp_c3matrix_duplicate(m) _sp_c3matrix_duplicate(m,__FILE__,__LINE__)
-
-spimage_EXPORT sp_i3matrix * _sp_i3matrix_duplicate(const sp_i3matrix * m, const char * file, int line);
-#define sp_i3matrix_duplicate(m) _sp_i3matrix_duplicate(m,__FILE__,__LINE__)
-
-
 
 /*! This function creates a duplicate of it's argument and returns a pointer to it
  *
