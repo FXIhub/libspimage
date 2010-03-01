@@ -888,6 +888,24 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
       }
       sp_3matrix_free(tmp);
       
+
+      H5Eget_auto(&func,&client_data);
+      /* turn off warning to orientation because it might not exist */
+      H5Eset_auto(NULL,NULL);  
+
+      dataset_id = H5Dopen(file_id, "/orientation");
+      if(dataset_id >= 0){
+	/* we have orientation */
+	H5Eset_auto(func,client_data);
+	res->detector->orientation = sp_rot_alloc();
+	status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
+			  H5P_DEFAULT, res->detector->orientation->data);
+	H5Dclose(dataset_id);
+      }else{
+	H5Eset_auto(func,client_data);	
+      }
+
+
       status = H5Fclose(file_id);
       if(status < 0){
 	sp_error_warning("Unable to close dataset from file %s",filename);
