@@ -348,71 +348,65 @@ int sp_support_threshold_update_support_cuda(SpSupportAlgorithm *alg, SpPhaser *
   return 0;
 }
 
-int sp_support_static_update_support_cuda(SpSupportAlgorithm *alg, SpPhaser * ph){
-  return 0;
-}
-
 int sp_support_close_update_support_cuda(SpSupportAlgorithm *alg, SpPhaser * ph){
-  SpSupportCloseParameters *params = alg->params;
-  cutilSafeCall(cudaMemcpy(pixel_flags->data,d_pixel_flags,sizeof(int)*ph->image_size,cudaMemcpyDeviceToHost));
-  sp_i3matrix *in = ph->pixel_flags;
+  cutilSafeCall(cudaMemcpy(ph->pixel_flags->data,ph->d_pixel_flags,sizeof(int)*ph->image_size,cudaMemcpyDeviceToHost));
+  SpSupportCloseParameters *params = (SpSupportCloseParameters *)alg->params;
+  int pixels = params->size;
   sp_i3matrix *tmp1 = sp_i3matrix_duplicate(ph->pixel_flags);
   sp_i3matrix *tmp2 = sp_i3matrix_duplicate(ph->pixel_flags);
   sp_i3matrix *foo;
 
-  for (int i = 0; i < params->size; i++) {
-    for (int x = 0; x < sp_i3matrix_x(in); x++) {
-      for (int y = 0; y < sp_i3matrix_y(in); y++) {
-	for (int z = 0; z < sp_i3matrix_z(in); z++) {
-	  if ((sp_i3matrix_get(tmp1,x,y,z) == SpPixelInsideSupport) ||
-	      ((x != 0 && sp_i3matrix_get(tmp1,x-1,y,z) ==
-		SpPixelInsideSupport) ||
-	       (x != sp_image_x(tmp1)-1 && sp_i3matrix_get(tmp1,x+1,y,z) ==
-		SpPixelInsideSupport) ||
-	       (y != 0 && sp_i3matrix_get(tmp1,x,y-1,z) == 
-		SpPixelInsideSupport) ||
-	       (y != sp_image_y(tmp1)-1 && sp_i3matrix_get(tmp1,x,y+1,z) ==
-		SpPixelInsideSupport) ||
-	       (z != 0 && sp_i3matrix_get(tmp1,x,y,z-1) ==
-		SpPixelInsideSupport) ||
-	       (z != sp_image_z(tmp1)-1 && sp_i3matrix_get(tmp1,x,y,z+1) ==
-		SpPixelInsideSupport))) {
-	    tmp2->data[z*sp_i3matrix_y(in)*sp_i3matrix_x(in)+
-		       y*sp_i3matrix_x(in)+x] |= SpPixelInsideSupport;
+  Image *out = sp_image_alloc(sp_i3matrix_x(tmp1),sp_i3matrix_y(tmp1),sp_i3matrix_z(tmp1));
+  char buffer[1000];
+  out->mask = ph->pixel_flags;
+  sp_image_write(out,"debug_init.h5",0);
+
+  for (int i = 0; i < pixels; i++) {
+    for (int x = 0; x < sp_i3matrix_x(ph->pixel_flags); x++) {
+      for (int y = 0; y < sp_i3matrix_y(ph->pixel_flags); y++) {
+	for (int z = 0; z < sp_i3matrix_z(ph->pixel_flags); z++) {
+	  
+	  if ((sp_i3matrix_get(tmp1,x,y,z) & SpPixelInsideSupport) ||
+	      ((x != 0 && (sp_i3matrix_get(tmp1,x-1,y,z) & SpPixelInsideSupport)) ||
+	       (x != sp_i3matrix_x(tmp1)-1 && (sp_i3matrix_get(tmp1,x+1,y,z) & SpPixelInsideSupport)) ||
+	       (y != 0 && (sp_i3matrix_get(tmp1,x,y-1,z) & SpPixelInsideSupport)) ||
+	       (y != sp_i3matrix_y(tmp1)-1 && (sp_i3matrix_get(tmp1,x,y+1,z) & SpPixelInsideSupport)) ||
+	       (z != 0 && (sp_i3matrix_get(tmp1,x,y,z-1) & SpPixelInsideSupport)) ||
+	       (z != sp_i3matrix_z(tmp1)-1 && (sp_i3matrix_get(tmp1,x,y,z+1) & SpPixelInsideSupport)))) {
+	    tmp2->data[z*sp_i3matrix_y(tmp2)*sp_i3matrix_x(tmp2) +
+		       y*sp_i3matrix_x(tmp2) + x] |= SpPixelInsideSupport;
 	  } else {
-	    tmp2->data[z*sp_i3matrix_y(in)*sp_i3matrix_x(in)+
-		       y*sp_i3matrix_x(in)+x] &= ~SpPixelInsideSupport;
+	    tmp2->data[z*sp_i3matrix_y(tmp2)*sp_i3matrix_x(tmp2) +
+		       y*sp_i3matrix_x(tmp2) + x] &= ~SpPixelInsideSupport;
 	  }
 	}
       }
     }
+    sprintf(buffer,"debug_out_%d.h5",i);
+    out->mask = tmp2;
+    sp_image_write(out,buffer,0);
     foo = tmp1;
     tmp1 = tmp2;
     tmp2 = foo;
   }
 
-  for (int i = 0; i < params->size; i++) {
-    for (int x = 0; x < sp_i3matrix_x(in); x++) {
-      for (int y = 0; y < sp_i3matrix_y(in); y++) {
-	for (int z = 0; z < sp_i3matrix_z(in); z++) {
-	  if ((sp_i3matrix_get(tmp1,x,y,z) == ~SpPixelInsideSupport) ||
-	      ((x != 0 && sp_i3matrix_get(tmp1,x-1,y,z) ==
-		~SpPixelInsideSupport) ||
-	       (x != sp_image_x(tmp1)-1 && sp_i3matrix_get(tmp1,x+1,y,z) ==
-		~SpPixelInsideSupport) ||
-	       (y != 0 && sp_i3matrix_get(tmp1,x,y-1,z) == 
-		~SpPixelInsideSupport) ||
-	       (y != sp_image_y(tmp1)-1 && sp_i3matrix_get(tmp1,x,y+1,z) ==
-		~SpPixelInsideSupport) ||
-	       (z != 0 && sp_i3matrix_get(tmp1,x,y,z-1) ==
-		~SpPixelInsideSupport) ||
-	       (z != sp_image_z(tmp1)-1 && sp_i3matrix_get(tmp1,x,y,z+1) ==
-		~SpPixelInsideSupport))) {
-	    tmp2->data[z*sp_i3matrix_y(in)*sp_i3matrix_x(in)+
-		       y*sp_i3matrix_x(in)+x] &= ~SpPixelInsideSupport;
+  for (int i = 0; i < pixels; i++) {
+    for (int x = 0; x < sp_i3matrix_x(ph->pixel_flags); x++) {
+      for (int y = 0; y < sp_i3matrix_y(ph->pixel_flags); y++) {
+	for (int z = 0; z < sp_i3matrix_z(ph->pixel_flags); z++) {
+	  
+	  if (!(sp_i3matrix_get(tmp1,x,y,z) & SpPixelInsideSupport) ||
+	      ((x != 0 && !(sp_i3matrix_get(tmp1,x-1,y,z) & SpPixelInsideSupport)) ||
+	       (x != sp_i3matrix_x(tmp1)-1 && !(sp_i3matrix_get(tmp1,x+1,y,z) & SpPixelInsideSupport)) ||
+	       (y != 0 && !(sp_i3matrix_get(tmp1,x,y-1,z) & SpPixelInsideSupport)) ||
+	       (y != sp_i3matrix_y(tmp1)-1 && !(sp_i3matrix_get(tmp1,x,y+1,z) & SpPixelInsideSupport)) ||
+	       (z != 0 && !(sp_i3matrix_get(tmp1,x,y,z-1) & SpPixelInsideSupport)) ||
+	       (z != sp_i3matrix_z(tmp1)-1 && !(sp_i3matrix_get(tmp1,x,y,z+1) & SpPixelInsideSupport)))) {
+	    tmp2->data[z*sp_i3matrix_y(tmp2)*sp_i3matrix_x(tmp2) +
+		       y*sp_i3matrix_x(tmp2) + x] &= ~SpPixelInsideSupport;
 	  } else {
-	    tmp2->data[z*sp_i3matrix_y(in)*sp_i3matrix_x(in)+
-		       y*sp_i3matrix_x(in)+x] |= SpPixelInsideSupport;
+	    tmp2->data[z*sp_i3matrix_y(tmp2)*sp_i3matrix_x(tmp2) +
+		       y*sp_i3matrix_x(tmp2) + x] |= SpPixelInsideSupport;
 	  }
 	}
       }
@@ -421,12 +415,22 @@ int sp_support_close_update_support_cuda(SpSupportAlgorithm *alg, SpPhaser * ph)
     tmp1 = tmp2;
     tmp2 = foo;
   }
+  for (int i = 0; i < sp_i3matrix_size(ph->pixel_flags); i++) {
+    ph->pixel_flags->data[i] = tmp1->data[i];
+  }
+       
   sp_i3matrix_free(tmp1);
   sp_i3matrix_free(tmp2);
-
+  
+  cutilSafeCall(cudaMemcpy(ph->d_pixel_flags,ph->pixel_flags->data,sizeof(int)*ph->image_size,cudaMemcpyHostToDevice));
   return 0;
-  cutilSafeCall(cudaMemcpy(d_pixel_flags,d_pixel_flags->data,sizeof(int)*ph->image_size,cudaMemcpyHostToDevice));
 }
+
+int sp_support_static_update_support_cuda(SpSupportAlgorithm *alg, SpPhaser * ph){
+  printf("update static support\n");
+  return 0;
+}
+
 
 static void support_from_absolute_threshold_cuda(SpPhaser * ph, cufftComplex * blur, real abs_threshold){
   CUDA_support_from_threshold<<<ph->number_of_blocks, ph->threads_per_block>>>(blur,abs_threshold,ph->d_pixel_flags,ph->image_size);
