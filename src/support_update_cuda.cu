@@ -293,7 +293,7 @@ int sp_support_area_update_support_cuda(SpSupportAlgorithm *alg, SpPhaser * ph){
   cufftComplex * blur;
   cutilSafeCall(cudaMalloc((void**)&blur, sizeof(cufftComplex)*ph->image_size));
   float * sort;
-    cutilSafeCall(cudaMalloc((void**)&sort, sizeof(float)*ph->image_size));
+  cutilSafeCall(cudaMalloc((void**)&sort, sizeof(float)*ph->image_size));
   cutilSafeCall(cudaMemcpy(blur,ph->d_g1,sizeof(cufftComplex)*ph->image_size,cudaMemcpyDeviceToDevice));
   /* we need to dephase the image first */
   CUDA_dephase<<<ph->number_of_blocks, ph->threads_per_block>>>(blur,ph->image_size);
@@ -334,17 +334,17 @@ int sp_support_template_update_support_cuda(SpSupportAlgorithm *alg, SpPhaser *p
 int sp_support_threshold_update_support_cuda(SpSupportAlgorithm *alg, SpPhaser * ph){
   SpSupportThresholdParameters * params = (SpSupportThresholdParameters *)alg->params;
   real radius =  bezier_map_interpolation(params->blur_radius_map,ph->iteration);
-  cufftComplex * blur;
-  cutilSafeCall(cudaMalloc((void**)&blur, sizeof(cufftComplex)*ph->image_size));
-  cutilSafeCall(cudaMemcpy(blur,ph->d_g1,sizeof(cufftComplex)*ph->image_size,cudaMemcpyDeviceToDevice));
+  cufftComplex * blured;
+  cutilSafeCall(cudaMalloc((void**)&blured, sizeof(cufftComplex)*ph->image_size));
+  cutilSafeCall(cudaMemcpy(blured,ph->d_g1, sizeof(cufftComplex)*ph->image_size, cudaMemcpyDeviceToDevice));
   /* we need to dephase the image first */
-  CUDA_dephase<<<ph->number_of_blocks, ph->threads_per_block>>>(blur,ph->image_size);
+  CUDA_dephase<<<ph->number_of_blocks, ph->threads_per_block>>>(blured,ph->image_size);
   sp_cuda_check_errors();
-  sp_gaussian_blur_cuda(blur,blur,sp_3matrix_x(ph->amplitudes),sp_3matrix_y(ph->amplitudes),sp_3matrix_z(ph->amplitudes),radius,ph->cufft_plan);
+  sp_gaussian_blur_cuda(blured,blured,sp_3matrix_x(ph->amplitudes),sp_3matrix_y(ph->amplitudes),sp_3matrix_z(ph->amplitudes),radius,ph->cufft_plan);
   real rel_threshold = bezier_map_interpolation(params->threshold,ph->iteration);  
-  real abs_threshold = sp_image_max_cuda(blur,ph->image_size)*rel_threshold;  
-  support_from_absolute_threshold_cuda(ph,blur,abs_threshold);
-  cutilSafeCall(cudaFree(blur));
+  real abs_threshold = sp_image_max_cuda(blured,ph->image_size)*rel_threshold;  
+  support_from_absolute_threshold_cuda(ph,blured,abs_threshold);
+  cutilSafeCall(cudaFree(blured));
   return 0;
 }
 
