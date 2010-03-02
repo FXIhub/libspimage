@@ -223,14 +223,13 @@ int sp_support_close_update_support_cpu(SpSupportAlgorithm *alg, SpPhaser * ph){
     for (int x = 0; x < sp_i3matrix_x(ph->pixel_flags); x++) {
       for (int y = 0; y < sp_i3matrix_y(ph->pixel_flags); y++) {
 	for (int z = 0; z < sp_i3matrix_z(ph->pixel_flags); z++) {
-	  
-	  if ((sp_i3matrix_get(tmp1,x,y,z) == SpPixelInsideSupport) ||
-	      ((x != 0 && sp_i3matrix_get(tmp1,x-1,y,z) != SpPixelInsideSupport) ||
-	       (x != sp_i3matrix_x(tmp1)-1 && sp_i3matrix_get(tmp1,x+1,y,z) != SpPixelInsideSupport) ||
-	       (y != 0 && sp_i3matrix_get(tmp1,x,y-1,z) != SpPixelInsideSupport) ||
-	       (y != sp_i3matrix_y(tmp1)-1 && sp_i3matrix_get(tmp1,x,y+1,z) != SpPixelInsideSupport) ||
-	       (z != 0 && sp_i3matrix_get(tmp1,x,y,z-1) != SpPixelInsideSupport) ||
-	       (z != sp_i3matrix_z(tmp1)-1 && sp_i3matrix_get(tmp1,x,y,z+1) != SpPixelInsideSupport))) {
+	  if ((sp_i3matrix_get(tmp1,x,y,z) & SpPixelInsideSupport) ||
+	      ((x != 0 && sp_i3matrix_get(tmp1,x-1,y,z) & SpPixelInsideSupport) ||
+	       (x != sp_i3matrix_x(tmp1)-1 && sp_i3matrix_get(tmp1,x+1,y,z) & SpPixelInsideSupport) ||
+	       (y != 0 && sp_i3matrix_get(tmp1,x,y-1,z) & SpPixelInsideSupport) ||
+	       (y != sp_i3matrix_y(tmp1)-1 && sp_i3matrix_get(tmp1,x,y+1,z) & SpPixelInsideSupport) ||
+	       (z != 0 && sp_i3matrix_get(tmp1,x,y,z-1) & SpPixelInsideSupport) ||
+	       (z != sp_i3matrix_z(tmp1)-1 && sp_i3matrix_get(tmp1,x,y,z+1) & SpPixelInsideSupport))) {
 	    tmp2->data[z*sp_i3matrix_y(tmp2)*sp_i3matrix_x(tmp2) +
 		       y*sp_i3matrix_x(tmp2) + x] |= SpPixelInsideSupport;
 	  } else {
@@ -249,14 +248,13 @@ int sp_support_close_update_support_cpu(SpSupportAlgorithm *alg, SpPhaser * ph){
     for (int x = 0; x < sp_i3matrix_x(ph->pixel_flags); x++) {
       for (int y = 0; y < sp_i3matrix_y(ph->pixel_flags); y++) {
 	for (int z = 0; z < sp_i3matrix_z(ph->pixel_flags); z++) {
-	  
-	  if ((sp_i3matrix_get(tmp1,x,y,z) != SpPixelInsideSupport) ||
-	      ((x != 0 && sp_i3matrix_get(tmp1,x-1,y,z) == SpPixelInsideSupport) ||
-	       (x != sp_i3matrix_x(tmp1)-1 && sp_i3matrix_get(tmp1,x+1,y,z) == SpPixelInsideSupport) ||
-	       (y != 0 && sp_i3matrix_get(tmp1,x,y-1,z) == SpPixelInsideSupport) ||
-	       (y != sp_i3matrix_y(tmp1)-1 && sp_i3matrix_get(tmp1,x,y+1,z) == SpPixelInsideSupport) ||
-	       (z != 0 && sp_i3matrix_get(tmp1,x,y,z-1) == SpPixelInsideSupport) ||
-	       (z != sp_i3matrix_z(tmp1)-1 && sp_i3matrix_get(tmp1,x,y,z+1) == SpPixelInsideSupport))) {
+	  if (!(sp_i3matrix_get(tmp1,x,y,z) & SpPixelInsideSupport) ||
+	      ((x != 0 && !(sp_i3matrix_get(tmp1,x-1,y,z) & SpPixelInsideSupport)) ||
+	       (x != sp_i3matrix_x(tmp1)-1 && !(sp_i3matrix_get(tmp1,x+1,y,z) & SpPixelInsideSupport)) ||
+	       (y != 0 && !(sp_i3matrix_get(tmp1,x,y-1,z) & SpPixelInsideSupport)) ||
+	       (y != sp_i3matrix_y(tmp1)-1 && !(sp_i3matrix_get(tmp1,x,y+1,z) & SpPixelInsideSupport)) ||
+	       (z != 0 && !(sp_i3matrix_get(tmp1,x,y,z-1) & SpPixelInsideSupport)) ||
+	       (z != sp_i3matrix_z(tmp1)-1 && !(sp_i3matrix_get(tmp1,x,y,z+1) & SpPixelInsideSupport)))) {
 	    tmp2->data[z*sp_i3matrix_y(tmp2)*sp_i3matrix_x(tmp2) +
 		       y*sp_i3matrix_x(tmp2) + x] &= ~SpPixelInsideSupport;
 	  } else {
