@@ -709,7 +709,7 @@ int sp_phaser_iterate(SpPhaser * ph, int iterations){
     return -7;
   }
   int ret = 0;
-  if(ph->sup_algorithm->algorithms[0]->function){
+  if(ph->sup_algorithm && ph->sup_algorithm->algorithms[0]->function){
     /* iterate up to the point of the support update */
     while(iterations){ 
       int to_support_update = ph->sup_algorithm->update_period-1-(ph->iteration)%ph->sup_algorithm->update_period;

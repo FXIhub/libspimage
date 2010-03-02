@@ -11,11 +11,14 @@ SpSupportAlgorithm * sp_support_threshold_alloc(sp_smap * blur_radius,sp_smap * 
   params->blur_radius_map = blur_radius;
   params->threshold = threshold;
   ret->params = params;
+  /*
 #ifdef _USE_CUDA
   ret->function = sp_support_threshold_update_support_cuda;
 #else
   ret->function = sp_support_threshold_update_support;
 #endif
+  */
+  ret->function = sp_support_threshold_update_support;
   return ret;
 }
 
@@ -26,11 +29,14 @@ SpSupportAlgorithm * sp_support_area_alloc(sp_smap * blur_radius,sp_smap * area)
   params->blur_radius_map = blur_radius;
   params->area = area;
   ret->params = params;
+  /*
 #ifdef _USE_CUDA
   ret->function = sp_support_area_update_support_cuda;
 #else
   ret->function = sp_support_area_update_support;
 #endif
+  */
+  ret->function = sp_support_area_update_support;
   return ret;
 }
 
@@ -62,13 +68,14 @@ SpSupportAlgorithm * sp_support_template_alloc(Image *initial_support, real blur
   if (1.0-min_threshold < 1e-4) {
     fprintf(stderr,"Dangerously small template area with this threshold!\n");
   }
-
+  /*
 #ifdef _USE_CUDA
   ret->function = sp_support_template_update_support_cuda;
 #else
   ret->function = sp_support_template_update_support;
 #endif
-
+  */
+  ret->function = sp_support_template_update_support;
   ret->params = params;
   return ret;
 }
@@ -78,11 +85,14 @@ SpSupportAlgorithm * sp_support_static_alloc(){
   ret->type = SpSupportStatic;
   SpSupportStaticParameters * params = sp_malloc(sizeof(SpSupportStaticParameters));
   ret->params = params;
+  /*
 #ifdef _USE_CUDA
   ret->function = sp_support_static_update_support_cuda;
 #else
   ret->function = sp_support_static_update_support;
 #endif
+  */
+  ret->function = sp_support_static_update_support;
   return ret;
 }
 
@@ -92,15 +102,30 @@ SpSupportAlgorithm * sp_support_close_alloc(int size) {
   SpSupportCloseParameters * params = sp_malloc(sizeof(SpSupportCloseParameters));
   ret->params = params;
   params->size = size;
+  /*
 #ifdef _USE_CUDA
   ret->function = sp_support_close_update_support_cuda;
 #else
   ret->function = sp_support_close_update_support;
 #endif
+  */
+  ret->function = sp_support_close_update_support;
   return ret;
 }
 
 int sp_support_area_update_support(SpSupportAlgorithm *alg, SpPhaser * ph){
+#ifdef _USE_CUDA
+  if (ph->engine == SpEngineCUDA) {
+    return sp_support_area_update_support_cuda(alg,ph);
+  } else {
+    return sp_support_area_update_support_cpu(alg,ph);
+  }
+#else
+  return sp_support_area_update_support_cpu(alg,ph);
+#endif
+}
+
+int sp_support_area_update_support_cpu(SpSupportAlgorithm *alg, SpPhaser * ph){
   SpSupportAreaParameters * params = alg->params;
   real radius =  bezier_map_interpolation(params->blur_radius_map,ph->iteration);
   Image * tmp = sp_image_duplicate(ph->g1,SP_COPY_DATA);
@@ -117,7 +142,19 @@ int sp_support_area_update_support(SpSupportAlgorithm *alg, SpPhaser * ph){
   return 0;
 }
 
-int sp_support_threshold_update_support(SpSupportAlgorithm *alg, SpPhaser * ph){
+int sp_support_threshold_update_support(SpSupportAlgorithm *alg, SpPhaser *ph){
+#ifdef _USE_CUDA
+  if (ph->engine == SpEngineCUDA) {
+    return sp_support_threshold_update_support_cuda(alg,ph);
+  } else {
+    return sp_support_threshold_update_support_cpu(alg,ph);
+  }
+#else
+  return sp_support_threshold_update_support_cpu(alg,ph);
+#endif
+}
+
+int sp_support_threshold_update_support_cpu(SpSupportAlgorithm *alg, SpPhaser * ph){
   SpSupportThresholdParameters * params = alg->params;
   real radius =  bezier_map_interpolation(params->blur_radius_map,ph->iteration);
   Image * tmp = sp_image_duplicate(ph->g1,SP_COPY_DATA);
@@ -132,6 +169,18 @@ int sp_support_threshold_update_support(SpSupportAlgorithm *alg, SpPhaser * ph){
 }
 
 int sp_support_template_update_support(SpSupportAlgorithm *alg, SpPhaser * ph){
+#ifdef _USE_CUDA
+  if (ph->engine == SpEngineCUDA) {
+    return sp_support_template_update_support_cuda(alg,ph);
+  } else {
+    return sp_support_template_update_support_cpu(alg,ph);
+  }
+#else
+  return sp_support_template_update_support_cpu(alg,ph);
+#endif
+}
+
+int sp_support_template_update_support_cpu(SpSupportAlgorithm *alg, SpPhaser * ph){
   SpSupportTemplateParameters * params = alg->params;
   //real radius = params->blur_radius;
   //Image *blur = gaussian_blur(params->template,params->blur_radius);
@@ -152,6 +201,18 @@ int sp_support_static_update_support(SpSupportAlgorithm *alg, SpPhaser * ph){
 }
 
 int sp_support_close_update_support(SpSupportAlgorithm *alg, SpPhaser * ph){
+#ifdef _USE_CUDA
+  if (ph->engine == SpEngineCUDA) {
+    return sp_support_close_update_support_cuda(alg,ph);
+  } else {
+    return sp_support_close_update_support_cpu(alg,ph);
+  }
+#else
+  return sp_support_close_update_support_cpu(alg,ph);
+#endif
+}
+
+int sp_support_close_update_support_cpu(SpSupportAlgorithm *alg, SpPhaser * ph){
   SpSupportCloseParameters *params = (SpSupportCloseParameters *)alg->params;
   int pixels = params->size;
   sp_i3matrix *tmp1 = sp_i3matrix_duplicate(ph->pixel_flags);
