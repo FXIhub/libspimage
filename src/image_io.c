@@ -557,6 +557,10 @@ static void write_h5_img(const Image * img,const char * filename, int output_pre
   if(status < 0){
     goto error;
   }
+#ifdef _WIN32
+  /* windows rename does not allow to rename on top of an existing file. */
+  remove(filename))
+#endif
   if(rename(tmpfile,filename)){
     sp_error_warning("Unable to rename %s to %s",tmpfile,filename);
   }
