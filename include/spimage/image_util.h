@@ -272,7 +272,7 @@ static inline Complex sp_image_get_by_index(const Image * a,long long index){
 
 /*! Returns the mask value at point x,y,z (or x,y,0 for 2D)
  */
-static inline int sp_image_mask_get(Image * a,int x,int y,int z){
+static inline int sp_image_mask_get(const Image * a,int x,int y,int z){
   return sp_i3matrix_get(a->mask,x,y,z);
 }
 
@@ -484,7 +484,7 @@ spimage_EXPORT Image * fourier_rescale(Image * img, int x, int y, int z);
   //spimage_EXPORT real bilinear_interpol_img(Image * img, real * data, real v_x, real v_y);
 spimage_EXPORT Image * bilinear_rescale(Image * img, int new_x, int new_y, int new_z);
   //spimage_EXPORT void resize_empty_image(Image * a,int newx, int newy);
-spimage_EXPORT Image * sp_image_get_mask(Image * a);
+spimage_EXPORT Image * sp_image_get_mask(const Image * a);
 spimage_EXPORT int sp_image_shift_index(Image * a, long long index);
 spimage_EXPORT void sp_image_normalize(Image * in);
 
