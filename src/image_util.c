@@ -1992,7 +1992,7 @@ void sp_image_normalize(Image * in){
 }
 
 
-Image * sp_image_get_mask(Image * a){
+Image * sp_image_get_mask(const Image * a){
   Image * res = sp_image_duplicate(a,SP_COPY_DATA|SP_COPY_MASK);
   int i;
   for(i = 0;i<sp_image_size(a);i++){
