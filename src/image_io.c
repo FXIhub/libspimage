@@ -574,6 +574,7 @@ static void write_h5_img(const Image * img,const char * filename, int output_pre
 
 Image * _read_imagefile(const char * filename,const char * file, int line){
   Image * res = sp_malloc(sizeof(Image));
+  memset(res,0,sizeof(Image));
   hid_t file_id,dataset_id,space;
   int status,i;
   int version;
@@ -595,6 +596,7 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
   
   
   res->detector = sp_malloc(sizeof(Detector));
+  memset(res->detector,0,sizeof(Detector));
   
   
   H5Eget_auto(&func,&client_data);
