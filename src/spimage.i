@@ -1,6 +1,7 @@
 %module spimage
- %{
- /* Includes the header in the wrapper code */
+%include pointer.i 
+%{
+  /* Includes the header in the wrapper code */
 #include "../include/spimage/colormap.h"
 #include "../include/spimage/cuda_util.h"
 #include "../include/spimage/fft.h"
@@ -25,9 +26,10 @@
 #include "../include/spimage/time_util.h"
   //#include <numpy/npy_common.h>
 #include <numpy/arrayobject.h>
+  
+  %}
 
- %}
- 
+
 %init %{
         import_array();
 %}

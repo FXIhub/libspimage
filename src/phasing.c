@@ -502,6 +502,7 @@ int sp_phaser_init_model(SpPhaser * ph, const Image * user_model, int flags){
     sp_image_scale(ph->model,1.0/sp_image_size(ph->model));
     sp_image_free(tmp);
   }
+  ph->model->phased = 1;
   ph->model_change = sp_image_alloc(sp_image_x(ph->model),sp_image_y(ph->model),sp_image_z(ph->model));
   sp_image_fill(ph->model_change,sp_cinit(0,0));
 

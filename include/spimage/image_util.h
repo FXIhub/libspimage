@@ -477,7 +477,7 @@ spimage_EXPORT Image * zero_pad_image(Image * a, int newx, int newy, int newz, i
 spimage_EXPORT Image * shift_center_to_top_left(Image * a);
 spimage_EXPORT real I_divergenge(Image * a, Image * b);
 spimage_EXPORT Image * sp_image_patterson(Image * a);
-spimage_EXPORT void find_center(Image * img, real * center_x, real * center_y, real * center_z);
+spimage_EXPORT void sp_find_center(Image * img, real * center_x, real * center_y, real * center_z);
 spimage_EXPORT long long pixel_to_index(Image * img, real * point);
 spimage_EXPORT void sp_image_smooth_edges(Image * img, sp_i3matrix * mask, int flags, real * value);
 spimage_EXPORT Image * fourier_rescale(Image * img, int x, int y, int z);

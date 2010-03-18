@@ -1835,7 +1835,7 @@ Image * cube_crop(Image * in, int x1, int y1, int z1, int x2, int y2, int z2){
 }
 
 
-void find_center(Image * img, real * center_x, real * center_y, real * center_z){
+void sp_find_center(Image * img, real * center_x, real * center_y, real * center_z){
   int x,y,z;
   float bx = -1;
   float by = -1;
