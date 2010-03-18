@@ -1432,8 +1432,8 @@ Image * read_anton_datafile(hid_t file_id,hid_t dataset_id,const char * filename
 
 
 Image * read_tiff(const char * filename){
-  Image * out = sp_malloc(sizeof(Image));
-  out->detector = sp_malloc(sizeof(Detector));
+  //  Image * out = sp_malloc(sizeof(Image));
+  //  out->detector = sp_malloc(sizeof(Detector));
   int bpp = 4;  
   int datatype = 0;
   int width,height;
@@ -1480,8 +1480,9 @@ Image * read_tiff(const char * filename){
   }
   TIFFClose(tif);
   
-  out->image = sp_c3matrix_alloc(width,height,1);
-  out->mask = sp_i3matrix_alloc(width,height,1);
+  Image * out = sp_image_alloc(width,height,1);
+  //  out->image = sp_c3matrix_alloc(width,height,1);
+  //  out->mask = sp_i3matrix_alloc(width,height,1);
 
   if(datatype == SAMPLEFORMAT_UINT){
     tmpui = (unsigned short *)img;
