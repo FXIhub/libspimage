@@ -765,8 +765,71 @@ static void phaser_apply_constraints(SpPhaser * ph,Image * new_model, SpPhasingC
 	    sp_imag(new_model->image->data[i]) = 0;
 	  }
 	}
-
       }
+    }
+  }
+  if(constraints & SpRampObject) {
+    real x2 = 0.0;
+    real y2 = 0.0;
+    real xy = 0.0;
+    real kx = 0.0;
+    real ky = 0.0;
+    real x_tmp, y_tmp;
+    for (int x = 0; x < sp_image_x(new_model); x++) {
+      if (x < sp_image_x(new_model)/2) {
+	x2 += x*x;
+      } else {
+	x2 += (real)sp_image_x(new_model) - x;
+      }
+      x2 *= (real)sp_image_y(new_model);
+    }
+    for (int y = 0; y < sp_image_y(new_model); y++) {
+      if (y < sp_image_y(new_model)/2) {
+	y2 += y*y;
+      } else {
+	y2 += (real)sp_image_y(new_model) - y;
+      }
+      y2 *= (real)sp_image_x(new_model);
+    }
+    for (int x = 0; x < sp_image_x(new_model); x++) {
+      for (int y = 0; y < sp_image_y(new_model); y++) {
+	if (x < sp_image_x(new_model)/2) {
+	  x_tmp = (real) x;
+	} else {
+	  x_tmp = (real)( sp_image_x(new_model) - x );
+	}
+	if (y < sp_image_y(new_model)/2) {
+	  y_tmp = (real) y;
+	} else {
+	  y_tmp = (real)( sp_image_y(new_model) - y );
+	}
+	xy += x*y;
+	//kx += x*sp_imag(sp_image_get(new_model,x,y,0));
+	//ky += y*sp_imag(sp_image_get(new_model,x,y,0));
+	kx += x*sp_carg(sp_image_get(new_model,x,y,0));
+	ky += y*sp_carg(sp_image_get(new_model,x,y,0));
+      }
+    }
+    ax = (kx*y2-ky*xy) / (x2*y2 - xy*xy);
+    ay = (ky*x2-kx*xy) / (x2*y2 - xy*xy);
+  }
+  for (int x = 0; x < sp_image_x(new_model); x++) {
+    for (int y = 0; y < sp_image_y(new_model); y++) {
+      if (x < sp_image_x(new_model)/2) {
+	x_tmp = (real) x;
+      } else {
+	x_tmp = (real)( sp_image_x(new_model) - x );
+      }
+      if (y < sp_image_y(new_model)/2) {
+	y_tmp = (real) y;
+      } else {
+	y_tmp = (real)( sp_image_y(new_model) - y );
+      }
+      sp_image_set(new_model,x,y,0,
+		   sp_cinit(sp_cabs(sp_image_get(new_model,x,y,0))*
+			    cos(ax*x_tmp+ay*y_tmp),
+			    sp_cabs(sp_image_get(new_model,x,y,0))*
+			    sin(ax*x_tmp+ay*y_tmp)));
     }
   }
 }

@@ -3248,8 +3248,12 @@ void sp_image_fourier_translate(Image * ra, real t_x, real t_y, real t_z){
 	  f_x = -(sp_image_x(a)-x);
 	}
 	a->image->data[i] = sp_cmul(a->image->data[i],
-				       sp_cinit(cos(f_x * t_x * nx_inv * two_pi+f_y * t_y * ny_inv * two_pi+f_z * t_z * nz_inv * two_pi),
-						-sin(f_x * t_x * nx_inv * two_pi+f_y * t_y * ny_inv * two_pi+f_z * t_z * nz_inv * two_pi)));
+				    sp_cinit(cos(f_x * t_x * nx_inv * two_pi+
+						 f_y * t_y * ny_inv * two_pi+
+						 f_z * t_z * nz_inv * two_pi),
+					     -sin(f_x * t_x * nx_inv * two_pi+
+						  f_y * t_y * ny_inv * two_pi+
+						  f_z * t_z * nz_inv * two_pi)));
 	i++;
       }
     }
