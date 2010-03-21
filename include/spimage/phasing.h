@@ -91,7 +91,7 @@ typedef struct{
   cufftComplex * d_g0;
   cufftComplex * d_g1;
   int threads_per_block;
-  int number_of_blocks;
+  dim3 number_of_blocks;
 #endif
 }SpPhaser;
 

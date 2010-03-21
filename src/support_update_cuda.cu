@@ -14,7 +14,8 @@ static real bezier_map_interpolation(sp_smap * map, real x);
 static void support_from_absolute_threshold_cuda(SpPhaser * ph, cufftComplex * blur, real abs_threshold);
 
 static __global__ void CUDA_support_from_threshold(cufftComplex * a,float abs_threshold,int * pixel_flags, int size){
-  const int i = blockIdx.x*blockDim.x + threadIdx.x;
+  /* Assume 3D grids and 1D blocks*/
+  const int i = blockIdx.z*blockDim.z*blockDim.y*blockDim.x+blockIdx.y*blockDim.y*blockDim.x+blockIdx.x*blockDim.x + threadIdx.x;
   if(i<size){
     if(a[i].x > abs_threshold){
       pixel_flags[i] |= SpPixelInsideSupport;
@@ -26,7 +27,8 @@ static __global__ void CUDA_support_from_threshold(cufftComplex * a,float abs_th
 
 
 static __global__ void CUDA_dephase(cufftComplex * a, int size){
-  const int i = blockIdx.x*blockDim.x + threadIdx.x;
+  /* Assume 3D grids and 1D blocks*/
+  const int i = blockIdx.z*blockDim.z*blockDim.y*blockDim.x+blockIdx.y*blockDim.y*blockDim.x+blockIdx.x*blockDim.x + threadIdx.x;
   if(i<size){
 #ifdef _STRICT_IEEE_754
     a[i].x = __fsqrt_rn(__fadd_rn(__fmul_rn(a[i].x,a[i].x), __fmul_rn(a[i].y,a[i].y)));
@@ -38,7 +40,8 @@ static __global__ void CUDA_dephase(cufftComplex * a, int size){
 }
 
 static __global__ void CUDA_complex_to_float(cufftComplex * in,float * out, int size){
-  const int i = blockIdx.x*blockDim.x + threadIdx.x;
+  /* Assume 3D grids and 1D blocks*/
+  const int i = blockIdx.z*blockDim.z*blockDim.y*blockDim.x+blockIdx.y*blockDim.y*blockDim.x+blockIdx.x*blockDim.x + threadIdx.x;
   if(i<size){
     out[i] = in[i].x;
   }

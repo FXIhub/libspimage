@@ -1133,6 +1133,33 @@ void test_sp_phasing_hio_speed(CuTest * tc){
 }
 
 
+void test_sp_phasing_hio_speed_by_size(CuTest * tc){
+#ifndef NDEBUG
+  for(int size = 64;size<5000;size*=2){
+  /* Simple phasing example */
+    int oversampling = 2;
+    sp_smap * beta = sp_smap_create_from_pair(0,0.8);
+    SpPhasingAlgorithm * alg = sp_phasing_raar_alloc(beta,0);
+    int iterations = 1024*1024/(size*size);
+    sp_smap * blur_radius = sp_smap_alloc(2);
+    sp_smap_insert(blur_radius,0,3);
+    sp_smap_insert(blur_radius,2000,0.7);
+    sp_smap * threshold = sp_smap_alloc(1);
+    sp_smap_insert(threshold,0,0.15);  
+    sp_smap * area = sp_smap_alloc(1);
+    sp_smap_insert(area,0,1.3*1.0/(oversampling*oversampling));  
+    
+    if(sp_cuda_get_device_type() == SpCUDAHardwareDevice){
+      //      int delta_t = test_sp_phasing_speed_common(tc,alg,NULL,size,oversampling,SpNoConstraints,iterations,SpEngineCUDA);
+      int delta_t = test_sp_phasing_speed_common(tc,alg,NULL,size,oversampling,SpNoConstraints,iterations,SpEngineCPU);
+      printf("CUDA HIO %dx%d = %g iterations per second\n",size*oversampling,size*oversampling,(1.0e6*iterations)/delta_t);
+    }
+  }
+#endif
+  PRINT_DONE;
+}
+
+
 
 void test_sp_phasing_raar(CuTest * tc){
   /* Simple phasing example */
@@ -1316,7 +1343,7 @@ void test_sp_phasing_fourier_constraints(CuTest * tc){
 CuSuite* phasing_get_suite(void)
 {
   CuSuite* suite = CuSuiteNew();
-
+  SUITE_ADD_TEST(suite,test_sp_phasing_hio_speed_by_size);
   if(sp_cuda_get_device_type() == SpCUDAHardwareDevice){
 #ifdef _USE_CUDA
     SUITE_ADD_TEST(suite, test_sp_support_cuda);
@@ -1338,5 +1365,6 @@ CuSuite* phasing_get_suite(void)
   SUITE_ADD_TEST(suite,test_sp_phasing_diff_map_success_rate);
   SUITE_ADD_TEST(suite,test_sp_phasing_diff_map_noisy_success_rate);  
   SUITE_ADD_TEST(suite, test_sp_phasing_fourier_constraints);
+
   return suite;
 }

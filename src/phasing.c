@@ -235,14 +235,18 @@ static void phaser_check_dimensions(SpPhaser * ph, const Image * a){
        block maximum and 65535 x 65535 x 1 of maximum block size.
        
      */
-    ph->threads_per_block = 64;
+        ph->threads_per_block = 64;
+	/*
     while(sp_image_size(a) > 65535*ph->threads_per_block){
       ph->threads_per_block *= 2;
     }
     if(ph->threads_per_block > 512){
       sp_error_fatal("Image to large to handle with current CUDA code!");
-    }
-    ph->number_of_blocks = (ph->image_size+ph->threads_per_block-1)/ph->threads_per_block;
+      }*/
+    sp_vector * max_grid = sp_cuda_get_max_grid_size();
+    ph->number_of_blocks.x = sp_min(sp_vector_get(max_grid,0),(ph->image_size+ph->threads_per_block-1)/ph->threads_per_block);
+    ph->number_of_blocks.y = sp_min(sp_vector_get(max_grid,1),(ph->image_size+ph->number_of_blocks.x*ph->threads_per_block-1)/(ph->number_of_blocks.x*ph->threads_per_block));
+    ph->number_of_blocks.z = 1;
 #endif
   }
   if(ph->nx != sp_image_x(a)){
@@ -619,6 +623,7 @@ const Image * sp_phaser_support(SpPhaser * ph){
 }
 
 int sp_phaser_iterate(SpPhaser * ph, int iterations){
+  int timer = sp_timer_start();
   int (*phaser_iterate_pointer)(SpPhaser *, int) = NULL; 
   int (*phaser_update_support_pointer)(SpPhaser *) = NULL; 
   if(!ph){
@@ -745,6 +750,7 @@ int sp_phaser_iterate(SpPhaser * ph, int iterations){
       ret = phaser_iterate_pointer(ph,iterations);
     }
   }
+  printf("%d iterations in %f ms\n",iterations,sp_timer_stop(timer)/1000.0);
   return ret;
 }
 

@@ -34,3 +34,23 @@ Image * sp_get_image_from_cuda(cufftComplex * a, int size){
   return ret;
 }
 #endif
+
+sp_vector * sp_cuda_get_max_grid_size(){
+#ifdef _USE_CUDA
+  int dev_count;
+  cudaGetDeviceCount(&dev_count);
+  if(dev_count == 0){
+    return NULL;
+  }else{
+    struct cudaDeviceProp dev_prop;
+    cudaGetDeviceProperties(&dev_prop, 0);
+    sp_vector * ret = sp_vector_alloc(3);
+    sp_vector_set(ret,0,dev_prop.maxGridSize[0]);
+    sp_vector_set(ret,1,dev_prop.maxGridSize[1]);
+    sp_vector_set(ret,2,dev_prop.maxGridSize[2]);
+    return ret;
+  }
+#endif
+  return NULL;
+}
+

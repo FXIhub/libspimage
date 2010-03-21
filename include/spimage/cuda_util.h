@@ -12,6 +12,7 @@
 #include <cuda_runtime_api.h>
 #include <cufft.h>
 #include <spimage/sperror.h>
+#include <spimage/linear_alg.h>
 
 
 
@@ -93,6 +94,7 @@ extern "C"
   /*! Returns the CUDA device currently being used if any.
    */
 spimage_EXPORT  SpCUDADeviceType sp_cuda_get_device_type();
+  sp_vector * sp_cuda_get_max_grid_size();
   //  spimage_EXPORT void __sp_cuda_check_errors(const char * file,const int line);
 
 /*@}*/
