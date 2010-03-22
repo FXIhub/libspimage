@@ -692,9 +692,12 @@ spimage_EXPORT int sp_image_get_coords_from_index(const Image * in,int index,rea
    */
   spimage_EXPORT Image * sp_image_phase_shift(Image * in, real phi, int in_place);
 
-  /*! Tries to determine if the input is a valid image.
-      If so returns 1. Otherwise returns 0.
-  */
+  /*! Goes through an image and checks if all its values are finite.
+   * \param img the input image
+   * \return 1 if the image is only composed of finite values, 0 otherwise.
+   *
+   * This function only check the image field of the Image structure.
+   */
   spimage_EXPORT int sp_image_is_valid(const Image * a);
 
   /*! Returns 1 if the coordinates fall inside the image and 0 otherwise. */
@@ -716,7 +719,6 @@ spimage_EXPORT int sp_image_get_coords_from_index(const Image * in,int index,rea
 
   spimage_EXPORT void sp_image_grow_mask(Image *in, int pixels);
   spimage_EXPORT void sp_image_shrink_mask(Image *in, int pixels);
-
 #ifdef __cplusplus
 }  /* extern "C" */
 #endif /* __cplusplus */

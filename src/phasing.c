@@ -6,7 +6,8 @@ static int phaser_iterate_hio(SpPhaser * ph, int iterations);
 static int phaser_iterate_raar(SpPhaser * ph, int iterations);
 static int phaser_iterate_diff_map(SpPhaser * ph, int iterations);
 static Image * phaser_iterate_diff_map_f1(Image * real_in,sp_i3matrix * pixel_flags,real gamma1);
-static void phaser_apply_constraints(SpPhaser * ph,Image * new_model, SpPhasingConstraints constraints);
+void phaser_apply_constraints(SpPhaser * ph,Image * new_model, SpPhasingConstraints constraints);
+void phaser_apply_fourier_constraints(SpPhaser * ph,Image * new_amplitudes, SpPhasingConstraints constraints);
 
 static void phaser_module_projection(Image * a, sp_3matrix * amp, sp_i3matrix * pixel_flags);
 static void phaser_phased_amplitudes_projection(Image * a, sp_c3matrix * phased_amp, sp_i3matrix * pixel_flags);
@@ -247,6 +248,7 @@ static void phaser_check_dimensions(SpPhaser * ph, const Image * a){
     ph->number_of_blocks.x = sp_min(sp_vector_get(max_grid,0),(ph->image_size+ph->threads_per_block-1)/ph->threads_per_block);
     ph->number_of_blocks.y = sp_min(sp_vector_get(max_grid,1),(ph->image_size+ph->number_of_blocks.x*ph->threads_per_block-1)/(ph->number_of_blocks.x*ph->threads_per_block));
     ph->number_of_blocks.z = 1;
+    sp_vector_free(max_grid);
 #endif
   }
   if(ph->nx != sp_image_x(a)){
@@ -623,7 +625,7 @@ const Image * sp_phaser_support(SpPhaser * ph){
 }
 
 int sp_phaser_iterate(SpPhaser * ph, int iterations){
-  int timer = sp_timer_start();
+  /*  int timer = sp_timer_start();*/
   int (*phaser_iterate_pointer)(SpPhaser *, int) = NULL; 
   int (*phaser_update_support_pointer)(SpPhaser *) = NULL; 
   if(!ph){
@@ -750,11 +752,11 @@ int sp_phaser_iterate(SpPhaser * ph, int iterations){
       ret = phaser_iterate_pointer(ph,iterations);
     }
   }
-  printf("%d iterations in %f ms\n",iterations,sp_timer_stop(timer)/1000.0);
+  /*  printf("%d iterations in %f ms\n",iterations,sp_timer_stop(timer)/1000.0);*/
   return ret;
 }
 
-static void phaser_apply_constraints(SpPhaser * ph,Image * new_model, SpPhasingConstraints constraints){
+void phaser_apply_constraints(SpPhaser * ph,Image * new_model, SpPhasingConstraints constraints){
   /* Apply constraints */
   for(int i =0;i<sp_image_size(new_model);i++){
     if(ph->pixel_flags->data[i] & SpPixelInsideSupport){
@@ -790,10 +792,16 @@ static void phaser_apply_constraints(SpPhaser * ph,Image * new_model, SpPhasingC
   }
 }
 
-static void phaser_apply_fourier_constraints(SpPhaser * ph,Image * new_amplitudes, SpPhasingConstraints constraints){
+void phaser_apply_fourier_constraints(SpPhaser * ph,Image * new_amplitudes, SpPhasingConstraints constraints){
   /* Apply constraints */
   for(int i =0;i<sp_image_size(new_amplitudes);i++){
     if(constraints & SpCentrosymmetricObject){
+      /* keep the power of the image */
+      if(sp_real(new_amplitudes->image->data[i]) > 0){
+	sp_real(new_amplitudes->image->data[i])  = sp_cabs(new_amplitudes->image->data[i]);
+      }else{
+	sp_real(new_amplitudes->image->data[i])  = -sp_cabs(new_amplitudes->image->data[i]);
+      }
       sp_imag(new_amplitudes->image->data[i]) = 0;
     }
   }

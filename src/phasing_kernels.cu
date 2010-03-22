@@ -124,6 +124,7 @@ __global__ void CUDA_apply_fourier_constraints(cufftComplex* g,const  int size,c
   const int i = blockIdx.z*blockDim.z*blockDim.y*blockDim.x+blockIdx.y*blockDim.y*blockDim.x+blockIdx.x*blockDim.x + threadIdx.x;
   if(i<size){
     if(constraints & SpCentrosymmetricObject){
+      /* keep the power of the image */
       if(g[i].x > 0){
 	g[i].x  = sqrt(g[i].x*g[i].x+g[i].y*g[i].y);
       }else{

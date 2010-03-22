@@ -81,7 +81,6 @@ int test_sp_phasing_cuda_common(CuTest * tc,SpPhasingAlgorithm * alg,int size, r
   sp_phaser_set_amplitudes(ph_cuda,f);
   int i =0;
   int max_iter = 10;
-  //  sp_srand(0);
   CuAssertTrue(tc,sp_phaser_init_model(ph_cpu,NULL,SpModelRandomPhases) == 0); 
   CuAssertTrue(tc,sp_phaser_init_model(ph_cuda,NULL,SpModelRandomPhases) == 0); 
   sp_phaser_set_model(ph_cuda,sp_image_duplicate(sp_phaser_model(ph_cpu),SP_COPY_ALL));
@@ -1049,6 +1048,14 @@ void test_sp_phasing_hio(CuTest * tc){
   CuAssertIntEquals(tc,test_sp_phasing_common(tc,alg,size,oversampling,SpNoConstraints,1,tol),1);
   alg = sp_phasing_hio_alloc(beta,SpPositiveRealObject);
   CuAssertIntEquals(tc,test_sp_phasing_common(tc,alg,size,oversampling,SpPositiveRealObject,1,tol),1);
+
+
+  /* Also try some large sizes */
+  if(sp_cuda_get_device_type() == SpCUDAHardwareDevice){
+    int size = 1024;
+  int oversampling = 2;
+    CuAssertIntEquals(tc,test_sp_phasing_cuda_common(tc,alg,size,oversampling,SpNoConstraints,tol),1);
+  }
   PRINT_DONE;
 }
 
@@ -1135,12 +1142,12 @@ void test_sp_phasing_hio_speed(CuTest * tc){
 
 void test_sp_phasing_hio_speed_by_size(CuTest * tc){
 #ifndef NDEBUG
-  for(int size = 64;size<5000;size*=2){
+  for(int size = 64;size<2000;size*=2){
   /* Simple phasing example */
     int oversampling = 2;
     sp_smap * beta = sp_smap_create_from_pair(0,0.8);
     SpPhasingAlgorithm * alg = sp_phasing_raar_alloc(beta,0);
-    int iterations = 1024*1024/(size*size);
+    int iterations = 10*1024*1024/(size*size);
     sp_smap * blur_radius = sp_smap_alloc(2);
     sp_smap_insert(blur_radius,0,3);
     sp_smap_insert(blur_radius,2000,0.7);
@@ -1287,19 +1294,21 @@ void test_sp_support_diff_map(CuTest * tc){
 
 
 void test_sp_support_cuda(CuTest * tc){
-  real oversampling = 2;
-  sp_smap * blur_radius = sp_smap_alloc(2);
-  sp_smap_insert(blur_radius,0,3);
-  sp_smap_insert(blur_radius,2000,0.7);
-  sp_smap * threshold = sp_smap_alloc(1);
-  sp_smap_insert(threshold,0,0.15);  
-  sp_smap * area = sp_smap_alloc(1);
-  sp_smap_insert(area,0,1.3*1.0/(oversampling*oversampling));  
-  SpSupportArray * sup_alg = sp_support_array_init(sp_support_threshold_alloc(blur_radius,threshold),4);
-  test_sp_support_cuda_common(tc,sup_alg);
-  sup_alg = sp_support_array_init(sp_support_area_alloc(blur_radius,area),4);
-  test_sp_support_cuda_common(tc,sup_alg);
-  PRINT_DONE;
+  if(sp_cuda_get_device_type() == SpCUDAHardwareDevice){
+    real oversampling = 2;
+    sp_smap * blur_radius = sp_smap_alloc(2);
+    sp_smap_insert(blur_radius,0,3);
+    sp_smap_insert(blur_radius,2000,0.7);
+    sp_smap * threshold = sp_smap_alloc(1);
+    sp_smap_insert(threshold,0,0.15);  
+    sp_smap * area = sp_smap_alloc(1);
+    sp_smap_insert(area,0,1.3*1.0/(oversampling*oversampling));  
+    SpSupportArray * sup_alg = sp_support_array_init(sp_support_threshold_alloc(blur_radius,threshold),4);
+    test_sp_support_cuda_common(tc,sup_alg);
+    sup_alg = sp_support_array_init(sp_support_area_alloc(blur_radius,area),4);
+    test_sp_support_cuda_common(tc,sup_alg);
+    PRINT_DONE;
+  }
 }
 
 
@@ -1343,28 +1352,24 @@ void test_sp_phasing_fourier_constraints(CuTest * tc){
 CuSuite* phasing_get_suite(void)
 {
   CuSuite* suite = CuSuiteNew();
-  SUITE_ADD_TEST(suite,test_sp_phasing_hio_speed_by_size);
-  if(sp_cuda_get_device_type() == SpCUDAHardwareDevice){
-#ifdef _USE_CUDA
-    SUITE_ADD_TEST(suite, test_sp_support_cuda);
-#endif
-  }
   SUITE_ADD_TEST(suite, test_sp_phasing_hio);
-  SUITE_ADD_TEST(suite,test_sp_support_speed);
+  /*  SUITE_ADD_TEST(suite,test_sp_phasing_hio_speed_by_size);
+  SUITE_ADD_TEST(suite, test_sp_support_cuda);
+  SUITE_ADD_TEST(suite, test_sp_support_speed);
   SUITE_ADD_TEST(suite, test_sp_phasing_hio_speed);
   SUITE_ADD_TEST(suite, test_sp_support_hio);
-  SUITE_ADD_TEST(suite,test_sp_phasing_hio_success_rate);
-  SUITE_ADD_TEST(suite,test_sp_phasing_hio_noisy_success_rate);
+  SUITE_ADD_TEST(suite, test_sp_phasing_hio_success_rate);
+  SUITE_ADD_TEST(suite, test_sp_phasing_hio_noisy_success_rate);
   SUITE_ADD_TEST(suite, test_sp_phasing_raar);
   SUITE_ADD_TEST(suite, test_sp_phasing_raar_speed);
   SUITE_ADD_TEST(suite, test_sp_support_raar);
-  SUITE_ADD_TEST(suite,test_sp_phasing_raar_success_rate);
-  SUITE_ADD_TEST(suite,test_sp_phasing_raar_noisy_success_rate);
+  SUITE_ADD_TEST(suite, test_sp_phasing_raar_success_rate);
+  SUITE_ADD_TEST(suite, test_sp_phasing_raar_noisy_success_rate);
   SUITE_ADD_TEST(suite, test_sp_phasing_diff_map_speed); 
   SUITE_ADD_TEST(suite, test_sp_support_diff_map);
-  SUITE_ADD_TEST(suite,test_sp_phasing_diff_map_success_rate);
-  SUITE_ADD_TEST(suite,test_sp_phasing_diff_map_noisy_success_rate);  
-  SUITE_ADD_TEST(suite, test_sp_phasing_fourier_constraints);
+  SUITE_ADD_TEST(suite, test_sp_phasing_diff_map_success_rate);
+  SUITE_ADD_TEST(suite, test_sp_phasing_diff_map_noisy_success_rate);  
+  SUITE_ADD_TEST(suite, test_sp_phasing_fourier_constraints);*/
 
   return suite;
 }

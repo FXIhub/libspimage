@@ -33,5 +33,6 @@ CuSuite* proj_get_suite();
 CuSuite* prtf_get_suite();
 CuSuite* phasing_get_suite();
 CuSuite* container_get_suite();
+CuSuite* constraint_get_suite();
 
 #endif

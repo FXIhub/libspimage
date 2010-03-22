@@ -31,7 +31,14 @@ int sp_proj_module_cuda(Image * a, Image * amp){
   cudaMemcpy(d_amp,h_amp->data,sizeof(float)*sp_image_size(a),cudaMemcpyHostToDevice);
   cudaMemcpy(d_pixel_flags,pixel_flags->data,sizeof(int)*sp_image_size(a),cudaMemcpyHostToDevice);
   int threads_per_block = 64;
-  int number_of_blocks = (sp_image_size(a)+threads_per_block-1)/threads_per_block;
+  dim3 number_of_blocks;
+  sp_vector * max_grid = sp_cuda_get_max_grid_size();
+  int image_size = sp_image_size(a);
+  number_of_blocks.x = sp_min(sp_vector_get(max_grid,0),(image_size+threads_per_block-1)/threads_per_block);
+  number_of_blocks.y = sp_min(sp_vector_get(max_grid,1),(image_size+number_of_blocks.x*threads_per_block-1)/(number_of_blocks.x*threads_per_block));
+  number_of_blocks.z = 1;
+  sp_vector_free(max_grid);
+
   CUDA_module_projection<<<number_of_blocks, threads_per_block>>>(d_a,d_amp,d_pixel_flags,sp_image_size(a));
   cudaMemcpy(a->image->data,d_a,sizeof(cufftComplex)*sp_image_size(a),cudaMemcpyDeviceToHost);
   cudaFree(d_amp);
@@ -183,4 +190,22 @@ int phaser_iterate_raar_cuda(SpPhaser * ph,int iterations){
   }
   return 0;
 
+}
+
+void phaser_apply_fourier_constraints_cuda(Image * a, SpPhasingConstraints constraints){
+  cufftComplex * d_a;
+  cudaMalloc((void **)&d_a,sizeof(cufftComplex)*sp_image_size(a));
+  cudaMemcpy(d_a,a->image->data,sizeof(cufftComplex)*sp_image_size(a),cudaMemcpyHostToDevice);
+  int threads_per_block = 64;
+  dim3 number_of_blocks;
+  sp_vector * max_grid = sp_cuda_get_max_grid_size();
+  int image_size = sp_image_size(a);
+  number_of_blocks.x = sp_min(sp_vector_get(max_grid,0),(image_size+threads_per_block-1)/threads_per_block);
+  number_of_blocks.y = sp_min(sp_vector_get(max_grid,1),(image_size+number_of_blocks.x*threads_per_block-1)/(number_of_blocks.x*threads_per_block));
+  number_of_blocks.z = 1;
+  sp_vector_free(max_grid);
+  CUDA_apply_fourier_constraints<<<number_of_blocks, threads_per_block>>>(d_a,image_size,constraints);
+  cudaMemcpy(a->image->data,d_a,sizeof(cufftComplex)*sp_image_size(a),cudaMemcpyDeviceToHost);
+  cudaFree(d_a);
+  sp_cuda_check_errors();
 }

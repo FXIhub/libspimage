@@ -3550,3 +3550,4 @@ void sp_image_shrink_mask(Image *in, int pixels){
   sp_image_free(tmp1);
   sp_image_free(tmp2);
 }
+
