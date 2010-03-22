@@ -775,6 +775,8 @@ static void phaser_apply_constraints(SpPhaser * ph,Image * new_model, SpPhasingC
     real kx = 0.0;
     real ky = 0.0;
     real x_tmp, y_tmp;
+    real ax,ay;
+    /*
     for (int x = 0; x < sp_image_x(new_model); x++) {
       if (x < sp_image_x(new_model)/2) {
 	x2 += x*x;
@@ -790,46 +792,59 @@ static void phaser_apply_constraints(SpPhaser * ph,Image * new_model, SpPhasingC
 	y2 += (real)sp_image_y(new_model) - y;
       }
       y2 *= (real)sp_image_x(new_model);
-    }
+      }
+    */
     for (int x = 0; x < sp_image_x(new_model); x++) {
       for (int y = 0; y < sp_image_y(new_model); y++) {
-	if (x < sp_image_x(new_model)/2) {
-	  x_tmp = (real) x;
-	} else {
-	  x_tmp = (real)( sp_image_x(new_model) - x );
+	if (sp_i3matrix_get(ph->pixel_flags,x,y,0) & SpPixelInsideSupport) {
+	  if (x < sp_image_x(new_model)/2) {
+	    x_tmp = (real) x;
+	  } else {
+	    x_tmp = (real)( x - sp_image_x(new_model) );
+	  }
+	  if (y < sp_image_y(new_model)/2) {
+	    y_tmp = (real) y;
+	  } else {
+	    y_tmp = (real)( y - sp_image_y(new_model) );
+	  }
+	  //x_tmp = (real)(x - sp_image_x(new_model)/2);
+	  //y_tmp = (real)(y - sp_image_y(new_model)/2);
+	  x2 += x_tmp*x_tmp;
+	  y2 += y_tmp*y_tmp;
+	  xy += x_tmp*y_tmp;
+	  //kx += x*sp_imag(sp_image_get(new_model,x,y,0));
+	  //ky += y*sp_imag(sp_image_get(new_model,x,y,0));
+	  kx += x_tmp*sp_carg(sp_image_get(new_model,x,y,0));
+	  ky += y_tmp*sp_carg(sp_image_get(new_model,x,y,0));
 	}
-	if (y < sp_image_y(new_model)/2) {
-	  y_tmp = (real) y;
-	} else {
-	  y_tmp = (real)( sp_image_y(new_model) - y );
-	}
-	xy += x*y;
-	//kx += x*sp_imag(sp_image_get(new_model,x,y,0));
-	//ky += y*sp_imag(sp_image_get(new_model,x,y,0));
-	kx += x*sp_carg(sp_image_get(new_model,x,y,0));
-	ky += y*sp_carg(sp_image_get(new_model,x,y,0));
       }
     }
     ax = (kx*y2-ky*xy) / (x2*y2 - xy*xy);
     ay = (ky*x2-kx*xy) / (x2*y2 - xy*xy);
-  }
-  for (int x = 0; x < sp_image_x(new_model); x++) {
-    for (int y = 0; y < sp_image_y(new_model); y++) {
-      if (x < sp_image_x(new_model)/2) {
-	x_tmp = (real) x;
-      } else {
-	x_tmp = (real)( sp_image_x(new_model) - x );
+    //printf("ax = %g\nay = %g\n",ax,ay);
+    for (int x = 0; x < sp_image_x(new_model); x++) {
+      for (int y = 0; y < sp_image_y(new_model); y++) {
+	if (sp_i3matrix_get(ph->pixel_flags,x,y,0) & SpPixelInsideSupport) {
+	  if (x < sp_image_x(new_model)/2) {
+	    x_tmp = (real) x;
+	  } else {
+	    x_tmp = (real)( x - sp_image_x(new_model) );
+	  }
+	  if (y < sp_image_y(new_model)/2) {
+	    y_tmp = (real) y;
+	  } else {
+	    y_tmp = (real)( y - sp_image_y(new_model) );
+	  }
+	  //x_tmp = (real)(x - sp_image_x(new_model)/2);
+	  //y_tmp = (real)(y - sp_image_y(new_model)/2);
+
+	  sp_image_set(new_model,x,y,0,
+		       sp_cinit(sp_cabs(sp_image_get(new_model,x,y,0))*
+				cos(ax*x_tmp+ay*y_tmp),
+				sp_cabs(sp_image_get(new_model,x,y,0))*
+				sin(ax*x_tmp+ay*y_tmp)));
+	}
       }
-      if (y < sp_image_y(new_model)/2) {
-	y_tmp = (real) y;
-      } else {
-	y_tmp = (real)( sp_image_y(new_model) - y );
-      }
-      sp_image_set(new_model,x,y,0,
-		   sp_cinit(sp_cabs(sp_image_get(new_model,x,y,0))*
-			    cos(ax*x_tmp+ay*y_tmp),
-			    sp_cabs(sp_image_get(new_model,x,y,0))*
-			    sin(ax*x_tmp+ay*y_tmp)));
     }
   }
 }
@@ -968,6 +983,7 @@ static int phaser_iterate_raar(SpPhaser * ph,int iterations){
       }
     }
     phaser_apply_constraints(ph,ph->g1,params->constraints);
+
     ph->iteration++;
   }
   return 0;
