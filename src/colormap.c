@@ -104,9 +104,57 @@ void sp_colormap_write_rgb(unsigned char * out,Image * img, int colormap,sp_rgb 
   real value = sp_colormap_scale_value(sp_cabs(cvalue),colormap,max_v,min_v);
   if(colormap & SpColormapPhase){
     real phase = (256*(sp_carg(cvalue)+3.1416)/(2*3.1416));
-    out[0] =  sqrt(value)*color_table[(int)phase].r;
+    /*
+    out[0] = sqrt(value)*color_table[(int)phase].r;
     out[1] = sqrt(value)*color_table[(int)phase].g;
     out[2] = sqrt(value)*color_table[(int)phase].b;
+    */
+    float rgb[3];
+    hsv_to_rgb(phase/255.0*360.0,1.0-value,sqrt(value),&(rgb[0]),&(rgb[1]),&(rgb[2]));
+    out[0] = rgb[0];
+    out[1] = rgb[1];
+    out[2] = rgb[2];
+  }else if (colormap & SpColormapInvertedPhase) {
+    real phase = (256*(sp_carg(cvalue)+3.1416)/(2*3.1416));
+    /*
+    value = sqrt(value*0.8);
+    if (value < 0.5) {
+      value = 2.0*value;
+      out[0] = (1.0-value)*255.0 + value*color_table[(int)phase].r;
+      out[1] = (1.0-value)*255.0 + value*color_table[(int)phase].g;
+      out[2] = (1.0-value)*255.0 + value*color_table[(int)phase].b;
+    } else {
+      value = 2.0*value - 1.0;
+      out[0] = (1.0-value)*color_table[(int)phase].r;
+      out[1] = (1.0-value)*color_table[(int)phase].g;
+      out[2] = (1.0-value)*color_table[(int)phase].b;
+    }
+    */
+    float rgb[3];
+    hsv_to_rgb(phase/255.0*360.0,sqrt(value),1.0-0.8*pow(value,2.0),&(rgb[0]),&(rgb[1]),&(rgb[2]));
+    out[0] = rgb[0];
+    out[1] = rgb[1];
+    out[2] = rgb[2];
+  }else if (colormap & SpColormapPosNeg){
+    float rgb[3];
+    if (sp_real(cvalue) >= 0.0) {
+      hsv_to_rgb(0.0,1.0-value,sqrt(value),&(rgb[0]),&(rgb[1]),&(rgb[2]));
+    }else{
+      hsv_to_rgb(240.0,1.0-value,sqrt(value),&(rgb[0]),&(rgb[1]),&(rgb[2]));
+    }
+    out[0] = rgb[0];
+    out[1] = rgb[1];
+    out[2] = rgb[2];
+  }else if (colormap & SpColormapInvertedPosNeg){
+    float rgb[3];
+    if (sp_real(cvalue) >= 0.0) {
+      hsv_to_rgb(0.0,sqrt(value),1.0-0.8*pow(value,2.0),&(rgb[0]),&(rgb[1]),&(rgb[2]));
+    }else{
+      hsv_to_rgb(240.0,sqrt(value),1.0-0.8*pow(value,2.0),&(rgb[0]),&(rgb[1]),&(rgb[2]));
+    }
+    out[0] = rgb[0];
+    out[1] = rgb[1];
+    out[2] = rgb[2];
   }else if(colormap & SpColormapMask){
     value = sp_image_mask_get(img,x,y,z);
     if(value){

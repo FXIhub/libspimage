@@ -10,6 +10,7 @@ __global__ void CUDA_apply_fourier_constraints(cufftComplex* g, const  int size,
 __global__ void CUDA_phased_amplitudes_projection(cufftComplex* g, const cufftComplex* phased_amp,const int * pixel_flags, const  int size);
 __global__ void CUDA_diff_map_f1(cufftComplex* f1, const cufftComplex* g0,const int * pixel_flags,const float gamma1,const  int size);
 __global__ void CUDA_diff_map(cufftComplex* Pi2f1,cufftComplex* Pi2rho, const cufftComplex* g0,cufftComplex* g1,const int * pixel_flags,const float gamma2,const float beta,const  int size);
+__global__ void CUDA_ramp_final(cufftComplex *g, const float ax, const float ay, const int size, const int nx, const int *pixel_flags);
 
 int sp_proj_module_cuda(Image * a, Image * amp){
   cufftComplex * d_a;
@@ -177,10 +178,113 @@ int phaser_iterate_raar_cuda(SpPhaser * ph,int iterations){
     sp_cuda_check_errors();
     if(params->constraints != SpNoConstraints){
       CUDA_apply_constraints<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->d_pixel_flags,ph->image_size,params->constraints);
+      if (params->constraints & SpRampObject) {
+	apply_ramp_constraint_cuda(ph);
+      }
     }
     sp_cuda_check_errors();
     ph->iteration++;
   }
   return 0;
 
+}
+
+int apply_ramp_constraint_cuda(SpPhaser *ph)
+{
+  float x_tmp, y_tmp;
+  float x2,y2,xy,kx,ky;
+  Image *tmp = sp_image_alloc(ph->nx,ph->ny,1);
+  //int foo = tmp->image->x + tmp->image->y;
+  //printf("%d\n",sp_image_y(tmp));
+  //printf("%d x %d\n",sp_image_x(tmp),sp_image_y(tmp));
+  printf("%d x %d\n",ph->nx,ph->ny);
+  cudaMemcpy(tmp->image->data,ph->d_g1,sizeof(cufftComplex)*ph->image_size,cudaMemcpyDeviceToHost);
+  cudaMemcpy(ph->pixel_flags->data,ph->d_pixel_flags,sizeof(int)*ph->image_size,cudaMemcpyDeviceToHost);
+  int x,y;
+  for (x = 0; x < ph->nx/2; x++) {
+    x_tmp = (float) x;
+    for (y = 0; y < ph->ny/2; y++) {
+      if (sp_i3matrix_get(ph->pixel_flags,x,y,0) & SpPixelInsideSupport) {
+	y_tmp = (float) y;
+	x2 += x_tmp*x_tmp;
+	y2 += y_tmp*y_tmp;
+	xy += x_tmp*y_tmp;
+	kx += x_tmp*sp_carg(sp_image_get(tmp,x,y,0));
+	ky += y_tmp*sp_carg(sp_image_get(tmp,x,y,0));
+      }
+    }
+    for (y = ph->ny/2; y < ph->ny; y++) {
+      if (sp_i3matrix_get(ph->pixel_flags,x,y,0) & SpPixelInsideSupport) {
+	y_tmp = (float) (y-ph->ny);
+	x2 += x_tmp*x_tmp;
+	y2 += y_tmp*y_tmp;
+	xy += x_tmp*y_tmp;
+	kx += x_tmp*sp_carg(sp_image_get(tmp,x,y,0));
+	ky += y_tmp*sp_carg(sp_image_get(tmp,x,y,0));
+      }
+    }
+  }
+  for (x = ph->nx/2; x < ph->nx; x++) {
+    x_tmp = (float) (x-ph->nx);
+    for (y = 0; y < ph->ny/2; y++) {
+      if (sp_i3matrix_get(ph->pixel_flags,x,y,0) & SpPixelInsideSupport) {
+	y_tmp = (float) y;
+	x2 += x_tmp*x_tmp;
+	y2 += y_tmp*y_tmp;
+	xy += x_tmp*y_tmp;
+	kx += x_tmp*sp_carg(sp_image_get(tmp,x,y,0));
+	ky += y_tmp*sp_carg(sp_image_get(tmp,x,y,0));
+      }
+    }
+    for (y = ph->ny/2; y < ph->ny; y++) {
+      if (sp_i3matrix_get(ph->pixel_flags,x,y,0) & SpPixelInsideSupport) {
+	y_tmp = (float) (y-ph->ny);
+	x2 += x_tmp*x_tmp;
+	y2 += y_tmp*y_tmp;
+	xy += x_tmp*y_tmp;
+	kx += x_tmp*sp_carg(sp_image_get(tmp,x,y,0));
+	ky += y_tmp*sp_carg(sp_image_get(tmp,x,y,0));
+      }
+    }
+  }
+  sp_image_free(tmp);
+  /*
+  for (int x = 0; x < sp_image_x(new_model); x++) {
+    for (int y = 0; y < sp_image_y(new_model); y++) {
+      if (sp_i3matrix_get(ph->pixel_flags,x,y,0) & SpPixelInsideSupport) {
+	if (x < ph->nx/2) {
+	  x_tmp = (real) x;
+	} else {
+	  x_tmp = (real)( x - ph->nx );
+	}
+	if (y < ph->ny/2) {
+	  y_tmp = (real) y;
+	} else {
+	  y_tmp = (real)( y - ph->ny );
+	}
+	x2 += x_tmp*x_tmp;
+	y2 += y_tmp*y_tmp;
+	xy += x_tmp*y_tmp;
+	kx += x_tmp*sp_carg(sp_image_get(new_model,x,y,0));
+	ky += y_tmp*sp_carg(sp_image_get(new_model,x,y,0));
+      }
+    }
+  }
+  */
+  float ax = (kx*y2-ky*xy) / (x2*y2 - xy*xy);
+  float ay = (ky*x2-kx*xy) / (x2*y2 - xy*xy);
+  printf("\nax = %g\nay = %g\nsize = %d\nnx = %d\n",ax,ay,ph->image_size,ph->nx);
+
+  Image *tmp2 = sp_image_alloc(ph->nx,ph->ny,1);
+  cudaMemcpy(tmp2->image->data,ph->d_g1,sizeof(cufftComplex)*ph->image_size,cudaMemcpyDeviceToHost);
+  sp_image_write(tmp2,"debug_before_kernel.h5",0);
+
+  CUDA_ramp_final<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1, ax, ay, ph->image_size, ph->nx, ph->d_pixel_flags);
+
+  cudaMemcpy(tmp2->image->data,ph->d_g1,sizeof(cufftComplex)*ph->image_size,cudaMemcpyDeviceToHost);
+  sp_image_write(tmp2,"debug_after_kernel.h5",0);
+  sp_image_free(tmp2);
+
+  //sp_image_free(tmp);
+  return 0;
 }

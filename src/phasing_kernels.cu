@@ -126,7 +126,7 @@ __global__ void CUDA_apply_fourier_constraints(cufftComplex* g,const  int size,c
   }
 }
 
-__global__ void CUDA_apply_constraints(cufftComplex* g, const int * pixel_flags,const  int size,const SpPhasingConstraints constraints){
+__global__ void CUDA_apply_constraints(cufftComplex* g, const int * pixel_flags, const int size, const SpPhasingConstraints constraints){
   const int i =  blockIdx.x*blockDim.x + threadIdx.x;
   if(i<size){
     if(pixel_flags[i] & SpPixelInsideSupport){
@@ -159,64 +159,6 @@ __global__ void CUDA_apply_constraints(cufftComplex* g, const int * pixel_flags,
       }
     }
   }
-  if(constraints & SpRampObject) {
-    printf("Start ramp constraint\n");
-    float x2 = 0.0;
-    float y2 = 0.0;
-    float xy = 0.0;
-    float kx = 0.0;
-    float ky = 0.0;
-    float x_tmp;
-    float y_tmp;
-    float ax;
-    float ay;
-    for (int x = 0; x < sp_image_x(new_model); x++) {
-      for (int y = 0; y < sp_image_y(new_model); y++) {
-	if (sp_i3matrix_get(ph->pixel_flags,x,y,0) & SpPixelInsideSupport) {
-	  if (x < sp_image_x(new_model)/2) {
-	    x_tmp = (real) x;
-	  } else {
-	    x_tmp = (real)( sp_image_x(new_model) - x );
-	  }
-	  if (y < sp_image_y(new_model)/2) {
-	    y_tmp = (real) y;
-	  } else {
-	    y_tmp = (real)( sp_image_y(new_model) - y );
-	  }
-	  x2 += x*x;
-	  y2 += y*y;
-	  xy += x*y;
-	  //kx += x*sp_imag(sp_image_get(new_model,x,y,0));
-	  //ky += y*sp_imag(sp_image_get(new_model,x,y,0));
-	  kx += x*sp_carg(sp_image_get(new_model,x,y,0));
-	  ky += y*sp_carg(sp_image_get(new_model,x,y,0));
-	}
-      }
-    }
-    ax = (kx*y2-ky*xy) / (x2*y2 - xy*xy);
-    ay = (ky*x2-kx*xy) / (x2*y2 - xy*xy);
-    for (int x = 0; x < sp_image_x(new_model); x++) {
-      for (int y = 0; y < sp_image_y(new_model); y++) {
-	if (sp_i3matrix_get(ph->pixel_flags,x,y,0) & SpPixelInsideSupport) {
-	  if (x < sp_image_x(new_model)/2) {
-	    x_tmp = (real) x;
-	  } else {
-	    x_tmp = (real)( sp_image_x(new_model) - x );
-	  }
-	  if (y < sp_image_y(new_model)/2) {
-	    y_tmp = (real) y;
-	  } else {
-	    y_tmp = (real)( sp_image_y(new_model) - y );
-	  }
-	  sp_image_set(new_model,x,y,0,
-		       sp_cinit(sp_cabs(sp_image_get(new_model,x,y,0))*
-				cos(ax*x_tmp+ay*y_tmp),
-				sp_cabs(sp_image_get(new_model,x,y,0))*
-				sin(ax*x_tmp+ay*y_tmp)));
-	}
-      }
-    }
-  }
 }
 
 // Complex pointwise multiplication
@@ -227,3 +169,28 @@ __global__ void CUDA_complex_scale(cufftComplex * a, int size ,float scale){
     a[i].y *= scale;
   }
 } 
+
+__global__ void CUDA_ramp_final(cufftComplex *g, const float ax, const float ay, const int size, const int nx, const int * pixel_flags)
+{
+  const int i = blockIdx.x*blockDim.x + threadIdx.x;
+  if (i < size) {
+    if(pixel_flags[i] & SpPixelInsideSupport){
+      float x_tmp;
+      float y_tmp;
+      float g_abs;
+      if (i%nx < nx/2) {
+	x_tmp = i%nx;
+      } else {
+	x_tmp = i%nx - nx;
+      }
+      if (i/nx < size/nx/2) {
+	y_tmp = i/nx;
+      } else {
+	y_tmp = i/nx - size/nx;
+      }
+      g_abs = sqrt(g[i].x*g[i].x + g[i].y*g[i].y);
+      g[i].x = g_abs*cos(ax*x_tmp+ay*y_tmp);
+      g[i].y = g_abs*sin(ax*x_tmp+ay*y_tmp);
+    }
+  }
+}

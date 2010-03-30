@@ -29,21 +29,22 @@ extern "C"
   typedef enum{SpColormapFirstColorScheme=1,SpColormapGrayScale=1,SpColormapTraditional=2,
 	       SpColormapHot=4,SpColormapRainbow=8,SpColormapJet=16,
 	       SpColormapWheel=32,SpColormapLastColorScheme=64,SpColormapLogScale=128,SpColormapPhase=256,
-	       SpColormapWeightedPhase=512,SpColormapMask=1024,SpColormapShadedMask=2048}SpColormap;
+	       SpColormapWeightedPhase=512,SpColormapMask=1024,SpColormapShadedMask=2048,SpColormapInvertedPhase=4096,
+	       SpColormapPosNeg=8192,SpColormapInvertedPosNeg=16384}SpColormap;
 
-/*! 
-  \internal
-  Calculates the color corresponding to the given value using a certain colormap.
-  value must fall in the interval [0,1[.
-*/
-spimage_EXPORT sp_rgb sp_colormap_rgb_from_value(real value, int colormap);
+  /*! 
+    \internal
+    Calculates the color corresponding to the given value using a certain colormap.
+    value must fall in the interval [0,1[.
+  */
+  spimage_EXPORT sp_rgb sp_colormap_rgb_from_value(real value, int colormap);
 
   /*!
   \internal
     Creates a color table given a colormap.
     It's only for internal use.
    */
-spimage_EXPORT void sp_colormap_create_table(sp_rgb color_table[256],int colormap);
+  spimage_EXPORT void sp_colormap_create_table(sp_rgb color_table[256],int colormap);
 
   /*!
     \internal
