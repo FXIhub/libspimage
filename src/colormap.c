@@ -102,6 +102,9 @@ real sp_colormap_scale_value(real input,int colormap,real max_v, real min_v){
 void sp_colormap_write_rgb(unsigned char * out,Image * img, int colormap,sp_rgb * color_table,real max_v, real min_v, int x, int y, int z,int red_blue_swap){
   Complex cvalue = sp_image_get(img,x,y,z);
   real value = sp_colormap_scale_value(sp_cabs(cvalue),colormap,max_v,min_v);
+  if(!isfinite(value)){   
+    return;
+  }
   if(colormap & SpColormapPhase){
     real phase = (256*(sp_carg(cvalue)+3.1416)/(2*3.1416));
     out[0] =  sqrt(value)*color_table[(int)phase].r;
