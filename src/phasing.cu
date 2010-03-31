@@ -273,7 +273,11 @@ int apply_ramp_constraint_cuda(SpPhaser *ph)
   */
   float ax = (kx*y2-ky*xy) / (x2*y2 - xy*xy);
   float ay = (ky*x2-kx*xy) / (x2*y2 - xy*xy);
-  printf("\nax = %g\nay = %g\nsize = %d\nnx = %d\n",ax,ay,ph->image_size,ph->nx);
+  //printf("\nax = %g\nay = %g\nsize = %d\nnx = %d\n",ax,ay,ph->image_size,ph->nx);
+  printf("\nax = %g\n",ax);
+  printf("ay = %g\n",ay);
+  printf("size = %d\n",ph->image_size);
+  printf("nx = %d\n",ph->nx);
 
   Image *tmp2 = sp_image_alloc(ph->nx,ph->ny,1);
   cudaMemcpy(tmp2->image->data,ph->d_g1,sizeof(cufftComplex)*ph->image_size,cudaMemcpyDeviceToHost);
