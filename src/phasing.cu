@@ -209,3 +209,32 @@ void phaser_apply_fourier_constraints_cuda(Image * a, SpPhasingConstraints const
   cudaFree(d_a);
   sp_cuda_check_errors();
 }
+
+void phaser_apply_constraints_cuda(SpPhaser * ph,Image * a, SpPhasingConstraints constraints){
+  cufftComplex * d_a;
+  cudaMalloc((void **)&d_a,sizeof(cufftComplex)*sp_image_size(a));
+  cudaMemcpy(d_a,a->image->data,sizeof(cufftComplex)*sp_image_size(a),cudaMemcpyHostToDevice);
+  CUDA_apply_constraints<<<ph->number_of_blocks, ph->threads_per_block>>>(d_a,ph->d_pixel_flags,ph->image_size,constraints);
+  cudaMemcpy(a->image->data,d_a,sizeof(cufftComplex)*sp_image_size(a),cudaMemcpyDeviceToHost);
+  cudaFree(d_a);
+  sp_cuda_check_errors();
+}
+
+void phaser_complex_scale_cuda(Image * a, float scale){
+  int threads_per_block = 32;
+  dim3 number_of_blocks;
+  sp_vector * max_grid = sp_cuda_get_max_grid_size();
+  int image_size = sp_image_size(a);
+  number_of_blocks.x = sp_min(sp_vector_get(max_grid,0),(image_size+threads_per_block-1)/threads_per_block);
+  number_of_blocks.y = sp_min(sp_vector_get(max_grid,1),(image_size+number_of_blocks.x*threads_per_block-1)/(number_of_blocks.x*threads_per_block));
+  number_of_blocks.z = 1;
+  sp_vector_free(max_grid);
+
+  cufftComplex * d_a;
+  cudaMalloc((void **)&d_a,sizeof(cufftComplex)*sp_image_size(a));
+  cudaMemcpy(d_a,a->image->data,sizeof(cufftComplex)*sp_image_size(a),cudaMemcpyHostToDevice);
+  CUDA_complex_scale<<<number_of_blocks, threads_per_block>>>(d_a,image_size,scale);
+  cudaMemcpy(a->image->data,d_a,sizeof(cufftComplex)*sp_image_size(a),cudaMemcpyDeviceToHost);
+  cudaFree(d_a);
+  sp_cuda_check_errors();
+}

@@ -1784,6 +1784,30 @@ void test_sp_image_cuda_fft(CuTest * tc){
 #endif
 }
 
+void test_phaser_complex_scale_cuda(CuTest * tc){
+  int size[] = {512,2048};
+  for(int i = 0;i<sizeof(size)/sizeof(int);i++){
+    Image * a = sp_image_alloc(size[i],size[i],1);
+    for(int j = 0;j<sp_image_size(a);j++){
+      a->image->data[j] = sp_cinit((float)rand()/RAND_MAX,(float)rand()/RAND_MAX);
+    }
+    sp_image_scale(a,sp_image_size(a));
+    Image * b = sp_image_duplicate(a,SP_COPY_ALL);
+    phaser_complex_scale_cuda(a, 1.0/sp_image_size(a));
+    sp_image_scale(b,1.0/sp_image_size(a));
+    for(int i= 0;i<sp_image_size(a);i++){
+      if(fabs(sp_real(a->image->data[i])-sp_real(b->image->data[i])) > REAL_EPSILON+ REAL_EPSILON*sp_cabs(a->image->data[i])){
+	printf("here!\n");
+      }
+      CuAssertComplexEquals(tc,a->image->data[i],b->image->data[i],sqrt(REAL_EPSILON)+REAL_EPSILON*sp_cabs(a->image->data[i]));  
+    
+    }
+    sp_image_free(a);
+    sp_image_free(b);
+  }
+  PRINT_DONE;
+}
+
 CuSuite* linear_alg_get_suite(void)
 {
   CuSuite* suite = CuSuiteNew();
@@ -1889,6 +1913,7 @@ CuSuite* linear_alg_get_suite(void)
   if(sp_cuda_get_device_type() == SpCUDAHardwareDevice){
     SUITE_ADD_TEST(suite,test_sp_image_cuda_ifft);
     SUITE_ADD_TEST(suite,test_sp_image_cuda_fft);
+    SUITE_ADD_TEST(suite,test_phaser_complex_scale_cuda);
   }
 
   return suite;

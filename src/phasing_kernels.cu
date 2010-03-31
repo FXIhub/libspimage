@@ -4,7 +4,7 @@
 
 __global__ void CUDA_diff_map_f1(cufftComplex* f1, const cufftComplex* g0,const int * pixel_flags,const float gamma1,const  int size){
   /* Assume 3D grids and 1D blocks*/
-  const int i = blockIdx.z*blockDim.z*blockDim.y*blockDim.x+blockIdx.y*blockDim.y*blockDim.x+blockIdx.x*blockDim.x + threadIdx.x;
+  const int i = blockIdx.z*gridDim.y*gridDim.x*blockDim.x+blockIdx.y*gridDim.x*blockDim.x+blockIdx.x*blockDim.x + threadIdx.x;
   if(i<size){
     f1[i] = g0[i];
     if((pixel_flags[i] & SpPixelInsideSupport) == 0){
@@ -16,7 +16,7 @@ __global__ void CUDA_diff_map_f1(cufftComplex* f1, const cufftComplex* g0,const 
 
 __global__ void CUDA_diff_map(cufftComplex* Pi2f1,cufftComplex* Pi2rho, const cufftComplex* g0, cufftComplex* g1,const int * pixel_flags,const float gamma2,const float beta,const  int size){
   /* Assume 3D grids and 1D blocks*/
-  const int i = blockIdx.z*blockDim.z*blockDim.y*blockDim.x+blockIdx.y*blockDim.y*blockDim.x+blockIdx.x*blockDim.x + threadIdx.x;
+  const int i = blockIdx.z*gridDim.y*gridDim.x*blockDim.x+blockIdx.y*gridDim.x*blockDim.x+blockIdx.x*blockDim.x + threadIdx.x;
   if(i<size){
     if((pixel_flags[i] & SpPixelInsideSupport)){
       g1[i].x = g0[i].x +(beta)*((1+gamma2)*Pi2rho[i].x-gamma2*g0[i].x);
@@ -45,7 +45,7 @@ __global__ void CUDA_support_projection_raar(cufftComplex* g1, const cufftComple
      
   */    
   /* Assume 3D grids and 1D blocks*/
-  const int i = blockIdx.z*blockDim.z*blockDim.y*blockDim.x+blockIdx.y*blockDim.y*blockDim.x+blockIdx.x*blockDim.x + threadIdx.x;
+  const int i = blockIdx.z*gridDim.y*gridDim.x*blockDim.x+blockIdx.y*gridDim.x*blockDim.x+blockIdx.x*blockDim.x + threadIdx.x;
   if(i<size){
     if((pixel_flags[i] & SpPixelInsideSupport) == 0){
       g1[i].x = g0[i].x*beta+(1.0f-2.0f*beta)*g1[i].x;
@@ -57,7 +57,7 @@ __global__ void CUDA_support_projection_raar(cufftComplex* g1, const cufftComple
 __global__ void CUDA_support_projection_hio(cufftComplex* g1, const cufftComplex* g0,const int * pixel_flags,const  int size,const float beta)
 {
   /* Assume 3D grids and 1D blocks*/
-  const int i = blockIdx.z*blockDim.z*blockDim.y*blockDim.x+blockIdx.y*blockDim.y*blockDim.x+blockIdx.x*blockDim.x + threadIdx.x;
+  const int i = blockIdx.z*gridDim.y*gridDim.x*blockDim.x+blockIdx.y*gridDim.x*blockDim.x+blockIdx.x*blockDim.x + threadIdx.x;
   if(i<size){
     if((pixel_flags[i] & SpPixelInsideSupport) == 0){
       g1[i].x = g0[i].x-g1[i].x*beta;
@@ -69,7 +69,7 @@ __global__ void CUDA_support_projection_hio(cufftComplex* g1, const cufftComplex
 __global__ void CUDA_support_projection_er(cufftComplex* g1,const int * pixel_flags,const  int size)
 {
   /* Assume 3D grids and 1D blocks*/
-  const int i = blockIdx.z*blockDim.z*blockDim.y*blockDim.x+blockIdx.y*blockDim.y*blockDim.x+blockIdx.x*blockDim.x + threadIdx.x;
+  const int i = blockIdx.z*gridDim.y*gridDim.x*blockDim.x+blockIdx.y*gridDim.x*blockDim.x+blockIdx.x*blockDim.x + threadIdx.x;
   if(i<size){
     if((pixel_flags[i] & SpPixelInsideSupport) == 0){
       g1[i].x = 0;
@@ -81,7 +81,7 @@ __global__ void CUDA_support_projection_er(cufftComplex* g1,const int * pixel_fl
 __global__ void CUDA_module_projection(cufftComplex* g, const float* amp,const int * pixel_flags,const  int size)
 {	
   /* Assume 3D grids and 1D blocks*/
-  const int i = blockIdx.z*blockDim.z*blockDim.y*blockDim.x+blockIdx.y*blockDim.y*blockDim.x+blockIdx.x*blockDim.x + threadIdx.x;
+  const int i = blockIdx.z*gridDim.y*gridDim.x*blockDim.x+blockIdx.y*gridDim.x*blockDim.x+blockIdx.x*blockDim.x + threadIdx.x;
   if(i<size){
     if(pixel_flags[i] & SpPixelMeasuredAmplitude){
 #ifndef _STRICT_IEEE_754      
@@ -110,7 +110,7 @@ __global__ void CUDA_module_projection(cufftComplex* g, const float* amp,const i
 __global__ void CUDA_phased_amplitudes_projection(cufftComplex* g, const cufftComplex* phased_amplitudes,const int * pixel_flags,const  int size)
 {	
   /* Assume 3D grids and 1D blocks*/
-  const int i = blockIdx.z*blockDim.z*blockDim.y*blockDim.x+blockIdx.y*blockDim.y*blockDim.x+blockIdx.x*blockDim.x + threadIdx.x;
+  const int i = blockIdx.z*gridDim.y*gridDim.x*blockDim.x+blockIdx.y*gridDim.x*blockDim.x+blockIdx.x*blockDim.x + threadIdx.x;
   if(i<size){
     if(pixel_flags[i] & SpPixelMeasuredAmplitude){
       g[i].x = phased_amplitudes[i].x;
@@ -121,7 +121,7 @@ __global__ void CUDA_phased_amplitudes_projection(cufftComplex* g, const cufftCo
 
 __global__ void CUDA_apply_fourier_constraints(cufftComplex* g,const  int size,const SpPhasingConstraints constraints){
   /* Assume 3D grids and 1D blocks*/
-  const int i = blockIdx.z*blockDim.z*blockDim.y*blockDim.x+blockIdx.y*blockDim.y*blockDim.x+blockIdx.x*blockDim.x + threadIdx.x;
+  const int i = blockIdx.z*gridDim.y*gridDim.x*blockDim.x+blockIdx.y*gridDim.x*blockDim.x+blockIdx.x*blockDim.x + threadIdx.x;
   if(i<size){
     if(constraints & SpCentrosymmetricObject){
       /* keep the power of the image */
@@ -137,7 +137,7 @@ __global__ void CUDA_apply_fourier_constraints(cufftComplex* g,const  int size,c
 
 __global__ void CUDA_apply_constraints(cufftComplex* g, const int * pixel_flags,const  int size,const SpPhasingConstraints constraints){
   /* Assume 3D grids and 1D blocks*/
-  const int i = blockIdx.z*blockDim.z*blockDim.y*blockDim.x+blockIdx.y*blockDim.y*blockDim.x+blockIdx.x*blockDim.x + threadIdx.x;
+  const int i = blockIdx.z*gridDim.y*gridDim.x*blockDim.x+blockIdx.y*gridDim.x*blockDim.x+blockIdx.x*blockDim.x + threadIdx.x;
   if(i<size){
     if(pixel_flags[i] & SpPixelInsideSupport){
       if(constraints & SpRealObject){
@@ -174,7 +174,7 @@ __global__ void CUDA_apply_constraints(cufftComplex* g, const int * pixel_flags,
 // Complex pointwise multiplication
 __global__ void CUDA_complex_scale(cufftComplex * a, int size ,float scale){
   /* Assume 3D grids and 1D blocks*/
-  const int i = blockIdx.z*blockDim.z*blockDim.y*blockDim.x+blockIdx.y*blockDim.y*blockDim.x+blockIdx.x*blockDim.x + threadIdx.x;
+  const int i = blockIdx.z*gridDim.y*gridDim.x*blockDim.x+blockIdx.y*gridDim.x*blockDim.x+blockIdx.x*blockDim.x + threadIdx.x;
   if(i<size){
     a[i].x *= scale;
     a[i].y *= scale;

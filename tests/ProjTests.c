@@ -122,6 +122,7 @@ void test_sp_proj_module_histogram(CuTest* tc)
 }
 
 
+
 CuSuite* proj_get_suite(void)
 {
   CuSuite* suite = CuSuiteNew();

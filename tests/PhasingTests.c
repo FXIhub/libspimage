@@ -82,8 +82,7 @@ int test_sp_phasing_cuda_common(CuTest * tc,SpPhasingAlgorithm * alg,int size, r
   int i =0;
   int max_iter = 10;
   CuAssertTrue(tc,sp_phaser_init_model(ph_cpu,NULL,SpModelRandomPhases) == 0); 
-  CuAssertTrue(tc,sp_phaser_init_model(ph_cuda,NULL,SpModelRandomPhases) == 0); 
-  sp_phaser_set_model(ph_cuda,sp_image_duplicate(sp_phaser_model(ph_cpu),SP_COPY_ALL));
+  CuAssertTrue(tc,sp_phaser_init_model(ph_cuda,sp_phaser_model(ph_cpu),0) == 0); 
   CuAssertTrue(tc,sp_phaser_init_support(ph_cpu,support,0,0) == 0); 
   CuAssertTrue(tc,sp_phaser_init_support(ph_cuda,support,0,0) == 0); 
   do{
@@ -93,7 +92,7 @@ int test_sp_phasing_cuda_common(CuTest * tc,SpPhasingAlgorithm * alg,int size, r
     const Image * cuda_model = sp_phaser_model(ph_cuda);
     for(int i =0 ;i<ph_cpu->image_size;i++){
       CuAssertComplexEquals(tc,cpu_model->image->data[i],
-			    cuda_model->image->data[i],
+			    cuda_model->image->data[i],sqrt(REAL_EPSILON)+
 			    sqrt(REAL_EPSILON)*sp_cabs(cuda_model->image->data[i]));  
     }
     i++;
@@ -1033,9 +1032,9 @@ void test_sp_phasing_hio(CuTest * tc){
   SpPhasingAlgorithm * alg = sp_phasing_hio_alloc(beta,0);
   //  CuAssertIntEquals(tc,test_sp_phasing_common(tc,alg,size,oversampling,SpNoConstraints,0,tol),1);
 
-  if(sp_cuda_get_device_type() == SpCUDAHardwareDevice){
+  /*  if(sp_cuda_get_device_type() == SpCUDAHardwareDevice){
     CuAssertIntEquals(tc,test_sp_phasing_cuda_common(tc,alg,size,oversampling,SpNoConstraints,tol),1);
-  }
+    }
   alg = sp_phasing_hio_alloc(beta,SpPositiveRealObject);
   CuAssertIntEquals(tc,test_sp_phasing_common(tc,alg,size,oversampling,SpPositiveRealObject,0,tol),1);
   alg = sp_phasing_hio_alloc(beta,SpRealObject);
@@ -1048,7 +1047,7 @@ void test_sp_phasing_hio(CuTest * tc){
   CuAssertIntEquals(tc,test_sp_phasing_common(tc,alg,size,oversampling,SpNoConstraints,1,tol),1);
   alg = sp_phasing_hio_alloc(beta,SpPositiveRealObject);
   CuAssertIntEquals(tc,test_sp_phasing_common(tc,alg,size,oversampling,SpPositiveRealObject,1,tol),1);
-
+  */
 
   /* Also try some large sizes */
   if(sp_cuda_get_device_type() == SpCUDAHardwareDevice){
@@ -1353,7 +1352,7 @@ CuSuite* phasing_get_suite(void)
 {
   CuSuite* suite = CuSuiteNew();
   SUITE_ADD_TEST(suite, test_sp_phasing_hio);
-  /*  SUITE_ADD_TEST(suite,test_sp_phasing_hio_speed_by_size);
+  SUITE_ADD_TEST(suite,test_sp_phasing_hio_speed_by_size);
   SUITE_ADD_TEST(suite, test_sp_support_cuda);
   SUITE_ADD_TEST(suite, test_sp_support_speed);
   SUITE_ADD_TEST(suite, test_sp_phasing_hio_speed);
@@ -1369,7 +1368,7 @@ CuSuite* phasing_get_suite(void)
   SUITE_ADD_TEST(suite, test_sp_support_diff_map);
   SUITE_ADD_TEST(suite, test_sp_phasing_diff_map_success_rate);
   SUITE_ADD_TEST(suite, test_sp_phasing_diff_map_noisy_success_rate);  
-  SUITE_ADD_TEST(suite, test_sp_phasing_fourier_constraints);*/
+  SUITE_ADD_TEST(suite, test_sp_phasing_fourier_constraints);
 
   return suite;
 }

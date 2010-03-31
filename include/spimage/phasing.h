@@ -6,7 +6,7 @@
 #include "support_update.h"
 #include "map.h"
 
-#ifdef __cplusplus
+#if defined __cplusplus || defined __CUDACC__
 extern "C"
 {
 #endif /* __cplusplus */
@@ -134,6 +134,8 @@ spimage_EXPORT int sp_phaser_iterate(SpPhaser * ph, int iterations);
   int sp_support_close_update_support_cuda(SpSupportAlgorithm *alg, SpPhaser * ph);
   int sp_proj_module_cuda(Image * a, Image * amp);
   void phaser_apply_fourier_constraints_cuda(Image * a, SpPhasingConstraints constraints);
+  void phaser_apply_constraints_cuda(SpPhaser * ph,Image * a,SpPhasingConstraints constraints);
+  void phaser_complex_scale_cuda(Image * a, float scale);
 #endif
 
   int sp_support_area_update_support(SpSupportAlgorithm *alg, SpPhaser * ph);
@@ -148,7 +150,7 @@ spimage_EXPORT int sp_phaser_iterate(SpPhaser * ph, int iterations);
 
   int sp_support_array_update(SpSupportArray *array, SpPhaser *ph);
 
-#ifdef __cplusplus
+#if defined __cplusplus || defined __CUDACC__
 }  /* extern "C" */
 #endif /* __cplusplus */
 
