@@ -390,7 +390,7 @@ static inline  void sp_image_to_amplitudes(Image *  img){
   long long i;
   if(!img->scaled){
     for(i = 0;i<sp_image_size(img);i++){
-      if(img->image->data[i] >= 0){ 
+      if(sp_real(img->image->data[i]) >= 0){ 
 	sp_real(img->image->data[i]) = sqrt(sp_real(img->image->data[i]));
       }else{
 	sp_real(img->image->data[i]) = 0;
