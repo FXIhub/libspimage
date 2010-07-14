@@ -1,5 +1,5 @@
 /*
- *  Copyright 2008-2009 NVIDIA Corporation
+ *  Copyright 2008-2010 NVIDIA Corporation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -21,40 +21,28 @@
 
 #include <thrust/detail/vector_base.h>
 #include <thrust/copy.h>
+#include <thrust/detail/move.h>
+#include <thrust/equal.h>
 #include <thrust/uninitialized_fill.h>
 #include <thrust/uninitialized_copy.h>
 #include <thrust/distance.h>
 #include <thrust/advance.h>
 #include <thrust/detail/destroy.h>
 #include <thrust/detail/type_traits.h>
+
+#include <algorithm>
 #include <stdexcept>
+
+#include <thrust/distance.h>
+#include <thrust/iterator/iterator_traits.h>
+
+#include <thrust/detail/raw_buffer.h>
 
 namespace thrust
 {
 
 namespace detail
 {
-
-// specialize iterator_device_reference for normal_iterator with device_ptr as base
-template<typename T>
-  struct iterator_device_reference< normal_iterator< device_ptr<T> > >
-{
-  typedef typename iterator_device_reference< device_ptr<T> >::type type;
-}; // end iterator_device_reference
-
-// define our own min() function rather than #include <thrust/extrema.h>
-template<typename T>
-  T vector_base_min(const T &lhs, const T &rhs)
-{
-  return lhs < rhs ? lhs : rhs;
-} // end vector_base_min()
-
-// define our own max() function rather than #include <thrust/extrema.h>
-template<typename T>
-  T vector_base_max(const T &lhs, const T &rhs)
-{
-  return lhs > rhs ? lhs : rhs;
-} // end vector_base_min()
 
 template<typename T, typename Alloc>
   vector_base<T,Alloc>
@@ -287,6 +275,14 @@ template<typename T, typename Alloc>
 } // end vector_base::capacity()
 
 template<typename T, typename Alloc>
+  void vector_base<T,Alloc>
+    ::shrink_to_fit(void)
+{
+  // use the swap trick
+  vector_base(*this).swap(*this);
+} // end vector_base::shrink_to_fit()
+
+template<typename T, typename Alloc>
   typename vector_base<T,Alloc>::reference
     vector_base<T,Alloc>
       ::operator[](const size_type n)
@@ -327,6 +323,30 @@ template<typename T, typename Alloc>
 } // end vector_base::cbegin()
 
 template<typename T, typename Alloc>
+  typename vector_base<T,Alloc>::reverse_iterator
+    vector_base<T,Alloc>
+      ::rbegin(void)
+{
+  return reverse_iterator(end());
+} // end vector_base::rbegin()
+
+template<typename T, typename Alloc>
+  typename vector_base<T,Alloc>::const_reverse_iterator
+    vector_base<T,Alloc>
+      ::rbegin(void) const
+{
+  return const_reverse_iterator(end());
+} // end vector_base::rbegin()
+
+template<typename T, typename Alloc>
+  typename vector_base<T,Alloc>::const_reverse_iterator
+    vector_base<T,Alloc>
+      ::crbegin(void) const
+{
+  return rbegin();
+} // end vector_base::crbegin()
+
+template<typename T, typename Alloc>
   typename vector_base<T,Alloc>::iterator
     vector_base<T,Alloc>
       ::end(void)
@@ -349,6 +369,30 @@ template<typename T, typename Alloc>
 {
   return end();
 } // end vector_base::cend()
+
+template<typename T, typename Alloc>
+  typename vector_base<T,Alloc>::reverse_iterator
+    vector_base<T,Alloc>
+      ::rend(void)
+{
+  return reverse_iterator(begin());
+} // end vector_base::rend()
+
+template<typename T, typename Alloc>
+  typename vector_base<T,Alloc>::const_reverse_iterator
+    vector_base<T,Alloc>
+      ::rend(void) const
+{
+  return const_reverse_iterator(begin());
+} // end vector_base::rend()
+
+template<typename T, typename Alloc>
+  typename vector_base<T,Alloc>::const_reverse_iterator
+    vector_base<T,Alloc>
+      ::crend(void) const
+{
+  return rend();
+} // end vector_base::crend()
 
 template<typename T, typename Alloc>
   typename vector_base<T,Alloc>::const_reference
@@ -381,6 +425,22 @@ template<typename T, typename Alloc>
 {
   return *(begin() + static_cast<difference_type>(size() - 1));
 } // end vector_base::vector_base
+
+template<typename T, typename Alloc>
+  typename vector_base<T,Alloc>::pointer
+    vector_base<T,Alloc>
+      ::data(void)
+{
+  return &front();
+} // end vector_base::data()
+
+template<typename T, typename Alloc>
+  typename vector_base<T,Alloc>::const_pointer
+    vector_base<T,Alloc>
+      ::data(void) const
+{
+  return &front();
+} // end vector_base::data()
 
 template<typename T, typename Alloc>
   vector_base<T,Alloc>
@@ -434,8 +494,8 @@ template<typename T, typename Alloc>
   typename vector_base<T,Alloc>::iterator vector_base<T,Alloc>
     ::erase(iterator first, iterator last)
 {
-  // copy the range [last,end()) to first
-  iterator i = thrust::copy(last, end(), first);
+  // move the range [last,end()) to first
+  iterator i = detail::move(last, end(), first);
 
   // destroy everything after i
   thrust::detail::destroy(i, end());
@@ -607,7 +667,7 @@ template<typename T, typename Alloc>
       const size_type old_size = size();
 
       // compute the new capacity after the allocation
-      size_type new_capacity = old_size + vector_base_max(old_size, num_new_elements);
+      size_type new_capacity = old_size + std::max(old_size, num_new_elements);
 
       // allocate exponentially larger new storage
       new_capacity = std::max<size_type>(new_capacity, 2 * capacity());
@@ -719,7 +779,7 @@ template<typename T, typename Alloc>
       const size_type old_size = size();
 
       // compute the new capacity after the allocation
-      size_type new_capacity = old_size + vector_base_max(old_size, n);
+      size_type new_capacity = old_size + std::max(old_size, n);
 
       // allocate exponentially larger new storage
       new_capacity = std::max<size_type>(new_capacity, 2 * capacity());
@@ -960,6 +1020,131 @@ template<typename T, typename Alloc>
 {
   a.swap(b);
 } // end swap()
+
+
+
+namespace detail
+{
+    
+//////////////////////
+// Host<->Host Path //
+//////////////////////
+template <typename InputIterator1, typename InputIterator2>
+bool vector_equal(InputIterator1 first1, InputIterator1 last1,
+                  InputIterator2 first2,
+                  thrust::host_space_tag,
+                  thrust::host_space_tag)
+{
+    return thrust::equal(first1, last1, first2);
+}
+
+//////////////////////////
+// Device<->Device Path //
+//////////////////////////
+template <typename InputIterator1, typename InputIterator2>
+bool vector_equal(InputIterator1 first1, InputIterator1 last1,
+                  InputIterator2 first2,
+                  thrust::device_space_tag,
+                  thrust::device_space_tag)
+{
+    return thrust::equal(first1, last1, first2);
+}
+
+////////////////////////
+// Host<->Device Path //
+////////////////////////
+template <typename InputIterator1, typename InputIterator2>
+bool vector_equal(InputIterator1 first1, InputIterator1 last1,
+                  InputIterator2 first2,
+                  thrust::host_space_tag,
+                  thrust::device_space_tag)
+{
+    typedef typename thrust::iterator_traits<InputIterator2>::value_type InputType2;
+    
+    // copy device sequence to host and compare on host
+    raw_host_buffer<InputType2> buffer(first2, first2 + thrust::distance(first1, last1));
+
+    return thrust::equal(first1, last1, buffer.begin());
+}
+  
+////////////////////////
+// Device<->Host Path //
+////////////////////////
+template <typename InputIterator1, typename InputIterator2> 
+bool vector_equal(InputIterator1 first1, InputIterator1 last1,
+                  InputIterator2 first2,
+                  thrust::device_space_tag,
+                  thrust::host_space_tag)
+{
+    typedef typename thrust::iterator_traits<InputIterator1>::value_type InputType1;
+    
+    // copy device sequence to host and compare on host
+    raw_host_buffer<InputType1> buffer(first1, last1);
+
+    return thrust::equal(buffer.begin(), buffer.end(), first2);
+}
+
+template <typename InputIterator1, typename InputIterator2>
+bool vector_equal(InputIterator1 first1, InputIterator1 last1,
+                  InputIterator2 first2)
+{
+    return vector_equal(first1, last1, first2,
+            typename thrust::iterator_space< InputIterator1 >::type(),
+            typename thrust::iterator_space< InputIterator2 >::type());
+}
+
+} // end namespace detail
+
+
+
+
+template<typename T1, typename Alloc1,
+         typename T2, typename Alloc2>
+bool operator==(const detail::vector_base<T1,Alloc1>& lhs,
+                const detail::vector_base<T2,Alloc2>& rhs)
+{
+    return lhs.size() == rhs.size() && detail::vector_equal(lhs.begin(), lhs.end(), rhs.begin());
+}
+    
+template<typename T1, typename Alloc1,
+         typename T2, typename Alloc2>
+bool operator==(const detail::vector_base<T1,Alloc1>& lhs,
+                const std::vector<T2,Alloc2>&         rhs)
+{
+    return lhs.size() == rhs.size() && detail::vector_equal(lhs.begin(), lhs.end(), rhs.begin());
+}
+
+template<typename T1, typename Alloc1,
+         typename T2, typename Alloc2>
+bool operator==(const std::vector<T1,Alloc1>&         lhs,
+                const detail::vector_base<T2,Alloc2>& rhs)
+{
+    return lhs.size() == rhs.size() && detail::vector_equal(lhs.begin(), lhs.end(), rhs.begin());
+}
+
+template<typename T1, typename Alloc1,
+         typename T2, typename Alloc2>
+bool operator!=(const detail::vector_base<T1,Alloc1>& lhs,
+                const detail::vector_base<T2,Alloc2>& rhs)
+{
+    return !(lhs == rhs);
+}
+    
+template<typename T1, typename Alloc1,
+         typename T2, typename Alloc2>
+bool operator!=(const detail::vector_base<T1,Alloc1>& lhs,
+                const std::vector<T2,Alloc2>&         rhs)
+{
+    return !(lhs == rhs);
+}
+
+template<typename T1, typename Alloc1,
+         typename T2, typename Alloc2>
+bool operator!=(const std::vector<T1,Alloc1>&         lhs,
+                const detail::vector_base<T2,Alloc2>& rhs)
+{
+    return !(lhs == rhs);
+}
 
 } // end thrust
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2008-2009 NVIDIA Corporation
+ *  Copyright 2008-2010 NVIDIA Corporation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -15,11 +15,10 @@
  */
 
 
-/*! \file copy.h
- *  \brief Device implementations for copy.
- */
-
 #pragma once
+
+#include <thrust/iterator/iterator_traits.h>
+#include <thrust/detail/device/dispatch/copy.h>
 
 namespace thrust
 {
@@ -32,21 +31,15 @@ namespace device
 
 template<typename InputIterator,
          typename OutputIterator>
-  OutputIterator copy_host_to_device(InputIterator begin, 
-                                     InputIterator end, 
-                                     OutputIterator result);
+  OutputIterator copy(InputIterator begin, 
+                      InputIterator end, 
+                      OutputIterator result)
+{
+  return thrust::detail::device::dispatch::copy(begin, end, result,
+    typename thrust::iterator_space<InputIterator>::type(),
+    typename thrust::iterator_space<OutputIterator>::type());
+}
 
-template<typename InputIterator,
-         typename OutputIterator>
-  OutputIterator copy_device_to_host(InputIterator begin, 
-                                     InputIterator end, 
-                                     OutputIterator result);
-
-template<typename InputIterator,
-         typename OutputIterator>
-  OutputIterator copy_device_to_device(InputIterator begin, 
-                                       InputIterator end, 
-                                       OutputIterator result);
 
 template<typename InputIterator1,
          typename InputIterator2,
@@ -65,7 +58,4 @@ template<typename InputIterator1,
 } // end thrust
 
 #include "copy_if.inl"
-#include "copy_host_to_device.inl"
-#include "copy_device_to_host.inl"
-#include "copy_device_to_device.inl"
 

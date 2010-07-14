@@ -1,5 +1,5 @@
 /*
- *  Copyright 2008-2009 NVIDIA Corporation
+ *  Copyright 2008-2010 NVIDIA Corporation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -75,7 +75,7 @@ template<typename ForwardIterator,
 {
   typedef typename iterator_traits<ForwardIterator>::value_type ValueType;
 
-  // XXX nvcc can't compile this yet
+  // XXX nvcc 3.0b can compile this, but leave it out until 3.0 final
   //thrust::for_each(first, last, detail::copy_constructor<ValueType>(x));
 
   // fallback to fill

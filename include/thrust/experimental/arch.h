@@ -1,5 +1,5 @@
 /*
- *  Copyright 2008-2009 NVIDIA Corporation
+ *  Copyright 2008-2010 NVIDIA Corporation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -28,10 +28,11 @@
 // #include this for size_t
 #include <cstddef>
 
-#ifdef __CUDACC__
-
 // #include this for dim3
 #include <vector_types.h>
+
+// #include this for cudaDeviceProp
+#include <cuda_runtime_api.h>
 
 namespace thrust
 {
@@ -84,13 +85,29 @@ inline size_t max_active_blocks_per_multiprocessor(const cudaDeviceProp& propert
 template <typename KernelFunction>
 size_t max_active_blocks(KernelFunction kernel, const size_t CTA_SIZE, const size_t dynamic_smem_bytes);
 
-}; // end arch
 
-}; // end experimental
+/*! This function returns the block size that achieves the highest
+ *  occupancy for a particular kernel & device.
+ */
+inline size_t max_blocksize_with_highest_occupancy(const cudaDeviceProp& properties,
+                                                   const cudaFuncAttributes& attributes,
+                                                   size_t dynamic_smem_bytes_per_thread = 0);
 
-}; // end thrust
+template <typename KernelFunction>
+size_t max_blocksize_with_highest_occupancy(KernelFunction kernel, size_t dynamic_smem_bytes_per_thread = 0);
+
+/*! This function returns the maximum block size for a given kernel and device.
+ */
+inline size_t max_blocksize(const cudaDeviceProp& properties,
+                            const cudaFuncAttributes& attributes,
+                            size_t dynamic_smem_bytes_per_thread = 0);
+
+template <typename KernelFunction>
+size_t max_blocksize(KernelFunction kernel, size_t dynamic_smem_bytes_per_thread = 0);
+
+} // end namespace arch
+} // end namespace experimental
+} // end namespace thrust
 
 #include <thrust/experimental/arch.inl>
-
-#endif
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2008-2009 NVIDIA Corporation
+ *  Copyright 2008-2010 NVIDIA Corporation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -21,7 +21,8 @@
 
 #pragma once
 
-#include <thrust/detail/device/cuda/scan.h>
+#include <thrust/detail/device/dispatch/scan.h>
+#include <thrust/iterator/iterator_traits.h>
 
 namespace thrust
 {
@@ -40,7 +41,10 @@ template<typename InputIterator,
                                 OutputIterator result,
                                 AssociativeOperator binary_op)
 {
-    return thrust::detail::device::cuda::inclusive_scan(first, last, result, binary_op);
+    return thrust::detail::device::dispatch::inclusive_scan(first, last, result, binary_op,
+            typename thrust::iterator_space<InputIterator>::type(),
+            typename thrust::iterator_space<OutputIterator>::type());
+
 }
 
 
@@ -54,7 +58,9 @@ template<typename InputIterator,
                                 T init,
                                 AssociativeOperator binary_op)
 {
-    return thrust::detail::device::cuda::exclusive_scan(first, last, result, init, binary_op);
+    return thrust::detail::device::dispatch::exclusive_scan(first, last, result, init, binary_op,
+            typename thrust::iterator_space<InputIterator>::type(),
+            typename thrust::iterator_space<OutputIterator>::type());
 }
 
 } // end namespace device

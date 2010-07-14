@@ -1,5 +1,5 @@
 /*
- *  Copyright 2008-2009 NVIDIA Corporation
+ *  Copyright 2008-2010 NVIDIA Corporation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -16,48 +16,19 @@
 
 
 /*! \file generate.h
- *  \brief Device implementation of generate.
+ *  \brief Device interface to generate.
  */
 
 #pragma once
 
-#include <thrust/iterator/iterator_traits.h>
-
-#include <thrust/detail/device/dereference.h>
-#include <thrust/detail/device/cuda/vectorize.h>
+#include <thrust/detail/device/generic/generate.h>
 
 namespace thrust
 {
-
 namespace detail
 {
-
 namespace device
 {
-
-namespace detail
-{
-
-template<typename ForwardIterator,
-         typename Generator>
-struct generate_functor
-{
-  ForwardIterator first;
-  Generator gen;
-
-  generate_functor(ForwardIterator _first, Generator _gen)
-    : first(_first), gen(_gen){}
-
-  template<typename IntegerType>
-      __device__
-      void operator()(IntegerType i)
-      {
-          thrust::detail::device::dereference(first, i) = gen();
-      }
-}; // end generate_functor
-  
-} // end namespace detail
-
 
 template<typename ForwardIterator,
          typename Generator>
@@ -65,13 +36,10 @@ template<typename ForwardIterator,
                 ForwardIterator last,
                 Generator gen)
 {
-    detail::generate_functor<ForwardIterator, Generator> f(first, gen);
-    thrust::detail::device::cuda::vectorize(last - first, f);
-} // end generate()
+    thrust::detail::device::generic::generate(first, last, gen);
+}
 
 } // end namespace device
-
 } // end namespace detail
-
 } // end namespace thrust
 

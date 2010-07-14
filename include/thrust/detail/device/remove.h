@@ -1,5 +1,5 @@
 /*
- *  Copyright 2008-2009 NVIDIA Corporation
+ *  Copyright 2008-2010 NVIDIA Corporation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -16,27 +16,30 @@
 
 
 /*! \file remove.h
- *  \brief Device implementations for remove functions.
+ *  \brief Device interface to remove functions.
  */
 
 #pragma once
 
+#include <thrust/detail/device/generic/remove.h>
+
 namespace thrust
 {
-
 namespace detail
 {
-
 namespace device
 {
 
 template<typename ForwardIterator,
          typename InputIterator,
          typename Predicate>
-  ForwardIterator remove_if(ForwardIterator begin,
-                            ForwardIterator end,
+  ForwardIterator remove_if(ForwardIterator first,
+                            ForwardIterator last,
                             InputIterator stencil,
-                            Predicate pred);
+                            Predicate pred)
+{
+    return thrust::detail::device::generic::remove_if(first, last, stencil, pred);
+}
 
 template<typename InputIterator,
          typename OutputIterator,
@@ -44,23 +47,25 @@ template<typename InputIterator,
   OutputIterator remove_copy_if(InputIterator first,
                                 InputIterator last,
                                 OutputIterator result,
-                                Predicate pred);
+                                Predicate pred)
+{
+    return thrust::detail::device::generic::remove_copy_if(first, last, result, pred);
+}
 
 template<typename InputIterator1,
          typename InputIterator2,
          typename OutputIterator,
          typename Predicate>
-  OutputIterator remove_copy_if(InputIterator1 begin,
-                                InputIterator1 end,
+  OutputIterator remove_copy_if(InputIterator1 first,
+                                InputIterator1 last,
                                 InputIterator2 stencil,
                                 OutputIterator result,
-                                Predicate pred);
+                                Predicate pred)
+{
+    return thrust::detail::device::generic::remove_copy_if(first, last, stencil, result, pred);
+}
 
 } // end namespace device
-
 } // end namespace detail
-
 } // end namespace thrust
-
-#include "remove.inl"
 

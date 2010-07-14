@@ -1,5 +1,5 @@
 /*
- *  Copyright 2008-2009 NVIDIA Corporation
+ *  Copyright 2008-2010 NVIDIA Corporation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -80,14 +80,11 @@ template<typename T>
       typedef device_allocator<U> other;
     }; // end rebind
 
-    __host__ __device__
     inline device_allocator() {}
 
-    __host__ __device__
     inline device_allocator(device_allocator const&) {}
 
     template<typename U>
-    __host__ __device__
     inline device_allocator(device_allocator<U> const&) {}
 }; // end device_allocator
 

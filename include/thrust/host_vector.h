@@ -1,5 +1,5 @@
 /*
- *  Copyright 2008-2009 NVIDIA Corporation
+ *  Copyright 2008-2010 NVIDIA Corporation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -147,38 +147,6 @@ template<typename T, typename Alloc = std::allocator<T> >
       :Parent(first, last) {}
 }; // end host_vector
 
-/*! This operator allows comparison between two \p host_vectors.
- *  \param lhs The first \p host_vector to compare.
- *  \param rhs The second \p host_vector to compare.
- *  \return \c true if and only if each corresponding element in either
- *          \p host_vector equals the other; \c false, otherwise.
- */
-template<typename T1, typename Alloc1,
-         typename T2, typename Alloc2>
-  bool operator==(const host_vector<T1,Alloc1> &lhs,
-                  const host_vector<T2,Alloc2> &rhs);
-
-/*! This operator allows comparison between a \c host_vector & a \p std::vector.
- *  \param lhs The \p host_vector to compare.
- *  \param rhs The \c std::vector to compare.
- *  \return \c true if and only if each corresponding element in either
- *          vector equals the other; \c false, otherwise.
- */
-template<typename T1, typename Alloc1,
-         typename T2, typename Alloc2>
-  bool operator==(const host_vector<T1,Alloc1> &lhs,
-                  const std::vector<T2,Alloc2> &rhs);
-
-/*! This operator allows comparison between a <tt>std::vector</tt> & a \p host_vector.
- *  \param lhs The <tt>std::vector</tt> to compare.
- *  \param rhs The \p host_vector to compare.
- *  \return \c true if and only if each corresponding element in either
- *          vector equals the other; \c false, otherwise.
- */
-template<typename T1, typename Alloc1,
-         typename T2, typename Alloc2>
-  bool operator==(const std::vector<T1,Alloc1> &lhs,
-                  const host_vector<T2,Alloc2> &rhs);
 /*! \}
  */
 

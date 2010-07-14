@@ -1,5 +1,5 @@
 /*
- *  Copyright 2008-2009 NVIDIA Corporation
+ *  Copyright 2008-2010 NVIDIA Corporation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -37,19 +37,33 @@ namespace detail
 // forward declaration of normal_iterator
 template<typename> class normal_iterator;
 
-template<typename T, typename Space> struct choose_raw_buffer_allocator;
+template<typename T, typename Space>
+  struct choose_raw_buffer_allocator
+    : eval_if<
+        // catch any_space_tag and output an error
+        is_convertible<Space, thrust::any_space_tag>::value,
+        
+        void,
 
-template<typename T>
-  struct choose_raw_buffer_allocator<T,thrust::device_space_tag>
-{
-  typedef device_malloc_allocator<T> type;
-}; // end choose_raw_buffer_allocator
+        eval_if<
+          // XXX this check is technically incorrect: any could convert to host
+          is_convertible<Space, thrust::host_space_tag>::value,
 
-template<typename T>
-  struct choose_raw_buffer_allocator<T,thrust::host_space_tag>
-{
-  typedef std::allocator<T> type;
-}; // end choose_raw_buffer_allocator
+          identity_< std::allocator<T> >,
+
+          // XXX add backend-specific allocators here?
+
+          eval_if<
+            // XXX this check is technically incorrect: any could convert to device
+            is_convertible<Space, thrust::device_space_tag>::value,
+
+            identity_< device_malloc_allocator<T> >,
+
+            void
+          >
+        >
+      >
+{};
 
 
 template<typename T, typename Space>
@@ -104,19 +118,34 @@ template<typename T, typename Space>
     raw_buffer &operator=(const raw_buffer &);
 }; // end raw_buffer
 
+
 template<typename T>
-  class raw_device_buffer
-    : public raw_buffer<T, thrust::device_space_tag >
+  class raw_omp_device_buffer
+    : public raw_buffer<T, thrust::detail::omp_device_space_tag >
 {
   private:
-    typedef raw_buffer<T, thrust::device_space_tag > super_t;
+    typedef raw_buffer<T, thrust::detail::omp_device_space_tag > super_t;
 
   public:
-    explicit raw_device_buffer(typename super_t::size_type n):super_t(n){}
+    explicit raw_omp_device_buffer(typename super_t::size_type n):super_t(n){}
 
     template<typename InputIterator>
-    raw_device_buffer(InputIterator first, InputIterator last):super_t(first,last){}
-}; // end raw_device_buffer
+    raw_omp_device_buffer(InputIterator first, InputIterator last):super_t(first,last){}
+}; // end raw_omp_device_buffer
+
+template<typename T>
+  class raw_cuda_device_buffer
+    : public raw_buffer<T, thrust::detail::cuda_device_space_tag >
+{
+  private:
+    typedef raw_buffer<T, thrust::detail::cuda_device_space_tag > super_t;
+
+  public:
+    explicit raw_cuda_device_buffer(typename super_t::size_type n):super_t(n){}
+
+    template<typename InputIterator>
+    raw_cuda_device_buffer(InputIterator first, InputIterator last):super_t(first,last){}
+}; // end raw_cuda_device_buffer
 
 template<typename T>
   class raw_host_buffer

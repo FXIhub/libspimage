@@ -1,5 +1,5 @@
 /*
- *  Copyright 2008-2009 NVIDIA Corporation
+ *  Copyright 2008-2010 NVIDIA Corporation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -21,25 +21,27 @@
 
 #pragma once
 
+#include <thrust/detail/device/dispatch/fill.h>
+#include <thrust/iterator/iterator_traits.h>
+
 namespace thrust
 {
-
 namespace detail
 {
-
 namespace device
 {
 
 template<typename ForwardIterator, typename T>
   void fill(ForwardIterator first,
             ForwardIterator last,
-            const T &exemplar);
+            const T &exemplar)
+{
+    // dispatch on space
+    thrust::detail::device::dispatch::fill(first, last, exemplar,
+            typename thrust::iterator_space<ForwardIterator>::type());
+}
 
 } // end namespace device
-
 } // end namespace detail
-
 } // end namespace thrust
-
-#include "fill.inl"
 

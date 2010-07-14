@@ -1,5 +1,5 @@
 /*
- *  Copyright 2008-2009 NVIDIA Corporation
+ *  Copyright 2008-2010 NVIDIA Corporation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -16,17 +16,17 @@
 
 
 /*! \file scatter.h
- *  \brief Device implementations of scatter functions.
+ *  \brief Device interface to scatter functions.
  */
 
 #pragma once
 
+#include <thrust/detail/device/generic/scatter.h>
+
 namespace thrust
 {
-
 namespace detail
 {
-
 namespace device
 {
 
@@ -36,7 +36,10 @@ template<typename InputIterator1,
   void scatter(InputIterator1 first,
                InputIterator1 last,
                InputIterator2 map,
-               RandomAccessIterator output);
+               RandomAccessIterator output)
+{
+    thrust::detail::device::generic::scatter(first, last, map, output);
+}
 
 template<typename InputIterator1,
          typename InputIterator2,
@@ -48,13 +51,12 @@ template<typename InputIterator1,
                   InputIterator2 map,
                   InputIterator3 stencil,
                   RandomAccessIterator output,
-                  Predicate pred);
+                  Predicate pred)
+{
+    thrust::detail::device::generic::scatter_if(first, last, map, stencil, output, pred);
+}
 
 } // end namespace device
-
 } // end namespace detail
-
 } // end namespace thrust
-
-#include "scatter.inl"
 

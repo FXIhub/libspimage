@@ -1,5 +1,5 @@
 /*
- *  Copyright 2008-2009 NVIDIA Corporation
+ *  Copyright 2008-2010 NVIDIA Corporation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -21,7 +21,8 @@
 
 #pragma once
 
-#include <thrust/detail/device/cuda/for_each.h>
+#include <thrust/detail/device/dispatch/for_each.h>
+#include <thrust/iterator/iterator_traits.h>
 
 namespace thrust
 {
@@ -38,7 +39,9 @@ void for_each(InputIterator first,
               InputIterator last,
               UnaryFunction f)
 {
-    thrust::detail::device::cuda::for_each(first, last, f);
+  // dispatch on space
+  thrust::detail::device::dispatch::for_each(first, last, f,
+      typename thrust::iterator_space<InputIterator>::type());
 }
 
 } // end namespace device

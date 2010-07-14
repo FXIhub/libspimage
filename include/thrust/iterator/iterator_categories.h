@@ -1,5 +1,5 @@
 /*
- *  Copyright 2008-2009 NVIDIA Corporation
+ *  Copyright 2008-2010 NVIDIA Corporation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -176,47 +176,7 @@ typedef std::random_access_iterator_tag random_access_host_iterator_tag;
 /*! \} // end iterator_tag_classes
  */
 
-struct input_universal_iterator_tag
-  : input_host_iterator_tag,
-    input_device_iterator_tag {};
-
-struct output_universal_iterator_tag
-  : output_host_iterator_tag,
-    output_device_iterator_tag {};
-
-// define these types without inheritance to avoid ambiguous conversion to base classes
-
-struct forward_universal_iterator_tag
-  : input_universal_iterator_tag
-{
-  // make this type convertible to forward_host_iterator_tag
-  operator forward_host_iterator_tag () {return forward_host_iterator_tag();};
-
-  // make this type convertible to forward_device_iterator_tag
-  operator forward_device_iterator_tag () {return forward_device_iterator_tag();};
-};
-
-struct bidirectional_universal_iterator_tag
-  : forward_universal_iterator_tag
-{
-  // make this type convertible to bidirectional_host_iterator_tag
-  operator bidirectional_host_iterator_tag () {return bidirectional_host_iterator_tag();};
-
-  // make this type convertible to bidirectional_device_iterator_tag
-  operator bidirectional_device_iterator_tag () {return bidirectional_device_iterator_tag();};
-};
-
-struct random_access_universal_iterator_tag
-  : bidirectional_universal_iterator_tag
-{
-  // make this type convertible to random_access_host_iterator_tag
-  operator random_access_host_iterator_tag () {return random_access_host_iterator_tag();};
-
-  // make this type convertible to random_access_device_iterator_tag
-  operator random_access_device_iterator_tag () {return random_access_device_iterator_tag();};
-};
-
 } // end namespace thrust
 
-#include <thrust/iterator/detail/iterator_categories.inl>
+#include <thrust/iterator/detail/universal_categories.h>
 

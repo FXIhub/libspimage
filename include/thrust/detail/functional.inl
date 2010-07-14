@@ -1,5 +1,5 @@
 /*
- *  Copyright 2008-2009 NVIDIA Corporation
+ *  Copyright 2008-2010 NVIDIA Corporation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -107,13 +107,13 @@ template<typename Result, typename Argument1, typename Argument2>
 }; // end binary_traits
 
 template<typename Predicate>
-  unary_negate<Predicate> not1(Predicate &pred)
+  unary_negate<Predicate> not1(const Predicate &pred)
 {
   return unary_negate<Predicate>(pred);
 } // end not1()
 
 template<typename BinaryPredicate>
-  binary_negate<BinaryPredicate> not2(BinaryPredicate &pred)
+  binary_negate<BinaryPredicate> not2(const BinaryPredicate &pred)
 {
   return binary_negate<BinaryPredicate>(pred);
 } // end not2()

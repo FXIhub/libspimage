@@ -1,5 +1,5 @@
 /*
- *  Copyright 2008-2009 NVIDIA Corporation
+ *  Copyright 2008-2010 NVIDIA Corporation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ struct count_transform
   count_transform(InputType2 val) : rhs(val){}
 
   __host__ __device__
-  CountType operator()(InputType1& lhs)
+  CountType operator()(const InputType1& lhs)
   {
     if(lhs == rhs)
       return 1;
@@ -55,7 +55,7 @@ struct count_if_transform
   count_if_transform(Predicate _pred) : pred(_pred){}
 
   __host__ __device__
-  CountType operator()(InputType& val)
+  CountType operator()(const InputType& val)
   {
     if(pred(val))
       return 1;

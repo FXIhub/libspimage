@@ -1,5 +1,5 @@
 /*
- *  Copyright 2008-2009 NVIDIA Corporation
+ *  Copyright 2008-2010 NVIDIA Corporation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -24,32 +24,24 @@
 
 namespace thrust
 {
-
 namespace detail
 {
-
 namespace device
 {
-
 namespace cuda
 {
 
-
-template<typename InputIterator,
+template<typename InputIterator, 
          typename OutputType,
          typename BinaryFunction>
-  OutputType reduce(InputIterator input,
-                    const size_t n,
+  OutputType reduce(InputIterator first,
+                    InputIterator last,
                     OutputType init,
                     BinaryFunction binary_op);
 
-
 } // end namespace cuda
-
 } // end namespace device
-
 } // end namespace detail
-
 } // end namespace thrust
 
 #include "reduce.inl"

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2008-2009 NVIDIA Corporation
+ *  Copyright 2008-2010 NVIDIA Corporation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@
 #include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/detail/type_traits.h>
+#include <thrust/detail/device/dereference.h>
 #include <thrust/device_ptr.h>
 
 namespace thrust
@@ -64,34 +65,46 @@ template<typename Pointer>
 
 }; // end normal_iterator
 
+
 template<typename T> struct is_trivial_iterator< normal_iterator<T> > : public true_type {};
+
+
 
 namespace device
 {
 
+
+// specialize dereference_result for normal_iterator with device_ptr as base
+template<typename T>
+  struct dereference_result< normal_iterator< device_ptr<T> > >
+{
+  typedef typename dereference_result< device_ptr<T> >::type type;
+}; // end dereference_result
+
+
 // forward declarations for dereference(device_ptr)
 template<typename T>
-  inline __device__
-    typename iterator_device_reference< device_ptr<T> >::type
+  inline __host__ __device__
+    typename dereference_result< device_ptr<T> >::type
       dereference(device_ptr<T> iter);
 
 template<typename T, typename IndexType>
-  inline __device__ 
-    typename iterator_device_reference< device_ptr<T> >::type
+  inline __host__ __device__
+    typename dereference_result< device_ptr<T> >::type
       dereference(device_ptr<T> iter, IndexType n);
 
 template<typename T>
-  inline __device__
-    typename iterator_device_reference< normal_iterator< device_ptr<T> > >::type
-      dereference(normal_iterator< device_ptr<T> > iter)
+  inline __host__ __device__
+    typename dereference_result< normal_iterator< device_ptr<T> > >::type
+      dereference(const normal_iterator< device_ptr<T> > &iter)
 {
   return dereference(iter.base());
 } // end dereference()
 
 template<typename T, typename IndexType>
-  inline __device__ 
-    typename iterator_device_reference< normal_iterator< device_ptr<T> > >::type
-      dereference(normal_iterator< device_ptr<T> > iter, IndexType n)
+  inline __host__ __device__
+    typename dereference_result< normal_iterator< device_ptr<T> > >::type
+      dereference(const normal_iterator< device_ptr<T> > &iter, IndexType n)
 {
   return dereference(iter.base(), n);
 } // end dereference()

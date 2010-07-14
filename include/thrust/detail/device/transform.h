@@ -1,5 +1,5 @@
 /*
- *  Copyright 2008-2009 NVIDIA Corporation
+ *  Copyright 2008-2010 NVIDIA Corporation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -21,12 +21,12 @@
 
 #pragma once
 
+#include <thrust/detail/device/generic/transform.h>
+
 namespace thrust
 {
-
 namespace detail
 {
-
 namespace device
 {
 
@@ -35,8 +35,10 @@ template<typename InputIterator,
          typename UnaryFunction>
   OutputIterator transform(InputIterator first, InputIterator last,
                            OutputIterator result,
-                           UnaryFunction unary_op);
-
+                           UnaryFunction unary_op)
+{
+    return thrust::detail::device::generic::transform(first, last, result, unary_op);
+}
 
 template<typename InputIterator1,
          typename InputIterator2,
@@ -45,7 +47,10 @@ template<typename InputIterator1,
   OutputIterator transform(InputIterator1 first1, InputIterator1 last1,
                            InputIterator2 first2,
                            OutputIterator result,
-                           BinaryFunction binary_op);
+                           BinaryFunction binary_op)
+{
+    return thrust::detail::device::generic::transform(first1, last1, first2, result, binary_op);
+}
 
 
 template<typename InputIterator1,
@@ -57,7 +62,10 @@ template<typename InputIterator1,
                                InputIterator2 stencil,
                                ForwardIterator result,
                                UnaryFunction unary_op,
-                               Predicate pred);
+                               Predicate pred)
+{
+    return thrust::detail::device::generic::transform_if(first, last, stencil, result, unary_op, pred);
+}
 
 
 template<typename InputIterator1,
@@ -71,13 +79,12 @@ template<typename InputIterator1,
                                InputIterator3 stencil,
                                ForwardIterator result,
                                BinaryFunction binary_op,
-                               Predicate pred);
+                               Predicate pred)
+{
+    return thrust::detail::device::generic::transform_if(first1, last1, first2, stencil, result, binary_op, pred);
+}
 
 } // end namespace device
-
 } // end namespace detail
-
 } // end namespace thrust
-
-#include <thrust/detail/device/transform.inl>
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2008-2009 NVIDIA Corporation
+ *  Copyright 2008-2010 NVIDIA Corporation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -44,8 +44,6 @@ struct host_space_tag {};
 
 struct device_space_tag {};
 
-struct any_space_tag : host_space_tag, device_space_tag {};
-
 
 // define Boost's traversal tags
 struct no_traversal_tag {};
@@ -80,5 +78,6 @@ template<typename Iterator> struct iterator_space;
 
 } // end thrust
 
+#include <thrust/iterator/detail/any_space_tag.h>
 #include <thrust/iterator/detail/iterator_traits.inl>
 

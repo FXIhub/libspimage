@@ -1,5 +1,5 @@
 /*
- *  Copyright 2008-2009 NVIDIA Corporation
+ *  Copyright 2008-2010 NVIDIA Corporation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -116,16 +116,6 @@ template<typename T>
 }; // end is_iterator_space
 
 
-template <typename Iterator> struct iterator_device_reference {};
-
-template <typename T>
-  struct iterator_device_reference<T*>
-{
-  typedef T& type;
-}; // end iterator_device_reference
-
-
-
 #ifdef __GNUC__
 template<typename T>
   struct is_gnu_normal_iterator
@@ -172,6 +162,26 @@ template<typename T>
       | is_convertible_to_msvc_Ranit<T>::value
 #endif // _MSC_VER
     > {};
+
+// XXX this should be implemented better
+template<typename Space1, typename Space2>
+  struct are_spaces_interoperable
+    : thrust::detail::false_type
+{};
+
+template<>
+  struct are_spaces_interoperable<
+    thrust::host_space_tag,
+    thrust::detail::omp_device_space_tag
+  > : thrust::detail::true_type
+{};
+
+template<>
+  struct are_spaces_interoperable<
+    thrust::detail::omp_device_space_tag,
+    thrust::host_space_tag
+  > : thrust::detail::true_type
+{};
 
 } // end namespace detail
 

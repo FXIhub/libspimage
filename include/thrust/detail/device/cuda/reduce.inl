@@ -1,5 +1,5 @@
 /*
- *  Copyright 2008-2009 NVIDIA Corporation
+ *  Copyright 2008-2010 NVIDIA Corporation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -21,145 +21,127 @@
 
 #pragma once
 
-// do not attempt to compile this file with any other compiler
-#ifdef __CUDACC__
-
+#include <thrust/device_ptr.h>
+#include <thrust/functional.h>
 #include <thrust/iterator/iterator_traits.h>
-#include <thrust/detail/raw_buffer.h>
+#include <thrust/iterator/transform_iterator.h>
+#include <thrust/detail/static_assert.h>
 
-#include <thrust/experimental/arch.h>
-
-#include <thrust/detail/device/cuda/block/reduce.h>
-
-#include <thrust/detail/mpl/math.h> // for log2<N>
+#include <thrust/detail/device/cuda/reduce_n.h>
 
 namespace thrust
 {
-
 namespace detail
 {
-
 namespace device
 {
-
 namespace cuda
 {
+namespace detail
+{
+//////////////    
+// Functors //
+//////////////    
+template <typename InputType, typename OutputType, typename BinaryFunction, typename WideType>
+  struct wide_unary_op : public thrust::unary_function<WideType,OutputType>
+{
+    BinaryFunction binary_op;
 
-/*
- * Reduce a vector of n elements using binary_op()
- *
- * The order of reduction is not defined, so binary_op() should
- * be a commutative (and associative) operator such as 
- * (integer) addition.  Since floating point operations
- * do not completely satisfy these criteria, the result is 
- * generally not the same as a consecutive reduction of 
- * the elements.
- * 
- * Uses the same pattern as reduce6() in the CUDA SDK
- *
- */
-template<unsigned int BLOCK_SIZE,
-         typename InputIterator,
+    __host__ __device__ 
+        wide_unary_op(BinaryFunction binary_op) 
+            : binary_op(binary_op) {}
+
+    __host__ __device__
+        OutputType operator()(WideType x)
+        {
+            WideType mask = ((WideType) 1 << (8 * sizeof(InputType))) - 1;
+
+            OutputType sum = static_cast<InputType>(x & mask);
+
+            for(unsigned int n = 1; n < sizeof(WideType) / sizeof(InputType); n++)
+                sum = binary_op(sum, static_cast<InputType>( (x >> (8 * n * sizeof(InputType))) & mask ) );
+
+            return sum;
+        }
+};
+
+template<typename InputIterator, 
          typename OutputType,
          typename BinaryFunction>
-  __global__ void
-  __thrust__unordered_reduce_kernel(InputIterator input,
-                                    const unsigned int n,
-                                    OutputType * block_results,  
-                                    BinaryFunction binary_op)
+  OutputType reduce_device(InputIterator first,
+                           InputIterator last,
+                           OutputType init,
+                           BinaryFunction binary_op,
+                           thrust::detail::true_type)
 {
-    __shared__ unsigned char sdata_workaround[BLOCK_SIZE * sizeof(OutputType)];
-    OutputType *sdata = reinterpret_cast<OutputType*>(sdata_workaround);
+    // "wide" reduction for small types like char, short, etc.
+    typedef typename thrust::iterator_traits<InputIterator>::value_type InputType;
+    typedef unsigned int WideType;
 
-    // perform first level of reduction,
-    // write per-block results to global memory for second level reduction
-    
-    const unsigned int grid_size = BLOCK_SIZE * gridDim.x;
-    unsigned int i = blockIdx.x * BLOCK_SIZE + threadIdx.x;
-
-    // local (per-thread) sum
-    OutputType sum;
+    // note: this assumes that InputIterator is a InputType * and can be reinterpret_casted to WideType *
    
-    // initialize local sum 
-    if (i < n)
-    {
-        sum = input[i];
-        i += grid_size;
-    }
+    // TODO use simple threshold and ensure alignment of wide_first
 
-    // update sum
-    while (i < n)
-    {
-        sum = binary_op(sum, input[i]);  
-        i += grid_size;
-    } 
+    // process first part
+    size_t input_type_per_wide_type = sizeof(WideType) / sizeof(InputType);
+    size_t n_wide = (last - first) / input_type_per_wide_type;
 
-    // copy local sum to shared memory
-    sdata[threadIdx.x] = sum;  __syncthreads();
+    WideType * wide_first = reinterpret_cast<WideType *>(thrust::raw_pointer_cast(&*first));
 
-    // compute reduction across block
-    thrust::detail::block::reduce_n<BLOCK_SIZE>(sdata, n, binary_op);
+    OutputType result = thrust::detail::device::cuda::reduce_n
+        (thrust::make_transform_iterator(wide_first, wide_unary_op<InputType,OutputType,BinaryFunction,WideType>(binary_op)),
+         n_wide, init, binary_op);
 
-    // write result for this block to global mem 
-    if (threadIdx.x == 0) 
-        block_results[blockIdx.x] = sdata[threadIdx.x];
+    // process tail
+    InputIterator tail_first = first + n_wide * input_type_per_wide_type;
+    return thrust::detail::device::cuda::reduce_n(tail_first, last - tail_first, result, binary_op);
+}
 
-} // end __thrust__unordered_reduce_kernel()
-
-
-// XXX if n < UINT_MAX use unsigned int instead of size_t indices in kernel
-
-
-template<typename InputIterator,
+template<typename InputIterator, 
          typename OutputType,
          typename BinaryFunction>
-  OutputType reduce(InputIterator input,
-                    const size_t n,
-                    OutputType init,
-                    BinaryFunction binary_op)
+  OutputType reduce_device(InputIterator first,
+                           InputIterator last,
+                           OutputType init,
+                           BinaryFunction binary_op,
+                           thrust::detail::false_type)
 {
-    // handle zero length array case first
-    if( n == 0 )
-        return init;
-
-    // 16KB (max) - 1KB (upper bound on what's used for other purposes)
-    const size_t MAX_SMEM_SIZE = 15 * 1024; 
-
-    // largest 2^N that fits in SMEM
-    static const size_t BLOCKSIZE_LIMIT1 = 1 << thrust::detail::mpl::math::log2< (MAX_SMEM_SIZE/sizeof(OutputType)) >::value;
-    static const size_t BLOCKSIZE_LIMIT2 = 256;
-
-    static const size_t BLOCK_SIZE = (BLOCKSIZE_LIMIT1 < BLOCKSIZE_LIMIT2) ? BLOCKSIZE_LIMIT1 : BLOCKSIZE_LIMIT2;
-    
-    const size_t MAX_BLOCKS = thrust::experimental::arch::max_active_blocks(__thrust__unordered_reduce_kernel<BLOCK_SIZE, InputIterator, OutputType, BinaryFunction>, BLOCK_SIZE, (size_t) 0);
-
-    const unsigned int GRID_SIZE = std::max((size_t) 1, std::min( (n / BLOCK_SIZE), MAX_BLOCKS));
-
-    // allocate storage for per-block results
-    thrust::detail::raw_device_buffer<OutputType> temp(GRID_SIZE + 1);
-
-    // set first element of temp array to init
-    temp[0] = init;
-
-    // reduce input to per-block sums
-    __thrust__unordered_reduce_kernel<BLOCK_SIZE>
-        <<<GRID_SIZE, BLOCK_SIZE>>>(input, n, raw_pointer_cast(&temp[1]), binary_op);
-
-    // reduce per-block sums together with init
-    __thrust__unordered_reduce_kernel<BLOCK_SIZE>
-        <<<1, BLOCK_SIZE>>>(raw_pointer_cast(&temp[0]), GRID_SIZE + 1, raw_pointer_cast(&temp[0]), binary_op);
-
-    return temp[0];
-} // end reduce()
-
-
-} // end namespace cuda
-
-} // end namespace device
+    // standard reduction
+    return thrust::detail::device::cuda::reduce_n(first, last - first, init, binary_op);
+}
 
 } // end namespace detail
 
-} // end namespace thrust
 
-#endif // __CUDACC__
+template<typename InputIterator, 
+         typename OutputType,
+         typename BinaryFunction>
+  OutputType reduce(InputIterator first,
+                    InputIterator last,
+                    OutputType init,
+                    BinaryFunction binary_op)
+{
+    // we're attempting to launch a kernel, assert we're compiling with nvcc
+    // ========================================================================
+    // X Note to the user: If you've found this line due to a compiler error, X
+    // X you need to compile your code using nvcc, rather than g++ or cl.exe  X
+    // ========================================================================
+    THRUST_STATIC_ASSERT( (depend_on_instantiation<InputIterator, THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC>::value) );
+
+    typedef typename thrust::iterator_traits<InputIterator>::value_type InputType;
+
+    const bool use_wide_load = thrust::detail::is_pod<InputType>::value 
+                                    && thrust::detail::is_trivial_iterator<InputIterator>::value
+                                    && (sizeof(InputType) == 1 || sizeof(InputType) == 2);
+
+    // XXX WAR nvcc 3.0 unused variable warning
+    (void) use_wide_load;
+                                    
+    return detail::reduce_device(first, last, init, binary_op, thrust::detail::integral_constant<bool, use_wide_load>());
+}
+
+} // end namespace cuda
+} // end namespace device
+} // end namespace detail
+} // end namespace thrust
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2008-2009 NVIDIA Corporation
+ *  Copyright 2008-2010 NVIDIA Corporation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -715,11 +715,83 @@ __host__ __device__ inline
 } // end make_tuple()
 
 
+template<typename T0>
+__host__ __device__ inline
+tuple<T0&> tie(T0 &t0)
+{
+  return tuple<T0&>(t0);
+}
+
+template<typename T0,typename T1>
+__host__ __device__ inline
+tuple<T0&,T1&> tie(T0 &t0, T1 &t1)
+{
+  return tuple<T0&,T1&>(t0,t1);
+}
+
+template<typename T0,typename T1, typename T2>
+__host__ __device__ inline
+tuple<T0&,T1&,T2&> tie(T0 &t0, T1 &t1, T2 &t2)
+{
+  return tuple<T0&,T1&,T2&>(t0,t1,t2);
+}
+
+template<typename T0,typename T1, typename T2, typename T3>
+__host__ __device__ inline
+tuple<T0&,T1&,T2&,T3&> tie(T0 &t0, T1 &t1, T2 &t2, T3 &t3)
+{
+  return tuple<T0&,T1&,T2&,T3&>(t0,t1,t2,t3);
+}
+
+template<typename T0,typename T1, typename T2, typename T3, typename T4>
+__host__ __device__ inline
+tuple<T0&,T1&,T2&,T3&,T4&> tie(T0 &t0, T1 &t1, T2 &t2, T3 &t3, T4 &t4)
+{
+  return tuple<T0&,T1&,T2&,T3&,T4&>(t0,t1,t2,t3,t4);
+}
+
+template<typename T0,typename T1, typename T2, typename T3, typename T4, typename T5>
+__host__ __device__ inline
+tuple<T0&,T1&,T2&,T3&,T4&,T5&> tie(T0 &t0, T1 &t1, T2 &t2, T3 &t3, T4 &t4, T5 &t5)
+{
+  return tuple<T0&,T1&,T2&,T3&,T4&,T5&>(t0,t1,t2,t3,t4,t5);
+}
+
+template<typename T0,typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
+__host__ __device__ inline
+tuple<T0&,T1&,T2&,T3&,T4&,T5&,T6&> tie(T0 &t0, T1 &t1, T2 &t2, T3 &t3, T4 &t4, T5 &t5, T6 &t6)
+{
+  return tuple<T0&,T1&,T2&,T3&,T4&,T5&,T6&>(t0,t1,t2,t3,t4,t5,t6);
+}
+
+template<typename T0,typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>
+__host__ __device__ inline
+tuple<T0&,T1&,T2&,T3&,T4&,T5&,T6&,T7&> tie(T0 &t0, T1 &t1, T2 &t2, T3 &t3, T4 &t4, T5 &t5, T6 &t6, T7 &t7)
+{
+  return tuple<T0&,T1&,T2&,T3&,T4&,T5&,T6&,T7&>(t0,t1,t2,t3,t4,t5,t6,t7);
+}
+
+template<typename T0,typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
+__host__ __device__ inline
+tuple<T0&,T1&,T2&,T3&,T4&,T5&,T6&,T7&,T8&> tie(T0 &t0, T1 &t1, T2 &t2, T3 &t3, T4 &t4, T5 &t5, T6 &t6, T7 &t7, T8 &t8)
+{
+  return tuple<T0&,T1&,T2&,T3&,T4&,T5&,T6&,T7&,T8&>(t0,t1,t2,t3,t4,t5,t6,t7,t8);
+}
+
+template<typename T0,typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
+__host__ __device__ inline
+tuple<T0&,T1&,T2&,T3&,T4&,T5&,T6&,T7&,T8&,T9&> tie(T0 &t0, T1 &t1, T2 &t2, T3 &t3, T4 &t4, T5 &t5, T6 &t6, T7 &t7, T8 &t8, T9 &t9)
+{
+  return tuple<T0&,T1&,T2&,T3&,T4&,T5&,T6&,T7&,T8&,T9&>(t0,t1,t2,t3,t4,t5,t6,t7,t8,t9);
+}
+
+
 
 namespace detail
 {
 
 template<class T1, class T2>
+__host__ __device__
 inline bool eq(const T1& lhs, const T2& rhs) {
   return lhs.get_head() == rhs.get_head() &&
          eq(lhs.get_tail(), rhs.get_tail());
@@ -728,47 +800,57 @@ template<>
 inline bool eq<null_type,null_type>(const null_type&, const null_type&) { return true; }
 
 template<class T1, class T2>
+__host__ __device__
 inline bool neq(const T1& lhs, const T2& rhs) {
   return lhs.get_head() != rhs.get_head()  ||
          neq(lhs.get_tail(), rhs.get_tail());
 }
 template<>
+__host__ __device__
 inline bool neq<null_type,null_type>(const null_type&, const null_type&) { return false; }
 
 template<class T1, class T2>
+__host__ __device__
 inline bool lt(const T1& lhs, const T2& rhs) {
   return lhs.get_head() < rhs.get_head()  ||
             !(rhs.get_head() < lhs.get_head()) &&
             lt(lhs.get_tail(), rhs.get_tail());
 }
 template<>
+__host__ __device__
 inline bool lt<null_type,null_type>(const null_type&, const null_type&) { return false; }
 
 template<class T1, class T2>
+__host__ __device__
 inline bool gt(const T1& lhs, const T2& rhs) {
   return lhs.get_head() > rhs.get_head()  ||
             !(rhs.get_head() > lhs.get_head()) &&
             gt(lhs.get_tail(), rhs.get_tail());
 }
 template<>
+__host__ __device__
 inline bool gt<null_type,null_type>(const null_type&, const null_type&) { return false; }
 
 template<class T1, class T2>
+__host__ __device__
 inline bool lte(const T1& lhs, const T2& rhs) {
   return lhs.get_head() <= rhs.get_head()  &&
           ( !(rhs.get_head() <= lhs.get_head()) ||
             lte(lhs.get_tail(), rhs.get_tail()));
 }
 template<>
+__host__ __device__
 inline bool lte<null_type,null_type>(const null_type&, const null_type&) { return true; }
 
 template<class T1, class T2>
+__host__ __device__
 inline bool gte(const T1& lhs, const T2& rhs) {
   return lhs.get_head() >= rhs.get_head()  &&
           ( !(rhs.get_head() >= lhs.get_head()) ||
             gte(lhs.get_tail(), rhs.get_tail()));
 }
 template<>
+__host__ __device__
 inline bool gte<null_type,null_type>(const null_type&, const null_type&) { return true; }
 
 } // end detail
@@ -778,6 +860,7 @@ inline bool gte<null_type,null_type>(const null_type&, const null_type&) { retur
 // equal ----
 
 template<class T1, class T2, class S1, class S2>
+__host__ __device__
 inline bool operator==(const detail::cons<T1, T2>& lhs, const detail::cons<S1, S2>& rhs)
 {
   // XXX support this eventually -jph
@@ -790,6 +873,7 @@ inline bool operator==(const detail::cons<T1, T2>& lhs, const detail::cons<S1, S
 // not equal -----
 
 template<class T1, class T2, class S1, class S2>
+__host__ __device__
 inline bool operator!=(const detail::cons<T1, T2>& lhs, const detail::cons<S1, S2>& rhs)
 {
   // XXX support this eventually -jph
@@ -801,6 +885,7 @@ inline bool operator!=(const detail::cons<T1, T2>& lhs, const detail::cons<S1, S
 
 // <
 template<class T1, class T2, class S1, class S2>
+__host__ __device__
 inline bool operator<(const detail::cons<T1, T2>& lhs, const detail::cons<S1, S2>& rhs)
 {
   // XXX support this eventually -jph
@@ -812,6 +897,7 @@ inline bool operator<(const detail::cons<T1, T2>& lhs, const detail::cons<S1, S2
 
 // >
 template<class T1, class T2, class S1, class S2>
+__host__ __device__
 inline bool operator>(const detail::cons<T1, T2>& lhs, const detail::cons<S1, S2>& rhs)
 {
   // XXX support this eventually -jph
@@ -823,6 +909,7 @@ inline bool operator>(const detail::cons<T1, T2>& lhs, const detail::cons<S1, S2
 
 // <=
 template<class T1, class T2, class S1, class S2>
+__host__ __device__
 inline bool operator<=(const detail::cons<T1, T2>& lhs, const detail::cons<S1, S2>& rhs)
 {
   // XXX support this eventually -jph
@@ -834,6 +921,7 @@ inline bool operator<=(const detail::cons<T1, T2>& lhs, const detail::cons<S1, S
 
 // >=
 template<class T1, class T2, class S1, class S2>
+__host__ __device__
 inline bool operator>=(const detail::cons<T1, T2>& lhs, const detail::cons<S1, S2>& rhs)
 {
   // XXX support this eventually -jph

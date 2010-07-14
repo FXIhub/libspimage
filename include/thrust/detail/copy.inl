@@ -1,5 +1,5 @@
 /*
- *  Copyright 2008-2009 NVIDIA Corporation
+ *  Copyright 2008-2010 NVIDIA Corporation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -42,7 +42,6 @@ template<typename InputIterator,
   if(first == last) 
     return result;
 
-  // dispatch on space
   return thrust::detail::dispatch::copy(first, last, result,
           typename thrust::iterator_space<InputIterator>::type(),
           typename thrust::iterator_space<OutputIterator>::type());

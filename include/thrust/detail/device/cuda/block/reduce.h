@@ -1,5 +1,5 @@
 /*
- *  Copyright 2008-2009 NVIDIA Corporation
+ *  Copyright 2008-2010 NVIDIA Corporation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -14,54 +14,55 @@
  *  limitations under the License.
  */
 
-
-
 #pragma once
 
 namespace thrust
 {
-
 namespace detail
 {
-
+namespace device
+{
+namespace cuda
+{
 namespace block
 {
 
-template <unsigned int BLOCK_SIZE, typename ValueIterator, typename BinaryFunction>
+template <unsigned int block_size, typename ValueIterator, typename BinaryFunction>
 __device__ 
 void reduce(ValueIterator data, BinaryFunction binary_op)
 {
-    if (BLOCK_SIZE >= 512) { if (threadIdx.x < 256) { data[threadIdx.x] = binary_op(data[threadIdx.x], data[threadIdx.x + 256]); } __syncthreads(); }
-    if (BLOCK_SIZE >= 256) { if (threadIdx.x < 128) { data[threadIdx.x] = binary_op(data[threadIdx.x], data[threadIdx.x + 128]); } __syncthreads(); }
-    if (BLOCK_SIZE >= 128) { if (threadIdx.x <  64) { data[threadIdx.x] = binary_op(data[threadIdx.x], data[threadIdx.x +  64]); } __syncthreads(); }
-    if (BLOCK_SIZE >=  64) { if (threadIdx.x <  32) { data[threadIdx.x] = binary_op(data[threadIdx.x], data[threadIdx.x +  32]); } __syncthreads(); }
-    if (BLOCK_SIZE >=  32) { if (threadIdx.x <  16) { data[threadIdx.x] = binary_op(data[threadIdx.x], data[threadIdx.x +  16]); } __syncthreads(); }
-    if (BLOCK_SIZE >=  16) { if (threadIdx.x <   8) { data[threadIdx.x] = binary_op(data[threadIdx.x], data[threadIdx.x +   8]); } __syncthreads(); }
-    if (BLOCK_SIZE >=   8) { if (threadIdx.x <   4) { data[threadIdx.x] = binary_op(data[threadIdx.x], data[threadIdx.x +   4]); } __syncthreads(); }
-    if (BLOCK_SIZE >=   4) { if (threadIdx.x <   2) { data[threadIdx.x] = binary_op(data[threadIdx.x], data[threadIdx.x +   2]); } __syncthreads(); }
-    if (BLOCK_SIZE >=   2) { if (threadIdx.x <   1) { data[threadIdx.x] = binary_op(data[threadIdx.x], data[threadIdx.x +   1]); } __syncthreads(); }
-    
-    // XXX Not testing (threadIdx.x < X) for X <= 16 seems to break on G80
-    // XXX This appears to be due to (illegal) instruction reorderings in the nightly builds
+    if (block_size >= 1024) { if (threadIdx.x < 512) { data[threadIdx.x] = binary_op(data[threadIdx.x], data[threadIdx.x + 512]); } __syncthreads(); }
+    if (block_size >=  512) { if (threadIdx.x < 256) { data[threadIdx.x] = binary_op(data[threadIdx.x], data[threadIdx.x + 256]); } __syncthreads(); }
+    if (block_size >=  256) { if (threadIdx.x < 128) { data[threadIdx.x] = binary_op(data[threadIdx.x], data[threadIdx.x + 128]); } __syncthreads(); }
+    if (block_size >=  128) { if (threadIdx.x <  64) { data[threadIdx.x] = binary_op(data[threadIdx.x], data[threadIdx.x +  64]); } __syncthreads(); }
+    if (block_size >=   64) { if (threadIdx.x <  32) { data[threadIdx.x] = binary_op(data[threadIdx.x], data[threadIdx.x +  32]); } __syncthreads(); }
+    if (block_size >=   32) { if (threadIdx.x <  16) { data[threadIdx.x] = binary_op(data[threadIdx.x], data[threadIdx.x +  16]); } __syncthreads(); }
+    if (block_size >=   16) { if (threadIdx.x <   8) { data[threadIdx.x] = binary_op(data[threadIdx.x], data[threadIdx.x +   8]); } __syncthreads(); }
+    if (block_size >=    8) { if (threadIdx.x <   4) { data[threadIdx.x] = binary_op(data[threadIdx.x], data[threadIdx.x +   4]); } __syncthreads(); }
+    if (block_size >=    4) { if (threadIdx.x <   2) { data[threadIdx.x] = binary_op(data[threadIdx.x], data[threadIdx.x +   2]); } __syncthreads(); }
+    if (block_size >=    2) { if (threadIdx.x <   1) { data[threadIdx.x] = binary_op(data[threadIdx.x], data[threadIdx.x +   1]); } __syncthreads(); }
 }
 
-template <unsigned int BLOCK_SIZE, typename ValueIterator, typename BinaryFunction>
+template <typename ValueIterator, typename BinaryFunction>
 __device__ 
 void reduce_n(ValueIterator data, const unsigned int n, BinaryFunction binary_op)
 {
-    if (BLOCK_SIZE >= 512) { if (threadIdx.x < 256 && threadIdx.x + 256 < n) { data[threadIdx.x] = binary_op(data[threadIdx.x], data[threadIdx.x + 256]); } __syncthreads(); }
-    if (BLOCK_SIZE >= 256) { if (threadIdx.x < 128 && threadIdx.x + 128 < n) { data[threadIdx.x] = binary_op(data[threadIdx.x], data[threadIdx.x + 128]); } __syncthreads(); }
-    if (BLOCK_SIZE >= 128) { if (threadIdx.x <  64 && threadIdx.x +  64 < n) { data[threadIdx.x] = binary_op(data[threadIdx.x], data[threadIdx.x +  64]); } __syncthreads(); }
-    if (BLOCK_SIZE >=  64) { if (threadIdx.x <  32 && threadIdx.x +  32 < n) { data[threadIdx.x] = binary_op(data[threadIdx.x], data[threadIdx.x +  32]); } __syncthreads(); }
-    if (BLOCK_SIZE >=  32) { if (threadIdx.x <  16 && threadIdx.x +  16 < n) { data[threadIdx.x] = binary_op(data[threadIdx.x], data[threadIdx.x +  16]); } __syncthreads(); }
-    if (BLOCK_SIZE >=  16) { if (threadIdx.x <   8 && threadIdx.x +   8 < n) { data[threadIdx.x] = binary_op(data[threadIdx.x], data[threadIdx.x +   8]); } __syncthreads(); }
-    if (BLOCK_SIZE >=   8) { if (threadIdx.x <   4 && threadIdx.x +   4 < n) { data[threadIdx.x] = binary_op(data[threadIdx.x], data[threadIdx.x +   4]); } __syncthreads(); }
-    if (BLOCK_SIZE >=   4) { if (threadIdx.x <   2 && threadIdx.x +   2 < n) { data[threadIdx.x] = binary_op(data[threadIdx.x], data[threadIdx.x +   2]); } __syncthreads(); }
-    if (BLOCK_SIZE >=   2) { if (threadIdx.x <   1 && threadIdx.x +   1 < n) { data[threadIdx.x] = binary_op(data[threadIdx.x], data[threadIdx.x +   1]); } __syncthreads(); }
+    // assume n <= 1024
+    if (n > 512) { if (threadIdx.x < 512 && threadIdx.x + 512 < n) { data[threadIdx.x] = binary_op(data[threadIdx.x], data[threadIdx.x + 512]); } __syncthreads(); }
+    if (n > 256) { if (threadIdx.x < 256 && threadIdx.x + 256 < n) { data[threadIdx.x] = binary_op(data[threadIdx.x], data[threadIdx.x + 256]); } __syncthreads(); }
+    if (n > 128) { if (threadIdx.x < 128 && threadIdx.x + 128 < n) { data[threadIdx.x] = binary_op(data[threadIdx.x], data[threadIdx.x + 128]); } __syncthreads(); }
+    if (n >  64) { if (threadIdx.x <  64 && threadIdx.x +  64 < n) { data[threadIdx.x] = binary_op(data[threadIdx.x], data[threadIdx.x +  64]); } __syncthreads(); }
+    if (n >  32) { if (threadIdx.x <  32 && threadIdx.x +  32 < n) { data[threadIdx.x] = binary_op(data[threadIdx.x], data[threadIdx.x +  32]); } __syncthreads(); }
+    if (n >  16) { if (threadIdx.x <  16 && threadIdx.x +  16 < n) { data[threadIdx.x] = binary_op(data[threadIdx.x], data[threadIdx.x +  16]); } __syncthreads(); }
+    if (n >   8) { if (threadIdx.x <   8 && threadIdx.x +   8 < n) { data[threadIdx.x] = binary_op(data[threadIdx.x], data[threadIdx.x +   8]); } __syncthreads(); }
+    if (n >   4) { if (threadIdx.x <   4 && threadIdx.x +   4 < n) { data[threadIdx.x] = binary_op(data[threadIdx.x], data[threadIdx.x +   4]); } __syncthreads(); }
+    if (n >   2) { if (threadIdx.x <   2 && threadIdx.x +   2 < n) { data[threadIdx.x] = binary_op(data[threadIdx.x], data[threadIdx.x +   2]); } __syncthreads(); }
+    if (n >   1) { if (threadIdx.x <   1 && threadIdx.x +   1 < n) { data[threadIdx.x] = binary_op(data[threadIdx.x], data[threadIdx.x +   1]); } __syncthreads(); }
 }
 
 } // end namespace block
-
+} // end namespace cuda
+} // end namespace device
 } // end namespace detail
-
 } // end namespace thrust
+

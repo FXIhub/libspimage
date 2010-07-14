@@ -1,5 +1,5 @@
 /*
- *  Copyright 2008-2009 NVIDIA Corporation
+ *  Copyright 2008-2010 NVIDIA Corporation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -16,28 +16,17 @@
 
 
 /*! \file partition.h
- *  \brief Device implementations for partition.
+ *  \brief Device interface to partition functions.
  */
 
 #pragma once
 
-#include <thrust/iterator/iterator_traits.h>
-
-#include <thrust/partition.h>
-
-#include <thrust/functional.h>
-#include <thrust/remove.h>
-#include <thrust/copy.h>
-#include <thrust/distance.h>
-#include <thrust/remove.h>
-#include <thrust/detail/raw_buffer.h>
+#include <thrust/detail/device/generic/partition.h>
 
 namespace thrust
 {
-
 namespace detail
 {
-
 namespace device
 {
 
@@ -47,16 +36,7 @@ template<typename ForwardIterator,
                                    ForwardIterator last,
                                    Predicate pred)
 {
-  typedef typename thrust::iterator_traits<ForwardIterator>::value_type InputType;
-
-  // partition to temp space
-  raw_device_buffer<InputType> temp(thrust::distance(first,last));
-  typename raw_device_buffer<InputType>::iterator temp_middle = thrust::experimental::stable_partition_copy(first, last, temp.begin(), pred);
-    
-  // copy back to original sequence
-  thrust::copy(temp.begin(), temp.end(), first);
-
-  return first + (temp_middle - temp.begin());
+    return thrust::detail::device::generic::stable_partition(first, last, pred);
 }
 
 template<typename ForwardIterator1,
@@ -67,15 +47,7 @@ template<typename ForwardIterator1,
                                          ForwardIterator2 result,
                                          Predicate pred)
 {
-  thrust::unary_negate<Predicate> not_pred(pred);
-
-  // remove_copy_if the false partition to result
-  ForwardIterator2 end_of_true_partition = thrust::remove_copy_if(first, last, result, not_pred);
-
-  // remove_copy_if the true partition to the end of the true partition
-  thrust::remove_copy_if(first, last, end_of_true_partition, pred);
-
-  return end_of_true_partition;
+    return thrust::detail::device::generic::stable_partition_copy(first, last, result, pred);
 }
 
 template<typename ForwardIterator,
@@ -84,7 +56,7 @@ template<typename ForwardIterator,
                             ForwardIterator last,
                             Predicate pred)
 {
-    return thrust::stable_partition(first, last, pred);
+    return thrust::detail::device::generic::partition(first, last, pred);
 }
 
 template<typename ForwardIterator1,
@@ -95,14 +67,10 @@ template<typename ForwardIterator1,
                                   ForwardIterator2 result,
                                   Predicate pred)
 {
-    return thrust::experimental::stable_partition_copy(first, last, result, pred);
+    return thrust::detail::device::generic::partition_copy(first, last, result, pred);
 }
 
-
 } // end namespace device
-
 } // end namespace detail
-
 } // end namespace thrust
-
 

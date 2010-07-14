@@ -1,5 +1,5 @@
 /*
- *  Copyright 2008-2009 NVIDIA Corporation
+ *  Copyright 2008-2010 NVIDIA Corporation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ namespace detail
 template<typename InputIterator>
   inline typename thrust::iterator_traits<InputIterator>::difference_type
     distance(InputIterator first, InputIterator last,
-             thrust::input_device_iterator_tag)
+             thrust::incrementable_traversal_tag)
 {
     typename thrust::iterator_traits<InputIterator>::difference_type result = 0;
 
@@ -55,7 +55,7 @@ template<typename InputIterator>
 template<typename InputIterator>
   inline typename thrust::iterator_traits<InputIterator>::difference_type
     distance(InputIterator first, InputIterator last,
-             thrust::random_access_device_iterator_tag)
+             thrust::random_access_traversal_tag)
 {
     return last - first;
 }
@@ -66,9 +66,9 @@ template<typename InputIterator>
   inline typename thrust::iterator_traits<InputIterator>::difference_type
     distance(InputIterator first, InputIterator last)
 {
-    // dispatch on category
+    // dispatch on traversal
     return detail::distance(first, last, 
-            typename thrust::iterator_traits<InputIterator>::iterator_category());
+            typename thrust::iterator_traversal<InputIterator>::type());
 } // end distance()
 
 

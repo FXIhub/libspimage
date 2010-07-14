@@ -1,5 +1,5 @@
 /*
- *  Copyright 2008-2009 NVIDIA Corporation
+ *  Copyright 2008-2010 NVIDIA Corporation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -19,10 +19,8 @@
  *  \brief Inline file for arch.h.
  */
 
-#include <cassert>
 #include <string>
-
-#include <thrust/experimental/arch.h>
+#include <algorithm>
 
 #include <thrust/detail/util/blocking.h>
 
@@ -34,36 +32,39 @@
 
 namespace thrust
 {
-
 namespace experimental
 {
-
 namespace arch
 {
-
 namespace detail
 {
 
 inline void checked_get_current_device_properties(cudaDeviceProp &props)
 {
   int current_device = -1;
+
   cudaError_t error = cudaGetDevice(&current_device);
+
   if(error)
-  {
     throw std::runtime_error(std::string("CUDA error: ") + std::string(cudaGetErrorString(error)));
-  } // end if
 
   if(current_device < 0)
-  {
     throw std::runtime_error(std::string("No CUDA device found."));
-  } // end if
   
   error = cudaGetDeviceProperties(&props, current_device);
-  if(error)
-  {
+
+  if(error != cudaSuccess)
     throw std::runtime_error(std::string("CUDA error: ") + std::string(cudaGetErrorString(error)));
-  } // end if
 } // end checked_get_current_device_properties()
+
+template <typename KernelFunction>
+void checked_get_function_attributes(cudaFuncAttributes& attributes, KernelFunction kernel)
+{
+  cudaError_t error = cudaFuncGetAttributes(&attributes, kernel);
+
+  if(error != cudaSuccess)
+    throw std::runtime_error(std::string("CUDA error: ") + std::string(cudaGetErrorString(error)));
+} // end checked_get_function_attributes()
 
 } // end detail
 
@@ -77,15 +78,17 @@ size_t num_multiprocessors(const cudaDeviceProp& properties)
 size_t max_active_threads_per_multiprocessor(const cudaDeviceProp& properties)
 {
     // index this array by [major, minor] revision
-    // \see NVIDIA_CUDA_Programming_Guide_2.1.pdf pp 82--83
-    static const size_t max_active_threads_by_compute_capability[2][4] = \
+    // \see NVIDIA_CUDA_Programming_Guide_3.0.pdf p 140
+    static const size_t max_active_threads_by_compute_capability[3][4] = \
         {{     0,    0,    0,    0},
-         {   768,  768, 1024, 1024}};
+         {   768,  768, 1024, 1024},
+         {  1536, 1536, 1536, 1536}};
 
-    assert(properties.major == 1);
-    assert(properties.minor >= 0 && properties.minor <= 3);
-
-    return max_active_threads_by_compute_capability[properties.major][properties.minor];
+    // produce valid results for new, unknown devices
+    if (properties.major > 2 || properties.minor > 3)
+        return max_active_threads_by_compute_capability[2][3];
+    else
+        return max_active_threads_by_compute_capability[properties.major][properties.minor];
 } // end max_active_threads_per_multiprocessor()
 
 
@@ -169,17 +172,88 @@ size_t max_active_blocks(KernelFunction kernel, const size_t CTA_SIZE, const siz
     detail::checked_get_current_device_properties(properties);
 
     cudaFuncAttributes attributes;
-    cudaError_t err = cudaFuncGetAttributes(&attributes, kernel);
-    assert(err == cudaSuccess);
+    detail::checked_get_function_attributes(attributes, kernel);
 
     return num_multiprocessors(properties) * max_active_blocks_per_multiprocessor(properties, attributes, CTA_SIZE, dynamic_smem_bytes);
 }
 
+size_t max_blocksize_with_highest_occupancy(const cudaDeviceProp& properties,
+                                            const cudaFuncAttributes& attributes,
+                                            size_t dynamic_smem_bytes_per_thread)
+{
+    size_t max_occupancy = max_active_threads_per_multiprocessor(properties);
 
+    size_t largest_blocksize  = std::min(properties.maxThreadsPerBlock, attributes.maxThreadsPerBlock);
+
+    // TODO eliminate this constant (i assume this is warp_size)
+    size_t granularity        = 32;
+
+    size_t max_blocksize     = 0;
+    size_t highest_occupancy = 0;
+
+    for(size_t blocksize = largest_blocksize; blocksize != 0; blocksize -= granularity)
+    {
+        size_t occupancy = blocksize * max_active_blocks_per_multiprocessor(properties, attributes, blocksize, dynamic_smem_bytes_per_thread * blocksize);
+
+        if (occupancy > highest_occupancy)
+        {
+            max_blocksize = blocksize;
+            highest_occupancy = occupancy;
+        }
+
+        // early out, can't do better
+        if (highest_occupancy == max_occupancy)
+            return max_blocksize;
+    }
+
+    return max_blocksize;
+}
+
+template <typename KernelFunction>
+size_t max_blocksize_with_highest_occupancy(KernelFunction kernel, size_t dynamic_smem_bytes_per_thread)
+{
+    cudaDeviceProp properties;  
+    detail::checked_get_current_device_properties(properties);
+
+    cudaFuncAttributes attributes;
+    detail::checked_get_function_attributes(attributes, kernel);
+
+    return max_blocksize_with_highest_occupancy(properties, attributes, dynamic_smem_bytes_per_thread);
+}
+
+
+// TODO unify this with max_blocksize_with_highest_occupancy
+size_t max_blocksize(const cudaDeviceProp& properties,
+                     const cudaFuncAttributes& attributes,
+                     size_t dynamic_smem_bytes_per_thread)
+{
+    size_t largest_blocksize  = std::min(properties.maxThreadsPerBlock, attributes.maxThreadsPerBlock);
+
+    // TODO eliminate this constant (i assume this is warp_size)
+    size_t granularity        = 32;
+
+    for(size_t blocksize = largest_blocksize; blocksize != 0; blocksize -= granularity)
+    {
+        if(0 < max_active_blocks_per_multiprocessor(properties, attributes, blocksize, dynamic_smem_bytes_per_thread * blocksize))
+            return blocksize;
+    }
+
+    return 0;
+}
+
+template <typename KernelFunction>
+size_t max_blocksize(KernelFunction kernel, size_t dynamic_smem_bytes_per_thread)
+{
+    cudaDeviceProp properties;  
+    detail::checked_get_current_device_properties(properties);
+
+    cudaFuncAttributes attributes;
+    detail::checked_get_function_attributes(attributes, kernel);
+
+    return max_blocksize(properties, attributes, dynamic_smem_bytes_per_thread);
+}
 
 } // end namespace arch
-
 } // end namespace experimental
-
 } // end namespace thrust
 

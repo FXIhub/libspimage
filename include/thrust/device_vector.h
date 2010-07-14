@@ -1,5 +1,5 @@
 /*
- *  Copyright 2008-2009 NVIDIA Corporation
+ *  Copyright 2008-2010 NVIDIA Corporation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -139,61 +139,6 @@ template<typename T, typename Alloc = thrust::device_malloc_allocator<T> >
     device_vector(InputIterator first, InputIterator last)
       :Parent(first,last) {}
 }; // end device_vector
-
-/*! This operator allows comparison between two \p device_vectors.
- *  \param lhs The first \p device_vector to compare.
- *  \param rhs The second \p device_vector to compare.
- *  \return \c true if and only if each corresponding element in either
- *          \p device_vector equals the other; \c false, otherwise.
- */
-template<typename T1, typename Alloc1,
-         typename T2, typename Alloc2>
-  bool operator==(const device_vector<T1,Alloc1> &lhs,
-                  const device_vector<T2,Alloc2> &rhs);
-
-/*! This operator allows comparison between a \p host_vector & a \p device_vector.
- *  \param lhs The \p host_vector to compare.
- *  \param rhs The \p device_vector to compare.
- *  \return \c true if and only if each corresponding element in either
- *          vector equals the other; \c false, otherwise.
- */
-template<typename T1, typename Alloc1,
-         typename T2, typename Alloc2>
-  bool operator==(const host_vector<T1,Alloc1> &lhs,
-                  const device_vector<T2,Alloc2> &rhs);
-
-/*! This operator allows comparison between a \p device_vector & a \p host_vector.
- *  \param lhs The \p device_vector to compare.
- *  \param rhs The \p host_vector to compare.
- *  \return \c true if and only if each corresponding element in either
- *          vector equals the other; \c false, otherwise.
- */
-template<typename T1, typename Alloc1,
-         typename T2, typename Alloc2>
-  bool operator==(const device_vector<T1,Alloc1> &lhs,
-                  const host_vector<T2,Alloc2> &rhs);
-
-/*! This operator allows comparison between a \c std::vector & a \p device_vector.
- *  \param lhs The \c std::vector to compare.
- *  \param rhs The \p device_vector to compare.
- *  \return \c true if and only if each corresponding element in either
- *          vector equals the other; \c false, otherwise.
- */
-template<typename T1, typename Alloc1,
-         typename T2, typename Alloc2>
-  bool operator==(const std::vector<T1,Alloc1> &lhs,
-                  const device_vector<T2,Alloc2> &rhs);
-
-/*! This operator allows comparison between a \c device_vector & a \p std::vector.
- *  \param lhs The \p device_vector to compare.
- *  \param rhs The \c std::vector to compare.
- *  \return \c true if and only if each corresponding element in either
- *          vector equals the other; \c false, otherwise.
- */
-template<typename T1, typename Alloc1,
-         typename T2, typename Alloc2>
-  bool operator==(const device_vector<T1,Alloc1> &lhs,
-                  const std::vector<T2,Alloc2> &rhs);
 
 /*! \}
  */

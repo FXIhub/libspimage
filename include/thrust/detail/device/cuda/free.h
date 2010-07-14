@@ -1,5 +1,5 @@
 /*
- *  Copyright 2008-2009 NVIDIA Corporation
+ *  Copyright 2008-2010 NVIDIA Corporation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -22,28 +22,32 @@
 #pragma once
 
 #include <thrust/device_ptr.h>
+#include <cuda_runtime_api.h>
+#include <stdexcept>
+#include <string>
 
 namespace thrust
 {
-
 namespace detail
 {
-
 namespace device
 {
-
 namespace cuda
 {
 
-inline void free(thrust::device_ptr<void> ptr);
+template<unsigned int DummyParameterToAvoidInstantiation>
+void free(thrust::device_ptr<void> ptr)
+{
+  cudaError_t error = cudaFree(ptr.get());
+
+  if(error)
+  {
+    throw std::runtime_error(std::string("CUDA error: ") + std::string(cudaGetErrorString(error)));
+  } // end error
+} // end free()
 
 } // end namespace cuda
-
 } // end namespace device
-
 } // end namespace detail
-
 } // end namespace thrust
-
-#include "free.inl"
 
