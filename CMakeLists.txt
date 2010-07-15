@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 2.6)
 PROJECT (spimage)
 
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
-SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/cuda")
 
 ADD_DEFINITIONS(-D H5_USE_16_API)
 # Make sure that while building this library the include files are not 
@@ -46,6 +45,11 @@ find_package(SWIG)
 IF(USE_CUDA)
   IF(CMAKE_VERSION)
     # CMAKE VERSION was first defined in 2.6.3. Sorry for the hack
+    IF(CMAKE_VERSION VERSION_LESS 2.8)
+      SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/cuda")
+    ELSE(CMAKE_VERSION VERSION_LESS 2.8)
+      MESSAGE(STATUS "Using builtin CUDA package")
+    ENDIF(CMAKE_VERSION VERSION_LESS 2.8)
     find_package(CUDA QUIET)
   ELSE(CMAKE_VERSION)
     message(STATUS "cmake 2.6.3 or higher required to use CUDA")
