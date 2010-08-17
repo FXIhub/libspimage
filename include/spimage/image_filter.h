@@ -14,6 +14,21 @@ extern "C"
  *  @{
  */
 
+
+/*! Convolute the image with a square window.
+ *  The filter function is given by:
+ *  
+ *  f(x,y) = 1/((2*radius+1)^2)) 
+ *
+ *  If type is SP_3D the blur is done in 3D.
+ *
+ * \param in input image
+ * \param radius distance from the center of the square/cube to the center of the face
+ * \param type if given SP_3D the blur is done in 3D. Otherwise it's done in 2D.
+ * \return the blurred image
+ */
+  Image * sp_square_blur(Image * in, real radius, int type);
+
 /*! Convolutes the images with a gaussian function of a given radius in pixels .
  * 
  * \param in input image
