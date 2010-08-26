@@ -2170,7 +2170,7 @@ Complex sp_image_dot_prod(Image * a, Image * b){
   return sp_c3matrix_froenius_prod(a->image,b->image);
 }
 
-Image * sp_proj_module(Image * a, Image * b,SpPlace place){
+Image * sp_proj_module(Image * a, const Image * b,SpPlace place){
   Image * ret;
   if(place & SpInPlace){
     ret = a;

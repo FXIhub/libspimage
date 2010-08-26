@@ -4,7 +4,7 @@
 #include "spimage.h"
 
 
-Image * sp_image_cuda_ifft(Image * img){
+Image * sp_image_cuda_ifft(const Image * img){
   cufftComplex *d_img;
   cufftHandle plan;
   int size = sp_image_size(img);
@@ -23,7 +23,7 @@ Image * sp_image_cuda_ifft(Image * img){
   return out;
 }
 
-Image * sp_image_cuda_fft(Image * img){
+Image * sp_image_cuda_fft(const Image * img){
   cufftComplex *d_img;
   cufftHandle plan;
   int size = sp_image_size(img);

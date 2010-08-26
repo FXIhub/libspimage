@@ -84,35 +84,35 @@ extern "C"
  * The mask is copied unchanged
  * The center of the image is set to the middle of the image
  */
-spimage_EXPORT Image * sp_image_fft(Image * img);
+spimage_EXPORT Image * sp_image_fft(const Image * img);
 
 /*! Simply does the fft of the input data and puts it into out */
-spimage_EXPORT void sp_image_fft_fast(Image * in, Image * out);
+spimage_EXPORT void sp_image_fft_fast(const Image * in, Image * out);
 
   /*!Returns the 1d fourier transform of img along the specified axis. 
    * axis = 0,1,2 corresponds to x,y,z respectively. (axis = 1 only
    * works for 2d images.
    */
-spimage_EXPORT Image * sp_image_1d_fft(Image *img,int axis);
+spimage_EXPORT Image * sp_image_1d_fft(const Image *img,int axis);
 
   /*!Returns the 1d back fourier transform of img along the specified axis. 
    * axis = 0,1,2 corresponds to x,y,z respectively. (axis = 1 only
    * works for 2d images.
    */
-spimage_EXPORT Image * sp_image_1d_ifft(Image *img,int axis);
+spimage_EXPORT Image * sp_image_1d_ifft(const Image *img,int axis);
 /*! Returns the forward FFT of m.
  */
 //spimage_EXPORT sp_cmatrix * sp_cmatrix_fft(sp_cmatrix * m);
 /*! Returns the forward FFT of m.
  */
-spimage_EXPORT sp_c3matrix * sp_c3matrix_fft(sp_c3matrix * m);
+spimage_EXPORT sp_c3matrix * sp_c3matrix_fft(const sp_c3matrix * m);
 /*! Returns the backward FFT of img.
  *
  * The mask is copied unchanged
  */
-spimage_EXPORT Image * sp_image_ifft(Image * img);
+spimage_EXPORT Image * sp_image_ifft(const Image * img);
 /*! Simply does the ifft of the input data and puts it into out */
-spimage_EXPORT void sp_image_ifft_fast(Image * in, Image * out);
+spimage_EXPORT void sp_image_ifft_fast(const Image * in, Image * out);
 
 
 /*! Returns the backward FFT of m.
@@ -120,15 +120,15 @@ spimage_EXPORT void sp_image_ifft_fast(Image * in, Image * out);
 //spimage_EXPORT sp_cmatrix * sp_cmatrix_ifft(sp_cmatrix * img);
 /*! Returns the backward FFT of m.
  */
-spimage_EXPORT sp_c3matrix * sp_c3matrix_ifft(sp_c3matrix * img);
+spimage_EXPORT sp_c3matrix * sp_c3matrix_ifft(const sp_c3matrix * img);
 /*! Initializes the fft routine and tells it to use 
  *   nthreads threads
  */
 spimage_EXPORT int sp_init_fft(int nthreads);
 
 #ifdef _USE_CUDA
-  spimage_EXPORT Image * sp_image_cuda_ifft(Image * img);
-  spimage_EXPORT Image * sp_image_cuda_fft(Image * img);
+  spimage_EXPORT Image * sp_image_cuda_ifft(const Image * img);
+  spimage_EXPORT Image * sp_image_cuda_fft(const Image * img);
 #endif
 
 /*@}*/

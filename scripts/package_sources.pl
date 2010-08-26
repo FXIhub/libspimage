@@ -16,7 +16,4 @@ chomp($arch);
 my $reldir =($basedir."/../releases/libspimage-$version-src");
 `rm -rf $reldir`;
 $reldir = File::Spec->rel2abs($reldir);
-chdir($basedir."/../releases");
-system("svn export svn://hirst/libspimage/trunk $reldir");
-system("cd $reldir; doxygen doxygen.conf");
-system("tar -zcvf ".$reldir.".tar.gz libspimage-$version-src");
+system('cd '.$basedir.'/.. && git archive --format=tar --prefix=libspimage-'.$version.'-src/ master  |gzip  > '.$reldir.'.tar.gz');
