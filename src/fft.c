@@ -50,7 +50,7 @@ int sp_init_fft(int nthreads){
 
 #ifdef FFTW3
 
-Image * sp_image_ifftw3(Image * img){
+Image * sp_image_ifftw3(const Image * img){
   fftwr_complex *out; 
   fftwr_complex *in; 
   fftwr_plan plan;
@@ -84,7 +84,7 @@ Image * sp_image_ifftw3(Image * img){
   return res;
 }
 
-void sp_image_ifftw3_fast(Image * img_in, Image * img_out){
+void sp_image_ifftw3_fast(const Image * img_in, Image * img_out){
   fftwr_complex *out; 
   fftwr_complex *in; 
   fftwr_plan plan;
@@ -98,7 +98,7 @@ void sp_image_ifftw3_fast(Image * img_in, Image * img_out){
   fftwr_destroy_plan(plan);  
 }
 
-sp_c3matrix * sp_c3matrix_ifftw3(sp_c3matrix * m){
+sp_c3matrix * sp_c3matrix_ifftw3(const sp_c3matrix * m){
   fftwr_complex *out; 
   fftwr_complex *in; 
   fftwr_plan plan;
@@ -117,7 +117,7 @@ sp_c3matrix * sp_c3matrix_ifftw3(sp_c3matrix * m){
 
 #ifdef FFTW2
 
-Image * sp_image_ifftw2(Image * img){
+Image * sp_image_ifftw2(const Image * img){
   fftw_complex *out; 
   fftw_complex *in; 
   fftwnd_plan plan;
@@ -149,7 +149,7 @@ Image * sp_image_ifftw2(Image * img){
 
 #ifdef FFTW3
 
-Image * sp_image_fftw3(Image * img){
+Image * sp_image_fftw3(const Image * img){
   fftwr_complex *out; 
   fftwr_complex *in; 
   fftwr_plan plan;
@@ -174,7 +174,7 @@ Image * sp_image_fftw3(Image * img){
   return res;
 }
 
-void sp_image_fftw3_fast(Image * img_in, Image * img_out){
+void sp_image_fftw3_fast(const Image * img_in, Image * img_out){
   fftwr_complex *out; 
   fftwr_complex *in; 
   fftwr_plan plan;
@@ -188,7 +188,7 @@ void sp_image_fftw3_fast(Image * img_in, Image * img_out){
   fftwr_destroy_plan(plan);  
 }
 
-Image * sp_image_1d_fftw3(Image * img, int axis) {
+Image * sp_image_1d_fftw3(const Image * img, int axis) {
   fftwr_complex *out;
   fftwr_complex *in;
   fftwr_plan plan;
@@ -240,7 +240,7 @@ Image * sp_image_1d_fftw3(Image * img, int axis) {
   return res;
 }
 
-Image * sp_image_1d_ifftw3(Image * img, int axis) {
+Image * sp_image_1d_ifftw3(const Image * img, int axis) {
   fftwr_complex *out;
   fftwr_complex *in;
   fftwr_plan plan;
@@ -293,7 +293,7 @@ Image * sp_image_1d_ifftw3(Image * img, int axis) {
 }
 
 
-sp_c3matrix * sp_c3matrix_fftw3(sp_c3matrix * m){
+sp_c3matrix * sp_c3matrix_fftw3(const sp_c3matrix * m){
   fftwr_complex *out; 
   fftwr_complex *in; 
   fftwr_plan plan;
@@ -315,7 +315,7 @@ sp_c3matrix * sp_c3matrix_fftw3(sp_c3matrix * m){
 
 #ifdef FFTW2
 
-sp_c3matrix * sp_c3matrix_fftw2(sp_c3matrix * m){
+sp_c3matrix * sp_c3matrix_fftw2(const sp_c3matrix * m){
   fftw_complex *out; 
   fftw_complex *in; 
   fftwnd_plan plan;

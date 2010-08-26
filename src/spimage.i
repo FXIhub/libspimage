@@ -1,5 +1,4 @@
 %module spimage
- /*%include pointer.i */
 %{
   /* Includes the header in the wrapper code */
 #include "../include/spimage/colormap.h"

@@ -438,7 +438,7 @@ spimage_EXPORT real sp_image_interp(const Image * img, real v_x, real v_y, real 
  *  Both images are assumed to be in reciprocal space
  *  If SpPlace is set to SpInPlace the input a is used to write the output
  */
-  spimage_EXPORT Image * sp_proj_module(Image * a, Image * b, SpPlace place);
+  spimage_EXPORT Image * sp_proj_module(Image * a,const Image * b, SpPlace place);
 
 /*! Module Histogram projector
  *

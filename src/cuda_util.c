@@ -8,7 +8,7 @@
 
 SpCUDADeviceType sp_cuda_get_device_type(){
 #ifdef _USE_CUDA
-  int dev_count;
+  int dev_count = 0;
   cudaGetDeviceCount(&dev_count);
   if(dev_count == 0){
     return SpCUDANoDevice;
