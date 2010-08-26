@@ -98,10 +98,12 @@
 }
 
 %typemap(out) float[3] {
-  $result = PyTuple_New(3);
+  /*$result = PyTuple_New(3);
   PyTuple_SetItem($result, 0, PyFloat_FromDouble($1[0]));
   PyTuple_SetItem($result, 1, PyFloat_FromDouble($1[1]));
-  PyTuple_SetItem($result, 2, PyFloat_FromDouble($1[2]));
+  PyTuple_SetItem($result, 2, PyFloat_FromDouble($1[2]));*/
+  npy_intp dims[1] = {3};
+  $result = PyArray_SimpleNewFromData(1, dims, PyArray_FLOAT, $1);
 }
 
 
