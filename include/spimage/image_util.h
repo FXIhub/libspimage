@@ -245,6 +245,14 @@ static inline void sp_image_mask_set(Image * a,int x,int y,int z,int v){
   sp_i3matrix_set(a->mask,x,y,z,v);
 }
 
+/*! Sets the center to x,y,z.
+ */
+static inline void sp_image_set_center(Image *a, real x, real y, real z) {
+  a->detector->image_center[0] = x;
+  a->detector->image_center[1] = y;
+  a->detector->image_center[2] = z;
+}
+
 /*! Increments the real part of the point x,y,z (or x,y,0 for 2D) by the value v
  */
 static inline void sp_image_inc(Image * a,int x,int y,int z,real v){
