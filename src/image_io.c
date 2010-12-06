@@ -1345,15 +1345,28 @@ Image * read_cxdi(const char * filename){
 }
 
 
+
 Image * read_anton_datafile(hid_t file_id,hid_t dataset_id,const char * filename){
   hid_t mem_type_id;
   int status = 0;
+  H5E_auto_t func;
+  void * client_data;
   if(sizeof(real) == sizeof(float)){
     mem_type_id = H5T_NATIVE_FLOAT;
   }else if(sizeof(real) == sizeof(double)){
     mem_type_id = H5T_NATIVE_DOUBLE;
   }else{
     abort();
+  }
+  H5Eget_auto(&func,&client_data);
+  /* turn off warning to check file and version because they might not exist */
+  H5Eset_auto(NULL,NULL);  
+  /* check if we have a multiple frames thing or just a simple /data/data file */
+  dataset_id = H5Dopen(file_id, "/data/nframes");
+  if(dataset_id < 0){
+    H5Eset_auto(func,client_data);
+    H5Fclose(file_id);
+    return read_cxdi(filename);
   }
   int nframes;
   /* read number of frames and put them together in just 1 image */
@@ -1391,7 +1404,7 @@ Image * read_anton_datafile(hid_t file_id,hid_t dataset_id,const char * filename
     }
     total_dims[0] +=dims[frame][0];
     total_dims[1] = sp_max(dims[frame][1],total_dims[1]);
-
+    
     data[frame] = malloc(sizeof(real)*(dims[frame][0]*dims[frame][1]*dims[frame][2]));
 #if H5_VERS_MAJOR < 2 && H5_VERS_MINOR < 8
     /* HDF5 1.6 does not support int -> double conversion so we'll need a buffer */
