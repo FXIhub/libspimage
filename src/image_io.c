@@ -1345,8 +1345,12 @@ Image * read_cxdi(const char * filename){
     sp_error_warning("Unable to get dimensions extent in file %s",filename);
     return NULL;
   }
-
-  Image * ret = sp_image_alloc(dims[0],dims[1],dims[2]);
+  Image * ret;
+  if(dims[2] == 1){
+    ret = sp_image_alloc(dims[1],dims[0],dims[2]);
+  }else{
+    ret = sp_image_alloc(dims[0],dims[1],dims[2]);
+  }
   float * buffer = sp_malloc(dims[0]*dims[1]*dims[2]*sizeof(float));
   status = H5Dread(dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL,
 		   H5P_DEFAULT, buffer);
