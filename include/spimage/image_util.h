@@ -418,6 +418,10 @@ spimage_EXPORT void sp_image_scale(Image * img, real value);
   index of that pixel along iwth *x and *y
  */
 spimage_EXPORT real sp_image_max(Image * img, long long * index, int * x, int * y, int * z);
+/*! Returns the minimum value of the image and sets *index to the
+  index of that pixel along iwth *x and *y
+ */
+spimage_EXPORT real sp_image_min(Image * img, long long * index,int * x, int * y, int * z);
 
 /*! Returns the phase of the image on each pixel, in radians
  *
@@ -640,6 +644,7 @@ spimage_EXPORT void sp_image_translate(Image * a,int x,int y,int z, int flags);
  * 
  * Translates an image by multiplying it with a phase ramp in fourier space.
  * The image is always wrapped around when it goes outside the image.
+ * The mask is put to all zeros regardless of input.
  */
 spimage_EXPORT void sp_image_fourier_translate(Image * ra, real t_x, real t_y, real t_z);
   

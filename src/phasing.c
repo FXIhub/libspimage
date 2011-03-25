@@ -106,7 +106,26 @@ void sp_phaser_free(SpPhaser * ph){
   if(ph->pixel_flags){
     sp_i3matrix_free(ph->pixel_flags);
     ph->pixel_flags = 0;
-    
+  }
+  if (ph->phased_amplitudes) {
+    sp_c3matrix_free(ph->phased_amplitudes);
+    ph->phased_amplitudes = 0;
+  }
+  if (ph->amplitudes_image) {
+    sp_image_free(ph->amplitudes_image);
+    ph->amplitudes_image = 0;
+  }
+  if (ph->old_model) {
+    sp_image_free(ph->old_model);
+    ph->old_model = 0;
+  }
+  if (ph->support) {
+    sp_image_free(ph->support);
+    ph->support = 0;
+  }
+  if (ph->fmodel) {
+    sp_image_free(ph->fmodel);
+    ph->fmodel = 0;
   }
 #ifdef _USE_CUDA
   if(ph->engine == SpEngineCUDA){
@@ -347,6 +366,7 @@ const Image * sp_phaser_fmodel(SpPhaser * ph){
     if(!ph->fmodel){
       ph->fmodel = sp_image_alloc(ph->nx,ph->ny,ph->nz);
     }
+
     ph->fmodel_iteration = ph->iteration;
     if(ph->engine == SpEngineCPU){
       sp_image_memcpy(ph->fmodel,ph->g1);

@@ -1458,6 +1458,9 @@ Image * read_anton_datafile(hid_t file_id,hid_t dataset_id,const char * filename
       sp_image_mask_set(ret,x,y,0,1);
     }
   }
+  for(int frame = 0;frame<nframes;frame++){
+    free(data[frame]);
+  }
   /* For some reason the image is upside down so we'll turn it around */
   sp_image_reflect(ret,1,SP_AXIS_X);
 
