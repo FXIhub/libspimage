@@ -3298,6 +3298,9 @@ sp_vector * sp_image_center_of_mass(Image * a){
   return sp_c3matrix_center_of_mass(a->image);
 }
 
+sp_vector * sp_image_mask_center_of_mass(Image * a){
+  return sp_i3matrix_center_of_mass(a->mask);
+}
 
 int sp_image_get_coords_from_index(const Image * in,int index,real * x, real * y, real * z, SpOrigin origin){
   int nx,ny,nz;
@@ -3531,7 +3534,7 @@ void sp_image_shrink_mask(Image *in, int pixels){
 	  if ((sp_image_mask_get(tmp1,x,y,z) == 0) ||
 	      ((x != 0 && sp_image_mask_get(tmp1,x-1,y,z) == 0) ||
 	       (x != sp_image_x(tmp1)-1 && sp_image_mask_get(tmp1,x+1,y,z) == 0) ||
-	       (y != 0 && sp_image_mask_get(tmp1,x,y-1,z) == 0) ||
+ 	       (y != 0 && sp_image_mask_get(tmp1,x,y-1,z) == 0) ||
 	       (y != sp_image_y(tmp1)-1 && sp_image_mask_get(tmp1,x,y+1,z) == 0) ||
 	       (z != 0 && sp_image_mask_get(tmp1,x,y,z-1) == 0) ||
 	       (z != sp_image_z(tmp1)-1 && sp_image_mask_get(tmp1,x,y,z+1) == 0))) {
@@ -3550,3 +3553,29 @@ void sp_image_shrink_mask(Image *in, int pixels){
   sp_image_free(tmp1);
   sp_image_free(tmp2);
 }
+
+void sp_pixel_flags_translate_mask(sp_i3matrix * pfm, int dx, int dy, int dz){
+  int matrix_x = sp_i3matrix_x(pfm);
+  int matrix_y = sp_i3matrix_y(pfm);
+  int matrix_z = sp_i3matrix_z(pfm);
+  sp_i3matrix * tmppfm = sp_i3matrix_alloc(matrix_x,matrix_y,matrix_z);
+  int ix,iy,iz,val1,val2,Dx,Dy,Dz;
+  while(dx<0) dx += matrix_x;
+  while(dy<0) dy += matrix_y;
+  while(dz<0) dz += matrix_z;
+  for(ix = 0; ix<matrix_x; ix++){
+    for(iy = 0; iy<matrix_y; iy++){
+      for(iz = 0; iz<matrix_z; iz++){
+	Dx = (ix+dx) % matrix_x;
+	Dy = (iy+dy) % matrix_y;
+	Dz = (iz+dz) % matrix_z;	
+	val1 = sp_i3matrix_get(pfm,ix,iy,iz);
+	val2 = sp_i3matrix_get(pfm,Dx,Dy,Dz);
+	if(val1 & SpPixelInsideSupport) sp_i3matrix_set(tmppfm,Dx,Dy,Dz,val2 |= SpPixelInsideSupport);
+	else sp_i3matrix_set(tmppfm,Dx,Dy,Dz,val2 &= ~SpPixelInsideSupport);
+      }
+    }
+  }
+  sp_i3matrix_memcpy(pfm,tmppfm);
+  sp_i3matrix_free(tmppfm);
+} 

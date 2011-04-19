@@ -6,7 +6,7 @@ extern "C"
 {
 #endif /* __cplusplus */
 
-  typedef enum{SpSupportThreshold=1,SpSupportArea,SpSupportTemplate,SpSupportStatic,SpSupportClose}SpSupportAlgorithmType;
+  typedef enum{SpSupportThreshold=1,SpSupportArea,SpSupportCentreImage,SpSupportTemplate,SpSupportStatic,SpSupportClose}SpSupportAlgorithmType;
 
 /*! This structure is private */
 typedef struct{
@@ -19,6 +19,9 @@ typedef struct{
   sp_smap * blur_radius_map;
   sp_smap * area;
 }SpSupportAreaParameters;
+
+typedef struct{
+}SpSupportCentreImageParameters;
 
 /*! This structure is private */
 typedef struct{

@@ -736,6 +736,7 @@ int sp_phaser_iterate(SpPhaser * ph, int iterations){
 	//ph->sup_algorithm->function(ph);
 	//((int(*)(SpPhaser *))ph->sup_algorithm->function)(ph);
 	sp_support_array_update(ph->sup_algorithm,ph);
+	
 	ph->iteration++;
 	iterations -= 1;
       }
@@ -977,4 +978,3 @@ Image * phaser_iterate_diff_map_f1(Image * real_in,sp_i3matrix * pixel_flags,rea
   }
   return out;
 }
-
