@@ -30,9 +30,6 @@ void _sp_cvector_free(sp_cvector * v,const char * file, int line){
   _sp_free(v,file,line);
 }
 
-
-
-
 sp_matrix * _sp_matrix_alloc(unsigned int nrows, unsigned int ncols,const char * file, int line){
   sp_matrix * res = _sp_malloc(sizeof(sp_matrix),file,line);
   res->rows = nrows;
@@ -239,7 +236,6 @@ void sp_3matrix_invert(sp_3matrix * m){
     }    
   }
 
-  
   /* Now from the bottom up */
   /* triangularize the matrix */
   /* For every row */
@@ -310,6 +306,24 @@ void sp_cmatrix_invert(sp_cmatrix * m){
   sp_cmatrix_free(inv);
 }
 
+void sp_i3matrix_translate(sp_i3matrix * m, int dx, int dy, int dz){
+  int matrix_x = sp_i3matrix_x(m);
+  int matrix_y = sp_i3matrix_y(m);
+  int matrix_z = sp_i3matrix_z(m);
+  sp_i3matrix * tmpmx = sp_i3matrix_alloc(matrix_x,matrix_y,matrix_z);
+  int ix,iy,iz;
+  if(dx<0) dx += matrix_x;
+  if(dy<0) dy += matrix_y;
+  if(dz<0) dz += matrix_z;
+  for(ix = 0; ix<matrix_x; ix++)
+    for(iy = 0; iy<matrix_y; iy++)
+      for(iz = 0; iz<matrix_z; iz++)
+	if(sp_i3matrix_get(m,ix,iy,iz)!=0)
+	  sp_i3matrix_set(tmpmx,(ix+dx) % matrix_x,(iy+dy) % matrix_y,(iz+dz) % matrix_z,sp_i3matrix_get(m,ix,iy,iz));
+  sp_i3matrix_memcpy(m,tmpmx);
+  sp_i3matrix_free(tmpmx);
+}
+
 void sp_matrix_print(sp_matrix * a,FILE * fp){
   int i,j;
   if(!fp){
@@ -354,6 +368,114 @@ void sp_cmatrix_print(sp_cmatrix * a,FILE * fp){
 }
 
 
+sp_vector * sp_3matrix_center_of_mass(const sp_3matrix * a){
+  sp_vector * res = sp_vector_alloc(3);
+  int i = 0;
+  real sum= 0;
+  for(int z = 0;z<sp_3matrix_z(a);z++){
+    for(int y = 0;y<sp_3matrix_y(a);y++){
+      for(int x = 0;x<sp_3matrix_x(a);x++){	
+	real m = a->data[i];
+	res->data[0] += m*x;
+	res->data[1] += m*y;
+	res->data[2] += m*z;
+	sum += m;
+	i++;
+      }
+    }
+  }
+  if(sum){
+    res->data[0] /= sum;
+    res->data[1] /= sum;
+    res->data[2] /= sum;
+  }
+  return res;
+}
+
+sp_vector * sp_i3matrix_center_of_mass(const sp_i3matrix * a){
+  sp_vector * res = sp_vector_alloc(3);
+  int i = 0;
+  int sum= 0;
+  for(int z = 0;z<sp_i3matrix_z(a);z++){
+    for(int y = 0;y<sp_i3matrix_y(a);y++){
+      for(int x = 0;x<sp_i3matrix_x(a);x++){	
+	int m = a->data[i];
+	res->data[0] += m*x;
+	res->data[1] += m*y;
+	res->data[2] += m*z;
+	sum += m;
+	i++;
+      }
+    }
+  }
+  if(sum){
+    res->data[0] /= sum;
+    res->data[1] /= sum;
+    res->data[2] /= sum;
+  }
+  return res;
+}
+
+sp_vector * sp_i3matrix_binary_center_of_mass(const sp_i3matrix * a){
+  sp_vector * res = sp_vector_alloc(3);
+  int i = 0;
+  int sum= 0;
+  for(int z = 0;z<sp_i3matrix_z(a);z++){
+    for(int y = 0;y<sp_i3matrix_y(a);y++){
+      for(int x = 0;x<sp_i3matrix_x(a);x++){	
+	if(a->data[i] & SpPixelInsideSupport){
+	  res->data[0] += x;
+	  res->data[1] += y;
+	  res->data[2] += z;
+	  sum++;
+	}
+	i++;
+      }
+    }
+  }
+  if(sum){
+    res->data[0] /= sum;
+    res->data[1] /= sum;
+    res->data[2] /= sum;
+  }
+  return res;
+}
+
+sp_vector * sp_i3matrix_binary_center_of_mass_shifted(const sp_i3matrix * a){
+  sp_vector * res = sp_vector_alloc(3);
+  int matrix_x = sp_i3matrix_x(a);
+  int matrix_y = sp_i3matrix_y(a);
+  int matrix_z = sp_i3matrix_z(a);
+  int i = 0;
+  int sum= 0;
+  for(int z = 0;z<matrix_z;z++){
+    for(int y = 0;y<matrix_y;y++){
+      for(int x = 0;x<matrix_x;x++){	
+	if(a->data[i] & SpPixelInsideSupport){
+	  // shifting
+	  res->data[0] += (x+(matrix_x-1)/2) % matrix_x;
+	  res->data[1] += (y+(matrix_y-1)/2) % matrix_y;
+	  res->data[2] += (z+(matrix_z-1)/2) % matrix_z;
+	  sum++;
+	}
+	i++;
+      }
+    }
+  }
+  if(sum){
+    res->data[0] /= sum;
+    res->data[1] /= sum;
+    res->data[2] /= sum;
+    // backshifting
+    res->data[0] -= (matrix_x-1)/2;
+    res->data[1] -= (matrix_y-1)/2;
+    res->data[2] -= (matrix_z-1)/2;
+  }
+  return res;
+}
+
+
+
 sp_vector * sp_c3matrix_center_of_mass(const sp_c3matrix * a){
   sp_vector * res = sp_vector_alloc(3);
   int i = 0;
@@ -377,6 +499,9 @@ sp_vector * sp_c3matrix_center_of_mass(const sp_c3matrix * a){
   }
   return res;
 }
+
+
+
 
 int sp_complex_descend_compare(const void * pa,const void * pb){
   Complex a,b;
@@ -555,3 +680,4 @@ sp_matrix * sp_matrix_rotate(sp_matrix * in, SpAngle angleDef, int in_place){
   sp_matrix_free(rot);
   return out;
 }
+
