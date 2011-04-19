@@ -129,35 +129,35 @@ __global__ void CUDA_apply_fourier_constraints(cufftComplex* g,const  int size,c
 __global__ void CUDA_apply_constraints(cufftComplex* g, const int * pixel_flags,const  int size,const SpPhasingConstraints constraints){
   const int i =  blockIdx.x*blockDim.x + threadIdx.x;
   if(i<size){
-    if(pixel_flags[i] & SpPixelInsideSupport){
-      if(constraints & SpRealObject){
-	g[i].y = 0;
-      }else if(constraints & SpPositiveRealObject){
-	if(g[i].x < 0){
-	  if(constraints & SpPositivityFlipping){
-	    g[i].x = fabs(g[i].x);
-	  }else{
-	    g[i].x = 0;
-	  }
+    //if(pixel_flags[i] & SpPixelInsideSupport){
+    if(constraints & SpRealObject){
+      g[i].y = 0;
+    }else if(constraints & SpPositiveRealObject){
+      if(g[i].x < 0){
+	if(constraints & SpPositivityFlipping){
+	  g[i].x = fabs(g[i].x);
+	}else{
+	  g[i].x = 0;
 	}
-	g[i].y = 0;
-      }else if(constraints & SpPositiveComplexObject){
-	if(g[i].x < 0){
-	  if(constraints & SpPositivityFlipping){
-	    g[i].x = fabs(g[i].x);
-	  }else{
-	    g[i].x = 0;
-	  }
+      }
+      g[i].y = 0;
+    }else if(constraints & SpPositiveComplexObject){
+      if(g[i].x < 0){
+	if(constraints & SpPositivityFlipping){
+	  g[i].x = fabs(g[i].x);
+	}else{
+	  g[i].x = 0;
 	}
-	if(g[i].y < 0){
-	  if(constraints & SpPositivityFlipping){
-	    g[i].y = fabs(g[i].y);
-	  }else{
-	    g[i].y = 0;
-	  }
+      }
+      if(g[i].y < 0){
+	if(constraints & SpPositivityFlipping){
+	  g[i].y = fabs(g[i].y);
+	}else{
+	  g[i].y = 0;
 	}
       }
     }
+    //}
   }
 }
 
@@ -168,4 +168,4 @@ __global__ void CUDA_complex_scale(cufftComplex * a, int size ,float scale){
     a[i].x *= scale;
     a[i].y *= scale;
   }
-} 
+}

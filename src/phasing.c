@@ -771,36 +771,36 @@ int sp_phaser_iterate(SpPhaser * ph, int iterations){
 static void phaser_apply_constraints(SpPhaser * ph,Image * new_model, SpPhasingConstraints constraints){
   /* Apply constraints */
   for(int i =0;i<sp_image_size(new_model);i++){
-    if(ph->pixel_flags->data[i] & SpPixelInsideSupport){
-      if(constraints & SpRealObject){
-	sp_imag(new_model->image->data[i]) = 0;
-      }else if(constraints & SpPositiveRealObject){
-	if(sp_real(new_model->image->data[i]) < 0){
-	  if(constraints & SpPositivityFlipping){
-	    sp_real(new_model->image->data[i]) = fabs(sp_real(new_model->image->data[i]));
-	  }else{
-	    sp_real(new_model->image->data[i]) = 0;
-	  }
+    //if(ph->pixel_flags->data[i] & SpPixelInsideSupport){
+    if(constraints & SpRealObject){
+      sp_imag(new_model->image->data[i]) = 0;
+    }else if(constraints & SpPositiveRealObject){
+      if(sp_real(new_model->image->data[i]) < 0){
+	if(constraints & SpPositivityFlipping){
+	  sp_real(new_model->image->data[i]) = fabs(sp_real(new_model->image->data[i]));
+	}else{
+	  sp_real(new_model->image->data[i]) = 0;
 	}
-	sp_imag(new_model->image->data[i]) = 0;	
-      }else if(constraints & SpPositiveComplexObject){
-	if(sp_real(new_model->image->data[i]) < 0){
-	  if(constraints & SpPositivityFlipping){
-	    sp_real(new_model->image->data[i]) = fabs(sp_real(new_model->image->data[i]));
-	  }else{
-	    sp_real(new_model->image->data[i]) = 0;
-	  }
-	}
-	if(sp_imag(new_model->image->data[i]) < 0){
-	  if(constraints & SpPositivityFlipping){
-	    sp_imag(new_model->image->data[i]) = fabs(sp_imag(new_model->image->data[i]));
-	  }else{
-	    sp_imag(new_model->image->data[i]) = 0;
-	  }
-	}
-
       }
+      sp_imag(new_model->image->data[i]) = 0;	
+    }else if(constraints & SpPositiveComplexObject){
+      if(sp_real(new_model->image->data[i]) < 0){
+	if(constraints & SpPositivityFlipping){
+	  sp_real(new_model->image->data[i]) = fabs(sp_real(new_model->image->data[i]));
+	}else{
+	  sp_real(new_model->image->data[i]) = 0;
+	}
+      }
+      if(sp_imag(new_model->image->data[i]) < 0){
+	if(constraints & SpPositivityFlipping){
+	  sp_imag(new_model->image->data[i]) = fabs(sp_imag(new_model->image->data[i]));
+	}else{
+	  sp_imag(new_model->image->data[i]) = 0;
+	}
+      }
+
     }
+      //}
   }
 }
 
