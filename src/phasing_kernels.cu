@@ -129,7 +129,7 @@ __global__ void CUDA_apply_fourier_constraints(cufftComplex* g,const  int size,c
 __global__ void CUDA_apply_constraints(cufftComplex* g, const int * pixel_flags,const  int size,const SpPhasingConstraints constraints){
   const int i =  blockIdx.x*blockDim.x + threadIdx.x;
   if(i<size){
-    if(pixel_flags[i] & SpPixelInsideSupport){
+    //if(pixel_flags[i] & SpPixelInsideSupport){
       if(constraints & SpRealObject){
 	g[i].y = 0;
       }else if(constraints & SpPositiveRealObject){
@@ -157,7 +157,7 @@ __global__ void CUDA_apply_constraints(cufftComplex* g, const int * pixel_flags,
 	  }
 	}
       }
-    }
+      //}
   }
 }
 

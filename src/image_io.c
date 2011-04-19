@@ -1393,6 +1393,7 @@ Image * read_anton_datafile(hid_t file_id,hid_t dataset_id,const char * filename
   dataset_id = H5Dopen(file_id, "/data/nframes");
   status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL,
 		   H5P_DEFAULT, &nframes);
+  H5Dclose(file_id);
   int total_dims[3] = {0,0,1};
   hsize_t dims[nframes][3];
   for(int i = 0;i<nframes;i++){
@@ -1443,6 +1444,7 @@ Image * read_anton_datafile(hid_t file_id,hid_t dataset_id,const char * filename
     status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		     H5P_DEFAULT, data[frame]);
 #endif
+    H5Dclose(dataset_id);
   }
   Image * ret = sp_image_alloc(total_dims[0],total_dims[1],total_dims[2]);
   
