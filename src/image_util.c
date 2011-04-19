@@ -494,13 +494,13 @@ Image * sp_image_shift(Image * img){
     }
   }		       
   if(img->shifted){
-    out->detector->image_center[0] = (sp_image_x(img)-1.0)/2.0;
-    out->detector->image_center[1] = (sp_image_y(img)-1.0)/2.0;
-    out->detector->image_center[2] = (sp_image_z(img)-1.0)/2.0;
+    out->detector->image_center[0] = ((real)sp_image_x(img)-1.0)/2.0;
+    out->detector->image_center[1] = ((real)sp_image_y(img)-1.0)/2.0;
+    out->detector->image_center[2] = ((real)sp_image_z(img)-1.0)/2.0;
   }else{
-    out->detector->image_center[0] = 0;
-    out->detector->image_center[1] = 0;
-    out->detector->image_center[2] = 0;
+    out->detector->image_center[0] = 0.0;
+    out->detector->image_center[1] = 0.0;
+    out->detector->image_center[2] = 0.0;
   }
 
   return out;
@@ -1955,6 +1955,27 @@ real sp_image_max(Image * img, long long * index,int * x, int * y, int * z){
   real ret;
   float fx,fy,fz;
   ret = sp_c3matrix_max(img->image,index);
+  if(index){
+    sp_image_get_coords_from_index(img,*index,&fx,&fy,&fz,SpTopLeftCorner);
+    if(x){
+      *x = (int)round(fx);
+      /*      *x = *index%(sp_image_z(img)*sp_image_y(img));*/
+    }
+    if(y){
+      *y = (int)round(fy);
+    }
+    if(z){
+      *z = (int)round(fz);
+      /*      *z = *index%sp_image_x(img)%sp_image_y(img);*/
+    }
+  }
+  return ret;
+}
+
+real sp_image_min(Image * img, long long * index,int * x, int * y, int * z){
+  real ret;
+  float fx,fy,fz;
+  ret = sp_c3matrix_min(img->image,index);
   if(index){
     sp_image_get_coords_from_index(img,*index,&fx,&fy,&fz,SpTopLeftCorner);
     if(x){

@@ -33,6 +33,8 @@ static int write_mrc(const Image * img,const char * filename);
 static Image * read_anton_datafile(hid_t file_id,hid_t dataset_id, const char * filename);
 static void write_cxdi(const Image * img,const char * filename);
 static Image * read_cxdi(const char * filename);
+static void write_cxi(const Image * img,const char * filename);
+static Image * read_cxi(const char * filename);
 
 
 void sp_image_write(const Image * img, const const char * filename, int flags){
@@ -63,6 +65,8 @@ void sp_image_write(const Image * img, const const char * filename, int flags){
     write_xplor(img,filename);
   }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".cxdi") == 0)){
     write_cxdi(img,filename);
+  }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".cxi") == 0)){
+    write_cxi(img,filename);
   }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".mrc") == 0)){
     write_mrc(img,filename);
   }else{
@@ -97,6 +101,9 @@ Image * _sp_image_read(const char * filename, int flags, const char * file, int 
   }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".cxdi") == 0 ||strcmp(strrchr(buffer,'.'),".CXDI") == 0 )){
     /* we have an hdf5 simple data file file */
     return read_cxdi(filename);
+  }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".cxi") == 0 ||strcmp(strrchr(buffer,'.'),".CXI") == 0 )){
+    /* we have a CXI file */
+    return read_cxi(filename);
   }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".mrc") == 0 ||strcmp(strrchr(buffer,'.'),".MRC") == 0 )){
     /* we have an hdf5 simple data file file */
     return read_mrc(filename);
@@ -439,6 +446,8 @@ static void write_h5_img(const Image * img,const char * filename, int output_pre
   values[0] = img->detector->pixel_size[0];
   values[1] = img->detector->pixel_size[1];
   values[2] = img->detector->pixel_size[2];
+  dims[0] = 3;
+  dataspace_id = H5Screate_simple( 1, dims, NULL );
   dataset_id = H5Dcreate(file_id, "/pixel_size", out_type_id,
 			 dataspace_id, H5P_DEFAULT);
   if(dataset_id < 0){
@@ -453,6 +462,9 @@ static void write_h5_img(const Image * img,const char * filename, int output_pre
   if(status < 0){
     goto error;
   }
+
+  dims[0] = 1;
+  dataspace_id = H5Screate_simple( 1, dims, NULL );
 
   values[0] = img->num_dimensions;
   dataset_id = H5Dcreate(file_id, "/num_dimensions", out_type_id,
@@ -796,13 +808,16 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
 	sp_error_warning("Unable to read dataset from file %s",filename);
 	return NULL;
       }
+      if(H5Sget_simple_extent_npoints(H5Dget_space(dataset_id)) == 1){
+	values[2] = values[0];
+	values[1] = values[0];	
+      }
 
       status = H5Dclose(dataset_id);
       if(status < 0){
 	sp_error_warning("Unable to close dataset from file %s",filename);
 	return NULL;
       }
-
       res->detector->pixel_size[0] = values[0];
       res->detector->pixel_size[1] = values[1];
       res->detector->pixel_size[2] = values[2];
@@ -1330,8 +1345,12 @@ Image * read_cxdi(const char * filename){
     sp_error_warning("Unable to get dimensions extent in file %s",filename);
     return NULL;
   }
-
-  Image * ret = sp_image_alloc(dims[0],dims[1],dims[2]);
+  Image * ret;
+  if(dims[2] == 1){
+    ret = sp_image_alloc(dims[1],dims[0],dims[2]);
+  }else{
+    ret = sp_image_alloc(dims[0],dims[1],dims[2]);
+  }
   float * buffer = sp_malloc(dims[0]*dims[1]*dims[2]*sizeof(float));
   status = H5Dread(dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL,
 		   H5P_DEFAULT, buffer);
@@ -1345,15 +1364,28 @@ Image * read_cxdi(const char * filename){
 }
 
 
+
 Image * read_anton_datafile(hid_t file_id,hid_t dataset_id,const char * filename){
   hid_t mem_type_id;
   int status = 0;
+  H5E_auto_t func;
+  void * client_data;
   if(sizeof(real) == sizeof(float)){
     mem_type_id = H5T_NATIVE_FLOAT;
   }else if(sizeof(real) == sizeof(double)){
     mem_type_id = H5T_NATIVE_DOUBLE;
   }else{
     abort();
+  }
+  H5Eget_auto(&func,&client_data);
+  /* turn off warning to check file and version because they might not exist */
+  H5Eset_auto(NULL,NULL);  
+  /* check if we have a multiple frames thing or just a simple /data/data file */
+  dataset_id = H5Dopen(file_id, "/data/nframes");
+  if(dataset_id < 0){
+    H5Eset_auto(func,client_data);
+    H5Fclose(file_id);
+    return read_cxdi(filename);
   }
   int nframes;
   /* read number of frames and put them together in just 1 image */
@@ -1391,7 +1423,7 @@ Image * read_anton_datafile(hid_t file_id,hid_t dataset_id,const char * filename
     }
     total_dims[0] +=dims[frame][0];
     total_dims[1] = sp_max(dims[frame][1],total_dims[1]);
-
+    
     data[frame] = malloc(sizeof(real)*(dims[frame][0]*dims[frame][1]*dims[frame][2]));
 #if H5_VERS_MAJOR < 2 && H5_VERS_MINOR < 8
     /* HDF5 1.6 does not support int -> double conversion so we'll need a buffer */
@@ -1425,6 +1457,9 @@ Image * read_anton_datafile(hid_t file_id,hid_t dataset_id,const char * filename
       sp_image_set(ret,x,y,0,sp_cinit(data[frame][y*dims[frame][0]+rel_x],0));
       sp_image_mask_set(ret,x,y,0,1);
     }
+  }
+  for(int frame = 0;frame<nframes;frame++){
+    free(data[frame]);
   }
   /* For some reason the image is upside down so we'll turn it around */
   sp_image_reflect(ret,1,SP_AXIS_X);
@@ -2061,4 +2096,142 @@ int write_xplor(const Image * img, const char * filename){
   fflush(f);
   fclose(f);
   return 0;
+}
+
+void write_cxi(const Image * img,const char * filename){
+  hsize_t  dims[3];
+  hid_t dataspace_id;
+  hid_t dataset_id;
+  hid_t file_id;
+  char * data_type_string[] = {"intensity","amplitude","unphased amplitude"};
+  char * string;
+  hid_t mem_type_id;
+  if(sizeof(real) == sizeof(float)){
+    mem_type_id = H5T_NATIVE_FLOAT;
+  }else if(sizeof(real) == sizeof(double)){
+    mem_type_id = H5T_NATIVE_DOUBLE;
+  };
+  file_id = H5Fcreate(filename,  H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+  dims[0] = 1;
+  dataspace_id = H5Screate(H5S_SCALAR);
+  dataset_id = H5Dcreate(file_id, "/cxi_version", H5T_NATIVE_INT,dataspace_id,H5P_DEFAULT);
+  int cxi_version = 100;
+  H5Dwrite(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL,
+	   H5P_DEFAULT, &cxi_version);
+
+  hid_t entry_1 = H5Gcreate(file_id,"entry_1", H5P_DEFAULT);
+  hid_t data_1 = H5Gcreate(entry_1,"data_1", H5P_DEFAULT);
+  hid_t image_1 = H5Gcreate(entry_1,"image_1", H5P_DEFAULT);
+  if(img->scaled && img->phased){
+    string = data_type_string[1];
+  }else if(img->scaled){
+    string = data_type_string[2];
+  }else if(!img->scaled){
+    string = data_type_string[0];
+  }
+  hid_t string_type = H5Tcopy (H5T_C_S1);  
+  H5Tset_size (string_type, strlen(string));
+  dataset_id = H5Dcreate (image_1, "data_type", string_type,dataspace_id, H5P_DEFAULT);
+  H5Dwrite(dataset_id, string_type, H5S_ALL, H5S_ALL,
+		    H5P_DEFAULT, string);
+
+  hid_t source_1 = H5Gcreate(image_1,"source_1", H5P_DEFAULT);
+  {
+    double c = 299792458;
+    double h = 4.13566733e-15; // in eV.s
+    float energy = h*c/img->detector->wavelength;
+    dataset_id = H5Dcreate(source_1, "energy", H5T_NATIVE_FLOAT,dataspace_id,H5P_DEFAULT);
+    H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
+	     H5P_DEFAULT, &energy);
+  }
+
+  hid_t detector_1 = H5Gcreate(image_1,"detector_1", H5P_DEFAULT);
+  dataset_id = H5Dcreate(detector_1, "distance", H5T_NATIVE_FLOAT,dataspace_id,H5P_DEFAULT);
+  H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
+		    H5P_DEFAULT, &img->detector->detector_distance);
+
+
+
+
+  dataset_id = H5Dcreate(image_1, "is_fft_shifted", H5T_NATIVE_INT,dataspace_id,H5P_DEFAULT);
+  H5Dwrite(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL,
+	   H5P_DEFAULT, &img->shifted);
+
+  dataset_id = H5Dcreate(detector_1, "x_pixel_size", H5T_NATIVE_FLOAT,dataspace_id,H5P_DEFAULT);
+  H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
+	   H5P_DEFAULT, &(img->detector->pixel_size[0]));
+  dataset_id = H5Dcreate(detector_1, "y_pixel_size", H5T_NATIVE_FLOAT,dataspace_id,H5P_DEFAULT);
+  H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
+	   H5P_DEFAULT, &(img->detector->pixel_size[1]));
+
+  dims[0] = 3;
+  dataspace_id = H5Screate_simple(1,dims,NULL);
+  float cxi_center[3] = {img->detector->image_center[0]+1.0/2,
+			 img->detector->image_center[1]+1.0/2,
+			 img->detector->image_center[2]+1.0/2};
+  dataset_id = H5Dcreate(image_1, "image_center", H5T_NATIVE_FLOAT,dataspace_id,H5P_DEFAULT);
+  H5Dwrite(dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL,
+	   H5P_DEFAULT, cxi_center);
+
+  
+
+  hid_t complex_id = H5Tcreate(H5T_COMPOUND,
+			       sizeof(Complex));
+  H5Tinsert(complex_id, "r", 0, mem_type_id);
+  H5Tinsert(complex_id, "i", sizeof(real), mem_type_id);
+  dims[0] = sp_c3matrix_x(img->image);
+  dims[1] = sp_c3matrix_y(img->image);
+  dims[2] = sp_c3matrix_z(img->image);
+  int ndims = 3;
+  if(dims[2] == 1){
+    ndims = 2;
+  }
+  hid_t plist = H5Pcreate (H5P_DATASET_CREATE);
+  H5Pset_chunk(plist,ndims,dims);
+  H5Pset_deflate(plist,6);
+
+  dataspace_id = H5Screate_simple( ndims, dims, NULL );
+  dataset_id = H5Dcreate(image_1, "data", complex_id,dataspace_id,plist);
+  H5Dwrite(dataset_id, complex_id, H5S_ALL, H5S_ALL,
+		    H5P_DEFAULT, img->image->data);
+
+  dataspace_id = H5Screate_simple( ndims, dims, NULL );
+  dataset_id = H5Dcreate(image_1, "mask", H5T_NATIVE_INT,dataspace_id,plist);
+  H5Dwrite(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL,
+		    H5P_DEFAULT, img->mask->data);
+
+  H5Lcreate_soft("/entry_1/image_1/data", data_1,"data", H5P_DEFAULT,H5P_DEFAULT);
+  H5close();
+}
+
+Image * read_cxi(const char * filename){
+  hid_t dataset_id;
+  hid_t file_id;
+  int status;
+  file_id = H5Fopen(filename, H5F_ACC_RDONLY,H5P_DEFAULT);
+  dataset_id = H5Dopen(file_id,"/data/data");
+  hid_t space = H5Dget_space(dataset_id);
+  if(H5Sget_simple_extent_ndims(space) == 3 ||
+     H5Sget_simple_extent_ndims(space) == 2){
+  }else{
+    sp_error_warning("File has unsupported number of dimensions!\n");
+    return NULL;
+  }
+  hsize_t dims[3] = {1,1,1};
+  if(H5Sget_simple_extent_dims(space,dims,NULL) < 0){
+    sp_error_warning("Unable to get dimensions extent in file %s",filename);
+    return NULL;
+  }
+
+  Image * ret = sp_image_alloc(dims[0],dims[1],dims[2]);
+  float * buffer = sp_malloc(dims[0]*dims[1]*dims[2]*sizeof(float));
+  status = H5Dread(dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL,
+		   H5P_DEFAULT, buffer);
+  for(int i = 0;i<sp_image_size(ret);i++){
+    ret->image->data[i] = sp_cinit(buffer[i],0);
+    ret->mask->data[i] = 1;
+  }  
+
+  H5close();
+  return ret;
 }

@@ -95,7 +95,7 @@ int test_sp_phasing_cuda_common(CuTest * tc,SpPhasingAlgorithm * alg,int size, r
     for(int i =0 ;i<ph_cpu->image_size;i++){
       CuAssertComplexEquals(tc,cpu_model->image->data[i],
 			    cuda_model->image->data[i],
-			    sqrt(REAL_EPSILON)*sp_cabs(cuda_model->image->data[i]));  
+			    sqrt(sqrt(REAL_EPSILON))*sp_cabs(cuda_model->image->data[i]));  
     }
     i++;
   }while(i < max_iter);
