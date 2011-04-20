@@ -426,6 +426,99 @@ int sp_support_close_update_support_cuda(SpSupportAlgorithm *alg, SpPhaser * ph)
   return 0;
 }
 
+// !CHANGE!
+int sp_support_centre_image_cuda(SpSupportAlgorithm * alg, SpPhaser * ph){
+  cutilSafeCall(cudaMemcpy(ph->pixel_flags->data,ph->d_pixel_flags,sizeof(int)*ph->image_size,cudaMemcpyDeviceToHost));
+
+  int image_x = sp_image_x(ph->model);
+  int image_y = sp_image_y(ph->model);
+  int image_z = sp_image_z(ph->model);
+  Dimensions num_dim = ph->model->num_dimensions;
+  int ix,iy,iz;
+  int dx,dy,dz;
+  sp_vector * com;
+  
+  // Moves object if it touches the border of shifted image
+  if(num_dim != SP_3D){
+  // 1-2 dimensions
+    for(ix = 0; ix < image_x;ix++){
+      if(sp_i3matrix_get(ph->pixel_flags,ix,(image_y-1)/2,0) & SpPixelInsideSupport){
+	dx = 0;
+	dy = (image_y-1)/2;
+	dz = 0;
+	sp_image_translate(ph->model,dx,dy,dz,SP_TRANSLATE_WRAP_AROUND);
+	sp_pixel_flags_translate_mask(ph->pixel_flags,dx,dy,dz);
+	break;
+      }
+    }
+    for(iy = 0; iy < image_y;iy++){
+      if(sp_i3matrix_get(ph->pixel_flags,(image_x-1)/2,iy,0) & SpPixelInsideSupport){
+	dx = (image_x-1)/2;
+	dy = 0;
+	dz = 0;
+	sp_image_translate(ph->model,dx,dy,dz,SP_TRANSLATE_WRAP_AROUND);
+	sp_pixel_flags_translate_mask(ph->pixel_flags,dx,dy,dz);
+	break;
+      }
+    }
+  }
+  else{
+  // 3 dimensions
+    ix = (image_x-1)/2;
+    for(iy = 0; iy < image_y;iy++){
+      for(iz = 0; iz < image_z;iz++){
+	if(sp_i3matrix_get(ph->pixel_flags,ix,iy,iz) & SpPixelInsideSupport){
+	  dx = (image_x-1)/2;
+	  dy = 0;
+	  dz = 0;
+	  sp_image_translate(ph->model,dx,dy,dz,SP_TRANSLATE_WRAP_AROUND);
+	  sp_pixel_flags_translate_mask(ph->pixel_flags,dx,dy,dz);
+	  break;
+	}
+      }
+    }
+    iy = (image_y-1)/2;
+    for(ix = 0; ix < image_x;ix++){
+      for(iz = 0; iz < image_z;iz++){
+	if(sp_i3matrix_get(ph->pixel_flags,ix,iy,iz) & SpPixelInsideSupport){
+	  dx = 0;
+	  dy = (image_y-1)/2;
+	  dz = 0;
+	  sp_image_translate(ph->model,dx,dy,dz,SP_TRANSLATE_WRAP_AROUND);
+	  sp_pixel_flags_translate_mask(ph->pixel_flags,dx,dy,dz);
+	  break;
+	}
+      }
+    }
+    iz = (image_z-1)/2;
+    for(ix = 0; ix < image_x;ix++){
+      for(iy = 0; iy < image_y;iy++){
+	if(sp_i3matrix_get(ph->pixel_flags,ix,iy,iz) & SpPixelInsideSupport){
+	  dx = 0;
+	  dy = 0;
+	  dz = (image_z-1)/2;
+	  sp_image_translate(ph->model,dx,dy,dz,SP_TRANSLATE_WRAP_AROUND);
+	  sp_pixel_flags_translate_mask(ph->pixel_flags,dx,dy,dz);
+	  break;
+	}
+      }
+    }
+  }
+  
+  // Calculates centre of mass of ph->pixel_flags (mask)
+  com = sp_i3matrix_binary_center_of_mass_shifted(ph->pixel_flags);
+  // Moves centre of mass to centre of shifted image (to the corner (0,0,0))
+  dx = 0-sp_vector_get(com,0);
+  dy = 0-sp_vector_get(com,1);
+  dz = 0-sp_vector_get(com,2);
+  sp_image_translate(ph->model,dx,dy,dz,SP_TRANSLATE_WRAP_AROUND);
+  sp_pixel_flags_translate_mask(ph->pixel_flags,dx,dy,dz);
+
+  cutilSafeCall(cudaMemcpy(ph->d_pixel_flags,ph->pixel_flags->data,sizeof(int)*ph->image_size,cudaMemcpyHostToDevice));
+  return 0;
+}
+
+
 int sp_support_static_update_support_cuda(SpSupportAlgorithm *alg, SpPhaser * ph){
   printf("update static support\n");
   return 0;
