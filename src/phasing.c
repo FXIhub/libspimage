@@ -799,13 +799,8 @@ static void phaser_apply_constraints(SpPhaser * ph,Image * new_model, SpPhasingC
 	  sp_imag(new_model->image->data[i]) = 0;
 	}
       }
-
-<<<<<<< HEAD
-=======
-      //}
->>>>>>> master
     }
-      //}
+    //}
   }
 }
 
