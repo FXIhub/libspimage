@@ -2299,9 +2299,11 @@ static inline Complex sp_c3matrix_froenius_prod(const sp_c3matrix * a, const sp_
  */
 spimage_EXPORT sp_vector * sp_c3matrix_center_of_mass(const sp_c3matrix * a);
 
+spimage_EXPORT sp_vector * sp_i3matrix_center_of_mass(const sp_i3matrix * a);
 
 spimage_EXPORT real sp_c3matrix_kernel_interpolation(sp_c3matrix * a, real x1, real y1, real z1,sp_kernel * k);
  
+spimage_EXPORT sp_vector * sp_i3matrix_binary_center_of_mass_shifted(const sp_i3matrix * a);
 
 /* Rotates a c3matrix by a multiple of 90 degrees counter clockwise
 */

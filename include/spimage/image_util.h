@@ -519,6 +519,9 @@ spimage_EXPORT void _sp_image_realloc(Image * img, int new_x, int new_y, int new
   }
 #endif
 
+spimage_EXPORT void sp_pixel_flags_translate_mask(sp_i3matrix * pfm, int dx, int dy, int dz);
+
+
 /*! Filters the input image with a median filter
  *
  * The kernels tells how big the window is and how to weight the pixels.

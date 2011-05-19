@@ -140,6 +140,7 @@ spimage_EXPORT int sp_phaser_iterate(SpPhaser * ph, int iterations);
   int sp_support_template_update_support_cuda(SpSupportAlgorithm *alg, SpPhaser * ph);
   int sp_support_static_update_support_cuda(SpSupportAlgorithm *alg, SpPhaser * ph);
   int sp_support_close_update_support_cuda(SpSupportAlgorithm *alg, SpPhaser * ph);
+  int sp_support_centre_image_cuda(SpSupportAlgorithm *alg, SpPhaser * ph);
   int sp_proj_module_cuda(Image * a, Image * amp);
 #endif
 
@@ -152,6 +153,8 @@ spimage_EXPORT int sp_phaser_iterate(SpPhaser * ph, int iterations);
   int sp_support_static_update_support(SpSupportAlgorithm *alg, SpPhaser * ph);
   int sp_support_close_update_support(SpSupportAlgorithm *alg, SpPhaser * ph);
   int sp_support_close_update_support_cpu(SpSupportAlgorithm *alg, SpPhaser * ph);
+  int sp_support_centre_image(SpSupportAlgorithm *alg, SpPhaser * ph);
+  int sp_support_centre_image_cpu(SpSupportAlgorithm *alg, SpPhaser * ph);
 
   int sp_support_array_update(SpSupportArray *array, SpPhaser *ph);
 
