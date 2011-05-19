@@ -14,9 +14,12 @@ extern "C"
 typedef enum{SpModelRandomPhases=1,SpModelZeroPhases=2,SpModelRandomValues=4,SpModelMaskedOutZeroed=256}SpModelInitialization;
 typedef enum{SpSupportFromPatterson=1}SpSupportInitialization;
 typedef enum{SpHIO=1,SpRAAR,SpDiffMap,SpER}SpPhasingAlgorithmType;
-  typedef enum{SpNoConstraints=0,SpRealObject=1,SpPositiveRealObject=2,SpPositiveComplexObject=4,SpPositivityFlipping=8,SpCentrosymmetricObject=16}SpPhasingConstraints;
+  // CHANGE
+  typedef enum{SpNoConstraints=0,SpRealObject=1,SpPositiveRealObject=2,SpPositiveComplexObject=4,SpPositivityFlipping=8,SpCentrosymmetricObject=16,SpConsistentSaturation=32}SpPhasingConstraints;
 typedef enum{SpEngineAutomatic=0,SpEngineCPU=1,SpEngineCUDA=2}SpPhasingEngine;
-typedef enum{SpPixelInsideSupport=1,SpPixelMeasuredAmplitude=2}SpPhasingPixelFlags;
+  // CHANGE
+  typedef enum{SpMaskPixelMaskedOut=0,SpMaskPixelMeasuredAmplitude=1}SpMaskPixelFlags;
+  typedef enum{SpPixelMaskedOut=0,SpPixelInsideSupport=1,SpPixelMeasuredAmplitude=2,SpPixelMeasuredSaturationC0=4}SpPhasingPixelFlags;
 typedef enum{SpRecoverPhases=0,SpRecoverAmplitudes=1}SpPhasingObjective;
 /*! This structure is private */
 typedef struct{
@@ -82,6 +85,11 @@ typedef struct{
 
   Image * g0;
   Image * g1;
+
+  // CHANGE
+  int number_saturation_clusters;
+  float * integral_saturated_pixels_measured;
+  float * integral_saturated_pixels_recovered;
 
 #ifdef _USE_CUDA
   cufftHandle cufft_plan;

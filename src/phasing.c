@@ -1,6 +1,5 @@
 #include <spimage.h>
 
-
 static int phaser_iterate_er(SpPhaser * ph,int iterations);
 static int phaser_iterate_hio(SpPhaser * ph, int iterations);
 static int phaser_iterate_raar(SpPhaser * ph, int iterations);
@@ -180,7 +179,7 @@ void sp_phaser_set_support(SpPhaser * ph,const Image * support){
   if(!ph->pixel_flags){
     ph->pixel_flags = sp_i3matrix_alloc(ph->nx,ph->ny,ph->nz);
     for(int i= 0;i<ph->image_size;i++){
-      ph->pixel_flags->data[i] = 0;
+      ph->pixel_flags->data[i] = SpPixelMaskedOut;
     }
   }
   for(int i = 0;i<ph->image_size;i++){
@@ -203,7 +202,6 @@ void sp_phaser_set_support(SpPhaser * ph,const Image * support){
   }
 }
 
-
 void sp_phaser_set_phased_amplitudes(SpPhaser * ph,const Image * phased_amplitudes){
   phaser_check_dimensions(ph,phased_amplitudes);
   if(!ph->phased_amplitudes){
@@ -212,15 +210,20 @@ void sp_phaser_set_phased_amplitudes(SpPhaser * ph,const Image * phased_amplitud
   if(!ph->pixel_flags){
     ph->pixel_flags = sp_i3matrix_alloc(ph->nx,ph->ny,ph->nz);
     for(int i= 0;i<ph->image_size;i++){
-      ph->pixel_flags->data[i] = 0;
+      ph->pixel_flags->data[i] = SpPixelMaskedOut;
     }
   }
+  // CHANGE
   for(int i = 0;i<ph->image_size;i++){
     ph->phased_amplitudes->data[i] = phased_amplitudes->image->data[i];
-    if(phased_amplitudes->mask->data[i]){
+    if(phased_amplitudes->mask->data[i]==SpMaskPixelMeasuredAmplitude){
       ph->pixel_flags->data[i] |= SpPixelMeasuredAmplitude;
-    }else{
-      ph->pixel_flags->data[i] &= ~SpPixelMeasuredAmplitude;
+    }
+    else if(phased_amplitudes->mask->data[i]==SpMaskPixelMaskedOut){
+      ph->pixel_flags->data[i] = SpPixelMaskedOut;
+    }
+    else{
+      ph->pixel_flags->data[i] = SpPixelMeasuredSaturationC0*pow(2,phased_amplitudes->mask->data[i]-SpMaskPixelMeasuredSaturationC0);
     }
   }
   if(ph->engine == SpEngineCUDA){
@@ -289,15 +292,37 @@ void sp_phaser_set_amplitudes(SpPhaser * ph,const Image * amplitudes){
   int masked = 0;
   for(int i = 0;i<ph->image_size;i++){
     ph->amplitudes->data[i] = sp_real(amplitudes->image->data[i]);
-    if(amplitudes->mask->data[i]){
-      ph->pixel_flags->data[i] |= SpPixelMeasuredAmplitude;
+    if(amplitudes->mask->data[i]==SpMaskPixelMeasuredAmplitude){
+      ph->pixel_flags->data[i] = SpPixelMeasuredAmplitude;
       masked++;
+    }else if(amplitudes->mask->data[i]==SpMaskPixelMaskedOut){
+      ph->pixel_flags->data[i] = SpPixelMaskedOut;
     }else{
-      ph->pixel_flags->data[i] &= ~SpPixelMeasuredAmplitude;
+      ph->pixel_flags->data[i] = SpPixelMeasuredAmplitude*pow(2,amplitudes->mask->data[i]-SpMaskPixelMeasuredAmplitude);
     }
   }
   if(masked == 0){
     fprintf(stderr,"Amplitudes mask is all zeros!\n");
+  }
+  // CHANGE
+  if(constraints & SpConsistentSaturation){
+    ph->number_saturation_clusters = 0;
+    for(int i = 0;i<sp_image_size(ph->model);i++){
+      if(ph->pixel_flags->data[i] >= SpPixelMeasuredSaturationC0+ph->number_saturation_clusters){
+	ph->number_saturation_clusters++;
+      }
+    }
+    ph->integral_saturated_pixels_measured = (float*) calloc (ph->number_saturation_clusters,sizeof(float));
+    ph->integral_saturated_pixels_recovered = (float*) calloc (ph->number_saturation_clusters,sizeof(float));
+    for(int i = 0;i<ph->number_saturation_clusters;i++){
+      ph->integral_saturated_pixels_measured[i] = 0;
+      ph->integral_saturated_pixels_recovered[i] = 0;
+    }
+    for(int i = 0;i<sp_image_size(ph->model);i++){
+      if(ph->pixel_flags->data[i] >= SpPixelMeasuredSaturationC0){
+	ph->integral_saturated_pixels_measured[ph->pixel_flags->data[i]-SpPixelMeasuredSaturationC0] += sp_real(amplitudes->image->data[i]);
+      }
+    }
   }
   if(ph->engine == SpEngineCUDA){
 #ifdef _USE_CUDA
@@ -324,6 +349,7 @@ const Image * sp_phaser_amplitudes(SpPhaser * ph){
     for(int i = 0;i<sp_image_size(ph->amplitudes_image);i++){
       sp_real(ph->amplitudes_image->image->data[i]) = ph->amplitudes->data[i];
       sp_imag(ph->amplitudes_image->image->data[i]) = 0;
+      // maybe CHANGE needed
       if(ph->pixel_flags->data[i] & SpPixelMeasuredAmplitude){
 	ph->amplitudes_image->mask->data[i] = 1;
       }else{
@@ -445,8 +471,7 @@ Image * sp_phaser_model_change(SpPhaser * ph){
 }
  
 
-
-int sp_phaser_init(SpPhaser * ph, SpPhasingAlgorithm * alg,SpSupportArray * sup_alg,SpPhasingEngine engine){
+int sp_phaser_init(SpPhaser * ph, SpPhasingAlgorithm * alg,SpSupportArray * sup_alg, SpPhasingEngine engine){
   if(!ph){
     fprintf(stderr,"Phaser is NULL!\n");
     return -1;
@@ -473,7 +498,7 @@ int sp_phaser_init(SpPhaser * ph, SpPhasingAlgorithm * alg,SpSupportArray * sup_
   return 0;
 } 
 
-int sp_phaser_init_model(SpPhaser * ph, const Image * user_model, int flags){
+int sp_phaser_init_model(SpPhaser * ph, int constraints, const Image * user_model, int flags){
   if(!ph){
     return -1;    
   }
@@ -561,7 +586,6 @@ int sp_phaser_init_model(SpPhaser * ph, const Image * user_model, int flags){
 #endif 
   return 0;
 }
-
 
 int sp_phaser_init_support(SpPhaser * ph, const Image * support, int flags, real value){
   if(support){
@@ -810,6 +834,21 @@ static void phaser_apply_fourier_constraints(SpPhaser * ph,Image * new_amplitude
     if(constraints & SpCentrosymmetricObject){
       sp_imag(new_amplitudes->image->data[i]) = 0;
     }
+    // CHANGE
+    if(constraints & SpConsistentSaturation){
+      if(ph->pixel_flags->data[i] >= SpPixelMeasuredSaturationC0){
+	integral_saturated_pixels_recovered[ph->pixel_flags->data[i]-SpPixelMeasuredSaturationC0] += sp_cabs(ph->g0->image->data[i]);
+      }
+    }
+  }
+  // CHANGE
+  if(constraints & SpConsistentSaturation){
+    for(int i =0;i<sp_image_size(new_amplitudes);i++){
+      if(ph->pixel_flags->data[i] >= SpPixelMeasuredSaturationC0){
+	// ugly
+	new_amplitudes->image->data[i] = sp_cscale(ph->g0->image->data[i],integral_saturated_pixels_measured[ph->pixel_flags->data[i]-SpPixelMeasuredSaturationC0]/integral_saturated_pixels_recovered[ph->pixel_flags->data[i]-SpPixelMeasuredSaturationC0]);	
+      }
+    }
   }
 }
 
@@ -826,7 +865,6 @@ static void phaser_module_projection(Image * a, sp_3matrix * amp, sp_i3matrix * 
     }
   }  
 }
-
 
 static void phaser_phased_amplitudes_projection(Image * a, sp_c3matrix * phased_amp, sp_i3matrix * pixel_flags){
   for(int i = 0;i<sp_image_size(a);i++){
