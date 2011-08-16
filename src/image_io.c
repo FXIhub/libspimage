@@ -2209,7 +2209,7 @@ Image * read_cxi(const char * filename){
   hid_t file_id;
   int status;
   file_id = H5Fopen(filename, H5F_ACC_RDONLY,H5P_DEFAULT);
-  dataset_id = H5Dopen(file_id,"/data/data");
+  dataset_id = H5Dopen(file_id,"/entry_1/data_1/data");
   hid_t space = H5Dget_space(dataset_id);
   if(H5Sget_simple_extent_ndims(space) == 3 ||
      H5Sget_simple_extent_ndims(space) == 2){
@@ -2223,7 +2223,12 @@ Image * read_cxi(const char * filename){
     return NULL;
   }
 
-  Image * ret = sp_image_alloc(dims[0],dims[1],dims[2]);
+  Image * ret;
+  if(dims[2] == 1){
+    ret = sp_image_alloc(dims[1],dims[0],1);
+  }else{
+    ret = sp_image_alloc(dims[2],dims[1],dims[0]);
+  }
   float * buffer = sp_malloc(dims[0]*dims[1]*dims[2]*sizeof(float));
   status = H5Dread(dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL,
 		   H5P_DEFAULT, buffer);
