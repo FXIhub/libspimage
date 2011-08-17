@@ -308,7 +308,7 @@ static void write_h5_img(const Image * img,const char * filename, int output_pre
 
   plist = H5Pcreate (H5P_DATASET_CREATE);
   H5Pset_chunk(plist,3,chunk_size);
-  H5Pset_deflate(plist,6);
+  H5Pset_deflate(plist,4);
 
   dataset_id = H5Dcreate(file_id, "/mask", H5T_NATIVE_INT,
 			 dataspace_id, plist);
