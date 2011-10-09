@@ -1827,7 +1827,7 @@ int write_png(const Image * img,const char * filename, int color){
   for(y = 0;y<sp_c3matrix_y(img->image);y++){
     for(x = 0;x<sp_c3matrix_x(img->image);x++){
       sp_colormap_write_rgb(&(row_pointers[y][x*3]),img,color,
-			    color_table,max_v,min_v,x,y,0,0);
+			    color_table,max_v,min_v,x,y,0,0,1.0);
     }
   }
   png_set_rows(png_ptr, info_ptr, row_pointers);

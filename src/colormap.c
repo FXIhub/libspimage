@@ -70,7 +70,7 @@ static void hsv_to_rgb(float H,float S,float V,float * R,float *G,float *B){
   *B *= 255.0F;  
 }
 
-real sp_colormap_scale_value(real input,int colormap,real max_v, real min_v){
+real sp_colormap_scale_value(real input,int colormap,real max_v, real min_v, double gamma){
   real scale,offset;
   if(min_v < 0){
     min_v = 0;
@@ -95,13 +95,16 @@ real sp_colormap_scale_value(real input,int colormap,real max_v, real min_v){
   }else{
     value /= 65535;
   }
+  if(gamma != 1){
+    value = pow(value,gamma);
+  }
   return value;
 }
 
 
-void sp_colormap_write_rgb(unsigned char * out,Image * img, int colormap,sp_rgb * color_table,real max_v, real min_v, int x, int y, int z,int red_blue_swap){
+void sp_colormap_write_rgb(unsigned char * out,Image * img, int colormap,sp_rgb * color_table,real max_v, real min_v, int x, int y, int z,int red_blue_swap, double gamma){
   Complex cvalue = sp_image_get(img,x,y,z);
-  real value = sp_colormap_scale_value(sp_cabs(cvalue),colormap,max_v,min_v);
+  real value = sp_colormap_scale_value(sp_cabs(cvalue),colormap,max_v,min_v,gamma);
   if(!isfinite(value)){   
     return;
   }
@@ -195,6 +198,35 @@ sp_rgb sp_colormap_rgb_from_value(real value, int colormap){
       ret.g = 0;
       ret.b = 0;
     }
+  }else if(colormap & SpColormapBlGrRdYl){
+    float colors[][3] = {{0,0,0},{0,0,0},{0,0,35},{0,2,73},{4,64,103},{17,118,99},{25,151,58},{24,144,0},{98,108,0},{187,15,0},{206,43,0},{215,84,0},{225,125,0},{234,168,0},{244,211,0},{254,251,0}};
+    float classes = sizeof(colors)/(3*sizeof(float));
+    for(int i = 1;i<classes;i++){
+      int j = i-1;
+      float t = i/(classes-1);
+      float u = (i-1)/(classes-1);
+      if(value < t){
+	ret.r = colors[j][0]/255 + 2*(colors[i][0]-colors[j][0])*(value-u)/255.0;
+	ret.g = colors[j][1]/255 + 2*(colors[i][1]-colors[j][1])*(value-u)/255.0;
+	ret.b = colors[j][2]/255 + 2*(colors[i][2]-colors[j][2])*(value-u)/255.0;
+	break;
+      }
+    }
+  }else if(colormap & SpColormapCXI){
+    float colors[][3] = {{0,0,0},{28,30,31},{0,24,255},{0,139,211},{247,134,0},{255,255,0},{255,255,255}};
+    float classes = sizeof(colors)/(3*sizeof(float));
+    for(int i = 1;i<classes;i++){
+      int j = i-1;
+      float t = i/(classes-1);
+      float u = (i-1)/(classes-1);
+      u = (value-u) * (classes-1);
+      if(value < t){
+	ret.r = colors[j][0]/255 + (colors[i][0]-colors[j][0])*(u)/255.0;
+	ret.g = colors[j][1]/255 + (colors[i][1]-colors[j][1])*(u)/255.0;
+	ret.b = colors[j][2]/255 + (colors[i][2]-colors[j][2])*(u)/255.0;
+	break;
+      }
+    }
   }
 
   ret.r = sp_min(1,ret.r);
@@ -221,7 +253,7 @@ void sp_colormap_create_table(sp_rgb color_table[256],int colormap){
   }
 }
 
-unsigned char * sp_image_get_false_color(Image * img, int color, double min, double max){
+unsigned char * sp_image_get_false_color(Image * img, int color, double min, double max, double gamma){
 
   int x,y,z;
   sp_rgb color_table[256];
@@ -244,7 +276,7 @@ unsigned char * sp_image_get_false_color(Image * img, int color, double min, dou
 	sp_colormap_write_rgb(&(out[4*(x+sp_image_x(img)*y+
 				       z*sp_image_x(img)*
 				       sp_image_y(img))]),img,color,
-			      color_table,max_v,min_v,x,y,0,1);
+			      color_table,max_v,min_v,x,y,0,1,gamma);
 	
       }
     }

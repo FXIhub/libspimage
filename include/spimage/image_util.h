@@ -668,11 +668,6 @@ spimage_EXPORT real sp_image_correlation_coefficient(const Image * a,const Image
 
 spimage_EXPORT sp_vector * sp_image_center_of_mass(Image * a);
 
-/*! Returns an array that correponds to the RGBA values of the image when transformed with the given colormap
-  using only the values in the range [min,max]
-*/
-spimage_EXPORT unsigned char * sp_image_get_false_color(Image * img, int color, double min, double max);
-
 /*! Calculate a random gaussian distributed number with mean m and standard deviation s 
 */
 spimage_EXPORT real sp_box_muller(real m, real s);
