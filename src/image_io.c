@@ -2205,6 +2205,7 @@ void write_cxi(const Image * img,const char * filename){
     dataset_id = H5Dcreate(image_1, "data", H5T_NATIVE_FLOAT,dataspace_id,plist);
     H5Dwrite(dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL,
 	     H5P_DEFAULT, data);
+    free(data);
   }
 
   dataspace_id = H5Screate_simple( ndims, dims, NULL );
