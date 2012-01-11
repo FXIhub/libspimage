@@ -2193,14 +2193,41 @@ void write_cxi(const Image * img,const char * filename){
   H5Pset_deflate(plist,6);
 
   dataspace_id = H5Screate_simple( ndims, dims, NULL );
-  dataset_id = H5Dcreate(image_1, "data", complex_id,dataspace_id,plist);
-  H5Dwrite(dataset_id, complex_id, H5S_ALL, H5S_ALL,
-		    H5P_DEFAULT, img->image->data);
+  if(img->phased){
+    dataset_id = H5Dcreate(image_1, "data", complex_id,dataspace_id,plist);
+    H5Dwrite(dataset_id, complex_id, H5S_ALL, H5S_ALL,
+	     H5P_DEFAULT, img->image->data);
+  }else{
+    float * data = malloc(sp_image_size(img)*sizeof(float));
+    for(int i =0;i<sp_image_size(img);i++){
+      data[i] = sp_real(img->image->data[i]);
+    }
+    dataset_id = H5Dcreate(image_1, "data", H5T_NATIVE_FLOAT,dataspace_id,plist);
+    H5Dwrite(dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL,
+	     H5P_DEFAULT, data);
+  }
 
   dataspace_id = H5Screate_simple( ndims, dims, NULL );
   dataset_id = H5Dcreate(image_1, "mask", H5T_NATIVE_INT,dataspace_id,plist);
   H5Dwrite(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL,
 		    H5P_DEFAULT, img->mask->data);
+
+  if(img->detector->orientation){
+    int i = 0;
+    float orientation[6];
+    for(int r=0;r<3;r++){
+      for(int c=0;c<2;c++){
+	orientation[i++] = sp_matrix_get(img->detector->orientation,r,c);	
+      }
+    }
+    dims[0] = 6;
+    ndims = 1;
+    hid_t geometry_1 = H5Gcreate(detector_1,"geometry_1", H5P_DEFAULT);
+    dataspace_id = H5Screate_simple( ndims, dims, NULL );
+    dataset_id = H5Dcreate(geometry_1, "orientation", H5T_NATIVE_FLOAT,dataspace_id,H5P_DEFAULT);
+    H5Dwrite(dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL,
+	     H5P_DEFAULT, orientation);
+  }
 
   H5Lcreate_soft("/entry_1/image_1/data", data_1,"data", H5P_DEFAULT,H5P_DEFAULT);
   H5close();
@@ -2231,14 +2258,26 @@ Image * read_cxi(const char * filename){
   }else{
     ret = sp_image_alloc(dims[2],dims[1],dims[0]);
   }
-  float * buffer = sp_malloc(dims[0]*dims[1]*dims[2]*sizeof(float));
-  status = H5Dread(dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL,
-		   H5P_DEFAULT, buffer);
-  for(int i = 0;i<sp_image_size(ret);i++){
-    ret->image->data[i] = sp_cinit(buffer[i],0);
-    ret->mask->data[i] = 1;
-  }  
-
+  if(H5Tget_class(H5Dget_type(dataset_id)) == H5T_COMPOUND){
+    // Assume data is complex
+    hid_t complex_id = H5Tcreate(H5T_COMPOUND,
+				 sizeof(Complex));
+    H5Tinsert(complex_id, "r", 0, H5T_NATIVE_FLOAT);
+    H5Tinsert(complex_id, "i", sizeof(real), H5T_NATIVE_FLOAT);
+    status = H5Dread(dataset_id, complex_id, H5S_ALL, H5S_ALL,
+		     H5P_DEFAULT, ret->image->data);
+    for(int i = 0;i<sp_image_size(ret);i++){
+      ret->mask->data[i] = 1;
+    }
+  }else{
+    float * buffer = sp_malloc(dims[0]*dims[1]*dims[2]*sizeof(float));
+    status = H5Dread(dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL,
+		     H5P_DEFAULT, buffer);
+    for(int i = 0;i<sp_image_size(ret);i++){
+      ret->image->data[i] = sp_cinit(buffer[i],0);
+      ret->mask->data[i] = 1;
+    }  
+  }
   H5close();
   return ret;
 }
