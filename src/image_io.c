@@ -2117,7 +2117,7 @@ void write_cxi(const Image * img,const char * filename){
   dims[0] = 1;
   dataspace_id = H5Screate(H5S_SCALAR);
   dataset_id = H5Dcreate(file_id, "/cxi_version", H5T_NATIVE_INT,dataspace_id,H5P_DEFAULT);
-  int cxi_version = 100;
+  int cxi_version = 130;
   H5Dwrite(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL,
 	   H5P_DEFAULT, &cxi_version);
 
@@ -2140,7 +2140,7 @@ void write_cxi(const Image * img,const char * filename){
   hid_t source_1 = H5Gcreate(image_1,"source_1", H5P_DEFAULT);
   {
     double c = 299792458;
-    double h = 4.13566733e-15; // in eV.s
+    double h = 6.62606957e-34; // in J.s
     float energy = h*c/img->detector->wavelength;
     dataset_id = H5Dcreate(source_1, "energy", H5T_NATIVE_FLOAT,dataspace_id,H5P_DEFAULT);
     H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
