@@ -205,7 +205,7 @@ sp_rgb sp_colormap_rgb_from_value(real value, int colormap){
       int j = i-1;
       float t = i/(classes-1);
       float u = (i-1)/(classes-1);
-      if(value < t){
+      if(value <= t){
 	ret.r = colors[j][0]/255 + 2*(colors[i][0]-colors[j][0])*(value-u)/255.0;
 	ret.g = colors[j][1]/255 + 2*(colors[i][1]-colors[j][1])*(value-u)/255.0;
 	ret.b = colors[j][2]/255 + 2*(colors[i][2]-colors[j][2])*(value-u)/255.0;
@@ -220,7 +220,7 @@ sp_rgb sp_colormap_rgb_from_value(real value, int colormap){
       float t = i/(classes-1);
       float u = (i-1)/(classes-1);
       u = (value-u) * (classes-1);
-      if(value < t){
+      if(value <= t){
 	ret.r = colors[j][0]/255 + (colors[i][0]-colors[j][0])*(u)/255.0;
 	ret.g = colors[j][1]/255 + (colors[i][1]-colors[j][1])*(u)/255.0;
 	ret.b = colors[j][2]/255 + (colors[i][2]-colors[j][2])*(u)/255.0;
