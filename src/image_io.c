@@ -2181,12 +2181,14 @@ void write_cxi(const Image * img,const char * filename){
 			       sizeof(Complex));
   H5Tinsert(complex_id, "r", 0, mem_type_id);
   H5Tinsert(complex_id, "i", sizeof(real), mem_type_id);
-  dims[0] = sp_c3matrix_x(img->image);
+  dims[2] = sp_c3matrix_x(img->image);
   dims[1] = sp_c3matrix_y(img->image);
-  dims[2] = sp_c3matrix_z(img->image);
+  dims[0] = sp_c3matrix_z(img->image);
   int ndims = 3;
-  if(dims[2] == 1){
+  if(dims[0] == 1){
     ndims = 2;
+    dims[0] = dims[1];
+    dims[1] = dims[2];
   }
   hid_t plist = H5Pcreate (H5P_DATASET_CREATE);
   H5Pset_chunk(plist,ndims,dims);
