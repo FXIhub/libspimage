@@ -40,6 +40,7 @@ static real dist_to_axis(int i, Image * in);
 static real dist_to_center(int i, Image * in);
 static real square_dist_to_center(int i, Image * in);
 static real dist_to_corner(int i, Image * in);
+static real dist_to_top_left(int i, Image * in);
 static void random_rephase(Image *  img);
 static Image * reflect_xy(Image * in, int in_place);
 static Image * reflect_x(Image * in, int in_place);
@@ -934,6 +935,8 @@ real sp_image_dist(Image * in, int i, int type){
     return square_dist_to_center(i,in);
   }if(type == SP_TO_CORNER){
     return  dist_to_corner(i, in);
+  }if(type == SP_TO_TOP_LEFT){
+    return  dist_to_top_left(i, in);
   }
   return -1;
 }
@@ -1009,6 +1012,28 @@ static real dist_to_corner(int i, Image * in){
     dz = z;
   }
   return sqrt(dx*dx+dy*dy+dz*dz);
+}
+
+static real dist_to_top_left(int i, Image *in){
+  float x,y,z;
+  sp_image_get_coords_from_index(in, i, &x, &y, &z, SpTopLeftCorner);
+  real dx, dy, dz;
+  if (sp_c3matrix_x(in->image)-x < x) {
+    dx = sp_c3matrix_x(in->image)-x;
+  } else {
+    dx = x;
+  }
+  if (sp_c3matrix_y(in->image)-y < y) {
+    dy = sp_c3matrix_y(in->image)-y;
+  } else {
+    dy = y;
+  }
+  if (sp_c3matrix_z(in->image)-z < z) {
+    dz = sp_c3matrix_z(in->image)-z;
+  } else {
+    dz = z;
+  }
+  return sqrt(pow(dx,2) + pow(dy,2) + pow(dz,2));
 }
 
 

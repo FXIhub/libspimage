@@ -40,6 +40,7 @@ extern "C"
  *  The mask will not be blurred.
  */
 spimage_EXPORT Image * sp_gaussian_blur(Image * in, real radius);
+spimage_EXPORT Image * sp_gaussian_blur_old(Image * in, real radius);
 
 /*! Multiplies the image with a gaussian centered in the image center of a given radius 
  *
