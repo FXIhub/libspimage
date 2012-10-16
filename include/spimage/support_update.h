@@ -59,7 +59,8 @@ typedef struct{
   SpSupportAlgorithm * sp_support_template_alloc(Image *initial_support, real blur_radius, sp_smap *area);
   SpSupportAlgorithm * sp_support_static_alloc();
   SpSupportAlgorithm * sp_support_close_alloc(int size);
-
+  SpSupportAlgorithm * sp_support_centre_image_alloc();
+  
   SpSupportArray * sp_support_array_alloc(int size, int update_period);
   SpSupportArray * sp_support_array_init(SpSupportAlgorithm *algorithm, int update_period);
   void sp_support_array_set(SpSupportArray *array, int i, SpSupportAlgorithm *algorithm);
