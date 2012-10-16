@@ -42,6 +42,7 @@ extern "C"
 #define SP_TO_CENTER 5
 #define SP_TO_CENTER2 6
 #define SP_TO_CORNER 7
+#define SP_TO_TOP_LEFT 8
 
 #define SP_COPY_DATA 1
 #define SP_COPY_DETECTOR 0

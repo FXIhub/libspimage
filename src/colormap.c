@@ -198,6 +198,76 @@ sp_rgb sp_colormap_rgb_from_value(real value, int colormap){
       ret.g = 0;
       ret.b = 0;
     }
+  }else if(colormap & SpColormapBlackJet){
+    if(value < 1/8.0){
+      ret.r = 0;
+      ret.g = 0;
+      ret.b = (value)*8.0/3.0*4;
+    }else if(value < 3/8.0){
+      ret.r = 0;
+      ret.g = (value-1.0/8.0)*4;
+      ret.b = 1;
+    }else if(value < 5/8.0){
+      ret.r = (value-3.0/8.0)*4;
+      ret.g = 1;
+      ret.b = 1-(value-3.0/8.0)*4;
+    }else if(value < 7/8.0){
+      ret.r = 1;
+      ret.g = 1-(value-5.0/8.0)*4;
+      ret.b = 0;
+    }else if(value <= 1.01){
+      ret.r = 1-(value-7.0/8.0)*4;;
+      ret.g = 0;
+      ret.b = 0;
+    }
+  }else if(colormap & SpColormapWhiteJet){
+    if(value < 1/8.0){
+      ret.r = (1/8.0-value)*8;
+      ret.g = (1/8.0-value)*8;
+      ret.b = 1;
+    }else if(value < 3/8.0){
+      ret.r = 0;
+      ret.g = (value-1.0/8.0)*4;
+      ret.b = 1;
+    }else if(value < 5/8.0){
+      ret.r = (value-3.0/8.0)*4;
+      ret.g = 1;
+      ret.b = 1-(value-3.0/8.0)*4;
+    }else if(value < 7/8.0){
+      ret.r = 1;
+      ret.g = 1-(value-5.0/8.0)*4;
+      ret.b = 0;
+    }else if(value <= 1.01){
+      ret.r = 1-(value-7.0/8.0)*4;;
+      ret.g = 0;
+      ret.b = 0;
+    }   
+  }else if(colormap & SpColormapWhiteJetShadow){
+    if(value < 1/8.0){
+      ret.r = (1/8.0-value)*8;
+      ret.g = (1/8.0-value)*8;
+      ret.b = (1/8.0-value)*8;
+    }else if(value < 2/8.0){
+      ret.r = 0;
+      ret.g = 0;
+      ret.b = (value-1.0/8.0)*8;
+    }else if(value < 3/8.0){
+      ret.r = 0;
+      ret.g = (value-2.0/8.0)*8;
+      ret.b = 1;
+    }else if(value < 5/8.0){
+      ret.r = (value-3.0/8.0)*4;
+      ret.g = 1;
+      ret.b = 1-(value-3.0/8.0)*4;
+    }else if(value < 7/8.0){
+      ret.r = 1;
+      ret.g = 1-(value-5.0/8.0)*4;
+      ret.b = 0;
+    }else if(value <= 1.01){
+      ret.r = 1-(value-7.0/8.0)*4;;
+      ret.g = 0;
+      ret.b = 0;
+    }   
   }else if(colormap & SpColormapBlGrRdYl){
     float colors[][3] = {{0,0,0},{0,0,0},{0,0,35},{0,2,73},{4,64,103},{17,118,99},{25,151,58},{24,144,0},{98,108,0},{187,15,0},{206,43,0},{215,84,0},{225,125,0},{234,168,0},{244,211,0},{254,251,0}};
     float classes = sizeof(colors)/(3*sizeof(float));
