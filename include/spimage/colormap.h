@@ -70,7 +70,7 @@ spimage_EXPORT void sp_colormap_create_table(sp_rgb color_table[256],int colorma
     The colormap has to have been initialized using sp_colormap_create_table.
     If red_blue_swap is different than 0 the image is written as ABGR.
    */
-  spimage_EXPORT void sp_colormap_write_rgb(unsigned char * out,Image * img, int colormap,sp_rgb * color_table,real max_v, real min_v, int x, int y, int z, int red_blue_swap, double gamma);
+  spimage_EXPORT void sp_colormap_write_rgb(unsigned char * out,const Image * img, int colormap,sp_rgb * color_table,real max_v, real min_v, int x, int y, int z, int red_blue_swap, double gamma);
 
 
   /*! Returns an array that correponds to the RGBA values of the image when transformed with the given colormap using only the values in the range [min,max]

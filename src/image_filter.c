@@ -78,7 +78,6 @@ Image * sp_gaussian_blur_old(Image * in, real radius){
 }
 
 Image * sp_gaussian_blur(Image * in, real radius){
-  int x, y, z;
   Image *fourier_image = sp_image_fft(in);
   real coordinate_rad;
   for (int i = 0; i < sp_image_size(fourier_image); i++) {

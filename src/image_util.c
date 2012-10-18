@@ -3449,7 +3449,7 @@ int sp_image_contains_coordinates(const Image *a, real x, real y, real z){
   return 1;
 }
 
-void sp_image_image_to_mask(Image *in, Image *out)
+void sp_image_image_to_mask(const Image *in, Image *out)
 {
   if (sp_image_x(in) != sp_image_x(out) ||
       sp_image_y(in) != sp_image_y(out) ||
@@ -3469,7 +3469,7 @@ void sp_image_image_to_mask(Image *in, Image *out)
 }
 /* out will get a new image that is zero when in->mask is zero
      and (1.0,0.0) where it is nonzero */
-void sp_image_mask_to_image(Image *in, Image *out)
+void sp_image_mask_to_image(const Image *in, Image *out)
 {
   if (sp_image_x(in) != sp_image_x(out) ||
       sp_image_y(in) != sp_image_y(out) ||
@@ -3487,7 +3487,7 @@ void sp_image_mask_to_image(Image *in, Image *out)
   }
 }
 /* copies the image from in to out */
-void sp_image_image_to_image(Image *in, Image *out)
+void sp_image_image_to_image(const Image *in, Image *out)
 {
   if (sp_image_x(in) != sp_image_x(out) ||
       sp_image_y(in) != sp_image_y(out) ||
@@ -3501,7 +3501,7 @@ void sp_image_image_to_image(Image *in, Image *out)
   }
 }
 /* copies the mask from in to out */
-void sp_image_mask_to_mask(Image *in, Image *out)
+void sp_image_mask_to_mask(const Image *in, Image *out)
 {
   if (sp_image_x(in) != sp_image_x(out) ||
       sp_image_y(in) != sp_image_y(out) ||
@@ -3517,7 +3517,7 @@ void sp_image_mask_to_mask(Image *in, Image *out)
 
 /* out gets a new mask that is zero where in->image is nonzero
    and one wher it is zero */
-void sp_image_invert_mask(Image *in, Image *out)
+void sp_image_invert_mask(const Image *in, Image *out)
 {
   if (sp_image_x(in) != sp_image_x(out) ||
       sp_image_y(in) != sp_image_y(out) ||
