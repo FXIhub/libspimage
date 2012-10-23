@@ -197,7 +197,7 @@ sp_rgb sp_colormap_rgb_from_value(real value, int colormap){
       ret.r = 1-(value-7.0/8.0)*4;;
       ret.g = 0;
       ret.b = 0;
-    }
+    }  
   }else if(colormap & SpColormapBlackJet){
     if(value < 1/8.0){
       ret.r = 0;
@@ -267,7 +267,7 @@ sp_rgb sp_colormap_rgb_from_value(real value, int colormap){
       ret.r = 1-(value-7.0/8.0)*4;;
       ret.g = 0;
       ret.b = 0;
-    }   
+    }     
   }else if(colormap & SpColormapBlGrRdYl){
     float colors[][3] = {{0,0,0},{0,0,0},{0,0,35},{0,2,73},{4,64,103},{17,118,99},{25,151,58},{24,144,0},{98,108,0},{187,15,0},{206,43,0},{215,84,0},{225,125,0},{234,168,0},{244,211,0},{254,251,0}};
     float classes = sizeof(colors)/(3*sizeof(float));
