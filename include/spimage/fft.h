@@ -20,7 +20,7 @@ extern "C"
 #define FFTW3
 /* #define FFTW2 */
 
-#ifdef FFTW3
+#if defined FFTW3 && !defined __CUDACC__
 #include <fftw3.h>
 #define sp_image_ifft(a) sp_image_ifftw3(a)
 #define sp_image_fft(a) sp_image_fftw3(a) 

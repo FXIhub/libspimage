@@ -10,7 +10,7 @@
  The filter function is given by:
 
 f(x,y) = 1/sqrt(2*M_PI*radius) * exp(-(x^2+y^2)/(2*radius^2)) */
-Image * sp_gaussian_blur(Image * in, real radius){
+Image * sp_gaussian_blur_old(Image * in, real radius){
   /* Lets make this convolution using a fourier transform shallw we... good....*/
   int x,y,z;
   int i,j,k;
@@ -75,6 +75,18 @@ Image * sp_gaussian_blur(Image * in, real radius){
     res = tmp;
   }
   return res;
+}
+
+Image * sp_gaussian_blur(Image * in, real radius){
+  Image *fourier_image = sp_image_fft(in);
+  real coordinate_rad;
+  for (int i = 0; i < sp_image_size(fourier_image); i++) {
+    coordinate_rad = sp_image_dist(fourier_image, i, SP_TO_TOP_LEFT) / ((real)sp_image_x(fourier_image));
+    fourier_image->image->data[i] = sp_cmul(fourier_image->image->data[i], sp_cinit(exp(-2.*pow(M_PI,2)*pow(coordinate_rad,2)*pow(radius,2))/((real) sp_image_size(fourier_image)), 0.));
+  }
+
+  Image *ret = sp_image_ifft(fourier_image);
+  return ret;
 }
 
 
