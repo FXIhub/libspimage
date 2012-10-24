@@ -2120,6 +2120,7 @@ void write_cxi(const Image * img,const char * filename){
   int cxi_version = 130;
   H5Dwrite(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL,
 	   H5P_DEFAULT, &cxi_version);
+  H5Dclose(dataset_id);
 
   hid_t entry_1 = H5Gcreate(file_id,"entry_1", H5P_DEFAULT);
   hid_t data_1 = H5Gcreate(entry_1,"data_1", H5P_DEFAULT);
@@ -2133,9 +2134,11 @@ void write_cxi(const Image * img,const char * filename){
   }
   hid_t string_type = H5Tcopy (H5T_C_S1);  
   H5Tset_size (string_type, strlen(string));
+  
   dataset_id = H5Dcreate (image_1, "data_type", string_type,dataspace_id, H5P_DEFAULT);
   H5Dwrite(dataset_id, string_type, H5S_ALL, H5S_ALL,
 		    H5P_DEFAULT, string);
+  H5Dclose(dataset_id);
 
   hid_t source_1 = H5Gcreate(image_1,"source_1", H5P_DEFAULT);
   {
@@ -2145,36 +2148,44 @@ void write_cxi(const Image * img,const char * filename){
     dataset_id = H5Dcreate(source_1, "energy", H5T_NATIVE_FLOAT,dataspace_id,H5P_DEFAULT);
     H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 	     H5P_DEFAULT, &energy);
+    H5Dclose(dataset_id);
   }
+  H5Gclose(source_1);
 
   hid_t detector_1 = H5Gcreate(image_1,"detector_1", H5P_DEFAULT);
+  
   dataset_id = H5Dcreate(detector_1, "distance", H5T_NATIVE_FLOAT,dataspace_id,H5P_DEFAULT);
   H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		    H5P_DEFAULT, &img->detector->detector_distance);
-
-
-
+  H5Dclose(dataset_id);
 
   dataset_id = H5Dcreate(image_1, "is_fft_shifted", H5T_NATIVE_INT,dataspace_id,H5P_DEFAULT);
   H5Dwrite(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL,
 	   H5P_DEFAULT, &img->shifted);
+  H5Dclose(dataset_id);
 
   dataset_id = H5Dcreate(detector_1, "x_pixel_size", H5T_NATIVE_FLOAT,dataspace_id,H5P_DEFAULT);
   H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 	   H5P_DEFAULT, &(img->detector->pixel_size[0]));
+  H5Dclose(dataset_id);
+
   dataset_id = H5Dcreate(detector_1, "y_pixel_size", H5T_NATIVE_FLOAT,dataspace_id,H5P_DEFAULT);
   H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 	   H5P_DEFAULT, &(img->detector->pixel_size[1]));
+  H5Dclose(dataset_id);
+  H5Sclose(dataspace_id);
 
   dims[0] = 3;
   dataspace_id = H5Screate_simple(1,dims,NULL);
   float cxi_center[3] = {img->detector->image_center[0]+1.0/2,
 			 img->detector->image_center[1]+1.0/2,
 			 img->detector->image_center[2]+1.0/2};
+  
+
   dataset_id = H5Dcreate(image_1, "image_center", H5T_NATIVE_FLOAT,dataspace_id,H5P_DEFAULT);
   H5Dwrite(dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL,
 	   H5P_DEFAULT, cxi_center);
-
+  H5Dclose(dataset_id);
   
 
   hid_t complex_id = H5Tcreate(H5T_COMPOUND,
@@ -2199,6 +2210,7 @@ void write_cxi(const Image * img,const char * filename){
     dataset_id = H5Dcreate(image_1, "data", complex_id,dataspace_id,plist);
     H5Dwrite(dataset_id, complex_id, H5S_ALL, H5S_ALL,
 	     H5P_DEFAULT, img->image->data);
+    H5Dclose(dataset_id);
   }else{
     float * data = malloc(sp_image_size(img)*sizeof(float));
     for(int i =0;i<sp_image_size(img);i++){
@@ -2208,19 +2220,24 @@ void write_cxi(const Image * img,const char * filename){
     H5Dwrite(dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL,
 	     H5P_DEFAULT, data);
     free(data);
+    H5Dclose(dataset_id);
   }
+  H5Sclose(dataspace_id);
+  H5Tclose(complex_id);
 
   dataspace_id = H5Screate_simple( ndims, dims, NULL );
   dataset_id = H5Dcreate(image_1, "mask", H5T_NATIVE_INT,dataspace_id,plist);
   H5Dwrite(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL,
 		    H5P_DEFAULT, img->mask->data);
+  H5Dclose(dataset_id);
+  H5Sclose(dataspace_id);
 
   if(img->detector->orientation){
     int i = 0;
     float orientation[6];
     for(int r=0;r<3;r++){
       for(int c=0;c<2;c++){
-	orientation[i++] = sp_matrix_get(img->detector->orientation,r,c);	
+       orientation[i++] = sp_matrix_get(img->detector->orientation,r,c);	
       }
     }
     dims[0] = 6;
@@ -2230,10 +2247,18 @@ void write_cxi(const Image * img,const char * filename){
     dataset_id = H5Dcreate(geometry_1, "orientation", H5T_NATIVE_FLOAT,dataspace_id,H5P_DEFAULT);
     H5Dwrite(dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL,
 	     H5P_DEFAULT, orientation);
+    H5Dclose(dataset_id);
+    H5Sclose(dataspace_id);
+    H5Gclose(geometry_1);
   }
+  H5Gclose(detector_1);
+  H5Gclose(image_1);
+  H5Gclose(entry_1);
+  H5Pclose(plist);  
+  H5Fclose(file_id);
 
   H5Lcreate_soft("/entry_1/image_1/data", data_1,"data", H5P_DEFAULT,H5P_DEFAULT);
-  H5close();
+//  H5close();
 }
 
 Image * read_cxi(const char * filename){
