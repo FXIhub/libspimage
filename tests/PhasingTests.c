@@ -172,6 +172,7 @@ void test_sp_support_cuda_common(CuTest * tc,SpSupportArray * sup_alg){
   real oversampling = 2;
   Image * solution = create_test_image(size,oversampling,SpNoConstraints);
   Image * f = sp_image_fft(solution);
+  real sigma_noise = 0.;
   sp_image_rephase(f,SP_ZERO_PHASE);
   for(int i = 0;i<sp_image_size(f);i++){
     f->mask->data[i] = 1;    
@@ -179,7 +180,7 @@ void test_sp_support_cuda_common(CuTest * tc,SpSupportArray * sup_alg){
   sp_smap * beta = sp_smap_create_from_pair(0,0.9);
   SpPhaser * ph_cpu = sp_phaser_alloc();
   SpPhaser * ph_cuda = sp_phaser_alloc();
-  SpPhasingAlgorithm * alg = sp_phasing_hio_alloc(beta,0);
+  SpPhasingAlgorithm * alg = sp_phasing_hio_alloc(beta,sigma_noise,0);
   CuAssertTrue(tc,sp_phaser_init(ph_cpu,alg,sup_alg,SpEngineCPU) == 0);
   sp_phaser_set_amplitudes(ph_cpu,f);
   CuAssertTrue(tc,sp_phaser_init_model(ph_cpu,NULL,SpModelRandomPhases) == 0); 
@@ -432,13 +433,14 @@ void test_sp_phasing_hio_success_rate(CuTest * tc){
   int size = 4;
   int oversampling = 2;
   sp_smap * beta = sp_smap_create_from_pair(0,0.8);
+  real sigma_noise = 0.;
   real stop_tol = 1e-10;
   real match_tol = 1e-4;
   int nruns = 30;
   Image * pada;
   SpPhasingAlgorithm * alg;
   int n_success = 0;
-  alg = sp_phasing_hio_alloc(beta,0);
+  alg = sp_phasing_hio_alloc(beta,sigma_noise,0);
   n_success = 0;
   for(int i = 0;i<nruns;i++){
     pada = create_test_image(size,oversampling,0);
@@ -448,7 +450,7 @@ void test_sp_phasing_hio_success_rate(CuTest * tc){
 #ifndef NDEBUG
   printf("HIO Complex success rate = %5.2f\n",(real)n_success/nruns);
 #endif
-  alg = sp_phasing_hio_alloc(beta,SpPositiveComplexObject);
+  alg = sp_phasing_hio_alloc(beta,sigma_noise,SpPositiveComplexObject);
   CuAssertTrue(tc,n_success>0);
   n_success = 0;
   for(int i = 0;i<nruns;i++){
@@ -459,7 +461,7 @@ void test_sp_phasing_hio_success_rate(CuTest * tc){
 #ifndef NDEBUG
   printf("HIO Positive Complex success rate = %5.2f\n",(real)n_success/nruns);
 #endif
-  alg = sp_phasing_hio_alloc(beta,SpPositiveComplexObject| SpPositivityFlipping);
+  alg = sp_phasing_hio_alloc(beta,sigma_noise,SpPositiveComplexObject| SpPositivityFlipping);
   CuAssertTrue(tc,n_success>0);
   n_success = 0;
   for(int i = 0;i<nruns;i++){
@@ -471,7 +473,7 @@ void test_sp_phasing_hio_success_rate(CuTest * tc){
   printf("HIO Flipping Positive Complex success rate = %5.2f\n",(real)n_success/nruns);
 #endif
   CuAssertTrue(tc,n_success>0);
-  alg = sp_phasing_hio_alloc(beta,SpRealObject);
+  alg = sp_phasing_hio_alloc(beta,sigma_noise,SpRealObject);
   n_success = 0;
   for(int i = 0;i<nruns;i++){
     pada = create_test_image(size,oversampling,SpRealObject);  
@@ -483,7 +485,7 @@ void test_sp_phasing_hio_success_rate(CuTest * tc){
 #endif
   CuAssertTrue(tc,n_success>0);
   n_success = 0;
-  alg = sp_phasing_hio_alloc(beta,SpPositiveRealObject);
+  alg = sp_phasing_hio_alloc(beta,sigma_noise,SpPositiveRealObject);
   for(int i = 0;i<nruns;i++){
     pada = create_test_image(size,oversampling,SpPositiveRealObject);
     n_success += test_sp_phasing_success_common(tc,alg,pada,0,stop_tol,match_tol);  
@@ -494,7 +496,7 @@ void test_sp_phasing_hio_success_rate(CuTest * tc){
 #endif
   CuAssertTrue(tc,n_success>0);
   n_success = 0;
-  alg = sp_phasing_hio_alloc(beta,SpPositiveRealObject| SpPositivityFlipping);
+  alg = sp_phasing_hio_alloc(beta,sigma_noise,SpPositiveRealObject| SpPositivityFlipping);
   for(int i = 0;i<nruns;i++){
     pada = create_test_image(size,oversampling,SpPositiveRealObject);
     n_success += test_sp_phasing_success_common(tc,alg,pada,0,stop_tol,match_tol);  
@@ -514,6 +516,7 @@ void test_sp_phasing_hio_noisy_success_rate(CuTest * tc){
   int size = 4;
   int oversampling = 2;
   sp_smap * beta = sp_smap_create_from_pair(0,0.8);
+  real sigma_noise = 0.;
   real stop_tol = 1e-10;
   real match_tol = 1e-2;
   //  real photons_per_pixel = 1/(match_tol*match_tol*match_tol);
@@ -524,7 +527,7 @@ void test_sp_phasing_hio_noisy_success_rate(CuTest * tc){
   gsl_rng * r = gsl_rng_alloc(gsl_rng_taus);
   int n_success = 0;
   real beamstop = 0;
-  alg = sp_phasing_hio_alloc(beta,0);
+  alg = sp_phasing_hio_alloc(beta,sigma_noise,0);
   n_success = 0;
   for(int i = 0;i<nruns;i++){
     pada = create_test_image(size,oversampling,0);
@@ -535,7 +538,7 @@ void test_sp_phasing_hio_noisy_success_rate(CuTest * tc){
   printf("HIO Complex success rate with %g photons per pixel = %5.2f\n",photons_per_pixel,(real)n_success/nruns);
 #endif
 
-  alg = sp_phasing_hio_alloc(beta,0);
+  alg = sp_phasing_hio_alloc(beta,sigma_noise,0);
   CuAssertTrue(tc,n_success>0);
   n_success = 0;
   for(int i = 0;i<nruns;i++){
@@ -547,7 +550,7 @@ void test_sp_phasing_hio_noisy_success_rate(CuTest * tc){
   printf("HIO Positive Complex object no constraints success rate with %g photons per pixel = %5.2f\n",photons_per_pixel,(real)n_success/nruns);
 #endif
 
-  alg = sp_phasing_hio_alloc(beta,SpPositiveComplexObject);
+  alg = sp_phasing_hio_alloc(beta,sigma_noise,SpPositiveComplexObject);
   CuAssertTrue(tc,n_success>0);
   n_success = 0;
   for(int i = 0;i<nruns;i++){
@@ -560,7 +563,7 @@ void test_sp_phasing_hio_noisy_success_rate(CuTest * tc){
 #endif
 
 
-  alg = sp_phasing_hio_alloc(beta,SpPositiveComplexObject| SpPositivityFlipping);
+  alg = sp_phasing_hio_alloc(beta,sigma_noise,SpPositiveComplexObject| SpPositivityFlipping);
   CuAssertTrue(tc,n_success>0);
   n_success = 0;
   for(int i = 0;i<nruns;i++){
@@ -572,7 +575,7 @@ void test_sp_phasing_hio_noisy_success_rate(CuTest * tc){
   printf("HIO Flipping Positive Complex success rate with %g photons per pixel = %5.2f\n",photons_per_pixel,(real)n_success/nruns);
 #endif
   CuAssertTrue(tc,n_success>0);
-  alg = sp_phasing_hio_alloc(beta,SpRealObject);
+  alg = sp_phasing_hio_alloc(beta,sigma_noise,SpRealObject);
   n_success = 0;
   for(int i = 0;i<nruns;i++){
     pada = create_test_image(size,oversampling,SpRealObject);  
@@ -584,7 +587,7 @@ void test_sp_phasing_hio_noisy_success_rate(CuTest * tc){
 #endif
   CuAssertTrue(tc,n_success>0);
   n_success = 0;
-  alg = sp_phasing_hio_alloc(beta,SpPositiveRealObject);
+  alg = sp_phasing_hio_alloc(beta,sigma_noise,SpPositiveRealObject);
   for(int i = 0;i<nruns;i++){
     pada = create_test_image(size,oversampling,SpPositiveRealObject);
     n_success += test_sp_phasing_noisy_success_common(tc,alg,pada,beamstop,stop_tol,match_tol,photons_per_pixel,r);  
@@ -595,7 +598,7 @@ void test_sp_phasing_hio_noisy_success_rate(CuTest * tc){
 #endif
   CuAssertTrue(tc,n_success>0);
   n_success = 0;
-  alg = sp_phasing_hio_alloc(beta,SpPositiveRealObject| SpPositivityFlipping);
+  alg = sp_phasing_hio_alloc(beta,sigma_noise,SpPositiveRealObject| SpPositivityFlipping);
   for(int i = 0;i<nruns;i++){
     pada = create_test_image(size,oversampling,SpPositiveRealObject);
     n_success += test_sp_phasing_noisy_success_common(tc,alg,pada,beamstop,stop_tol,match_tol,photons_per_pixel,r);  
@@ -609,7 +612,7 @@ void test_sp_phasing_hio_noisy_success_rate(CuTest * tc){
   beamstop = 1;
 
   n_success = 0;
-  alg = sp_phasing_hio_alloc(beta,SpRealObject);
+  alg = sp_phasing_hio_alloc(beta,sigma_noise,SpRealObject);
 
   for(int i = 0;i<nruns;i++){
     pada = create_test_image(size,oversampling,SpRealObject);
@@ -622,7 +625,7 @@ void test_sp_phasing_hio_noisy_success_rate(CuTest * tc){
   CuAssertTrue(tc,n_success>0);
 
   n_success = 0;
-  alg = sp_phasing_hio_alloc(beta,0);
+  alg = sp_phasing_hio_alloc(beta,sigma_noise,0);
 
   for(int i = 0;i<nruns;i++){
     pada = create_test_image(size,oversampling,0);
@@ -642,13 +645,14 @@ void test_sp_phasing_raar_success_rate(CuTest * tc){
   int size = 4;
   int oversampling = 2;
   sp_smap * beta = sp_smap_create_from_pair(0,0.8);
+  real sigma_noise = 0.;
   real stop_tol = 1e-10;
   real match_tol = 1e-4;
   int nruns = 30;
   Image * pada;
   SpPhasingAlgorithm * alg;
   int n_success = 0;
-  alg = sp_phasing_raar_alloc(beta,0);
+  alg = sp_phasing_raar_alloc(beta,sigma_noise,0);
   n_success = 0;
   for(int i = 0;i<nruns;i++){
     pada = create_test_image(size,oversampling,0);
@@ -658,7 +662,7 @@ void test_sp_phasing_raar_success_rate(CuTest * tc){
 #ifndef NDEBUG
   printf("RAAR Complex success rate = %5.2f\n",(real)n_success/nruns);
 #endif
-  alg = sp_phasing_raar_alloc(beta,SpPositiveComplexObject);
+  alg = sp_phasing_raar_alloc(beta,sigma_noise,SpPositiveComplexObject);
   CuAssertTrue(tc,n_success>0);
   n_success = 0;
   for(int i = 0;i<nruns;i++){
@@ -669,7 +673,7 @@ void test_sp_phasing_raar_success_rate(CuTest * tc){
 #ifndef NDEBUG
   printf("RAAR Positive Complex success rate = %5.2f\n",(real)n_success/nruns);
 #endif
-  alg = sp_phasing_raar_alloc(beta,SpPositiveComplexObject| SpPositivityFlipping);
+  alg = sp_phasing_raar_alloc(beta,sigma_noise,SpPositiveComplexObject| SpPositivityFlipping);
   CuAssertTrue(tc,n_success>0);
   n_success = 0;
   for(int i = 0;i<nruns;i++){
@@ -680,7 +684,7 @@ void test_sp_phasing_raar_success_rate(CuTest * tc){
 #ifndef NDEBUG
   printf("RAAR Flipping Positive Complex success rate = %5.2f\n",(real)n_success/nruns);
 #endif
-  alg = sp_phasing_raar_alloc(beta,SpRealObject);
+  alg = sp_phasing_raar_alloc(beta,sigma_noise,SpRealObject);
   CuAssertTrue(tc,n_success>0);
   n_success = 0;
   for(int i = 0;i<nruns;i++){
@@ -694,7 +698,7 @@ void test_sp_phasing_raar_success_rate(CuTest * tc){
   CuAssertTrue(tc,n_success>0);
 
   n_success = 0;
-  alg = sp_phasing_raar_alloc(beta,SpPositiveRealObject);
+  alg = sp_phasing_raar_alloc(beta,sigma_noise,SpPositiveRealObject);
   for(int i = 0;i<nruns;i++){
     pada = create_test_image(size,oversampling,SpPositiveRealObject);
     n_success += test_sp_phasing_success_common(tc,alg,pada,0,stop_tol,match_tol);  
@@ -706,7 +710,7 @@ void test_sp_phasing_raar_success_rate(CuTest * tc){
   CuAssertTrue(tc,n_success>0);
 
   n_success = 0;
-  alg = sp_phasing_raar_alloc(beta,SpPositiveRealObject| SpPositivityFlipping);
+  alg = sp_phasing_raar_alloc(beta,sigma_noise,SpPositiveRealObject| SpPositivityFlipping);
   for(int i = 0;i<nruns;i++){
     pada = create_test_image(size,oversampling,SpPositiveRealObject);
     n_success += test_sp_phasing_success_common(tc,alg,pada,0,stop_tol,match_tol);  
@@ -725,6 +729,7 @@ void test_sp_phasing_raar_noisy_success_rate(CuTest * tc){
   int size = 4;
   int oversampling = 2;
   sp_smap * beta = sp_smap_create_from_pair(0,0.8);
+  real sigma_noise = 0.;
   real stop_tol = 1e-10;
   real match_tol = 1e-2;
   real photons_per_pixel = 1/(match_tol*match_tol*match_tol);
@@ -734,7 +739,7 @@ void test_sp_phasing_raar_noisy_success_rate(CuTest * tc){
   gsl_rng * r = gsl_rng_alloc(gsl_rng_taus);
   int n_success = 0;
   real beamstop =0;
-  alg = sp_phasing_raar_alloc(beta,0);
+  alg = sp_phasing_raar_alloc(beta,sigma_noise,0);
   n_success = 0;
   for(int i = 0;i<nruns;i++){
     pada = create_test_image(size,oversampling,0);
@@ -744,7 +749,7 @@ void test_sp_phasing_raar_noisy_success_rate(CuTest * tc){
 #ifndef NDEBUG
   printf("RAAR Complex success rate with %g photons per pixel = %5.2f\n",photons_per_pixel,(real)n_success/nruns);
 #endif
-  alg = sp_phasing_raar_alloc(beta,SpPositiveComplexObject);
+  alg = sp_phasing_raar_alloc(beta,sigma_noise,SpPositiveComplexObject);
   CuAssertTrue(tc,n_success>0);
   n_success = 0;
   for(int i = 0;i<nruns;i++){
@@ -755,7 +760,7 @@ void test_sp_phasing_raar_noisy_success_rate(CuTest * tc){
 #ifndef NDEBUG
   printf("RAAR Positive Complex success rate with %g photons per pixel = %5.2f\n",photons_per_pixel,(real)n_success/nruns);
 #endif
-  alg = sp_phasing_raar_alloc(beta,SpPositiveComplexObject| SpPositivityFlipping);
+  alg = sp_phasing_raar_alloc(beta,sigma_noise,SpPositiveComplexObject| SpPositivityFlipping);
   CuAssertTrue(tc,n_success>0);
   n_success = 0;
   for(int i = 0;i<nruns;i++){
@@ -767,7 +772,7 @@ void test_sp_phasing_raar_noisy_success_rate(CuTest * tc){
   printf("RAAR Flipping Positive Complex success rate with %g photons per pixel = %5.2f\n",photons_per_pixel,(real)n_success/nruns);
 #endif
   CuAssertTrue(tc,n_success>0);
-  alg = sp_phasing_raar_alloc(beta,SpRealObject);
+  alg = sp_phasing_raar_alloc(beta,sigma_noise,SpRealObject);
   n_success = 0;
   for(int i = 0;i<nruns;i++){
     pada = create_test_image(size,oversampling,SpRealObject);  
@@ -779,7 +784,7 @@ void test_sp_phasing_raar_noisy_success_rate(CuTest * tc){
 #endif
   CuAssertTrue(tc,n_success>0);
   n_success = 0;
-  alg = sp_phasing_raar_alloc(beta,SpPositiveRealObject);
+  alg = sp_phasing_raar_alloc(beta,sigma_noise,SpPositiveRealObject);
   for(int i = 0;i<nruns;i++){
     pada = create_test_image(size,oversampling,SpPositiveRealObject);
     n_success += test_sp_phasing_noisy_success_common(tc,alg,pada,0,stop_tol,match_tol,photons_per_pixel,r);  
@@ -790,7 +795,7 @@ void test_sp_phasing_raar_noisy_success_rate(CuTest * tc){
 #endif
   CuAssertTrue(tc,n_success>0);
   n_success = 0;
-  alg = sp_phasing_raar_alloc(beta,SpPositiveRealObject| SpPositivityFlipping);
+  alg = sp_phasing_raar_alloc(beta,sigma_noise,SpPositiveRealObject| SpPositivityFlipping);
   for(int i = 0;i<nruns;i++){
     pada = create_test_image(size,oversampling,SpPositiveRealObject);
     n_success += test_sp_phasing_noisy_success_common(tc,alg,pada,0,stop_tol,match_tol,photons_per_pixel,r);  
@@ -804,7 +809,7 @@ void test_sp_phasing_raar_noisy_success_rate(CuTest * tc){
   beamstop = 1;
 
   n_success = 0;
-  alg = sp_phasing_raar_alloc(beta,SpRealObject);
+  alg = sp_phasing_raar_alloc(beta,sigma_noise,SpRealObject);
 
   for(int i = 0;i<nruns;i++){
     pada = create_test_image(size,oversampling,SpRealObject);
@@ -817,7 +822,7 @@ void test_sp_phasing_raar_noisy_success_rate(CuTest * tc){
   CuAssertTrue(tc,n_success>0);
 
   n_success = 0;
-  alg = sp_phasing_raar_alloc(beta,0);
+  alg = sp_phasing_raar_alloc(beta,sigma_noise,0);
 
   for(int i = 0;i<nruns;i++){
     pada = create_test_image(size,oversampling,0);
@@ -1030,24 +1035,25 @@ void test_sp_phasing_hio(CuTest * tc){
   int size = 4;
   int oversampling = 2;
   sp_smap * beta = sp_smap_create_from_pair(0,0.8);
+  real sigma_noise = 0.;
   real tol = 1e-10;
-  SpPhasingAlgorithm * alg = sp_phasing_hio_alloc(beta,0);
+  SpPhasingAlgorithm * alg = sp_phasing_hio_alloc(beta,sigma_noise,0);
   //  CuAssertIntEquals(tc,test_sp_phasing_common(tc,alg,size,oversampling,SpNoConstraints,0,tol),1);
 
   if(sp_cuda_get_device_type() == SpCUDAHardwareDevice){
     CuAssertIntEquals(tc,test_sp_phasing_cuda_common(tc,alg,size,oversampling,SpNoConstraints,tol),1);
   }
-  alg = sp_phasing_hio_alloc(beta,SpPositiveRealObject);
+  alg = sp_phasing_hio_alloc(beta,sigma_noise,SpPositiveRealObject);
   CuAssertIntEquals(tc,test_sp_phasing_common(tc,alg,size,oversampling,SpPositiveRealObject,0,tol),1);
-  alg = sp_phasing_hio_alloc(beta,SpRealObject);
+  alg = sp_phasing_hio_alloc(beta,sigma_noise,SpRealObject);
   CuAssertIntEquals(tc,test_sp_phasing_common(tc,alg,size,oversampling,SpRealObject,0,tol),1);
-  alg = sp_phasing_hio_alloc(beta,SpPositiveComplexObject);
+  alg = sp_phasing_hio_alloc(beta,sigma_noise,SpPositiveComplexObject);
   CuAssertIntEquals(tc,test_sp_phasing_common(tc,alg,size,oversampling,SpPositiveComplexObject,0,tol),1);
-  alg = sp_phasing_hio_alloc(beta,SpPositiveComplexObject);
+  alg = sp_phasing_hio_alloc(beta,sigma_noise,SpPositiveComplexObject);
   CuAssertIntEquals(tc,test_sp_phasing_common(tc,alg,size,oversampling,SpPositiveComplexObject,1,tol),1);
-  alg = sp_phasing_hio_alloc(beta,0);
+  alg = sp_phasing_hio_alloc(beta,sigma_noise,0);
   CuAssertIntEquals(tc,test_sp_phasing_common(tc,alg,size,oversampling,SpNoConstraints,1,tol),1);
-  alg = sp_phasing_hio_alloc(beta,SpPositiveRealObject);
+  alg = sp_phasing_hio_alloc(beta,sigma_noise,SpPositiveRealObject);
   CuAssertIntEquals(tc,test_sp_phasing_common(tc,alg,size,oversampling,SpPositiveRealObject,1,tol),1);
   PRINT_DONE;
 }
@@ -1059,7 +1065,8 @@ void test_sp_support_speed(CuTest * tc){
   int size = 512;
   int oversampling = 2;
   sp_smap * beta = sp_smap_create_from_pair(0,0.8);
-  SpPhasingAlgorithm * alg = sp_phasing_hio_alloc(beta,0);
+  real sigma_noise = 0.;
+  SpPhasingAlgorithm * alg = sp_phasing_hio_alloc(beta,sigma_noise,0);
   int iterations = 500;
   sp_smap * blur_radius = sp_smap_alloc(2);
   sp_smap_insert(blur_radius,0,3);
@@ -1094,7 +1101,8 @@ void test_sp_phasing_hio_speed(CuTest * tc){
   int size = 512;
   int oversampling = 2;
   sp_smap * beta = sp_smap_create_from_pair(0,0.8);
-  SpPhasingAlgorithm * alg = sp_phasing_hio_alloc(beta,0);
+  real sigma_noise = 0.;
+  SpPhasingAlgorithm * alg = sp_phasing_hio_alloc(beta,sigma_noise,0);
   int iterations = 2000;
   sp_smap * blur_radius = sp_smap_alloc(2);
   sp_smap_insert(blur_radius,0,3);
@@ -1140,17 +1148,18 @@ void test_sp_phasing_raar(CuTest * tc){
   int oversampling = 2;
   real tol = 1e-10;
   sp_smap * beta = sp_smap_create_from_pair(0,0.8);
-  SpPhasingAlgorithm * alg = sp_phasing_raar_alloc(beta,0);
+  real sigma_noise = 0.;
+  SpPhasingAlgorithm * alg = sp_phasing_raar_alloc(beta,sigma_noise,0);
   CuAssertIntEquals(tc,test_sp_phasing_common(tc,alg,size,oversampling,SpNoConstraints,0,tol),1);
-  alg = sp_phasing_raar_alloc(beta,SpPositiveRealObject);
+  alg = sp_phasing_raar_alloc(beta,sigma_noise,SpPositiveRealObject);
   CuAssertIntEquals(tc,test_sp_phasing_common(tc,alg,size,oversampling,SpPositiveRealObject,0,tol),1);
-  alg = sp_phasing_raar_alloc(beta,SpRealObject);
+  alg = sp_phasing_raar_alloc(beta,sigma_noise,SpRealObject);
   CuAssertIntEquals(tc,test_sp_phasing_common(tc,alg,size,oversampling,SpRealObject,0,tol),1);
-  alg = sp_phasing_raar_alloc(beta,SpPositiveComplexObject);
+  alg = sp_phasing_raar_alloc(beta,sigma_noise,SpPositiveComplexObject);
   CuAssertIntEquals(tc,test_sp_phasing_common(tc,alg,size,oversampling,SpPositiveComplexObject,0,tol),1);
-  alg = sp_phasing_raar_alloc(beta,SpPositiveComplexObject);
+  alg = sp_phasing_raar_alloc(beta,sigma_noise,SpPositiveComplexObject);
   CuAssertIntEquals(tc,test_sp_phasing_common(tc,alg,size,oversampling,SpPositiveComplexObject,1,tol),1);
-  alg = sp_phasing_raar_alloc(beta,SpPositiveRealObject);
+  alg = sp_phasing_raar_alloc(beta,sigma_noise,SpPositiveRealObject);
   CuAssertIntEquals(tc,test_sp_phasing_common(tc,alg,size,oversampling,SpPositiveRealObject,1,tol),1);
   PRINT_DONE;
 }
@@ -1161,7 +1170,8 @@ void test_sp_phasing_raar_speed(CuTest * tc){
   int size = 512;
   int oversampling = 2;
   sp_smap * beta = sp_smap_create_from_pair(0,0.8);
-  SpPhasingAlgorithm * alg = sp_phasing_raar_alloc(beta,0);
+  real sigma_noise = 0.;
+  SpPhasingAlgorithm * alg = sp_phasing_raar_alloc(beta,sigma_noise,0);
   int iterations = 2000;
   if(sp_cuda_get_device_type() == SpCUDAHardwareDevice){
     int delta_t = test_sp_phasing_speed_common(tc,alg,NULL,size,oversampling,SpNoConstraints,iterations,SpEngineCUDA);
@@ -1200,8 +1210,9 @@ void test_sp_support_hio(CuTest * tc){
   int size = 4;
   int oversampling = 2;
   sp_smap * beta = sp_smap_create_from_pair(0,0.8);
+  real sigma_noise = 0.;
   real tol = 1e-5;
-  SpPhasingAlgorithm * alg = sp_phasing_hio_alloc(beta,0);
+  SpPhasingAlgorithm * alg = sp_phasing_hio_alloc(beta,sigma_noise,0);
   sp_smap * blur_radius = sp_smap_alloc(2);
   sp_smap_insert(blur_radius,0,3);
   sp_smap_insert(blur_radius,2000,0.7);
@@ -1221,8 +1232,9 @@ void test_sp_support_raar(CuTest * tc){
   int size = 4;
   int oversampling = 2;
   sp_smap * beta = sp_smap_create_from_pair(0,0.8);
+  real sigma_noise = 0.;
   real tol = 1e-5;
-  SpPhasingAlgorithm * alg = sp_phasing_raar_alloc(beta,0);
+  SpPhasingAlgorithm * alg = sp_phasing_raar_alloc(beta,sigma_noise,0);
   sp_smap * blur_radius = sp_smap_alloc(2);
   sp_smap_insert(blur_radius,0,3);
   sp_smap_insert(blur_radius,2000,0.7);
@@ -1281,13 +1293,14 @@ void test_sp_phasing_fourier_constraints(CuTest * tc){
   int size = 4;
   int oversampling = 3;
   sp_smap * beta = sp_smap_create_from_pair(0,0.8);
+  real sigma_noise = 0.;
   real stop_tol = 1e-10;
   real match_tol = 1e-4;
   int nruns = 30;
   Image * pada;
   SpPhasingAlgorithm * alg;
   int n_success = 0;
-  alg = sp_phasing_hio_alloc(beta,SpCentrosymmetricObject);
+  alg = sp_phasing_hio_alloc(beta,sigma_noise,SpCentrosymmetricObject);
   n_success = 0;
   for(int i = 0;i<nruns;i++){
     pada = create_test_image(size,oversampling,SpCentrosymmetricObject);

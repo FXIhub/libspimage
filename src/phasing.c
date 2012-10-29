@@ -47,21 +47,23 @@ SpPhasingAlgorithm * sp_phasing_diff_map_alloc(sp_smap * beta, real gamma1, real
   return ret;
 }
 
-SpPhasingAlgorithm * sp_phasing_raar_alloc(sp_smap * beta, SpPhasingConstraints constraints){
+SpPhasingAlgorithm * sp_phasing_raar_alloc(sp_smap * beta, real sigma_noise, SpPhasingConstraints constraints){
   SpPhasingAlgorithm * ret = sp_malloc(sizeof(SpPhasingAlgorithm));
   ret->type = SpRAAR;
   SpPhasingRAARParameters * params = sp_malloc(sizeof(SpPhasingRAARParameters));
   params->beta = beta;
+  params->sigma_noise = sigma_noise;
   params->constraints = constraints;
   ret->params = params;
   return ret;
 }
 
-SpPhasingAlgorithm * sp_phasing_hio_alloc(sp_smap * beta, SpPhasingConstraints constraints){
+SpPhasingAlgorithm * sp_phasing_hio_alloc(sp_smap * beta, real sigma_noise, SpPhasingConstraints constraints){
   SpPhasingAlgorithm * ret = sp_malloc(sizeof(SpPhasingAlgorithm));
   ret->type = SpHIO;
   SpPhasingHIOParameters * params = sp_malloc(sizeof(SpPhasingHIOParameters));
   params->beta = beta;
+  params->sigma_noise = sigma_noise;
   params->constraints = constraints;
   ret->params = params;
   return ret;
@@ -869,6 +871,7 @@ static int phaser_iterate_er(SpPhaser * ph,int iterations){
 
 static int phaser_iterate_hio(SpPhaser * ph,int iterations){
   SpPhasingHIOParameters * params = ph->algorithm->params;
+  float sigma_noise = params->sigma_noise;
   for(int i = 0;i<iterations;i++){
     real beta = sp_smap_interpolate(params->beta,ph->iteration);
     Image * swap = ph->g0;
@@ -888,7 +891,17 @@ static int phaser_iterate_hio(SpPhaser * ph,int iterations){
     for(int i =0;i<sp_image_size(ph->g1);i++){
       if(ph->pixel_flags->data[i] & SpPixelInsideSupport){
 	// Nothing to do here 
-      }else{
+      }
+
+      else if(SpNoiseTolerance){
+	if (sp_cabs(ph->g1->image->data[i]) > 3*sigma_noise){
+	  ph->g1->image->data[i] = sp_csub(ph->g0->image->data[i],sp_cscale(ph->g1->image->data[i],beta));
+	}
+	else{
+	  ph->g1->image->data[i] = sp_cinit(0, 0);
+	}
+      }
+      else{
 	ph->g1->image->data[i] = sp_csub(ph->g0->image->data[i],sp_cscale(ph->g1->image->data[i],beta));
       }
     }
@@ -901,6 +914,7 @@ static int phaser_iterate_hio(SpPhaser * ph,int iterations){
 
 static int phaser_iterate_raar(SpPhaser * ph,int iterations){
   SpPhasingRAARParameters * params = ph->algorithm->params;
+  float sigma_noise = params->sigma_noise;
   for(int i = 0;i<iterations;i++){
     real beta = sp_smap_interpolate(params->beta,ph->iteration);
     Image * swap = ph->g0;
@@ -934,7 +948,18 @@ static int phaser_iterate_raar(SpPhaser * ph,int iterations){
       */    
       if(ph->pixel_flags->data[i] & SpPixelInsideSupport){
 	// Nothing to do here 
-      }else{
+      }
+
+      else if(ph->pixel_flags->data[i] & SpNoiseTolerance){
+	if (sp_cabs(ph->g1->image->data[i]) > 3*sigma_noise){
+	  ph->g1->image->data[i] = sp_cadd(sp_cscale(ph->g1->image->data[i],1-2*beta),sp_cscale(ph->g0->image->data[i],beta));
+	}
+	else{
+	  ph->g1->image->data[i] = sp_cinit(0, 0);
+	}
+      }
+
+      else{
 	ph->g1->image->data[i] = sp_cadd(sp_cscale(ph->g1->image->data[i],1-2*beta),sp_cscale(ph->g0->image->data[i],beta));      
       }
     }

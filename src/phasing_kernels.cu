@@ -27,7 +27,7 @@ __global__ void CUDA_diff_map(cufftComplex* Pi2f1,cufftComplex* Pi2rho, const cu
   }
 }
 
-__global__ void CUDA_support_projection_raar(cufftComplex* g1, const cufftComplex* g0,const int * pixel_flags,const  int size,const float beta)
+__global__ void CUDA_support_projection_raar(cufftComplex* g1, const cufftComplex* g0,const int * pixel_flags,const  int size,const float beta, const float sigma_noise)
 {
   /* A bit of documentation about the equation:
      
@@ -48,20 +48,42 @@ __global__ void CUDA_support_projection_raar(cufftComplex* g1, const cufftComple
       g1[i].x = g0[i].x*beta+(1.0f-2.0f*beta)*g1[i].x;
       g1[i].y = g0[i].y*beta+(1.0f-2.0f*beta)*g1[i].y;
     }
+
+    else if((pixel_flags[i] & SpNoiseTolerance) == 1){
+      if( sqrt(g1[i].x*g1[i].x+g1[i].y*g1[i].y) > sigma_noise*3.0f){
+	g1[i].x = g0[i].x*beta+(1.0f-2.0f*beta)*g1[i].x;
+	g1[i].y = g0[i].y*beta+(1.0f-2.0f*beta)*g1[i].y;	
+      }
+      else{
+	g1[i].x = 0.;
+	g1[i].y = 0.;
+      }
+    }
+
   }
 }      
 
-__global__ void CUDA_support_projection_hio(cufftComplex* g1, const cufftComplex* g0,const int * pixel_flags,const  int size,const float beta)
+__global__ void CUDA_support_projection_hio(cufftComplex* g1, const cufftComplex* g0,const int * pixel_flags,const  int size,const float beta, const float sigma_noise)
 {
   const int i = blockIdx.x*blockDim.x + threadIdx.x;
+  
   if(i<size){
     if((pixel_flags[i] & SpPixelInsideSupport) == 0){
       g1[i].x = g0[i].x-g1[i].x*beta;
       g1[i].y = g0[i].y-g1[i].y*beta;
     }
-  }
-}      
-
+    else if((pixel_flags[i] & SpNoiseTolerance) == 1){
+      if( sqrt(g1[i].x*g1[i].x+g1[i].y*g1[i].y) > sigma_noise*3.0f){
+	g1[i].x = g0[i].x-g1[i].x*beta;
+	g1[i].y = g0[i].y-g1[i].y*beta;
+      }
+      else{
+	g1[i].x = 0.;
+	g1[i].y = 0.;
+      }
+    }     
+  }      
+}
 __global__ void CUDA_support_projection_er(cufftComplex* g1,const int * pixel_flags,const  int size)
 {
   const int i = blockIdx.x*blockDim.x + threadIdx.x;
@@ -149,13 +171,13 @@ __global__ void CUDA_apply_constraints(cufftComplex* g, const int * pixel_flags,
 	    g[i].x = 0;
 	  }
 	}
-	if(g[i].y < 0){
+	/*if(g[i].y < 0){
 	  if(constraints & SpPositivityFlipping){
 	    g[i].y = fabs(g[i].y);
 	  }else{
 	    g[i].y = 0;
 	  }
-	}
+	  }*/
       }
     }
   }
