@@ -130,6 +130,8 @@ static void write_h5_img(const Image * img,const char * filename, int output_pre
   hid_t plist;
   hsize_t chunk_size[3] = {sp_c3matrix_x(img->image),sp_c3matrix_y(img->image),sp_c3matrix_z(img->image)};
   char tmpfile[1024];
+  H5E_auto_t func;
+  void * client_data;
   //  strcpy(tmpfile,filename);
   //  strcat(tmpfile,"XXXXXX");
   sprintf(tmpfile,"%s-%d",filename,rand());
@@ -158,7 +160,18 @@ static void write_h5_img(const Image * img,const char * filename, int output_pre
   dims[1] = sp_c3matrix_y(img->image);
   dims[2] = sp_c3matrix_z(img->image);
   //  file_id = H5Fcreate(filename,  H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+  H5Eget_auto(H5E_DEFAULT,&func,&client_data);
+  /* turn off warning to check file and version because they might not exist */
+  H5Eset_auto(H5E_DEFAULT,NULL,NULL);  
   file_id = H5Fcreate(tmpfile,  H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+  if(file_id < 0){
+    sp_error_warning("Unable to create %s",filename);
+    H5Eset_auto(H5E_DEFAULT,func,client_data);
+    H5close();
+    return;
+  }
+  H5Eset_auto(H5E_DEFAULT,func,client_data);
+
   dataspace_id = H5Screate_simple( 3, dims, NULL );
 
   plist = H5Pcreate (H5P_DATASET_CREATE);
@@ -499,129 +512,129 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
     if(version == 2){
       dataset_id = H5Dopen(file_id, "/mask",H5P_DEFAULT);
       if(dataset_id < 0){
-	sp_error_warning("Unable to open dataset in file %s",filename);
-	return NULL;
+       sp_error_warning("Unable to open dataset in file %s",filename);
+       return NULL;
       }
       space = H5Dget_space(dataset_id);
       H5Sget_simple_extent_dims(space,dims,NULL);
       if(H5Sget_simple_extent_ndims(space) == 3){
-	res->image = _sp_c3matrix_alloc(dims[0],dims[1],dims[2],file,line);
-	res->mask = _sp_i3matrix_alloc(dims[0],dims[1],dims[2],file,line);
+       res->image = _sp_c3matrix_alloc(dims[0],dims[1],dims[2],file,line);
+       res->mask = _sp_i3matrix_alloc(dims[0],dims[1],dims[2],file,line);
       }else{
-	res->image = _sp_c3matrix_alloc(dims[0],dims[1],1,file,line);
-	res->mask = _sp_i3matrix_alloc(dims[0],dims[1],1,file,line);
+       res->image = _sp_c3matrix_alloc(dims[0],dims[1],1,file,line);
+       res->mask = _sp_i3matrix_alloc(dims[0],dims[1],1,file,line);
       }
       
       status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL,
 		       H5P_DEFAULT, res->mask->data);
       if(status < 0){
-	sp_error_warning("Unable to read dataset from file %s",filename);
-	return NULL;
+       sp_error_warning("Unable to read dataset from file %s",filename);
+       return NULL;
       }
 
 
       status = H5Dclose(dataset_id);
       
       if(status < 0){
-	sp_error_warning("Unable to close dataset from file %s",filename);
-	return NULL;
+       sp_error_warning("Unable to close dataset from file %s",filename);
+       return NULL;
       }
 
       dataset_id = H5Dopen(file_id, "/image_center",H5P_DEFAULT);
       if(dataset_id < 0){
-	sp_error_warning("Unable to open dataset in file %s",filename);
-	return NULL;
+       sp_error_warning("Unable to open dataset in file %s",filename);
+       return NULL;
       }
       status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		       H5P_DEFAULT, values);
       if(status < 0){
-	sp_error_warning("Unable to read dataset from file %s",filename);
-	return NULL;
+       sp_error_warning("Unable to read dataset from file %s",filename);
+       return NULL;
       }
       status = H5Dclose(dataset_id);
       res->detector->image_center[0] = values[0];
       res->detector->image_center[1] = values[1];
       if(values[2]){
-	res->detector->image_center[2] = values[2];
+       res->detector->image_center[2] = values[2];
       }else{
-	res->detector->image_center[2] = 0;
+       res->detector->image_center[2] = 0;
       }
       
       dataset_id = H5Dopen(file_id, "/phased",H5P_DEFAULT);
       if(dataset_id < 0){
-	sp_error_warning("Unable to open dataset in file %s",filename);
-	return NULL;
+       sp_error_warning("Unable to open dataset in file %s",filename);
+       return NULL;
       }
 
       status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		       H5P_DEFAULT, values);
       if(status < 0){
-	sp_error_warning("Unable to read dataset from file %s",filename);
-	return NULL;
+       sp_error_warning("Unable to read dataset from file %s",filename);
+       return NULL;
       }
 
       status = H5Dclose(dataset_id);
       if(status < 0){
-	sp_error_warning("Unable to close dataset from file %s",filename);
-	return NULL;
+       sp_error_warning("Unable to close dataset from file %s",filename);
+       return NULL;
       }
 
       res->phased = values[0];
       
       dataset_id = H5Dopen(file_id, "/shifted",H5P_DEFAULT);
       if(dataset_id < 0){
-	sp_error_warning("Unable to open dataset in file %s",filename);
-	return NULL;
+       sp_error_warning("Unable to open dataset in file %s",filename);
+       return NULL;
       }
 
       status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		       H5P_DEFAULT, values);
       if(status < 0){
-	sp_error_warning("Unable to read dataset from file %s",filename);
-	return NULL;
+       sp_error_warning("Unable to read dataset from file %s",filename);
+       return NULL;
       }
 
       status = H5Dclose(dataset_id);
 
       if(status < 0){
-	sp_error_warning("Unable to close dataset from file %s",filename);
-	return NULL;
+       sp_error_warning("Unable to close dataset from file %s",filename);
+       return NULL;
       }
 
       res->shifted = values[0];
       
       dataset_id = H5Dopen(file_id, "/scaled",H5P_DEFAULT);
       if(dataset_id < 0){
-	sp_error_warning("Unable to open dataset in file %s",filename);
-	return NULL;
+       sp_error_warning("Unable to open dataset in file %s",filename);
+       return NULL;
       }
 
       status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		       H5P_DEFAULT, values);
       if(status < 0){
-	sp_error_warning("Unable to read dataset from file %s",filename);
-	return NULL;
+       sp_error_warning("Unable to read dataset from file %s",filename);
+       return NULL;
       }
 
       status = H5Dclose(dataset_id);
       if(status < 0){
-	sp_error_warning("Unable to close dataset from file %s",filename);
-	return NULL;
+       sp_error_warning("Unable to close dataset from file %s",filename);
+       return NULL;
       }
 
       res->scaled = values[0];
       
       dataset_id = H5Dopen(file_id, "/detector_distance",H5P_DEFAULT);
       if(dataset_id < 0){
-	sp_error_warning("Unable to open dataset in file %s",filename);
-	return NULL;
+       sp_error_warning("Unable to open dataset in file %s",filename);
+       return NULL;
       }
 
       status = H5Dread(dataset_id,  mem_type_id, H5S_ALL, H5S_ALL,
 		       H5P_DEFAULT, values);
       if(status < 0){
-	sp_error_warning("Unable to read dataset from file %s",filename);
-	return NULL;
+       sp_error_warning("Unable to read dataset from file %s",filename);
+       return NULL;
       }
 
       status = H5Dclose(dataset_id);
@@ -1916,13 +1929,27 @@ void write_cxi(const Image * img,const char * filename){
   hid_t file_id;
   char * data_type_string[] = {"intensity","amplitude","unphased amplitude"};
   char * string;
+  H5E_auto_t func;
+  void * client_data;
+
   hid_t mem_type_id;
   if(sizeof(real) == sizeof(float)){
     mem_type_id = H5T_NATIVE_FLOAT;
   }else if(sizeof(real) == sizeof(double)){
     mem_type_id = H5T_NATIVE_DOUBLE;
   };
+
+  H5Eget_auto(H5E_DEFAULT,&func,&client_data);
+  /* turn off warning to check file and version because they might not exist */
+  H5Eset_auto(H5E_DEFAULT,NULL,NULL);  
   file_id = H5Fcreate(filename,  H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+  if(file_id < 0){
+    sp_error_warning("Unable to create %s",filename);
+    H5Eset_auto(H5E_DEFAULT,func,client_data);
+    H5close();
+    return;
+  }
+  H5Eset_auto(H5E_DEFAULT,func,client_data);
   dims[0] = 1;
   dataspace_id = H5Screate(H5S_SCALAR);
   dataset_id = H5Dcreate(file_id, "/cxi_version", H5T_NATIVE_INT,dataspace_id,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
@@ -2074,8 +2101,28 @@ Image * read_cxi(const char * filename){
   hid_t dataset_id;
   hid_t file_id;
   int status;
+  H5E_auto_t func;
+  void * client_data;
+
+  H5Eget_auto(H5E_DEFAULT,&func,&client_data);
+  /* turn off warning to check file and version because they might not exist */
+  H5Eset_auto(H5E_DEFAULT,NULL,NULL);  
+
   file_id = H5Fopen(filename, H5F_ACC_RDONLY,H5P_DEFAULT);
+  if(file_id < 0){
+    sp_error_warning("Unable to open %s",filename);
+    H5Eset_auto(H5E_DEFAULT,func,client_data);
+    H5close();
+    return NULL;
+  }
   dataset_id = H5Dopen(file_id,"/entry_1/data_1/data",H5P_DEFAULT);
+  if(dataset_id < 0){
+    sp_error_warning("Unable to open /entry_1/data_1/data in %s",filename);
+    H5Eset_auto(H5E_DEFAULT,func,client_data);
+    H5close();
+    return NULL;
+  }
+  H5Eset_auto(H5E_DEFAULT,func,client_data);
   hid_t space = H5Dget_space(dataset_id);
   if(H5Sget_simple_extent_ndims(space) == 3 ||
      H5Sget_simple_extent_ndims(space) == 2){
