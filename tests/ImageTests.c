@@ -281,7 +281,7 @@ void test_sp_image_h5_read_write(CuTest * tc){
   for(int z = 0; z<sp_image_z(a);z++){
     for(int y = 0; y<sp_image_y(a);y++){
       for(int x = 0; x<sp_image_x(a);x++){
-	sp_image_set(a,0,0,0,sp_cinit(rand()%50,rand()%50));
+       sp_image_set(a,0,0,0,sp_cinit(rand()%50,rand()%50));
       }
     }
   }
@@ -290,7 +290,7 @@ void test_sp_image_h5_read_write(CuTest * tc){
   for(int z = 0; z<sp_image_z(a);z++){
     for(int y = 0; y<sp_image_y(a);y++){
       for(int x = 0; x<sp_image_x(a);x++){
-	CuAssertComplexEquals(tc,sp_image_get(b,x,y,z),sp_image_get(a,x,y,z),fabs(sp_cabs(sp_image_get(a,x,y,z))*(REAL_EPSILON))+REAL_EPSILON);
+       CuAssertComplexEquals(tc,sp_image_get(b,x,y,z),sp_image_get(a,x,y,z),fabs(sp_cabs(sp_image_get(a,x,y,z))*(REAL_EPSILON))+REAL_EPSILON);
       }
     }
   }
@@ -372,6 +372,29 @@ void test_sp_image_h5_read_write(CuTest * tc){
   remove("test.h5");
 }
 
+
+void test_sp_image_h5_read_write_errors(CuTest * tc){
+  /* First lets check 2D */
+  int size = 100;
+  Image * a;
+  a = sp_image_alloc(size,size,1);
+  a->phased = 1;
+  for(int z = 0; z<sp_image_z(a);z++){
+    for(int y = 0; y<sp_image_y(a);y++){
+      for(int x = 0; x<sp_image_x(a);x++){
+       sp_image_set(a,0,0,0,sp_cinit(rand()%50,rand()%50));
+      }
+    }
+  }
+  sp_image_write(a,"please_ignore_this_non_existent_directory_error_314159/error_test.h5",sizeof(float));
+  sp_image_write(a,"please_ignore_this_non_existent_directory_error_314159/error_test.cxi",sizeof(float));
+  sp_image_read("please_ignore_this_non_existent_directory_error_314159/error_test.h5",0);
+  sp_image_read("please_ignore_this_non_existent_directory_error_314159/error_test.cxi",0);
+//  b = sp_image_read("test.h5",0);
+  sp_image_free(a);
+//  sp_image_free(b);
+//  remove("test.h5");
+}
 
 void test_sp_image_get_false_color(CuTest * tc){
   int size = 100;
@@ -1086,6 +1109,7 @@ CuSuite* image_get_suite(void)
   SUITE_ADD_TEST(suite,test_cube_crop);
   SUITE_ADD_TEST(suite,test_sp_image_low_pass);
   SUITE_ADD_TEST(suite,test_sp_image_h5_read_write);
+  SUITE_ADD_TEST(suite,test_sp_image_h5_read_write_errors);
   SUITE_ADD_TEST(suite,test_sp_image_get_false_color);
   //  SUITE_ADD_TEST(suite,test_sp_image_noise_estimate);
   SUITE_ADD_TEST(suite,test_sp_image_dist);
