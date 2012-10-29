@@ -179,7 +179,7 @@ __global__ void CUDA_apply_constraints(cufftComplex* g, const int * pixel_flags,
 	  }
 	  }*/
       }
-    }
+      }
   }
 }
 

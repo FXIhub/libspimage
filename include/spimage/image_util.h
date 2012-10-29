@@ -42,6 +42,7 @@ extern "C"
 #define SP_TO_CENTER 5
 #define SP_TO_CENTER2 6
 #define SP_TO_CORNER 7
+#define SP_TO_TOP_LEFT 8
 
 #define SP_COPY_DATA 1
 #define SP_COPY_DETECTOR 0
@@ -668,11 +669,6 @@ spimage_EXPORT real sp_image_correlation_coefficient(const Image * a,const Image
 
 spimage_EXPORT sp_vector * sp_image_center_of_mass(Image * a);
 
-/*! Returns an array that correponds to the RGBA values of the image when transformed with the given colormap
-  using only the values in the range [min,max]
-*/
-spimage_EXPORT unsigned char * sp_image_get_false_color(Image * img, int color, double min, double max);
-
 /*! Calculate a random gaussian distributed number with mean m and standard deviation s 
 */
 spimage_EXPORT real sp_box_muller(real m, real s);
@@ -718,17 +714,17 @@ spimage_EXPORT int sp_image_get_coords_from_index(const Image * in,int index,rea
 
   /* out will get a new mask that is zero where in->image is zero
      and one where it is nonzero. */
-  spimage_EXPORT void sp_image_image_to_mask(Image *in, Image *out);
+  spimage_EXPORT void sp_image_image_to_mask(const Image *in, Image *out);
   /* out will get a new image that is zero when in->mask is zero
      and (1.0,0.0) where it is nonzero */
-  spimage_EXPORT void sp_image_mask_to_image(Image *in, Image *out);
+  spimage_EXPORT void sp_image_mask_to_image(const Image *in, Image *out);
   /* copies the image from in to out */
-  spimage_EXPORT void sp_image_image_to_image(Image *in, Image *out);
+  spimage_EXPORT void sp_image_image_to_image(const Image *in, Image *out);
   /* copies the mask from in to out */
-  spimage_EXPORT void sp_image_mask_to_mask(Image *in, Image *out);
+  spimage_EXPORT void sp_image_mask_to_mask(const Image *in, Image *out);
   /* out gets a new mask that is zero where in->image is nonzero
      and one wher it is zero */
-  spimage_EXPORT void sp_image_invert_mask(Image *in, Image *out);
+  spimage_EXPORT void sp_image_invert_mask(const Image *in, Image *out);
 
   spimage_EXPORT void sp_image_grow_mask(Image *in, int pixels);
   spimage_EXPORT void sp_image_shrink_mask(Image *in, int pixels);

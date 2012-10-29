@@ -40,6 +40,7 @@ static real dist_to_axis(int i, Image * in);
 static real dist_to_center(int i, Image * in);
 static real square_dist_to_center(int i, Image * in);
 static real dist_to_corner(int i, Image * in);
+static real dist_to_top_left(int i, Image * in);
 static void random_rephase(Image *  img);
 static Image * reflect_xy(Image * in, int in_place);
 static Image * reflect_x(Image * in, int in_place);
@@ -934,6 +935,8 @@ real sp_image_dist(Image * in, int i, int type){
     return square_dist_to_center(i,in);
   }if(type == SP_TO_CORNER){
     return  dist_to_corner(i, in);
+  }if(type == SP_TO_TOP_LEFT){
+    return  dist_to_top_left(i, in);
   }
   return -1;
 }
@@ -1009,6 +1012,28 @@ static real dist_to_corner(int i, Image * in){
     dz = z;
   }
   return sqrt(dx*dx+dy*dy+dz*dz);
+}
+
+static real dist_to_top_left(int i, Image *in){
+  float x,y,z;
+  sp_image_get_coords_from_index(in, i, &x, &y, &z, SpTopLeftCorner);
+  real dx, dy, dz;
+  if (sp_c3matrix_x(in->image)-x < x) {
+    dx = sp_c3matrix_x(in->image)-x;
+  } else {
+    dx = x;
+  }
+  if (sp_c3matrix_y(in->image)-y < y) {
+    dy = sp_c3matrix_y(in->image)-y;
+  } else {
+    dy = y;
+  }
+  if (sp_c3matrix_z(in->image)-z < z) {
+    dz = sp_c3matrix_z(in->image)-z;
+  } else {
+    dz = z;
+  }
+  return sqrt(pow(dx,2) + pow(dy,2) + pow(dz,2));
 }
 
 
@@ -3424,7 +3449,7 @@ int sp_image_contains_coordinates(const Image *a, real x, real y, real z){
   return 1;
 }
 
-void sp_image_image_to_mask(Image *in, Image *out)
+void sp_image_image_to_mask(const Image *in, Image *out)
 {
   if (sp_image_x(in) != sp_image_x(out) ||
       sp_image_y(in) != sp_image_y(out) ||
@@ -3444,7 +3469,7 @@ void sp_image_image_to_mask(Image *in, Image *out)
 }
 /* out will get a new image that is zero when in->mask is zero
      and (1.0,0.0) where it is nonzero */
-void sp_image_mask_to_image(Image *in, Image *out)
+void sp_image_mask_to_image(const Image *in, Image *out)
 {
   if (sp_image_x(in) != sp_image_x(out) ||
       sp_image_y(in) != sp_image_y(out) ||
@@ -3462,7 +3487,7 @@ void sp_image_mask_to_image(Image *in, Image *out)
   }
 }
 /* copies the image from in to out */
-void sp_image_image_to_image(Image *in, Image *out)
+void sp_image_image_to_image(const Image *in, Image *out)
 {
   if (sp_image_x(in) != sp_image_x(out) ||
       sp_image_y(in) != sp_image_y(out) ||
@@ -3476,7 +3501,7 @@ void sp_image_image_to_image(Image *in, Image *out)
   }
 }
 /* copies the mask from in to out */
-void sp_image_mask_to_mask(Image *in, Image *out)
+void sp_image_mask_to_mask(const Image *in, Image *out)
 {
   if (sp_image_x(in) != sp_image_x(out) ||
       sp_image_y(in) != sp_image_y(out) ||
@@ -3492,7 +3517,7 @@ void sp_image_mask_to_mask(Image *in, Image *out)
 
 /* out gets a new mask that is zero where in->image is nonzero
    and one wher it is zero */
-void sp_image_invert_mask(Image *in, Image *out)
+void sp_image_invert_mask(const Image *in, Image *out)
 {
   if (sp_image_x(in) != sp_image_x(out) ||
       sp_image_y(in) != sp_image_y(out) ||

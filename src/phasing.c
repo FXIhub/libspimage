@@ -356,9 +356,29 @@ const Image * sp_phaser_model(SpPhaser * ph){
   return ph->model;
 }
 
+static Image * sp_phaser_model_non_const(SpPhaser * ph){
+  if(ph->model_iteration != ph->iteration){
+    if(!ph->model){
+      ph->model = sp_image_alloc(ph->nx,ph->ny,ph->nz);
+    }
+    ph->model_iteration = ph->iteration;
+    if(ph->engine == SpEngineCPU){
+      sp_image_memcpy(ph->model,ph->g1);
+    }else if(ph->engine == SpEngineCUDA){
+#ifdef _USE_CUDA
+      /* transfer the model from the graphics card to the main memory */
+      cutilSafeCall(cudaMemcpy(ph->model->image->data,ph->d_g1,sizeof(cufftComplex)*ph->image_size,cudaMemcpyDeviceToHost));
+#else
+      return NULL;
+#endif    
+    }
+  }
+  return ph->model;
+}
+
 const Image * sp_phaser_model_with_support(SpPhaser * ph){
-  Image * model = sp_phaser_model(ph);
-  Image * support = sp_phaser_support(ph);
+  Image * model = sp_phaser_model_non_const(ph);
+  const Image * support = sp_phaser_support(ph);
   sp_image_image_to_mask(support,model);
   return model;
 }
@@ -388,9 +408,34 @@ const Image * sp_phaser_fmodel(SpPhaser * ph){
   return ph->fmodel;
 }
 
+static Image * sp_phaser_fmodel_non_const(SpPhaser * ph){
+  if(ph->fmodel_iteration != ph->iteration){
+    if(!ph->fmodel){
+      ph->fmodel = sp_image_alloc(ph->nx,ph->ny,ph->nz);
+    }
+
+    ph->fmodel_iteration = ph->iteration;
+    if(ph->engine == SpEngineCPU){
+      sp_image_memcpy(ph->fmodel,ph->g1);
+      sp_image_fft_fast(ph->fmodel,ph->fmodel);
+    }else if(ph->engine == SpEngineCUDA){
+#ifdef _USE_CUDA
+      /* transfer the model from the graphics card to the main memory */
+      cutilSafeCall(cudaMemcpy(ph->fmodel->image->data,ph->d_g1,sizeof(cufftComplex)*ph->image_size,cudaMemcpyDeviceToHost));
+      /* not really efficient here */
+      sp_image_fft_fast(ph->fmodel,ph->fmodel);
+#else
+      return NULL;
+#endif    
+    }
+  }
+  ph->fmodel->phased = 1;
+  return ph->fmodel;
+}
+
 const Image * sp_phaser_fmodel_with_mask(SpPhaser * ph){
-  Image *fmodel = sp_phaser_fmodel(ph);
-  Image *amplitudes = sp_phaser_amplitudes(ph);
+  Image *fmodel = sp_phaser_fmodel_non_const(ph);
+  const Image *amplitudes = sp_phaser_amplitudes(ph);
   sp_image_mask_to_mask(amplitudes,fmodel);
   /*
   for (int i = 0; i < sp_image_size(fmodel); i++) {
@@ -642,7 +687,7 @@ const Image * sp_phaser_support(SpPhaser * ph){
 
 int sp_phaser_iterate(SpPhaser * ph, int iterations){
   int (*phaser_iterate_pointer)(SpPhaser *, int) = NULL; 
-  int (*phaser_update_support_pointer)(SpPhaser *) = NULL; 
+  // int (*phaser_update_support_pointer)(SpPhaser *) = NULL; 
   if(!ph){
     return -1;
   }
@@ -775,34 +820,34 @@ static void phaser_apply_constraints(SpPhaser * ph,Image * new_model, SpPhasingC
   /* Apply constraints */
   for(int i =0;i<sp_image_size(new_model);i++){
     if(ph->pixel_flags->data[i] & SpPixelInsideSupport){
-      if(constraints & SpRealObject){
-	sp_imag(new_model->image->data[i]) = 0;
-      }else if(constraints & SpPositiveRealObject){
-	if(sp_real(new_model->image->data[i]) < 0){
-	  if(constraints & SpPositivityFlipping){
-	    sp_real(new_model->image->data[i]) = fabs(sp_real(new_model->image->data[i]));
-	  }else{
-	    sp_real(new_model->image->data[i]) = 0;
-	  }
+    if(constraints & SpRealObject){
+      sp_imag(new_model->image->data[i]) = 0;
+    }else if(constraints & SpPositiveRealObject){
+      if(sp_real(new_model->image->data[i]) < 0){
+	if(constraints & SpPositivityFlipping){
+	  sp_real(new_model->image->data[i]) = fabs(sp_real(new_model->image->data[i]));
+	}else{
+	  sp_real(new_model->image->data[i]) = 0;
 	}
-	sp_imag(new_model->image->data[i]) = 0;	
-      }else if(constraints & SpPositiveComplexObject){
-	if(sp_real(new_model->image->data[i]) < 0){
-	  if(constraints & SpPositivityFlipping){
-	    sp_real(new_model->image->data[i]) = fabs(sp_real(new_model->image->data[i]));
-	  }else{
-	    sp_real(new_model->image->data[i]) = 0;
-	  }
-	}
-	if(sp_imag(new_model->image->data[i]) < 0){
-	  if(constraints & SpPositivityFlipping){
-	    sp_imag(new_model->image->data[i]) = fabs(sp_imag(new_model->image->data[i]));
-	  }else{
-	    sp_imag(new_model->image->data[i]) = 0;
-	  }
-	}
-
       }
+      sp_imag(new_model->image->data[i]) = 0;	
+    }else if(constraints & SpPositiveComplexObject){
+      if(sp_real(new_model->image->data[i]) < 0){
+	if(constraints & SpPositivityFlipping){
+	  sp_real(new_model->image->data[i]) = fabs(sp_real(new_model->image->data[i]));
+	}else{
+	  sp_real(new_model->image->data[i]) = 0;
+	}
+      }
+      if(sp_imag(new_model->image->data[i]) < 0){
+	if(constraints & SpPositivityFlipping){
+	  sp_imag(new_model->image->data[i]) = fabs(sp_imag(new_model->image->data[i]));
+	}else{
+	  sp_imag(new_model->image->data[i]) = 0;
+	}
+      }
+
+    }
     }
   }
 }

@@ -12,8 +12,7 @@
  */
 SpRotation * sp_rot_alloc()
 {
-  SpRotation * rot = malloc(sizeof(SpRotation));
-  rot = sp_matrix_alloc(3,3);
+  SpRotation * rot = sp_matrix_alloc(3,3);
   return rot;
 }
 
@@ -200,10 +199,7 @@ SpRotation * sp_rot_uniform()
   sp_matrix_set(H,2,1,2.0*sin(2.0*M_PI*x2)*sqrt(x3-x3*x3));
   sp_matrix_set(H,2,2,2.0*(1.0-x3) - 1.0);
   
-  SpRotation * rot = sp_rot_alloc();
-  sp_matrix_free(rot);
-
-  rot = sp_matrix_mul(H,R);
+   SpRotation * rot = sp_matrix_mul(H,R);
   
   sp_matrix_free(R);
   sp_matrix_free(H);

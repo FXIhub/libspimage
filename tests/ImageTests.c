@@ -386,11 +386,11 @@ void test_sp_image_get_false_color(CuTest * tc){
       }
     }
   }
-  out = sp_image_get_false_color(a,SpColormapJet,0,0);
+  out = sp_image_get_false_color(a,SpColormapJet,0,0,1.0);
   free(out);
-  sp_image_get_false_color(a,SpColormapJet|SpColormapLogScale,0,0);
+  sp_image_get_false_color(a,SpColormapJet|SpColormapLogScale,0,0,1.0);
   free(out);
-  sp_image_get_false_color(a,SpColormapJet|SpColormapLogScale,0,25);
+  sp_image_get_false_color(a,SpColormapJet|SpColormapLogScale,0,25,1.0);
   free(out);
 }
 

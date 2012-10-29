@@ -75,13 +75,15 @@ static __global__ void CUDA_complex_scale(cufftComplex * a, int size ,float scal
 
 static __global__ void CUDA_Complex_multiply(cufftComplex * a,cufftComplex * b, int size){
   const int i = blockIdx.x * blockDim.x + threadIdx.x;
+  float tmp_a_x;
   if(i<size){
+    tmp_a_x = a[i].x;
 #ifdef _STRICT_IEEE_754
-    a[i].x = __fadd_rn(__fmul_rn(a[i].x,b[i].x),__fmul_rn(-a[i].y,b[i].y));
-    a[i].y = __fadd_rn(__fmul_rn(a[i].x,b[i].y),__fmul_rn(a[i].y,b[i].x));
+    a[i].x = __fadd_rn(__fmul_rn(tmp_a_x,b[i].x),__fmul_rn(-a[i].y,b[i].y));
+    a[i].y = __fadd_rn(__fmul_rn(tmp_a_x,b[i].y),__fmul_rn(a[i].y,b[i].x));
 #else
-    a[i].x = a[i].x*b[i].x-a[i].y*b[i].y;
-    a[i].y = a[i].x*b[i].y+a[i].y*b[i].x;
+    a[i].x = tmp_a_x*b[i].x-a[i].y*b[i].y;
+    a[i].y = tmp_a_x*b[i].y+a[i].y*b[i].x;
 #endif
   }
   
