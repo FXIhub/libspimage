@@ -4,9 +4,8 @@ PROJECT (spimage)
 
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
-ADD_DEFINITIONS(-D H5_USE_16_API)
 # Make sure that while building this library the include files are not 
-# built will export prefix
+# built with export prefix
 ADD_DEFINITIONS(-D SPIMAGE_NO_DLL)
 
 IF(WIN32)

@@ -115,151 +115,6 @@ Image * _sp_image_read(const char * filename, int flags, const char * file, int 
 }
 
 
-/* superseeded by the new one. Just leave it here in case strange bugs show up in the new one */
-/*
-static void write_h5_img(Image * img,const char * filename, int output_precision){
-  hid_t dataspace_id;
-  hid_t dataset_id;
-  hid_t file_id;
-  int status;
-  int version;
-  hsize_t  dims[2];
-  real values[2];
-  sp_3matrix * tmp;
-  int i;
-  hid_t out_type_id = 0;
-  hid_t mem_type_id = 0;
-  hid_t plist;
-  hsize_t chunk_size[2] = {sp_c3matrix_x(img->image),sp_c3matrix_y(img->image)};
-  if(output_precision == sizeof(double)){
-    out_type_id = H5T_NATIVE_DOUBLE;
-  }else if(output_precision == sizeof(float)){
-    out_type_id = H5T_NATIVE_FLOAT;
-  }else{
-    abort();
-  }
-  if(sizeof(real) == sizeof(float)){
-    mem_type_id = H5T_NATIVE_FLOAT;
-  }else if(sizeof(real) == sizeof(double)){
-    mem_type_id = H5T_NATIVE_DOUBLE;
-  }else{
-    abort();
-  }
-
-  dims[0] = sp_c3matrix_x(img->image);
-  dims[1] = sp_c3matrix_y(img->image);
-  file_id = H5Fcreate(filename,  H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-  dataspace_id = H5Screate_simple( 2, dims, NULL );
-
-  plist = H5Pcreate (H5P_DATASET_CREATE);
-  H5Pset_chunk(plist,2,chunk_size);
-  H5Pset_deflate(plist,6);
-
-  dataset_id = H5Dcreate(file_id, "/mask", H5T_NATIVE_INT,
-			 dataspace_id, plist);
-  status = H5Dwrite(dataset_id,H5T_NATIVE_INT , H5S_ALL, H5S_ALL,
-		    H5P_DEFAULT, img->mask->data);
-  status = H5Dclose(dataset_id);
-
-  tmp = sp_3matrix_alloc(sp_c3matrix_x(img->image),sp_c3matrix_y(img->image),1);
-  for(i = 0;i<sp_image_size(img);i++){
-    tmp->data[i] = sp_real(img->image->data[i]);
-  }
-
-  dataset_id = H5Dcreate(file_id, "/real", out_type_id,
-			 dataspace_id, plist);
-  status = H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
-		    H5P_DEFAULT, tmp->data);
-  status = H5Dclose(dataset_id);
-  sp_3matrix_free(tmp);
-
-  if(img->phased){
-    tmp = sp_3matrix_alloc(sp_c3matrix_x(img->image),sp_c3matrix_y(img->image),1);
-    for(i = 0;i<sp_image_size(img);i++){
-      tmp->data[i] = sp_imag(img->image->data[i]);
-    }
-
-    dataset_id = H5Dcreate(file_id, "/imag",out_type_id,
-			   dataspace_id, plist);
-    status = H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
-		    H5P_DEFAULT, tmp->data);
-    status = H5Dclose(dataset_id);
-    sp_3matrix_free(tmp);
-
-  }
-  dims[0] = 2;
-  dataspace_id = H5Screate_simple( 1, dims, NULL );
-  dataset_id = H5Dcreate(file_id, "/image_center",out_type_id ,
-			 dataspace_id, H5P_DEFAULT);
-  values[0] = img->detector->image_center[0];
-  values[1] = img->detector->image_center[1];
-  status = H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
-		    H5P_DEFAULT, values);
-  status = H5Dclose(dataset_id);
-  status = H5Sclose(dataspace_id);
-
-  dims[0] = 1;
-  dataspace_id = H5Screate_simple( 1, dims, NULL );
-  values[0] = img->phased;
-  dataset_id = H5Dcreate(file_id, "/phased", out_type_id,
-			 dataspace_id, H5P_DEFAULT);
-  status = H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
-		    H5P_DEFAULT, values);
-  status = H5Dclose(dataset_id);
-
-  values[0] = img->shifted;
-  dataset_id = H5Dcreate(file_id, "/shifted", out_type_id,
-			 dataspace_id, H5P_DEFAULT);
-  status = H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
-		    H5P_DEFAULT, values);
-  status = H5Dclose(dataset_id);
-
-  values[0] = img->detector->wavelength;
-  dataset_id = H5Dcreate(file_id, "/wavelength", out_type_id,
-			 dataspace_id, H5P_DEFAULT);
-  status = H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
-		    H5P_DEFAULT, values);
-  status = H5Dclose(dataset_id);
-
-  values[0] = img->detector->pixel_size[0];
-  values[1] = img->detector->pixel_size[1];
-  values[2] = img->detector->pixel_size[2];
-  dataset_id = H5Dcreate(file_id, "/pixel_size", out_type_id,
-			 dataspace_id, H5P_DEFAULT);
-  status = H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
-		    H5P_DEFAULT, values);
-  status = H5Dclose(dataset_id);
-
-  values[0] = img->detector->detector_distance;
-  dataset_id = H5Dcreate(file_id, "/detector_distance", out_type_id,
-			 dataspace_id, H5P_DEFAULT);
-  status = H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
-		    H5P_DEFAULT, values);
-  status = H5Dclose(dataset_id);
-
-  values[0] = img->scaled;
-  dataset_id = H5Dcreate(file_id, "/scaled", out_type_id,
-			 dataspace_id, H5P_DEFAULT);
-  status = H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
-		    H5P_DEFAULT, values);
-  status = H5Dclose(dataset_id);
-
-
-  version = 2;
-  dataset_id = H5Dcreate(file_id, "/version", H5T_NATIVE_INT,
-			 dataspace_id, H5P_DEFAULT);
-  status = H5Dwrite(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL,
-		    H5P_DEFAULT, &version);
-  status = H5Dclose(dataset_id);
-
-
-  status = H5Sclose(dataspace_id);
-
-
-  status = H5Fclose(file_id);
-}
-*/
-
 static void write_h5_img(const Image * img,const char * filename, int output_precision){
   hid_t dataspace_id;
   hid_t dataset_id;
@@ -311,7 +166,7 @@ static void write_h5_img(const Image * img,const char * filename, int output_pre
   H5Pset_deflate(plist,4);
 
   dataset_id = H5Dcreate(file_id, "/mask", H5T_NATIVE_INT,
-			 dataspace_id, plist);
+			 dataspace_id,H5P_DEFAULT, plist, H5P_DEFAULT);
   status = H5Dwrite(dataset_id,H5T_NATIVE_INT , H5S_ALL, H5S_ALL,
 		    H5P_DEFAULT, img->mask->data);
   if(status < 0){
@@ -329,7 +184,7 @@ static void write_h5_img(const Image * img,const char * filename, int output_pre
   }
 
   dataset_id = H5Dcreate(file_id, "/real", out_type_id,
-			 dataspace_id, plist);
+			 dataspace_id, H5P_DEFAULT, plist,H5P_DEFAULT);
   status = H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		    H5P_DEFAULT, tmp->data);
   if(status < 0){
@@ -349,7 +204,7 @@ static void write_h5_img(const Image * img,const char * filename, int output_pre
     }
 
     dataset_id = H5Dcreate(file_id, "/imag",out_type_id,
-			   dataspace_id, plist);
+			   dataspace_id, H5P_DEFAULT, plist, H5P_DEFAULT);
     status = H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		    H5P_DEFAULT, tmp->data);
     if(status < 0){
@@ -368,7 +223,7 @@ static void write_h5_img(const Image * img,const char * filename, int output_pre
     goto error;
   }
   dataset_id = H5Dcreate(file_id, "/image_center",out_type_id ,
-			 dataspace_id, H5P_DEFAULT);
+			 dataspace_id, H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
   if(dataset_id < 0){
     goto error;
   }
@@ -397,7 +252,7 @@ static void write_h5_img(const Image * img,const char * filename, int output_pre
 
   values[0] = img->phased;
   dataset_id = H5Dcreate(file_id, "/phased", out_type_id,
-			 dataspace_id, H5P_DEFAULT);
+			 dataspace_id, H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
   if(dataset_id < 0){
     goto error;
   }
@@ -413,7 +268,7 @@ static void write_h5_img(const Image * img,const char * filename, int output_pre
 
   values[0] = img->shifted;
   dataset_id = H5Dcreate(file_id, "/shifted", out_type_id,
-			 dataspace_id, H5P_DEFAULT);
+			 dataspace_id, H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
   if(dataset_id < 0){
     goto error;
   }
@@ -429,7 +284,7 @@ static void write_h5_img(const Image * img,const char * filename, int output_pre
 
   values[0] = img->detector->wavelength;
   dataset_id = H5Dcreate(file_id, "/lambda", out_type_id,
-			 dataspace_id, H5P_DEFAULT);
+			 dataspace_id, H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
   if(dataset_id < 0){
     goto error;
   }
@@ -449,7 +304,7 @@ static void write_h5_img(const Image * img,const char * filename, int output_pre
   dims[0] = 3;
   dataspace_id = H5Screate_simple( 1, dims, NULL );
   dataset_id = H5Dcreate(file_id, "/pixel_size", out_type_id,
-			 dataspace_id, H5P_DEFAULT);
+			 dataspace_id, H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
   if(dataset_id < 0){
     goto error;
   }
@@ -468,7 +323,7 @@ static void write_h5_img(const Image * img,const char * filename, int output_pre
 
   values[0] = img->num_dimensions;
   dataset_id = H5Dcreate(file_id, "/num_dimensions", out_type_id,
-			 dataspace_id, H5P_DEFAULT);
+			 dataspace_id, H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
   if(dataset_id < 0){
     goto error;
   }
@@ -484,7 +339,7 @@ static void write_h5_img(const Image * img,const char * filename, int output_pre
 
   values[0] = img->detector->detector_distance;
   dataset_id = H5Dcreate(file_id, "/detector_distance", out_type_id,
-			 dataspace_id, H5P_DEFAULT);
+			 dataspace_id, H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
   if(dataset_id < 0){
     goto error;
   }
@@ -500,7 +355,7 @@ static void write_h5_img(const Image * img,const char * filename, int output_pre
 
   values[0] = img->scaled;
   dataset_id = H5Dcreate(file_id, "/scaled", out_type_id,
-			 dataspace_id, H5P_DEFAULT);
+			 dataspace_id, H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
   if(dataset_id < 0){
     goto error;
   }
@@ -518,7 +373,7 @@ static void write_h5_img(const Image * img,const char * filename, int output_pre
 
   version = 2;
   dataset_id = H5Dcreate(file_id, "/version", H5T_NATIVE_INT,
-			 dataspace_id, H5P_DEFAULT);
+			 dataspace_id, H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
   if(dataset_id < 0){
     goto error;
   }
@@ -547,7 +402,7 @@ static void write_h5_img(const Image * img,const char * filename, int output_pre
       goto error;
     }
     dataset_id = H5Dcreate(file_id, "/orientation",out_type_id ,
-			   dataspace_id, H5P_DEFAULT);
+			   dataspace_id, H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
     if(dataset_id < 0){
       goto error;
     }
@@ -576,9 +431,11 @@ static void write_h5_img(const Image * img,const char * filename, int output_pre
   if(rename(tmpfile,filename)){
     sp_error_warning("Unable to rename %s to %s",tmpfile,filename);
   }
+  H5close();
   return;
   
  error:
+ H5close();
   sp_error_warning("Error while writing HDF5 file at %s:%d\n",__FILE__,__LINE__);
   return;    
 }
@@ -611,9 +468,9 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
   memset(res->detector,0,sizeof(Detector));
   
   
-  H5Eget_auto(&func,&client_data);
+  H5Eget_auto(H5E_DEFAULT,&func,&client_data);
   /* turn off warning to check file and version because they might not exist */
-  H5Eset_auto(NULL,NULL);  
+  H5Eset_auto(H5E_DEFAULT,NULL,NULL);  
 
   file_id = H5Fopen(filename,H5F_ACC_RDONLY,H5P_DEFAULT);
   if(file_id < 0){
@@ -622,14 +479,14 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
   }
   
 
-  dataset_id = H5Dopen(file_id, "/data/data");
+  dataset_id = H5Dopen(file_id, "/data/data",H5P_DEFAULT);
   if(dataset_id >= 0){
     /* we have Anton's simple data format */
-    H5Eset_auto(func,client_data);
+    H5Eset_auto(H5E_DEFAULT,func,client_data);
     return read_anton_datafile(file_id,dataset_id,filename);
   }
 
-  dataset_id = H5Dopen(file_id, "/version");
+  dataset_id = H5Dopen(file_id, "/version",H5P_DEFAULT);
   /* File includes version information */
   if(dataset_id>=0){
     status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL,
@@ -640,7 +497,7 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
     }
     status = H5Dclose(dataset_id);
     if(version == 2){
-      dataset_id = H5Dopen(file_id, "/mask");
+      dataset_id = H5Dopen(file_id, "/mask",H5P_DEFAULT);
       if(dataset_id < 0){
 	sp_error_warning("Unable to open dataset in file %s",filename);
 	return NULL;
@@ -670,7 +527,7 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
 	return NULL;
       }
 
-      dataset_id = H5Dopen(file_id, "/image_center");
+      dataset_id = H5Dopen(file_id, "/image_center",H5P_DEFAULT);
       if(dataset_id < 0){
 	sp_error_warning("Unable to open dataset in file %s",filename);
 	return NULL;
@@ -690,7 +547,7 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
 	res->detector->image_center[2] = 0;
       }
       
-      dataset_id = H5Dopen(file_id, "/phased");
+      dataset_id = H5Dopen(file_id, "/phased",H5P_DEFAULT);
       if(dataset_id < 0){
 	sp_error_warning("Unable to open dataset in file %s",filename);
 	return NULL;
@@ -711,7 +568,7 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
 
       res->phased = values[0];
       
-      dataset_id = H5Dopen(file_id, "/shifted");
+      dataset_id = H5Dopen(file_id, "/shifted",H5P_DEFAULT);
       if(dataset_id < 0){
 	sp_error_warning("Unable to open dataset in file %s",filename);
 	return NULL;
@@ -733,7 +590,7 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
 
       res->shifted = values[0];
       
-      dataset_id = H5Dopen(file_id, "/scaled");
+      dataset_id = H5Dopen(file_id, "/scaled",H5P_DEFAULT);
       if(dataset_id < 0){
 	sp_error_warning("Unable to open dataset in file %s",filename);
 	return NULL;
@@ -754,7 +611,7 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
 
       res->scaled = values[0];
       
-      dataset_id = H5Dopen(file_id, "/detector_distance");
+      dataset_id = H5Dopen(file_id, "/detector_distance",H5P_DEFAULT);
       if(dataset_id < 0){
 	sp_error_warning("Unable to open dataset in file %s",filename);
 	return NULL;
@@ -775,7 +632,7 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
 
       res->detector->detector_distance = values[0];
       
-      dataset_id = H5Dopen(file_id, "/lambda");
+      dataset_id = H5Dopen(file_id, "/lambda",H5P_DEFAULT);
       if(dataset_id < 0){
 	sp_error_warning("Unable to open dataset in file %s",filename);
 	return NULL;
@@ -796,7 +653,7 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
 
       res->detector->wavelength = values[0];
       
-      dataset_id = H5Dopen(file_id, "/pixel_size");
+      dataset_id = H5Dopen(file_id, "/pixel_size",H5P_DEFAULT);
       if(dataset_id < 0){
 	sp_error_warning("Unable to open dataset in file %s",filename);
 	return NULL;
@@ -823,11 +680,11 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
       res->detector->pixel_size[2] = values[2];
       
 
-      H5Eget_auto(&func,&client_data);
+      H5Eget_auto(H5E_DEFAULT,&func,&client_data);
       /* turn off warning to check num_dimensions because it might not exist */
-      H5Eset_auto(NULL,NULL);
-      dataset_id = H5Dopen(file_id, "/num_dimensions");
-      H5Eset_auto(func,client_data);
+      H5Eset_auto(H5E_DEFAULT,NULL,NULL);
+      dataset_id = H5Dopen(file_id, "/num_dimensions",H5P_DEFAULT);
+      H5Eset_auto(H5E_DEFAULT,func,client_data);
       if(dataset_id>=0){
 	flag_num_dimensions = 1;
 	status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
@@ -857,7 +714,7 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
 	tmp = _sp_3matrix_alloc(sp_i3matrix_x(res->mask),
 			       sp_i3matrix_y(res->mask),
 			       sp_i3matrix_z(res->mask),file,line);
-	dataset_id = H5Dopen(file_id, "/imag");
+	dataset_id = H5Dopen(file_id, "/imag",H5P_DEFAULT);
 	if(dataset_id < 0){
 	  sp_error_warning("Unable to open dataset in file %s",filename);
 	  return NULL;
@@ -890,7 +747,7 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
 	return NULL;
       }
 
-      dataset_id = H5Dopen(file_id, "/real");
+      dataset_id = H5Dopen(file_id, "/real",H5P_DEFAULT);
       if(dataset_id < 0){
 	sp_error_warning("Unable to open dataset in file %s",filename);
 	return NULL;
@@ -910,20 +767,20 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
       sp_3matrix_free(tmp);
       
 
-      H5Eget_auto(&func,&client_data);
+      H5Eget_auto(H5E_DEFAULT,&func,&client_data);
       /* turn off warning to orientation because it might not exist */
-      H5Eset_auto(NULL,NULL);  
+      H5Eset_auto(H5E_DEFAULT,NULL,NULL);  
 
-      dataset_id = H5Dopen(file_id, "/orientation");
+      dataset_id = H5Dopen(file_id, "/orientation",H5P_DEFAULT);
       if(dataset_id >= 0){
 	/* we have orientation */
-	H5Eset_auto(func,client_data);
+	H5Eset_auto(H5E_DEFAULT,func,client_data);
 	res->detector->orientation = sp_rot_alloc();
 	status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 			  H5P_DEFAULT, res->detector->orientation->data);
 	H5Dclose(dataset_id);
       }else{
-	H5Eset_auto(func,client_data);	
+	H5Eset_auto(H5E_DEFAULT,func,client_data);	
       }
 
 
@@ -935,7 +792,7 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
     }
   }else{
     /* File does *NOT* includes version information */
-    dataset_id = H5Dopen(file_id, "/mask");
+    dataset_id = H5Dopen(file_id, "/mask",H5P_DEFAULT);
     if(dataset_id < 0){
       sp_error_warning("Unable to open dataset in file %s",filename);
       return NULL;
@@ -991,7 +848,7 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
     }
 
     
-    dataset_id = H5Dopen(file_id, "/image_center");
+    dataset_id = H5Dopen(file_id, "/image_center",H5P_DEFAULT);
     if(dataset_id < 0){
       sp_error_warning("Unable to open dataset in file %s",filename);
       return NULL;
@@ -1019,7 +876,7 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
       res->detector->image_center[2] = 0;
     }
     
-    dataset_id = H5Dopen(file_id, "/phased");
+    dataset_id = H5Dopen(file_id, "/phased",H5P_DEFAULT);
     if(dataset_id < 0){
       sp_error_warning("Unable to open dataset in file %s",filename);
       return NULL;
@@ -1040,7 +897,7 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
 
     res->phased = values[0];
     
-    dataset_id = H5Dopen(file_id, "/shifted");
+    dataset_id = H5Dopen(file_id, "/shifted",H5P_DEFAULT);
     if(dataset_id < 0){
       sp_error_warning("Unable to open dataset in file %s",filename);
       return NULL;
@@ -1066,7 +923,7 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
 
     res->shifted = values[0];
     
-    dataset_id = H5Dopen(file_id, "/scaled");
+    dataset_id = H5Dopen(file_id, "/scaled",H5P_DEFAULT);
     if(dataset_id < 0){
       sp_error_warning("Unable to open dataset in file %s",filename);
       return NULL;
@@ -1087,7 +944,7 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
 
     res->scaled = values[0];
     
-    dataset_id = H5Dopen(file_id, "/detector_distance");
+    dataset_id = H5Dopen(file_id, "/detector_distance",H5P_DEFAULT);
     if(dataset_id < 0){
       sp_error_warning("Unable to open dataset in file %s",filename);
       return NULL;
@@ -1108,7 +965,7 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
 
     res->detector->detector_distance = values[0];
     
-    dataset_id = H5Dopen(file_id, "/lambda");
+    dataset_id = H5Dopen(file_id, "/lambda",H5P_DEFAULT);
     if(dataset_id < 0){
       sp_error_warning("Unable to open dataset in file %s",filename);
       return NULL;
@@ -1129,7 +986,7 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
 
     res->detector->wavelength = values[0];
     
-    dataset_id = H5Dopen(file_id, "/pixel_size");
+    dataset_id = H5Dopen(file_id, "/pixel_size",H5P_DEFAULT);
     if(dataset_id < 0){
       sp_error_warning("Unable to open dataset in file %s",filename);
       return NULL;
@@ -1160,7 +1017,7 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
 	sp_error_warning("Unable to allocate matrix for %s",filename);
 	return NULL;
       }
-      dataset_id = H5Dopen(file_id, "/complex");
+      dataset_id = H5Dopen(file_id, "/complex",H5P_DEFAULT);
       if(dataset_id < 0){
 	sp_error_warning("Unable to open dataset in file %s",filename);
 	return NULL;
@@ -1189,7 +1046,7 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
       if(!tmp){
 	sp_error_warning("Unable to allocate matrix");
       }
-      dataset_id = H5Dopen(file_id, "/real");
+      dataset_id = H5Dopen(file_id, "/real",H5P_DEFAULT);
       if(dataset_id < 0){
 	sp_error_warning("Unable to open dataset in file %s",filename);
 	return NULL;
@@ -1221,7 +1078,7 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
 	  sp_error_warning("Unable to allocate matrix");
 	}
 	
-	dataset_id = H5Dopen(file_id, "/intensities");
+	dataset_id = H5Dopen(file_id, "/intensities",H5P_DEFAULT);
 	if(dataset_id < 0){
 	  sp_error_warning("Unable to open dataset in file %s",filename);
 	  return NULL;
@@ -1251,7 +1108,7 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
 	  sp_error_warning("Unable to allocate matrix");
 	}
 
-	dataset_id = H5Dopen(file_id, "/amplitudes");
+	dataset_id = H5Dopen(file_id, "/amplitudes",H5P_DEFAULT);
 	if(dataset_id < 0){
 	  sp_error_warning("Unable to open dataset in file %s",filename);
 	  return NULL;
@@ -1283,7 +1140,7 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
     }
 
   }
-  H5Eset_auto(func,client_data);
+  H5Eset_auto(H5E_DEFAULT,func,client_data);
 
   /* Due to a dataformat change when there was no change in version
      we'll have to transpose the data when there is no num_dimensions field detected.
@@ -1300,7 +1157,7 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
     }
     sp_image_free(tmp_img);
   }
-
+  H5close();
   return res;
   
 }
@@ -1320,8 +1177,8 @@ void write_cxdi(const Image * img,const char * filename){
 
   file_id = H5Fcreate(filename,  H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
   dataspace_id = H5Screate_simple( 3, dims, NULL );
-  H5Gcreate(file_id,"data",0);
-  dataset_id = H5Dcreate(file_id, "/data/data", H5T_NATIVE_FLOAT,dataspace_id,H5P_DEFAULT);
+  H5Gcreate(file_id,"data",0, H5P_DEFAULT, H5P_DEFAULT);
+  dataset_id = H5Dcreate(file_id, "/data/data", H5T_NATIVE_FLOAT,dataspace_id,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
   H5Dwrite(dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL,
 		    H5P_DEFAULT, buffer);
   H5close();
@@ -1332,7 +1189,7 @@ Image * read_cxdi(const char * filename){
   hid_t file_id;
   int status;
   file_id = H5Fopen(filename, H5F_ACC_RDONLY,H5P_DEFAULT);
-  dataset_id = H5Dopen(file_id,"/data/data");
+  dataset_id = H5Dopen(file_id,"/data/data",H5P_DEFAULT);
   hid_t space = H5Dget_space(dataset_id);
   if(H5Sget_simple_extent_ndims(space) == 3 ||
      H5Sget_simple_extent_ndims(space) == 2){
@@ -1377,20 +1234,20 @@ Image * read_anton_datafile(hid_t file_id,hid_t dataset_id,const char * filename
   }else{
     abort();
   }
-  H5Eget_auto(&func,&client_data);
+  H5Eget_auto(H5E_DEFAULT,&func,&client_data);
   /* turn off warning to check file and version because they might not exist */
-  H5Eset_auto(NULL,NULL);  
+  H5Eset_auto(H5E_DEFAULT,NULL,NULL);  
   /* check if we have a multiple frames thing or just a simple /data/data file */
-  dataset_id = H5Dopen(file_id, "/data/nframes");
+  dataset_id = H5Dopen(file_id, "/data/nframes",H5P_DEFAULT);
   if(dataset_id < 0){
-    H5Eset_auto(func,client_data);
+    H5Eset_auto(H5E_DEFAULT,func,client_data);
     H5Fclose(file_id);
     return read_cxdi(filename);
   }
   int nframes;
   /* read number of frames and put them together in just 1 image */
   H5Dclose(dataset_id);
-  dataset_id = H5Dopen(file_id, "/data/nframes");
+  dataset_id = H5Dopen(file_id, "/data/nframes",H5P_DEFAULT);
   status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL,
 		   H5P_DEFAULT, &nframes);
   H5Dclose(file_id);
@@ -1406,7 +1263,7 @@ Image * read_anton_datafile(hid_t file_id,hid_t dataset_id,const char * filename
   for(int frame = 0;frame<nframes;frame++){
     char fieldname[100]; 
     sprintf(fieldname,"/data/data%i",frame);
-    dataset_id = H5Dopen(file_id,fieldname);
+    dataset_id = H5Dopen(file_id,fieldname,H5P_DEFAULT);
     hid_t space = H5Dget_space(dataset_id);
     if(space < 0){
       sp_error_warning("Unable to get space in file %s",filename);
@@ -1427,19 +1284,7 @@ Image * read_anton_datafile(hid_t file_id,hid_t dataset_id,const char * filename
     
     data[frame] = malloc(sizeof(real)*(dims[frame][0]*dims[frame][1]*dims[frame][2]));
 #if H5_VERS_MAJOR < 2 && H5_VERS_MINOR < 8
-    /* HDF5 1.6 does not support int -> double conversion so we'll need a buffer */
-    if(H5Tget_class(H5Dget_type(dataset_id)) == H5T_INTEGER){
-      int * buffer =  malloc(sizeof(int)*(dims[frame][0]*dims[frame][1]*dims[frame][2]));
-      status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL,
-		       H5P_DEFAULT, buffer);
-      for(int i = 0;i<dims[frame][0]*dims[frame][1]*dims[frame][2];i++){
-	data[frame][i] = buffer[i];      
-      }
-      free(buffer);
-    }else{
-      status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
-		       H5P_DEFAULT, data[frame]);
-    }
+#error libspimage does not support HDF5 < 1.8
 #else
     status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		     H5P_DEFAULT, data[frame]);
@@ -1465,7 +1310,7 @@ Image * read_anton_datafile(hid_t file_id,hid_t dataset_id,const char * filename
   }
   /* For some reason the image is upside down so we'll turn it around */
   sp_image_reflect(ret,1,SP_AXIS_X);
-
+  H5close();
   return ret;  
 }
 
@@ -1969,42 +1814,6 @@ int write_mrc(const Image * img,const char * filename){
   return 0;
 }
 
-/* Superseeded by the new write_vtk */
-/*
-int write_vtk(Image * img, const char * filename){
-  FILE * f = fopen(filename,"w");
-  int x,y;
-  if(!f){
-    perror("Bad file in write_vtk!");
-    abort();
-  }
-  fprintf(f,"# vtk DataFile Version 2.0\n");
-  fprintf(f,"Generated by image_util write_vtk()\n");
-  fprintf(f,"ASCII\n");
-  fprintf(f,"DATASET STRUCTURED_POINTS\n");
-  fprintf(f,"DIMENSIONS %d %d 1\n",sp_c3matrix_x(img->image),sp_c3matrix_y(img->image));
-  fprintf(f,"ORIGIN 0 %d 0\n",sp_c3matrix_y(img->image));
-  fprintf(f,"SPACING 1 -1 1\n");
-  fprintf(f,"POINT_DATA %lld\n",sp_image_size(img));
-  fprintf(f,"SCALARS amplitudes float 1\n");
-  fprintf(f,"LOOKUP_TABLE default\n");
-  fprintf(f,"%6g",sp_cabs(img->image->data[0]));
-  for(y = 0;y<sp_c3matrix_y(img->image);y++){
-    for(x = 0;x<sp_c3matrix_x(img->image);x++){
-      fprintf(f," %g",sp_cabs(img->image->data[y*sp_c3matrix_x(img->image)+x]));    
-    }
-  }
-*/
-/*  for(i = 1;i<sp_image_size(img);i++){
-    fprintf(f," %g",img->image->data[i]);    
-  }*/
-/*
-  fprintf(f,"\n");
-  fflush(f);
-  fclose(f);
-  return 0;
-}
-*/
 
 int write_vtk(const Image * img, const char * filename){
   FILE * f = fopen(filename,"w");
@@ -2116,15 +1925,15 @@ void write_cxi(const Image * img,const char * filename){
   file_id = H5Fcreate(filename,  H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
   dims[0] = 1;
   dataspace_id = H5Screate(H5S_SCALAR);
-  dataset_id = H5Dcreate(file_id, "/cxi_version", H5T_NATIVE_INT,dataspace_id,H5P_DEFAULT);
+  dataset_id = H5Dcreate(file_id, "/cxi_version", H5T_NATIVE_INT,dataspace_id,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
   int cxi_version = 130;
   H5Dwrite(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL,
 	   H5P_DEFAULT, &cxi_version);
   H5Dclose(dataset_id);
 
-  hid_t entry_1 = H5Gcreate(file_id,"entry_1", H5P_DEFAULT);
-  hid_t data_1 = H5Gcreate(entry_1,"data_1", H5P_DEFAULT);
-  hid_t image_1 = H5Gcreate(entry_1,"image_1", H5P_DEFAULT);
+  hid_t entry_1 = H5Gcreate(file_id,"entry_1", H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
+  hid_t data_1 = H5Gcreate(entry_1,"data_1", H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
+  hid_t image_1 = H5Gcreate(entry_1,"image_1", H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
   if(img->scaled && img->phased){
     string = data_type_string[1];
   }else if(img->scaled){
@@ -2135,41 +1944,41 @@ void write_cxi(const Image * img,const char * filename){
   hid_t string_type = H5Tcopy (H5T_C_S1);  
   H5Tset_size (string_type, strlen(string));
   
-  dataset_id = H5Dcreate (image_1, "data_type", string_type,dataspace_id, H5P_DEFAULT);
+  dataset_id = H5Dcreate (image_1, "data_type", string_type,dataspace_id, H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
   H5Dwrite(dataset_id, string_type, H5S_ALL, H5S_ALL,
 		    H5P_DEFAULT, string);
   H5Dclose(dataset_id);
 
-  hid_t source_1 = H5Gcreate(image_1,"source_1", H5P_DEFAULT);
+  hid_t source_1 = H5Gcreate(image_1,"source_1", H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
   {
     double c = 299792458;
     double h = 6.62606957e-34; // in J.s
     float energy = h*c/img->detector->wavelength;
-    dataset_id = H5Dcreate(source_1, "energy", H5T_NATIVE_FLOAT,dataspace_id,H5P_DEFAULT);
+    dataset_id = H5Dcreate(source_1, "energy", H5T_NATIVE_FLOAT,dataspace_id,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
     H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 	     H5P_DEFAULT, &energy);
     H5Dclose(dataset_id);
   }
   H5Gclose(source_1);
 
-  hid_t detector_1 = H5Gcreate(image_1,"detector_1", H5P_DEFAULT);
+  hid_t detector_1 = H5Gcreate(image_1,"detector_1", H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
   
-  dataset_id = H5Dcreate(detector_1, "distance", H5T_NATIVE_FLOAT,dataspace_id,H5P_DEFAULT);
+  dataset_id = H5Dcreate(detector_1, "distance", H5T_NATIVE_FLOAT,dataspace_id,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
   H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		    H5P_DEFAULT, &img->detector->detector_distance);
   H5Dclose(dataset_id);
 
-  dataset_id = H5Dcreate(image_1, "is_fft_shifted", H5T_NATIVE_INT,dataspace_id,H5P_DEFAULT);
+  dataset_id = H5Dcreate(image_1, "is_fft_shifted", H5T_NATIVE_INT,dataspace_id,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
   H5Dwrite(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL,
 	   H5P_DEFAULT, &img->shifted);
   H5Dclose(dataset_id);
 
-  dataset_id = H5Dcreate(detector_1, "x_pixel_size", H5T_NATIVE_FLOAT,dataspace_id,H5P_DEFAULT);
+  dataset_id = H5Dcreate(detector_1, "x_pixel_size", H5T_NATIVE_FLOAT,dataspace_id,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
   H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 	   H5P_DEFAULT, &(img->detector->pixel_size[0]));
   H5Dclose(dataset_id);
 
-  dataset_id = H5Dcreate(detector_1, "y_pixel_size", H5T_NATIVE_FLOAT,dataspace_id,H5P_DEFAULT);
+  dataset_id = H5Dcreate(detector_1, "y_pixel_size", H5T_NATIVE_FLOAT,dataspace_id,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
   H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 	   H5P_DEFAULT, &(img->detector->pixel_size[1]));
   H5Dclose(dataset_id);
@@ -2182,7 +1991,7 @@ void write_cxi(const Image * img,const char * filename){
 			 img->detector->image_center[2]+1.0/2};
   
 
-  dataset_id = H5Dcreate(image_1, "image_center", H5T_NATIVE_FLOAT,dataspace_id,H5P_DEFAULT);
+  dataset_id = H5Dcreate(image_1, "image_center", H5T_NATIVE_FLOAT,dataspace_id,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
   H5Dwrite(dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL,
 	   H5P_DEFAULT, cxi_center);
   H5Dclose(dataset_id);
@@ -2207,7 +2016,7 @@ void write_cxi(const Image * img,const char * filename){
 
   dataspace_id = H5Screate_simple( ndims, dims, NULL );
   if(img->phased){
-    dataset_id = H5Dcreate(image_1, "data", complex_id,dataspace_id,plist);
+    dataset_id = H5Dcreate(image_1, "data", complex_id,dataspace_id,H5P_DEFAULT,plist,H5P_DEFAULT);
     H5Dwrite(dataset_id, complex_id, H5S_ALL, H5S_ALL,
 	     H5P_DEFAULT, img->image->data);
     H5Dclose(dataset_id);
@@ -2216,7 +2025,7 @@ void write_cxi(const Image * img,const char * filename){
     for(int i =0;i<sp_image_size(img);i++){
       data[i] = sp_real(img->image->data[i]);
     }
-    dataset_id = H5Dcreate(image_1, "data", H5T_NATIVE_FLOAT,dataspace_id,plist);
+    dataset_id = H5Dcreate(image_1, "data", H5T_NATIVE_FLOAT,dataspace_id,H5P_DEFAULT,plist,H5P_DEFAULT);
     H5Dwrite(dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL,
 	     H5P_DEFAULT, data);
     free(data);
@@ -2226,7 +2035,7 @@ void write_cxi(const Image * img,const char * filename){
   H5Tclose(complex_id);
 
   dataspace_id = H5Screate_simple( ndims, dims, NULL );
-  dataset_id = H5Dcreate(image_1, "mask", H5T_NATIVE_INT,dataspace_id,plist);
+  dataset_id = H5Dcreate(image_1, "mask", H5T_NATIVE_INT,dataspace_id,H5P_DEFAULT,plist,H5P_DEFAULT);
   H5Dwrite(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL,
 		    H5P_DEFAULT, img->mask->data);
   H5Dclose(dataset_id);
@@ -2242,9 +2051,9 @@ void write_cxi(const Image * img,const char * filename){
     }
     dims[0] = 6;
     ndims = 1;
-    hid_t geometry_1 = H5Gcreate(detector_1,"geometry_1", H5P_DEFAULT);
+    hid_t geometry_1 = H5Gcreate(detector_1,"geometry_1", H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
     dataspace_id = H5Screate_simple( ndims, dims, NULL );
-    dataset_id = H5Dcreate(geometry_1, "orientation", H5T_NATIVE_FLOAT,dataspace_id,H5P_DEFAULT);
+    dataset_id = H5Dcreate(geometry_1, "orientation", H5T_NATIVE_FLOAT,dataspace_id,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
     H5Dwrite(dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL,
 	     H5P_DEFAULT, orientation);
     H5Dclose(dataset_id);
@@ -2258,7 +2067,7 @@ void write_cxi(const Image * img,const char * filename){
   H5Fclose(file_id);
 
   H5Lcreate_soft("/entry_1/image_1/data", data_1,"data", H5P_DEFAULT,H5P_DEFAULT);
-//  H5close();
+  H5close();
 }
 
 Image * read_cxi(const char * filename){
@@ -2266,7 +2075,7 @@ Image * read_cxi(const char * filename){
   hid_t file_id;
   int status;
   file_id = H5Fopen(filename, H5F_ACC_RDONLY,H5P_DEFAULT);
-  dataset_id = H5Dopen(file_id,"/entry_1/data_1/data");
+  dataset_id = H5Dopen(file_id,"/entry_1/data_1/data",H5P_DEFAULT);
   hid_t space = H5Dget_space(dataset_id);
   if(H5Sget_simple_extent_ndims(space) == 3 ||
      H5Sget_simple_extent_ndims(space) == 2){
