@@ -104,8 +104,8 @@ Image * _sp_image_read(const char * filename, int flags, const char * file, int 
   }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".cxi") == 0 ||strcmp(strrchr(buffer,'.'),".CXI") == 0 )){
     /* we have a CXI file */
     return read_cxi(filename);
-  }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".mrc") == 0 ||strcmp(strrchr(buffer,'.'),".MRC") == 0 )){
-    /* we have an hdf5 simple data file file */
+  }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".mrc") == 0 ||strcmp(strrchr(buffer,'.'),".MRC") == 0 
+    || strcmp(strrchr(buffer,'.'),".map") == 0 || strcmp(strrchr(buffer,'.'),".MAP") == 0 )){
     return read_mrc(filename);
   }else{
     fprintf(stderr,"Unsupported file type: %s\n",filename);
@@ -1744,7 +1744,6 @@ static Image * read_smv(const char * filename){
   }
   return res;
 }
-
 
 static Image * read_mrc(const char * filename){
   FILE * fp = fopen(filename,"rb");
