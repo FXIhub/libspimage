@@ -65,11 +65,16 @@ ELSE(USE_CUDA)
   UNSET(CUDA_FOUND)
 ENDIF(USE_CUDA)
 
-IF(UNIX AND CMAKE_SIZEOF_VOID_P EQUAL 8)
-	IF(EXISTS /usr/lib64)
-		SET(LIBRARY_SUFFIX 64)
-	ENDIF(EXISTS /usr/lib64)
-ENDIF(UNIX AND CMAKE_SIZEOF_VOID_P EQUAL 8)
+#   Offer the user the choice of overriding the installation directories
+
+get_property(LIB64 GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS)
+
+if (${LIB64} STREQUAL "TRUE")
+    set(LIBRARY_SUFFIX  64)
+else()
+    set(LIBRARY_SUFFIX  "")
+endif()
+
 
 
 IF(DOUBLE_PRECISION)
