@@ -31,8 +31,6 @@ static Image * read_smv(const char * filename);
 static Image * read_mrc(const char * filename);
 static int write_mrc(const Image * img,const char * filename);
 static Image * read_anton_datafile(hid_t file_id,hid_t dataset_id, const char * filename);
-static void write_cxdi(const Image * img,const char * filename);
-static Image * read_cxdi(const char * filename);
 static void write_cxi(const Image * img,const char * filename);
 static Image * read_cxi(const char * filename);
 
@@ -66,8 +64,6 @@ void sp_image_write(const Image * img, const const char * filename, int flags){
       sp_error_fatal("Can only export 3D files to xplor");
     }
     write_xplor(img,filename);
-  }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".cxdi") == 0)){
-    write_cxdi(img,filename);
   }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".cxi") == 0)){
     write_cxi(img,filename);
   }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".mrc") == 0|| strcmp(strrchr(buffer,'.'),".map") == 0)){
@@ -101,9 +97,6 @@ Image * _sp_image_read(const char * filename, int flags, const char * file, int 
   }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".smv") == 0)){
     /* we have an smv file */
     return read_smv(filename);
-  }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".cxdi") == 0)){
-    /* we have an hdf5 simple data file file */
-    return read_cxdi(filename);
   }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".cxi") == 0)){
     /* we have a CXI file */
     return read_cxi(filename);
@@ -1178,64 +1171,6 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
   
 }
 
-void write_cxdi(const Image * img,const char * filename){
-  hsize_t  dims[3];
-  hid_t dataspace_id;
-  hid_t dataset_id;
-  hid_t file_id;
-  float * buffer = sp_malloc(sp_image_size(img)*sizeof(float));
-  for(int i = 0;i<sp_image_size(img);i++){
-    buffer[i] = sp_real(img->image->data[i]);
-  }
-  dims[0] = sp_c3matrix_x(img->image);
-  dims[1] = sp_c3matrix_y(img->image);
-  dims[2] = sp_c3matrix_z(img->image);
-
-  file_id = H5Fcreate(filename,  H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-  dataspace_id = H5Screate_simple( 3, dims, NULL );
-  H5Gcreate(file_id,"data",0, H5P_DEFAULT, H5P_DEFAULT);
-  dataset_id = H5Dcreate(file_id, "/data/data", H5T_NATIVE_FLOAT,dataspace_id,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
-  H5Dwrite(dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL,
-		    H5P_DEFAULT, buffer);
-  H5close();
-}
-
-Image * read_cxdi(const char * filename){
-  hid_t dataset_id;
-  hid_t file_id;
-  int status;
-  file_id = H5Fopen(filename, H5F_ACC_RDONLY,H5P_DEFAULT);
-  dataset_id = H5Dopen(file_id,"/data/data",H5P_DEFAULT);
-  hid_t space = H5Dget_space(dataset_id);
-  if(H5Sget_simple_extent_ndims(space) == 3 ||
-     H5Sget_simple_extent_ndims(space) == 2){
-  }else{
-    sp_error_warning("File has unsupported number of dimensions!\n");
-    return NULL;
-  }
-  hsize_t dims[3] = {1,1,1};
-  if(H5Sget_simple_extent_dims(space,dims,NULL) < 0){
-    sp_error_warning("Unable to get dimensions extent in file %s",filename);
-    return NULL;
-  }
-  Image * ret;
-  if(dims[2] == 1){
-    ret = sp_image_alloc(dims[1],dims[0],dims[2]);
-  }else{
-    ret = sp_image_alloc(dims[0],dims[1],dims[2]);
-  }
-  float * buffer = sp_malloc(dims[0]*dims[1]*dims[2]*sizeof(float));
-  status = H5Dread(dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL,
-		   H5P_DEFAULT, buffer);
-  for(int i = 0;i<sp_image_size(ret);i++){
-    ret->image->data[i] = sp_cinit(buffer[i],0);
-    ret->mask->data[i] = 1;
-  }  
-
-  H5close();
-  return ret;
-}
-
 
 
 Image * read_anton_datafile(hid_t file_id,hid_t dataset_id,const char * filename){
@@ -1255,18 +1190,19 @@ Image * read_anton_datafile(hid_t file_id,hid_t dataset_id,const char * filename
   H5Eset_auto(H5E_DEFAULT,NULL,NULL);  
   /* check if we have a multiple frames thing or just a simple /data/data file */
   dataset_id = H5Dopen(file_id, "/data/nframes",H5P_DEFAULT);
+  H5Eset_auto(H5E_DEFAULT,func,client_data);
+  int nframes = 0;
+  int has_nframes = 0;
   if(dataset_id < 0){
-    H5Eset_auto(H5E_DEFAULT,func,client_data);
-    H5Fclose(file_id);
-    return read_cxdi(filename);
-  }
-  int nframes;
+    nframes = 1;
+    has_nframes = 0;
+  }else{
+    has_nframes = 1;
   /* read number of frames and put them together in just 1 image */
-  H5Dclose(dataset_id);
-  dataset_id = H5Dopen(file_id, "/data/nframes",H5P_DEFAULT);
-  status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL,
-		   H5P_DEFAULT, &nframes);
-  H5Dclose(file_id);
+    status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL,
+     H5P_DEFAULT, &nframes);
+    H5Dclose(file_id);
+  }
   int total_dims[3] = {0,0,1};
   hsize_t dims[nframes][3];
   for(int i = 0;i<nframes;i++){
@@ -1278,7 +1214,11 @@ Image * read_anton_datafile(hid_t file_id,hid_t dataset_id,const char * filename
   real * data[nframes];
   for(int frame = 0;frame<nframes;frame++){
     char fieldname[100]; 
-    sprintf(fieldname,"/data/data%i",frame);
+    if(has_nframes){
+      sprintf(fieldname,"/data/data%i",frame);
+    }else{
+      sprintf(fieldname,"/data/data");
+    }
     dataset_id = H5Dopen(file_id,fieldname,H5P_DEFAULT);
     hid_t space = H5Dget_space(dataset_id);
     if(space < 0){
