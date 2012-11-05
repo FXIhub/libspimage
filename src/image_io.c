@@ -52,22 +52,25 @@ void sp_image_write(const Image * img, const const char * filename, int flags){
   }else if(strrchr(buffer,'.') && strcmp(strrchr(buffer,'.'),".vtk") == 0){
     write_vtk(img,filename);
   }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".tif") == 0 ||strcmp(strrchr(buffer,'.'),".tiff") == 0 )){
+    if(img->num_dimensions == SP_3D){
+      sp_error_fatal("Cannot export 3D file to TIFF files");
+    }
     write_tiff(img,filename);
   }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".csv") == 0)){
     if(img->num_dimensions == SP_3D){
-      fprintf(stderr,"Cannot export 3D file to csv");
+      sp_error_fatal("Cannot export 3D file to csv");
     }
     write_csv(img,filename);
   }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".xplor") == 0)){
     if(img->num_dimensions != SP_3D){
-      fprintf(stderr,"Can only export 3D files to xplor");
+      sp_error_fatal("Can only export 3D files to xplor");
     }
     write_xplor(img,filename);
   }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".cxdi") == 0)){
     write_cxdi(img,filename);
   }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".cxi") == 0)){
     write_cxi(img,filename);
-  }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".mrc") == 0)){
+  }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".mrc") == 0|| strcmp(strrchr(buffer,'.'),".map") == 0)){
     write_mrc(img,filename);
   }else{
     fprintf(stderr,"Unsupported file type: %s\n",filename);
@@ -95,17 +98,17 @@ Image * _sp_image_read(const char * filename, int flags, const char * file, int 
   }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".tif") == 0 ||strcmp(strrchr(buffer,'.'),".tiff") == 0 )){
     /* we have a tiff file */
     return read_tiff(filename);
-  }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".smv") == 0 ||strcmp(strrchr(buffer,'.'),".SMV") == 0 )){
+  }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".smv") == 0)){
     /* we have an smv file */
     return read_smv(filename);
-  }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".cxdi") == 0 ||strcmp(strrchr(buffer,'.'),".CXDI") == 0 )){
+  }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".cxdi") == 0)){
     /* we have an hdf5 simple data file file */
     return read_cxdi(filename);
-  }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".cxi") == 0 ||strcmp(strrchr(buffer,'.'),".CXI") == 0 )){
+  }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".cxi") == 0)){
     /* we have a CXI file */
     return read_cxi(filename);
-  }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".mrc") == 0 ||strcmp(strrchr(buffer,'.'),".MRC") == 0 
-    || strcmp(strrchr(buffer,'.'),".map") == 0 || strcmp(strrchr(buffer,'.'),".MAP") == 0 )){
+  }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".mrc") == 0 || 
+    strcmp(strrchr(buffer,'.'),".map") == 0 )){
     return read_mrc(filename);
   }else{
     fprintf(stderr,"Unsupported file type: %s\n",filename);
@@ -1807,7 +1810,7 @@ int write_mrc(const Image * img,const char * filename){
   dims[0] = sp_image_x(img);
   dims[1] = sp_image_y(img);
   dims[2] = sp_image_z(img);
-  dims[3] = 2;
+  dims[3] = 2; // this is actually the type of the data
   fwrite(dims,sizeof(int),256,fp);
   int size = sizeof(float)*sp_image_size(img);
   float *  buffer = sp_malloc(size);
