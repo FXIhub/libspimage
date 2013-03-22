@@ -163,7 +163,7 @@ static void write_h5_img(const Image * img,const char * filename, int output_pre
   if(file_id < 0){
     sp_error_warning("Unable to create %s",filename);
     H5Eset_auto(H5E_DEFAULT,func,client_data);
-    H5close();
+    //H5close();
     return;
   }
   H5Eset_auto(H5E_DEFAULT,func,client_data);
@@ -440,11 +440,11 @@ static void write_h5_img(const Image * img,const char * filename, int output_pre
   if(rename(tmpfile,filename)){
     sp_error_warning("Unable to rename %s to %s",tmpfile,filename);
   }
-  H5close();
+  //H5close();
   return;
   
  error:
- H5close();
+  H5close();
   sp_error_warning("Error while writing HDF5 file at %s:%d\n",__FILE__,__LINE__);
   return;    
 }
@@ -1166,7 +1166,7 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
     }
     sp_image_free(tmp_img);
   }
-  H5close();
+  //H5close();
   return res;
   
 }
@@ -1266,7 +1266,8 @@ Image * read_anton_datafile(hid_t file_id,hid_t dataset_id,const char * filename
   }
   /* For some reason the image is upside down so we'll turn it around */
   sp_image_reflect(ret,1,SP_AXIS_X);
-  H5close();
+  //H5close();
+  H5Fclose(file_id);
   return ret;  
 }
 
@@ -1888,7 +1889,7 @@ void write_cxi(const Image * img,const char * filename){
   if(file_id < 0){
     sp_error_warning("Unable to create %s",filename);
     H5Eset_auto(H5E_DEFAULT,func,client_data);
-    H5close();
+    //H5close();
     return;
   }
   H5Eset_auto(H5E_DEFAULT,func,client_data);
@@ -2036,7 +2037,7 @@ void write_cxi(const Image * img,const char * filename){
   H5Fclose(file_id);
 
   H5Lcreate_soft("/entry_1/image_1/data", data_1,"data", H5P_DEFAULT,H5P_DEFAULT);
-  H5close();
+  //H5close();
 }
 
 Image * read_cxi(const char * filename){
@@ -2054,14 +2055,14 @@ Image * read_cxi(const char * filename){
   if(file_id < 0){
     sp_error_warning("Unable to open %s",filename);
     H5Eset_auto(H5E_DEFAULT,func,client_data);
-    H5close();
+    //H5close();
     return NULL;
   }
   dataset_id = H5Dopen(file_id,"/entry_1/data_1/data",H5P_DEFAULT);
   if(dataset_id < 0){
     sp_error_warning("Unable to open /entry_1/data_1/data in %s",filename);
     H5Eset_auto(H5E_DEFAULT,func,client_data);
-    H5close();
+    //H5close();
     return NULL;
   }
   H5Eset_auto(H5E_DEFAULT,func,client_data);
@@ -2104,6 +2105,8 @@ Image * read_cxi(const char * filename){
       ret->mask->data[i] = 1;
     }  
   }
-  H5close();
+  H5Dclose(dataset_id);
+  H5Fclose(file_id);
+  //H5close();
   return ret;
 }
