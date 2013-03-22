@@ -518,6 +518,15 @@ int sp_phaser_init(SpPhaser * ph, SpPhasingAlgorithm * alg,SpSupportArray * sup_
   return 0;
 } 
 
+int sp_phaser_set_phasing_algorithm(SpPhaser * ph, SpPhasingAlgorithm * alg) {
+  if (!alg) {
+    fprintf(stderr, "Algorithm is NULL!\n");
+    return -2;
+  }
+  ph->algorithm = alg;
+  return 0;
+}
+
 int sp_phaser_init_model(SpPhaser * ph, const Image * user_model, int flags){
   if(!ph){
     return -1;    

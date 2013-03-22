@@ -96,31 +96,32 @@ typedef struct{
 }SpPhaser;
 
 
-spimage_EXPORT SpPhasingAlgorithm * sp_phasing_hio_alloc(sp_smap * beta, SpPhasingConstraints constraints);
-spimage_EXPORT SpPhasingAlgorithm * sp_phasing_raar_alloc(sp_smap * beta, SpPhasingConstraints constraints);
-spimage_EXPORT SpPhasingAlgorithm * sp_phasing_diff_map_alloc(sp_smap * beta,real gamma1,real gamma2, SpPhasingConstraints constraints);
-spimage_EXPORT SpPhasingAlgorithm * sp_phasing_er_alloc(SpPhasingConstraints constraints);
+  spimage_EXPORT SpPhasingAlgorithm * sp_phasing_hio_alloc(sp_smap * beta, SpPhasingConstraints constraints);
+  spimage_EXPORT SpPhasingAlgorithm * sp_phasing_raar_alloc(sp_smap * beta, SpPhasingConstraints constraints);
+  spimage_EXPORT SpPhasingAlgorithm * sp_phasing_diff_map_alloc(sp_smap * beta,real gamma1,real gamma2, SpPhasingConstraints constraints);
+  spimage_EXPORT SpPhasingAlgorithm * sp_phasing_er_alloc(SpPhasingConstraints constraints);
 
-spimage_EXPORT SpPhaser * sp_phaser_alloc();
-spimage_EXPORT void sp_phaser_free(SpPhaser * ph);
+  spimage_EXPORT SpPhaser * sp_phaser_alloc();
+  spimage_EXPORT void sp_phaser_free(SpPhaser * ph);
 
-spimage_EXPORT const Image * sp_phaser_model(SpPhaser * ph);
-spimage_EXPORT const Image * sp_phaser_model_with_support(SpPhaser * ph);
-spimage_EXPORT const Image * sp_phaser_old_model(SpPhaser * ph);
+  spimage_EXPORT const Image * sp_phaser_model(SpPhaser * ph);
+  spimage_EXPORT const Image * sp_phaser_model_with_support(SpPhaser * ph);
+  spimage_EXPORT const Image * sp_phaser_old_model(SpPhaser * ph);
   /*! Returns the fourier transform of the current best model */
-spimage_EXPORT const Image * sp_phaser_fmodel(SpPhaser * ph);
-spimage_EXPORT const Image * sp_phaser_fmodel_with_mask(SpPhaser * ph);
+  spimage_EXPORT const Image * sp_phaser_fmodel(SpPhaser * ph);
+  spimage_EXPORT const Image * sp_phaser_fmodel_with_mask(SpPhaser * ph);
   spimage_EXPORT void sp_phaser_set_model(SpPhaser * ph,const Image * model);
   spimage_EXPORT void sp_phaser_set_support(SpPhaser * ph,const Image * support);
   spimage_EXPORT void sp_phaser_set_phased_amplitudes(SpPhaser * ph,const Image * phased_amplitudes);
   spimage_EXPORT void sp_phaser_set_amplitudes(SpPhaser * ph,const Image * amplitudes);
-spimage_EXPORT Image * sp_phaser_model_change(SpPhaser * ph);
-spimage_EXPORT const Image * sp_phaser_support(SpPhaser * ph);
-spimage_EXPORT const Image * sp_phaser_amplitudes(SpPhaser * ph);
-spimage_EXPORT int sp_phaser_init(SpPhaser * ph, SpPhasingAlgorithm * alg, SpSupportArray * sup_alg, SpPhasingEngine engine);
+  spimage_EXPORT Image * sp_phaser_model_change(SpPhaser * ph);
+  spimage_EXPORT const Image * sp_phaser_support(SpPhaser * ph);
+  spimage_EXPORT const Image * sp_phaser_amplitudes(SpPhaser * ph);
+  spimage_EXPORT int sp_phaser_init(SpPhaser * ph, SpPhasingAlgorithm * alg, SpSupportArray * sup_alg, SpPhasingEngine engine);
+  spimage_EXPORT int sp_phaser_set_phasing_algorithm(SpPhaser * ph, SpPhasingAlgorithm * alg);
   spimage_EXPORT int sp_phaser_init_model(SpPhaser * ph,const Image * model, int flags);
   spimage_EXPORT int sp_phaser_init_support(SpPhaser * ph,const Image * support, int flags, real value);
-spimage_EXPORT int sp_phaser_iterate(SpPhaser * ph, int iterations);
+  spimage_EXPORT int sp_phaser_iterate(SpPhaser * ph, int iterations);
   spimage_EXPORT void sp_phaser_set_objective(SpPhaser * ph, SpPhasingObjective obj);
 #ifdef _USE_CUDA
   int phaser_iterate_hio_cuda(SpPhaser * ph,int iterations);  
