@@ -51,7 +51,7 @@
     npy_intp dims[2] = {$1->y,$1->x};
     $result = PyArray_SimpleNewFromData(2, dims, PyArray_INT, $1->data);
   }else{
-    npy_intp dims[3] = {$1->x,$1->y,$1->z};
+    npy_intp dims[3] = {$1->z,$1->y,$1->x};
     $result = PyArray_SimpleNewFromData(3, dims, PyArray_INT, $1->data);
   }
 }
@@ -80,7 +80,7 @@
     npy_intp dims[2] = {$1->y,$1->x};
     $result = PyArray_SimpleNewFromData(2, dims, PyArray_CFLOAT, $1->data);
   }else{
-    npy_intp dims[3] = {$1->x,$1->y,$1->z};
+    npy_intp dims[3] = {$1->z,$1->y,$1->x};
     $result = PyArray_SimpleNewFromData(3, dims, PyArray_CFLOAT, $1->data);
   }
 }
@@ -92,7 +92,7 @@
     npy_intp dims[2] = {$1->y,$1->x};
     $result = PyArray_SimpleNewFromData(2, dims, PyArray_FLOAT, $1->data);
   }else{
-    npy_intp dims[3] = {$1->x,$1->y,$1->z};
+    npy_intp dims[3] = {$1->z,$1->y,$1->x};
     $result = PyArray_SimpleNewFromData(3, dims, PyArray_FLOAT, $1->data);
   }
 }
