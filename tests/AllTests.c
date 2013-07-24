@@ -49,7 +49,7 @@ int RunAllTests(Options * opt)
 }
 
 Options * parse_options(int argc, char ** argv){
-	int c;
+  int c;
   static char help_text[] = 
     "    Options description:\n\
     \n\
@@ -62,10 +62,10 @@ Options * parse_options(int argc, char ** argv){
     -a: Run all tests\n\
     -h: print this text\n\
 ";
+
   static char optstring[] = "lpirtcah";
   Options * res = calloc(1,sizeof(Options));
   set_defaults(res);
-
   while(1){
     c = getopt(argc,argv,optstring);
     if(c == -1){
@@ -102,8 +102,7 @@ Options * parse_options(int argc, char ** argv){
     }
   }
   if(argc == 1){
-  	printf("%s",help_text);
-  	exit(0);
+    res->all = 1;
   }
   return res;
 }

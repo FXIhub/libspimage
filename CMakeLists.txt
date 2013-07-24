@@ -2,6 +2,14 @@ cmake_minimum_required(VERSION 2.6)
 
 PROJECT (spimage)
 
+INCLUDE(CTest)
+ENABLE_TESTING()
+IF(BUILD_TESTING)
+  SET(BUILDNAME "${BUILDNAME}" CACHE STRING "Name of build on the dashboard")
+  MARK_AS_ADVANCED(BUILDNAME)
+ENDIF(BUILD_TESTING)
+
+
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
 # Make sure that while building this library the include files are not 
