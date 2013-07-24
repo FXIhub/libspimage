@@ -18,7 +18,7 @@ TARGET_LINK_LIBRARIES(tests ${TESTS_LIBRARIES})
 ENABLE_TESTING()
 
 ADD_TEST(linearAlgebra tests -l)
-#ADD_TEST(phasing tests -p)
+ADD_TEST(phasing tests -p)
 ADD_TEST(image tests -i)
 ADD_TEST(projection tests -r)
 ADD_TEST(PRTF tests -t)
