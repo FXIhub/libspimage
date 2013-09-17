@@ -27,7 +27,7 @@ __global__ void CUDA_diff_map(cufftComplex* Pi2f1,cufftComplex* Pi2rho, const cu
   }
 }
 
-__global__ void CUDA_support_projection_raar(cufftComplex* g1, const cufftComplex* g0,const int * pixel_flags,const  int size,const float beta)
+__global__ void CUDA_support_projection_raar(cufftComplex* g1, const cufftComplex* g0, const cufftComplex* gp, const int * pixel_flags, const  int size, const float beta)
 {
   /* A bit of documentation about the equation:
      
@@ -44,29 +44,38 @@ __global__ void CUDA_support_projection_raar(cufftComplex* g1, const cufftComple
   */    
   const int i = blockIdx.x*blockDim.x + threadIdx.x;
   if(i<size){
-    if((pixel_flags[i] & SpPixelInsideSupport) == 0){
-      g1[i].x = g0[i].x*beta+(1.0f-2.0f*beta)*g1[i].x;
-      g1[i].y = g0[i].y*beta+(1.0f-2.0f*beta)*g1[i].y;
+    if (pixel_flags[i] & SpPixelInsideSupport) {
+      g1[i].x = gp[i].x;
+      g1[i].y = gp[i].y;
+    } else {
+      g1[i].x = g0[i].x*beta+(1.0f-2.0f*beta)*gp[i].x;
+      g1[i].y = g0[i].y*beta+(1.0f-2.0f*beta)*gp[i].y;
     }
   }
 }      
 
-__global__ void CUDA_support_projection_hio(cufftComplex* g1, const cufftComplex* g0,const int * pixel_flags,const  int size,const float beta)
+__global__ void CUDA_support_projection_hio(cufftComplex* g1, const cufftComplex* g0, const cufftComplex* gp, const int * pixel_flags, const  int size, const float beta)
 {
   const int i = blockIdx.x*blockDim.x + threadIdx.x;
   if(i<size){
-    if((pixel_flags[i] & SpPixelInsideSupport) == 0){
-      g1[i].x = g0[i].x-g1[i].x*beta;
-      g1[i].y = g0[i].y-g1[i].y*beta;
+    if (pixel_flags[i] & SpPixelInsideSupport) {
+      g1[i].x = gp[i].x;
+      g1[i].y = gp[i].y;
+    } else {
+      g1[i].x = g0[i].x-gp[i].x*beta;
+      g1[i].y = g0[i].y-gp[i].y*beta;
     }
   }
 }      
 
-__global__ void CUDA_support_projection_er(cufftComplex* g1,const int * pixel_flags,const  int size)
+__global__ void CUDA_support_projection_er(cufftComplex* g1, cufftComplex *gp, const int * pixel_flags, const  int size)
 {
   const int i = blockIdx.x*blockDim.x + threadIdx.x;
   if(i<size){
-    if((pixel_flags[i] & SpPixelInsideSupport) == 0){
+    if(pixel_flags[i] & SpPixelInsideSupport) {
+      g1[i].x = gp[i].x;
+      g1[i].y = gp[i].y;
+    } else {
       g1[i].x = 0;
       g1[i].y = 0;
     }
