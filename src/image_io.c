@@ -812,11 +812,12 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
       sp_error_warning("Unable to get space in file %s",filename);
       return NULL;
     }
-    res->num_dimensions = H5Sget_simple_extent_ndims(space);
-    if(res->num_dimensions < 0){
+    int ndims = H5Sget_simple_extent_ndims(space);
+    if(ndims < 0){
       sp_error_warning("Unable to get dimensions in file %s",filename);
       return NULL;
     }
+    res->num_dimensions = ndims;
     if(H5Sget_simple_extent_dims(space,dims,NULL) < 0){
       sp_error_warning("Unable to get dimensions extent in file %s",filename);
       return NULL;
