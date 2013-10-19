@@ -246,6 +246,7 @@ static void phaser_check_dimensions(SpPhaser * ph, const Image * a){
     ph->ny = sp_image_y(a);
     ph->nz = sp_image_z(a);
     ph->image_size = ph->nx*ph->ny*ph->nz;
+    if(ph->engine == SpEngineCUDA){
 #ifdef _USE_CUDA
 
     /* We will have to be very careful in the future about block size and number of blocks. 
@@ -254,15 +255,16 @@ static void phaser_check_dimensions(SpPhaser * ph, const Image * a){
        block maximum and 65535 x 65535 x 1 of maximum block size.
        
      */
-    ph->threads_per_block = 64;
-    while(sp_image_size(a) > 65535*ph->threads_per_block){
-      ph->threads_per_block *= 2;
-    }
-    if(ph->threads_per_block > 512){
-      sp_error_fatal("Image to large to handle with current CUDA code!");
-    }
-    ph->number_of_blocks = (ph->image_size+ph->threads_per_block-1)/ph->threads_per_block;
+      ph->threads_per_block = 64;
+      while(sp_image_size(a) > 65535*ph->threads_per_block){
+	ph->threads_per_block *= 2;
+      }
+      if(ph->threads_per_block > 512){
+	sp_error_fatal("Image to large to handle with current CUDA code!");
+      }
+      ph->number_of_blocks = (ph->image_size+ph->threads_per_block-1)/ph->threads_per_block;
 #endif
+    }
   }
   if(ph->nx != sp_image_x(a)){
     abort();
