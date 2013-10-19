@@ -79,7 +79,11 @@ SpPhasingAlgorithm * sp_phasing_er_alloc(SpPhasingConstraints constraints){
 SpPhaser * sp_phaser_alloc(){
   SpPhaser * ret = sp_malloc(sizeof(SpPhaser));
   memset(ret,0,sizeof(SpPhaser));
+  ret->model = NULL;
+  ret->model_before_projection = NULL;
+  ret->fmodel = NULL;
   ret->model_iteration = -1;
+  ret->model_before_projection_iteration = -1;
   ret->model_change_iteration = -1;
   ret->support_iteration = -1;
   ret->phasing_objective = SpRecoverPhases;  
@@ -94,6 +98,10 @@ void sp_phaser_free(SpPhaser * ph){
   if(ph->model){
     sp_image_free(ph->model);
     ph->model = 0;
+  }
+  if (ph->model_before_projection){
+    sp_image_free(ph->model_before_projection);
+    ph->model_before_projection = 0;
   }
   if(ph->model_change){
     sp_image_free(ph->model_change);
@@ -138,6 +146,8 @@ void sp_phaser_free(SpPhaser * ph){
     ph->d_g0 = 0;
     cudaFree(ph->d_g1);
     ph->d_g1 = 0;
+    cudaFree(ph->d_gp);
+    ph->d_gp = 0;
     if(ph->d_phased_amplitudes){
       cudaFree(ph->d_phased_amplitudes);
       ph->d_phased_amplitudes = 0;
@@ -149,10 +159,12 @@ void sp_phaser_free(SpPhaser * ph){
   }else{
     sp_image_free(ph->g0);
     sp_image_free(ph->g1);
+    sp_image_free(ph->gp);
   }
 #else
   sp_image_free(ph->g0);
   sp_image_free(ph->g1);
+  sp_image_free(ph->gp);
 #endif
   free(ph);
 }
@@ -354,6 +366,26 @@ const Image * sp_phaser_model(SpPhaser * ph){
     }
   }
   return ph->model;
+}
+
+const Image * sp_phaser_model_before_projection(SpPhaser *ph) {
+  if (ph->model_before_projection_iteration != ph->iteration) {
+    if (!ph->model_before_projection) {
+      ph->model_before_projection = sp_image_alloc(ph->nx, ph->ny, ph->nz);
+    }
+    ph->model_before_projection_iteration = ph->iteration;
+    if (ph->engine == SpEngineCPU) {
+      sp_image_memcpy(ph->model, ph->gp);
+    } else if (ph->engine == SpEngineCUDA) {
+#ifdef _USE_CUDA
+      /* transfer the model from the graphics card to the main memory */
+      cutilSafeCall(cudaMemcpy(ph->model_before_projection->image->data, ph->d_gp, sizeof(cufftComplex)*ph->image_size, cudaMemcpyDeviceToHost));
+#else
+      return NULL;
+#endif
+    }
+  }
+  return ph->model_before_projection;
 }
 
 static Image * sp_phaser_model_non_const(SpPhaser * ph){
@@ -599,15 +631,18 @@ int sp_phaser_init_model(SpPhaser * ph, const Image * user_model, int flags){
     ph->g0 = sp_image_duplicate(ph->model,SP_COPY_ALL);
     sp_image_fill(ph->g0,sp_cinit(0,0));
     ph->g1 = sp_image_duplicate(ph->model,SP_COPY_ALL);
+    ph->gp = sp_image_duplicate(ph->g0, SP_COPY_ALL);
   }
 #ifdef _USE_CUDA
   if(ph->engine == SpEngineCUDA){
     /* allocate GPU memory */
     cudaMalloc((void**)&ph->d_g0, sizeof(cufftComplex)*ph->image_size);
     cudaMalloc((void**)&ph->d_g1, sizeof(cufftComplex)*ph->image_size);
+    cudaMalloc((void**)&ph->d_gp, sizeof(cufftComplex)*ph->image_size);
     
     cutilSafeCall(cudaMemcpy(ph->d_g1, ph->model->image->data, sizeof(cufftComplex)*ph->image_size, cudaMemcpyHostToDevice));
     cutilSafeCall(cudaMemset(ph->d_g0, 0, sizeof(cufftComplex)*ph->image_size));
+    cutilSafeCall(cudaMemset(ph->d_gp, 0, sizeof(cufftComplex)*ph->image_size));
     if(sp_image_z(ph->model) == 1){
       cufftPlan2d(&ph->cufft_plan, sp_image_y(ph->model),sp_image_x(ph->model), CUFFT_C2C);
     }else{
@@ -692,6 +727,46 @@ const Image * sp_phaser_support(SpPhaser * ph){
     }
   }
   return ph->support;
+}
+
+const real sp_phaser_ereal(SpPhaser *ph) {
+  const Image *real_space = sp_phaser_model_before_projection(ph);
+  const Image *support = sp_phaser_support(ph);
+  real ereal_den = 0.;
+  real ereal_nom = 0.;
+  int support_size = 0;
+  const int image_size = sp_image_size(real_space);
+  for (int i = 0; i < image_size; i++) {
+    if (sp_real(support->image->data[i])) {
+      ereal_den += sp_cabs(real_space->image->data[i])*sp_cabs(real_space->image->data[i]);
+      support_size++;
+    } else {
+      ereal_nom += sp_cabs(real_space->image->data[i])*sp_cabs(real_space->image->data[i]);
+    }
+  }
+  return ereal_nom / ereal_den;
+}
+
+const real sp_phaser_efourier(SpPhaser *ph) {
+  const Image *fourier_space = sp_phaser_fmodel(ph);
+  const Image *amplitudes = sp_phaser_amplitudes(ph);
+  const int image_size = sp_image_size(fourier_space);
+  real efourier_den = 0.;
+  real efourier_nom = 0.;
+  for (int i = 0; i < image_size; i++) {
+    //if (ph->pixel_flags->data[i] |= SpPixelMeasuredAmplitude && sp_cabs(amplitudes->image->data[i]) > 0.) {
+    //if (amplitudes->mask->data[i] && sp_real(amplitudes->image->data[i])) {
+    if (amplitudes->mask->data[i]) {// && sp_real(amplitudes->image->data[i])) {
+      /*
+      efourier_nom += (sp_cabs(fourier_space->image->data[i]) - sp_cabs(amplitudes->image->data[i])) *
+	(sp_cabs(fourier_space->image->data[i]) - sp_cabs(amplitudes->image->data[i]));
+      efourier_den += sp_cabs(amplitudes->image->data[i])*sp_cabs(amplitudes->image->data[i]);
+      */
+      efourier_nom += pow(sp_cabs(fourier_space->image->data[i]) - sp_cabs(amplitudes->image->data[i]), 2);
+      efourier_den += pow(sp_cabs(amplitudes->image->data[i]), 2);
+    }
+  }
+  return efourier_nom / efourier_den;
 }
 
 int sp_phaser_iterate(SpPhaser * ph, int iterations){
@@ -908,11 +983,12 @@ static int phaser_iterate_er(SpPhaser * ph,int iterations){
     }else{
       abort();
     }
-    sp_image_ifft_fast(ph->g1,ph->g1);
-    sp_image_scale(ph->g1,1.0/sp_image_size(ph->g1));
-    for(int i =0;i<sp_image_size(ph->g1);i++){
+    sp_image_ifft_fast(ph->g1,ph->gp);
+    sp_image_scale(ph->gp,1.0/sp_image_size(ph->gp));
+    for(int i =0;i<sp_image_size(ph->gp);i++){
       if(ph->pixel_flags->data[i] & SpPixelInsideSupport){
 	// Nothing to do here 
+	ph->g1->image->data[i] = ph->gp->image->data[i];
       }else{
 	ph->g1->image->data[i] = sp_cinit(0,0);
       }
@@ -939,13 +1015,14 @@ static int phaser_iterate_hio(SpPhaser * ph,int iterations){
     }else{
       abort();
     }
-    sp_image_ifft_fast(ph->g1,ph->g1);
-    sp_image_scale(ph->g1,1.0/sp_image_size(ph->g1));
-    for(int i =0;i<sp_image_size(ph->g1);i++){
+    sp_image_ifft_fast(ph->g1,ph->gp);
+    sp_image_scale(ph->gp,1.0/sp_image_size(ph->gp));
+    for(int i =0;i<sp_image_size(ph->gp);i++){
       if(ph->pixel_flags->data[i] & SpPixelInsideSupport){
 	// Nothing to do here 
+	ph->g1->image->data[i] = ph->gp->image->data[i];
       }else{
-	ph->g1->image->data[i] = sp_csub(ph->g0->image->data[i],sp_cscale(ph->g1->image->data[i],beta));
+	ph->g1->image->data[i] = sp_csub(ph->g0->image->data[i],sp_cscale(ph->gp->image->data[i],beta));
       }
     }
     phaser_apply_constraints(ph,ph->g1,params->constraints);
@@ -972,9 +1049,9 @@ static int phaser_iterate_raar(SpPhaser * ph,int iterations){
     }else{
       abort();
     }
-    sp_image_ifft_fast(ph->g1,ph->g1);
-    sp_image_scale(ph->g1,1.0/sp_image_size(ph->g1));
-    for(int i =0;i<sp_image_size(ph->g1);i++){
+    sp_image_ifft_fast(ph->g1,ph->gp);
+    sp_image_scale(ph->gp,1.0/sp_image_size(ph->gp));
+    for(int i =0;i<sp_image_size(ph->gp);i++){
       /* A bit of documentation about the equation:
 	 
 	 Rs = 2*Ps-I; Rm = 2*Pm-I
@@ -990,8 +1067,9 @@ static int phaser_iterate_raar(SpPhaser * ph,int iterations){
       */    
       if(ph->pixel_flags->data[i] & SpPixelInsideSupport){
 	// Nothing to do here 
+	ph->g1->image->data[i] = ph->gp->image->data[i];
       }else{
-	ph->g1->image->data[i] = sp_cadd(sp_cscale(ph->g1->image->data[i],1-2*beta),sp_cscale(ph->g0->image->data[i],beta));      
+	ph->g1->image->data[i] = sp_cadd(sp_cscale(ph->gp->image->data[i],1-2*beta),sp_cscale(ph->g0->image->data[i],beta));      
       }
     }
     phaser_apply_constraints(ph,ph->g1,params->constraints);
@@ -1018,8 +1096,8 @@ static int phaser_iterate_diff_map(SpPhaser * ph,int iterations){
     sp_image_ifft_fast(f1,f1);
     Image * Pi2f1 = f1;
     phaser_module_projection(ph->g1,ph->amplitudes,ph->pixel_flags);
-    sp_image_ifft_fast(ph->g1,ph->g1);
-    Image * Pi2rho = ph->g1;
+    sp_image_ifft_fast(ph->g1,ph->gp);
+    Image * Pi2rho = ph->gp;
     
     int size = ph->image_size;
     for(int i = 0;i<size;i++){

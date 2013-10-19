@@ -77,11 +77,14 @@ typedef struct{
   Image * amplitudes_image;
   Image * fmodel;
   int fmodel_iteration;
+  Image * model_before_projection;
+  int model_before_projection_iteration;
 
   SpPhasingEngine engine;
 
   Image * g0;
   Image * g1;
+  Image * gp;
 
 #ifdef _USE_CUDA
   cufftHandle cufft_plan;
@@ -90,6 +93,7 @@ typedef struct{
   int * d_pixel_flags;
   cufftComplex * d_g0;
   cufftComplex * d_g1;
+  cufftComplex * d_gp;
   int threads_per_block;
   int number_of_blocks;
 #endif
@@ -106,10 +110,13 @@ typedef struct{
 
   spimage_EXPORT const Image * sp_phaser_model(SpPhaser * ph);
   spimage_EXPORT const Image * sp_phaser_model_with_support(SpPhaser * ph);
+  spimage_EXPORT const Image * sp_phaser_model_before_projection(SpPhaser * ph);
   spimage_EXPORT const Image * sp_phaser_old_model(SpPhaser * ph);
   /*! Returns the fourier transform of the current best model */
   spimage_EXPORT const Image * sp_phaser_fmodel(SpPhaser * ph);
   spimage_EXPORT const Image * sp_phaser_fmodel_with_mask(SpPhaser * ph);
+  spimage_EXPORT const real sp_phaser_ereal(SpPhaser * ph);
+  spimage_EXPORT const real sp_phaser_efourier(SpPhaser * ph);
   spimage_EXPORT void sp_phaser_set_model(SpPhaser * ph,const Image * model);
   spimage_EXPORT void sp_phaser_set_support(SpPhaser * ph,const Image * support);
   spimage_EXPORT void sp_phaser_set_phased_amplitudes(SpPhaser * ph,const Image * phased_amplitudes);
