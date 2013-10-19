@@ -115,8 +115,8 @@ typedef struct{
   /*! Returns the fourier transform of the current best model */
   spimage_EXPORT const Image * sp_phaser_fmodel(SpPhaser * ph);
   spimage_EXPORT const Image * sp_phaser_fmodel_with_mask(SpPhaser * ph);
-  spimage_EXPORT const real sp_phaser_ereal(SpPhaser * ph);
-  spimage_EXPORT const real sp_phaser_efourier(SpPhaser * ph);
+  spimage_EXPORT real sp_phaser_ereal(SpPhaser * ph);
+  spimage_EXPORT real sp_phaser_efourier(SpPhaser * ph);
   spimage_EXPORT void sp_phaser_set_model(SpPhaser * ph,const Image * model);
   spimage_EXPORT void sp_phaser_set_support(SpPhaser * ph,const Image * support);
   spimage_EXPORT void sp_phaser_set_phased_amplitudes(SpPhaser * ph,const Image * phased_amplitudes);

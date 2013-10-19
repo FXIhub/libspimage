@@ -729,7 +729,7 @@ const Image * sp_phaser_support(SpPhaser * ph){
   return ph->support;
 }
 
-const real sp_phaser_ereal(SpPhaser *ph) {
+real sp_phaser_ereal(SpPhaser *ph) {
   const Image *real_space = sp_phaser_model_before_projection(ph);
   const Image *support = sp_phaser_support(ph);
   real ereal_den = 0.;
@@ -747,7 +747,7 @@ const real sp_phaser_ereal(SpPhaser *ph) {
   return ereal_nom / ereal_den;
 }
 
-const real sp_phaser_efourier(SpPhaser *ph) {
+real sp_phaser_efourier(SpPhaser *ph) {
   const Image *fourier_space = sp_phaser_fmodel(ph);
   const Image *amplitudes = sp_phaser_amplitudes(ph);
   const int image_size = sp_image_size(fourier_space);
