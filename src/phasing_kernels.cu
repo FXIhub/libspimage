@@ -82,17 +82,45 @@ __global__ void CUDA_support_projection_er(cufftComplex* g1, cufftComplex *gp, c
   }
 }      
 
-__global__ void CUDA_module_projection(cufftComplex* g, const float* amp,const int * pixel_flags,const  int size)
+
+__global__ void CUDA_module_projection(cufftComplex* g, const float* amp, const float* amperrtol, const int * pixel_flags,const  int size, const SpPhasingConstraints constraints)
 {	
   const int i =  blockIdx.x*blockDim.x + threadIdx.x;
   if(i<size){
     if(pixel_flags[i] & SpPixelMeasuredAmplitude){
+      float m = 1.;
+      if(!(constraints & SpAmplitudeErrorMargin) || (amperrtol==NULL)){
+	// Default: Projection on measured amplitude
 #ifndef _STRICT_IEEE_754      
-      const float m = amp[i]/sqrt(g[i].x*g[i].x + g[i].y*g[i].y);     
+        m = amp[i]/sqrt(g[i].x*g[i].x + g[i].y*g[i].y);     
 #else
-      const float m = __fdiv_rn(amp[i],__fsqrt_rn(__fadd_rn(__fmul_rn(g[i].x,g[i].x),
+        m = __fdiv_rn(amp[i],__fsqrt_rn(__fadd_rn(__fmul_rn(g[i].x,g[i].x),
 							    __fmul_rn( g[i].y,g[i].y))));     
 #endif
+      }else{
+        // Projection according to given amplitude error tolerance map
+#ifndef _STRICT_IEEE_754      
+        const float amp_a = sqrt(g[i].x*g[i].x + g[i].y*g[i].y);     
+#else
+        const float amp_a = __fsqrt_rn(__fadd_rn(__fmul_rn(g[i].x,g[i].x),__fmul_rn( g[i].y,g[i].y)));     
+#endif
+        const float ampdiff = amp_a - amp[i];
+        if (fabs(ampdiff) > amperrtol[i]){
+          if (ampdiff > amperrtol[i]){
+#ifndef _STRICT_IEEE_754      
+            m = (amp[i]-amperrtol[i])/amp_a;
+#else
+            m = __fdiv_rn(amp[i]-amperrtol[i],amp_a);
+#endif
+	  }else{
+#ifndef _STRICT_IEEE_754      
+            m = (amp[i]+amperrtol[i])/amp_a;
+#else
+            m = __fdiv_rn(amp[i]+amperrtol[i],amp_a)
+#endif
+	  }
+        }
+      }
       if(isfinite(m)){
 #ifndef _STRICT_IEEE_754      
 	g[i].x *= m;

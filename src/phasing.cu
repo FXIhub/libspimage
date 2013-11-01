@@ -1,6 +1,6 @@
 #include <spimage.h>
 
-__global__ void CUDA_module_projection(cufftComplex* g, const float* amp,const int * pixel_flags, const  int size);
+__global__ void CUDA_module_projection(cufftComplex* g, const float* amp, const float* amperrtol, const int * pixel_flags,const  int size, const SpPhasingConstraints constraints);
 __global__ void CUDA_support_projection_hio(cufftComplex* g1, const cufftComplex* g0, const cufftComplex* gp, const int * pixel_flags,const  int size, const float beta);
 __global__ void CUDA_support_projection_er(cufftComplex* g1, cufftComplex *gp, const int * pixel_flags, const  int size);
 __global__ void CUDA_complex_scale(cufftComplex * a, int size ,float scale);
@@ -32,7 +32,7 @@ int sp_proj_module_cuda(Image * a, Image * amp){
   cudaMemcpy(d_pixel_flags,pixel_flags->data,sizeof(int)*sp_image_size(a),cudaMemcpyHostToDevice);
   int threads_per_block = 64;
   int number_of_blocks = (sp_image_size(a)+threads_per_block-1)/threads_per_block;
-  CUDA_module_projection<<<number_of_blocks, threads_per_block>>>(d_a,d_amp,d_pixel_flags,sp_image_size(a));
+  CUDA_module_projection<<<number_of_blocks, threads_per_block>>>(d_a,d_amp,d_amp,d_pixel_flags,sp_image_size(a),SpNoConstraints);
   cudaMemcpy(a->image->data,d_a,sizeof(cufftComplex)*sp_image_size(a),cudaMemcpyDeviceToHost);
   cudaFree(d_amp);
   cudaFree(d_pixel_flags);
@@ -51,7 +51,7 @@ int phaser_iterate_er_cuda(SpPhaser * ph,int iterations){
     cufftExecC2C(ph->cufft_plan, ph->d_g0, ph->d_g1, CUFFT_FORWARD);
     CUDA_apply_fourier_constraints<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->image_size,params->constraints);    
     if(ph->phasing_objective == SpRecoverPhases){
-      CUDA_module_projection<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->d_amplitudes,ph->d_pixel_flags,ph->image_size);
+      CUDA_module_projection<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->d_amplitudes,ph->d_amplitudes_errtol,ph->d_pixel_flags,ph->image_size,params->constraints);
     }else if(ph->phasing_objective == SpRecoverAmplitudes){
       CUDA_phased_amplitudes_projection<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->d_phased_amplitudes,ph->d_pixel_flags,ph->image_size);
     }else{
@@ -88,7 +88,7 @@ int phaser_iterate_hio_cuda(SpPhaser * ph,int iterations){
     CUDA_apply_fourier_constraints<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->image_size,params->constraints);
     sp_cuda_check_errors();
     if(ph->phasing_objective == SpRecoverPhases){
-      CUDA_module_projection<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->d_amplitudes,ph->d_pixel_flags,ph->image_size);
+      CUDA_module_projection<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->d_amplitudes,ph->d_amplitudes_errtol,ph->d_pixel_flags,ph->image_size,params->constraints);
     }else if(ph->phasing_objective == SpRecoverAmplitudes){
       CUDA_phased_amplitudes_projection<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->d_phased_amplitudes,ph->d_pixel_flags,ph->image_size);
     }else{
@@ -128,9 +128,9 @@ int phaser_iterate_diff_map_cuda(SpPhaser * ph,int iterations){
     CUDA_apply_fourier_constraints<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->image_size,params->constraints);
     CUDA_diff_map_f1<<<ph->number_of_blocks, ph->threads_per_block>>>(f1,ph->d_g0,ph->d_pixel_flags,gamma1,ph->image_size);
     cufftExecC2C(ph->cufft_plan, f1, f1, CUFFT_FORWARD);
-    CUDA_module_projection<<<ph->number_of_blocks, ph->threads_per_block>>>(f1,ph->d_amplitudes,ph->d_pixel_flags,ph->image_size);
+    CUDA_module_projection<<<ph->number_of_blocks, ph->threads_per_block>>>(f1,ph->d_amplitudes,ph->d_amplitudes_errtol,ph->d_pixel_flags,ph->image_size,params->constraints); 
     cufftExecC2C(ph->cufft_plan, f1, f1, CUFFT_INVERSE);
-    CUDA_module_projection<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->d_amplitudes,ph->d_pixel_flags,ph->image_size);
+    CUDA_module_projection<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->d_amplitudes,ph->d_amplitudes_errtol,ph->d_pixel_flags,ph->image_size,params->constraints);
     cufftExecC2C(ph->cufft_plan, ph->d_g1, ph->d_gp, CUFFT_INVERSE);
     sp_cuda_check_errors();
     /* normalize */
@@ -162,7 +162,7 @@ int phaser_iterate_raar_cuda(SpPhaser * ph,int iterations){
     CUDA_apply_fourier_constraints<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->image_size,params->constraints);
     sp_cuda_check_errors();
     if(ph->phasing_objective == SpRecoverPhases){
-      CUDA_module_projection<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->d_amplitudes,ph->d_pixel_flags,ph->image_size);
+      CUDA_module_projection<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->d_amplitudes,ph->d_amplitudes_errtol,ph->d_pixel_flags,ph->image_size,params->constraints);
     }else if(ph->phasing_objective == SpRecoverAmplitudes){
       CUDA_phased_amplitudes_projection<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->d_phased_amplitudes,ph->d_pixel_flags,ph->image_size);
     }else{

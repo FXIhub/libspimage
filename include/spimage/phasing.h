@@ -14,7 +14,7 @@ extern "C"
 typedef enum{SpModelRandomPhases=1,SpModelZeroPhases=2,SpModelRandomValues=4,SpModelMaskedOutZeroed=256}SpModelInitialization;
 typedef enum{SpSupportFromPatterson=1}SpSupportInitialization;
 typedef enum{SpHIO=1,SpRAAR,SpDiffMap,SpER}SpPhasingAlgorithmType;
-  typedef enum{SpNoConstraints=0,SpRealObject=1,SpPositiveRealObject=2,SpPositiveComplexObject=4,SpPositivityFlipping=8,SpCentrosymmetricObject=16}SpPhasingConstraints;
+  typedef enum{SpNoConstraints=0,SpRealObject=1,SpPositiveRealObject=2,SpPositiveComplexObject=4,SpPositivityFlipping=8,SpCentrosymmetricObject=16,SpAmplitudeErrorMargin}SpPhasingConstraints;
 typedef enum{SpEngineAutomatic=0,SpEngineCPU=1,SpEngineCUDA=2}SpPhasingEngine;
 typedef enum{SpPixelInsideSupport=1,SpPixelMeasuredAmplitude=2}SpPhasingPixelFlags;
 typedef enum{SpRecoverPhases=0,SpRecoverAmplitudes=1}SpPhasingObjective;
@@ -49,6 +49,8 @@ typedef struct{
 typedef struct{
   /* amplitudes are used for phase recovery */
   sp_3matrix * amplitudes;
+  /* amplitudes error tolerance, define margins used with SpAmplitudeErrorMargin */
+  sp_3matrix * amplitudes_errtol;
   /* phased_amplitudes are used for amplitude recovery */
   sp_c3matrix * phased_amplitudes;
 
@@ -89,6 +91,7 @@ typedef struct{
 #ifdef _USE_CUDA
   cufftHandle cufft_plan;
   float * d_amplitudes;
+  float * d_amplitudes_errtol;
   cufftComplex * d_phased_amplitudes;
   int * d_pixel_flags;
   cufftComplex * d_g0;
@@ -121,6 +124,7 @@ typedef struct{
   spimage_EXPORT void sp_phaser_set_support(SpPhaser * ph,const Image * support);
   spimage_EXPORT void sp_phaser_set_phased_amplitudes(SpPhaser * ph,const Image * phased_amplitudes);
   spimage_EXPORT void sp_phaser_set_amplitudes(SpPhaser * ph,const Image * amplitudes);
+  spimage_EXPORT void sp_phaser_set_amplitudes_errtol(SpPhaser * ph,const Image * amplitudes_errtol);
   spimage_EXPORT Image * sp_phaser_model_change(SpPhaser * ph);
   spimage_EXPORT const Image * sp_phaser_support(SpPhaser * ph);
   spimage_EXPORT const Image * sp_phaser_amplitudes(SpPhaser * ph);

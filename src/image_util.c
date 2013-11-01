@@ -480,7 +480,8 @@ Image * sp_image_shift(Image * img){
 
   for(int i = 0;i<sp_image_size(out);i++){
     out->image->data[i] = sp_cinit(0,0);
-    out->mask->data[i] = 1;
+    // We initialize the mask with 0 values. This masks out regions that will be added due to an origin that is off-center
+    out->mask->data[i] = 0;
   }
   /* We're going to shift the image in all 3 dimensions by shifting each dimension individually */
   for(int z = 0;z<sp_image_z(img);z++){
