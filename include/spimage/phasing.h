@@ -14,7 +14,7 @@ extern "C"
 typedef enum{SpModelRandomPhases=1,SpModelZeroPhases=2,SpModelRandomValues=4,SpModelMaskedOutZeroed=256}SpModelInitialization;
 typedef enum{SpSupportFromPatterson=1}SpSupportInitialization;
 typedef enum{SpHIO=1,SpRAAR,SpDiffMap,SpER}SpPhasingAlgorithmType;
-  typedef enum{SpNoConstraints=0,SpRealObject=1,SpPositiveRealObject=2,SpPositiveComplexObject=4,SpPositivityFlipping=8,SpCentrosymmetricObject=16,SpAmplitudeErrorMargin}SpPhasingConstraints;
+typedef enum{SpNoConstraints=0,SpRealObject=1,SpPositiveRealObject=2,SpPositiveComplexObject=4,SpPositivityFlipping=8,SpCentrosymmetricObject=16,SpAmplitudeErrorMargin=32}SpPhasingConstraints;
 typedef enum{SpEngineAutomatic=0,SpEngineCPU=1,SpEngineCUDA=2}SpPhasingEngine;
 typedef enum{SpPixelInsideSupport=1,SpPixelMeasuredAmplitude=2}SpPhasingPixelFlags;
 typedef enum{SpRecoverPhases=0,SpRecoverAmplitudes=1}SpPhasingObjective;
