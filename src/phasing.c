@@ -340,6 +340,9 @@ void sp_phaser_set_amplitudes_errtol(SpPhaser * ph,const Image * amplitudes_errt
   if(!ph->amplitudes_errtol){
     ph->amplitudes_errtol = sp_3matrix_alloc(ph->nx,ph->ny,ph->nz);
   }
+  for(int i = 0;i<ph->image_size;i++){
+    ph->amplitudes_errtol->data[i] = sp_real(amplitudes_errtol->image->data[i]);
+  }
   if(ph->engine == SpEngineCUDA){
 #ifdef _USE_CUDA
     if(!ph->d_amplitudes_errtol){
@@ -981,6 +984,7 @@ static void phaser_module_projection(Image * a, sp_3matrix * amp, sp_3matrix * a
 	// Projection according to given amplitude error tolerance map
 	const float amp_a = sp_cabs(a->image->data[i]);
 	const float ampdiff = amp_a - amp->data[i];
+	//printf("amp_a=%f; amperrtol=%f; ampdiff=%f\n",amp_a,amperrtol->data[i],ampdiff);
 	if (fabs(ampdiff) > amperrtol->data[i]){
 	  if (ampdiff > amperrtol->data[i]){
 	    m = (amp->data[i]-amperrtol->data[i])/amp_a;
