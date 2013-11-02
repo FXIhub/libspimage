@@ -83,13 +83,13 @@ __global__ void CUDA_support_projection_er(cufftComplex* g1, cufftComplex *gp, c
 }      
 
 
-__global__ void CUDA_module_projection(cufftComplex* g, const float* amp, const float* amperrtol, const int * pixel_flags,const  int size, const SpPhasingConstraints constraints)
+__global__ void CUDA_module_projection(cufftComplex* g, const float* amp, const float* amp_min, const float* amp_max, const int * pixel_flags,const  int size, const SpPhasingConstraints constraints)
 {	
   const int i =  blockIdx.x*blockDim.x + threadIdx.x;
   if(i<size){
     if(pixel_flags[i] & SpPixelMeasuredAmplitude){
       float m = 1.;
-      if(!(constraints & SpAmplitudeErrorMargin) || (amperrtol==NULL)){
+      if(!(constraints & SpAmplitudeErrorMargin) || (amp_min==NULL) || (amp_max==NULL)){
 	// Default: Projection on measured amplitude
 #ifndef _STRICT_IEEE_754      
         m = amp[i]/sqrt(g[i].x*g[i].x + g[i].y*g[i].y);     
@@ -98,28 +98,26 @@ __global__ void CUDA_module_projection(cufftComplex* g, const float* amp, const 
 							    __fmul_rn( g[i].y,g[i].y))));     
 #endif
       }else{
-        // Projection according to given amplitude error tolerance map
+        // Projection according to given amplitude margins
 #ifndef _STRICT_IEEE_754      
         const float amp_a = sqrt(g[i].x*g[i].x + g[i].y*g[i].y);     
 #else
         const float amp_a = __fsqrt_rn(__fadd_rn(__fmul_rn(g[i].x,g[i].x),__fmul_rn( g[i].y,g[i].y)));     
 #endif
-        const float ampdiff = amp_a - amp[i];
-        if (fabs(ampdiff) > amperrtol[i]){
-          if (ampdiff > amperrtol[i]){
+	if (amp_a < amp_min[i]){
 #ifndef _STRICT_IEEE_754      
-            m = (amp[i]-amperrtol[i])/amp_a;
+          m = amp_min[i]/amp_a;
 #else
-            m = __fdiv_rn(amp[i]-amperrtol[i],amp_a);
+          m = __fdiv_rn(amp_min,amp_a);
 #endif
-	  }else{
+	}
+	else if(amp_a > amp_max[i]){
 #ifndef _STRICT_IEEE_754      
-            m = (amp[i]+amperrtol[i])/amp_a;
+          m = amp_max[i]/amp_a;
 #else
-            m = __fdiv_rn(amp[i]+amperrtol[i],amp_a)
+          m = __fdiv_rn(amp_max[i],amp_a)
 #endif
-	  }
-        }
+	}
       }
       if(isfinite(m)){
 #ifndef _STRICT_IEEE_754      
@@ -127,7 +125,7 @@ __global__ void CUDA_module_projection(cufftComplex* g, const float* amp, const 
 	g[i].y *= m;
 #else
 	g[i].x = __fmul_rn(g[i].x,m);
-	g[i].y = __fmul_rn(g[i].y,m);;
+	g[i].y = __fmul_rn(g[i].y,m);
 #endif
       }else{
 	g[i].x = amp[i];
@@ -136,7 +134,6 @@ __global__ void CUDA_module_projection(cufftComplex* g, const float* amp, const 
     }
   }
 }  
-
 
 __global__ void CUDA_phased_amplitudes_projection(cufftComplex* g, const cufftComplex* phased_amplitudes,const int * pixel_flags,const  int size)
 {	

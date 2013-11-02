@@ -7,7 +7,7 @@ static int phaser_iterate_raar(SpPhaser * ph, int iterations);
 static int phaser_iterate_diff_map(SpPhaser * ph, int iterations);
 static Image * phaser_iterate_diff_map_f1(Image * real_in,sp_i3matrix * pixel_flags,real gamma1);
 static void phaser_apply_constraints(SpPhaser * ph,Image * new_model, SpPhasingConstraints constraints);
-static void phaser_module_projection(Image * a, sp_3matrix * amp, sp_3matrix * amperrtol, sp_i3matrix * pixel_flags, SpPhasingConstraints constraints);
+static void phaser_module_projection(Image * a, sp_3matrix * amp, sp_3matrix * amp_min,sp_3matrix * amp_max, sp_i3matrix * pixel_flags, SpPhasingConstraints constraints);
 static void phaser_phased_amplitudes_projection(Image * a, sp_c3matrix * phased_amp, sp_i3matrix * pixel_flags);
 
 
@@ -110,9 +110,13 @@ void sp_phaser_free(SpPhaser * ph){
     sp_3matrix_free(ph->amplitudes);
     ph->amplitudes = 0;
   }
-  if(ph->amplitudes_errtol){
-    sp_3matrix_free(ph->amplitudes_errtol);
-    ph->amplitudes_errtol = 0;
+  if(ph->amplitudes_min){
+    sp_3matrix_free(ph->amplitudes_min);
+    ph->amplitudes_min = 0;
+  }
+  if(ph->amplitudes_max){
+    sp_3matrix_free(ph->amplitudes_max);
+    ph->amplitudes_max = 0;
   }
   if(ph->pixel_flags){
     sp_i3matrix_free(ph->pixel_flags);
@@ -143,8 +147,10 @@ void sp_phaser_free(SpPhaser * ph){
 
     cudaFree(ph->d_amplitudes);
     ph->d_amplitudes = 0;
-    cudaFree(ph->d_amplitudes_errtol);
-    ph->d_amplitudes_errtol = 0;
+    cudaFree(ph->d_amplitudes_min);
+    ph->d_amplitudes_min = 0;
+    cudaFree(ph->d_amplitudes_max);
+    ph->d_amplitudes_max = 0;
     cudaFree(ph->d_pixel_flags);
     ph->d_pixel_flags = 0;
     cudaFree(ph->d_g0);
@@ -335,21 +341,30 @@ void sp_phaser_set_amplitudes(SpPhaser * ph,const Image * amplitudes){
   }
 }
 
-void sp_phaser_set_amplitudes_errtol(SpPhaser * ph,const Image * amplitudes_errtol){
-  phaser_check_dimensions(ph,amplitudes_errtol);
-  if(!ph->amplitudes_errtol){
-    ph->amplitudes_errtol = sp_3matrix_alloc(ph->nx,ph->ny,ph->nz);
+void sp_phaser_set_amplitudes_margins(SpPhaser * ph,const Image * amplitudes_min,const Image * amplitudes_max){
+  phaser_check_dimensions(ph,amplitudes_min);
+  phaser_check_dimensions(ph,amplitudes_max);
+  if(!ph->amplitudes_min){
+    ph->amplitudes_min = sp_3matrix_alloc(ph->nx,ph->ny,ph->nz);
+  }
+  if(!ph->amplitudes_max){
+    ph->amplitudes_max = sp_3matrix_alloc(ph->nx,ph->ny,ph->nz);
   }
   for(int i = 0;i<ph->image_size;i++){
-    ph->amplitudes_errtol->data[i] = sp_real(amplitudes_errtol->image->data[i]);
+    ph->amplitudes_min->data[i] = sp_real(amplitudes_min->image->data[i]);
+    ph->amplitudes_max->data[i] = sp_real(amplitudes_max->image->data[i]);
   }
   if(ph->engine == SpEngineCUDA){
 #ifdef _USE_CUDA
-    if(!ph->d_amplitudes_errtol){
-      cudaMalloc((void **)&ph->d_amplitudes_errtol,sizeof(float)*ph->image_size);
+    if(!ph->d_amplitudes_min){
+      cudaMalloc((void **)&ph->d_amplitudes_min,sizeof(float)*ph->image_size);
+    }
+    if(!ph->d_amplitudes_max){
+      cudaMalloc((void **)&ph->d_amplitudes_max,sizeof(float)*ph->image_size);
     }
     /* transfer the data from the main memory to the graphics card */
-    cutilSafeCall(cudaMemcpy(ph->d_amplitudes_errtol,ph->amplitudes_errtol->data,sizeof(float)*ph->image_size,cudaMemcpyHostToDevice));
+    cutilSafeCall(cudaMemcpy(ph->d_amplitudes_min,ph->amplitudes_min->data,sizeof(float)*ph->image_size,cudaMemcpyHostToDevice));
+    cutilSafeCall(cudaMemcpy(ph->d_amplitudes_max,ph->amplitudes_max->data,sizeof(float)*ph->image_size,cudaMemcpyHostToDevice));
 #else
     abort();
 #endif    
@@ -970,9 +985,9 @@ static void phaser_apply_fourier_constraints(SpPhaser * ph,Image * new_amplitude
   }
 }
 
-static void phaser_module_projection(Image * a, sp_3matrix * amp, sp_3matrix * amperrtol, sp_i3matrix * pixel_flags, SpPhasingConstraints constraints){
-  if ((constraints & SpAmplitudeErrorMargin) && (amperrtol == NULL)){
-    sp_error_fatal("Amplitude error map is a null pointer.");
+static void phaser_module_projection(Image * a, sp_3matrix * amp, sp_3matrix * amp_min, sp_3matrix * amp_max, sp_i3matrix * pixel_flags, SpPhasingConstraints constraints){
+  if ((constraints & SpAmplitudeErrorMargin) && ((amp_min == NULL) || (amp_max == NULL))){
+    sp_error_fatal("Amplitude margin map is a null pointer.");
   }
   for(int i = 0;i<sp_image_size(a);i++){
     float m = 1.;
@@ -980,17 +995,15 @@ static void phaser_module_projection(Image * a, sp_3matrix * amp, sp_3matrix * a
       if(!(constraints & SpAmplitudeErrorMargin)){
 	// Default: Projection on measured amplitude
 	m = amp->data[i]/sp_cabs(a->image->data[i]);
-      }else{
+      }
+      else{
 	// Projection according to given amplitude error tolerance map
 	const float amp_a = sp_cabs(a->image->data[i]);
-	const float ampdiff = amp_a - amp->data[i];
-	//printf("amp_a=%f; amperrtol=%f; ampdiff=%f\n",amp_a,amperrtol->data[i],ampdiff);
-	if (fabs(ampdiff) > amperrtol->data[i]){
-	  if (ampdiff > amperrtol->data[i]){
-	    m = (amp->data[i]-amperrtol->data[i])/amp_a;
-	  }else{
-	    m = (amp->data[i]+amperrtol->data[i])/amp_a;
-	  }
+	if (amp_a < amp_min->data[i]){
+	  m = amp_min->data[i]/amp_a;
+	}
+	else if (amp_a > amp_max->data[i]){
+	  m = amp_max->data[i]/amp_a;
 	}
       }
       // Do projection
@@ -1022,7 +1035,7 @@ static int phaser_iterate_er(SpPhaser * ph,int iterations){
     sp_image_fft_fast(ph->g0,ph->g1);
     phaser_apply_fourier_constraints(ph,ph->g1,params->constraints);
     if(ph->phasing_objective == SpRecoverPhases){
-      phaser_module_projection(ph->g1,ph->amplitudes,ph->amplitudes_errtol,ph->pixel_flags,params->constraints);
+      phaser_module_projection(ph->g1,ph->amplitudes,ph->amplitudes_min,ph->amplitudes_max,ph->pixel_flags,params->constraints);
     }else if(ph->phasing_objective == SpRecoverAmplitudes){
       phaser_phased_amplitudes_projection(ph->g1,ph->phased_amplitudes,ph->pixel_flags);
     }else{
@@ -1054,7 +1067,7 @@ static int phaser_iterate_hio(SpPhaser * ph,int iterations){
     sp_image_fft_fast(ph->g0,ph->g1);
     phaser_apply_fourier_constraints(ph,ph->g1,params->constraints);
     if(ph->phasing_objective == SpRecoverPhases){
-      phaser_module_projection(ph->g1,ph->amplitudes,ph->amplitudes_errtol,ph->pixel_flags,params->constraints);
+      phaser_module_projection(ph->g1,ph->amplitudes,ph->amplitudes_min,ph->amplitudes_max,ph->pixel_flags,params->constraints);
     }else if(ph->phasing_objective == SpRecoverAmplitudes){
       phaser_phased_amplitudes_projection(ph->g1,ph->phased_amplitudes,ph->pixel_flags);
     }else{
@@ -1088,7 +1101,7 @@ static int phaser_iterate_raar(SpPhaser * ph,int iterations){
     phaser_apply_fourier_constraints(ph,ph->g1,params->constraints);
     SpPhasingHIOParameters * params = ph->algorithm->params;
     if(ph->phasing_objective == SpRecoverPhases){
-      phaser_module_projection(ph->g1,ph->amplitudes,ph->amplitudes_errtol,ph->pixel_flags,params->constraints);
+      phaser_module_projection(ph->g1,ph->amplitudes,ph->amplitudes_min,ph->amplitudes_max,ph->pixel_flags,params->constraints);
     }else if(ph->phasing_objective == SpRecoverAmplitudes){
       phaser_phased_amplitudes_projection(ph->g1,ph->phased_amplitudes,ph->pixel_flags);
     }else{
@@ -1137,10 +1150,10 @@ static int phaser_iterate_diff_map(SpPhaser * ph,int iterations){
     phaser_apply_fourier_constraints(ph,ph->g1,params->constraints);
     Image * f1 = phaser_iterate_diff_map_f1(ph->g0,ph->pixel_flags,gamma1);
     sp_image_fft_fast(f1,f1);
-    phaser_module_projection(f1,ph->amplitudes,ph->amplitudes_errtol,ph->pixel_flags,params->constraints);
+    phaser_module_projection(f1,ph->amplitudes,ph->amplitudes_min,ph->amplitudes_max,ph->pixel_flags,params->constraints);
     sp_image_ifft_fast(f1,f1);
     Image * Pi2f1 = f1;
-    phaser_module_projection(ph->g1,ph->amplitudes,ph->amplitudes_errtol,ph->pixel_flags,params->constraints);
+    phaser_module_projection(ph->g1,ph->amplitudes,ph->amplitudes_min,ph->amplitudes_max,ph->pixel_flags,params->constraints);
     sp_image_ifft_fast(ph->g1,ph->gp);
     Image * Pi2rho = ph->gp;
     
