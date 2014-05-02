@@ -25,6 +25,11 @@ IF(CMAKE_COMPILER_IS_GNUCC)
 	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -std=c99")
 ENDIF(CMAKE_COMPILER_IS_GNUCC)
 
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+  # Necessary due to CUDA compatibility problems
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libstdc++")
+endif()
+
 	
 
 SET(BUILD_STATIC_LIB CACHE BOOL "If ON output static library. Otherwise output shared libraries.")
