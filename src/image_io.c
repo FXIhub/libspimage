@@ -1,3 +1,5 @@
+#include <config.h>
+
 #ifndef PNG_DEBUG
 #  define PNG_DEBUG 3
 #endif
@@ -7,11 +9,18 @@
 #include <stdlib.h>
 #include <math.h>
 #include <hdf5.h>
+#ifdef TIFF_FOUND
 #include <tiffio.h>
+#endif
+
+#ifdef PNG_FOUND
 #include <png.h>
+#endif
+
 #include <float.h>
 #include <ctype.h>
 #include <strings.h>
+#include <time.h>
 #ifdef _USE_DMALLOC
 #include <dmalloc.h>
 #endif
@@ -35,7 +44,7 @@ static void write_cxi(const Image * img,const char * filename);
 static Image * read_cxi(const char * filename);
 
 
-void sp_image_write(const Image * img, const const char * filename, int flags){
+void sp_image_write(const Image * img, const char * filename, int flags){
   char buffer[1024];
   strcpy(buffer,filename);
   for(int i = 0;i<strlen(buffer);i++){
@@ -1274,6 +1283,7 @@ Image * read_anton_datafile(hid_t file_id,hid_t dataset_id,const char * filename
 
 
 Image * read_tiff(const char * filename){
+#ifdef TIFF_FOUND
   //  Image * out = sp_malloc(sizeof(Image));
   //  out->detector = sp_malloc(sizeof(Detector));
   int bpp = 4;  
@@ -1365,10 +1375,15 @@ Image * read_tiff(const char * filename){
   out->detector->image_center[1] = height/2;
   out->num_dimensions = SP_2D;
   return out;
+#else
+  sp_error_warning("Not compiled with TIFF support!");
+  return NULL;
+#endif
 }
 
 
 void write_tiff(const Image * img,const char * filename){
+#ifdef TIFF_FOUND
   float * data;
   int nstrips;
   int stripsize;
@@ -1403,6 +1418,9 @@ void write_tiff(const Image * img,const char * filename){
     }*/
   TIFFClose(tif);
   sp_free(data);
+#else
+  sp_error_warning("Not compiled with TIFF support!");
+#endif
 }
 
 
@@ -1443,6 +1461,8 @@ int write_mask_to_png(const Image * img, char * filename, int color){
 }
 
 
+#ifdef PNG_FOUND
+
 #ifdef _WIN32
   /* png_init_io seems to crash in windows using GnuWin32 libpng-1.2.8*/
 
@@ -1481,7 +1501,10 @@ pngtest_read_data(png_structp png_ptr, png_bytep data, png_size_t length)
 }
 #endif 
 
+#endif
+
 Image * read_png(const char * filename){
+#ifdef PNG_FOUND
  FILE *fp = fopen(filename, "rb");
  int i,j;
  png_uint_32 width,height;
@@ -1535,6 +1558,10 @@ Image * read_png(const char * filename){
  sp_free(row_pointers);
  png_destroy_read_struct(&png_ptr,&info_ptr, NULL);
  return res;
+#else
+  sp_error_warning("Not compiled with PNG support!");
+  return NULL;
+#endif
 }
 
 
@@ -1542,7 +1569,7 @@ Image * read_png(const char * filename){
 
 
 int write_png(const Image * img,const char * filename, int color){
-
+#ifdef PNG_FOUND
   if(img->num_dimensions != SP_2D){
     fprintf(stderr,"Can only write png of 2D images in write_png!\n");
     abort();
@@ -1646,6 +1673,10 @@ int write_png(const Image * img,const char * filename, int color){
   fflush(fp);
   fclose(fp);
   return 0;
+#else
+  sp_error_warning("Not compiled with PNG support!");
+  return -1;
+#endif
 }
 
 static Image * read_smv(const char * filename){

@@ -1,0 +1,9 @@
+#cmakedefine TIFF_FOUND
+#cmakedefine FFTW3_FOUND
+#cmakedefine PNG_FOUND
+#cmakedefine HDF5_FOUND
+#cmakedefine JPEG_FOUND
+#cmakedefine ZLIB_FOUND
+#cmakedefine GSL_FOUND
+
+
