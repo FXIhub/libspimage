@@ -1,4 +1,4 @@
-from pylab import *
+import numpy as np
 import spimage
 from _spimage_log import logger
 
