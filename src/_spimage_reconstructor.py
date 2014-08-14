@@ -1,5 +1,5 @@
-#import numpy as np
-from pylab import *
+import numpy as np
+#from pylab import *
 import spimage
 from _spimage_log import logger
 
@@ -86,9 +86,9 @@ class Reconstructor:
         out = {}
         [I,M] = self._get_curr_model(shifted=True)
         [fI,fM] = self._get_curr_fmodel(shifted=True)
-        out["real_error"] = sqrt((abs(I[M==0])**2).sum()/( (abs(I[M==1])**2).sum() + finfo("float32").eps ))
-        out["fourier_error"] = sqrt((abs(abs(fI[fM==1])-abs(fftshift(self._sp_amplitudes.image)[fM==1]))**2).sum()/( (abs(fftshift(self._sp_amplitudes.image)[fM==1])**2).sum() + finfo("float32").eps ))
-        out["FcFo"] = sqrt(abs(fI[fM==1]).sum()/(abs(self._sp_amplitudes.image[fM==0]).sum()+finfo("float32").eps))
+        out["real_error"] = np.sqrt((abs(I[M==0])**2).sum()/( (abs(I[M==1])**2).sum() + np.finfo("float32").eps ))
+        out["fourier_error"] = np.sqrt((abs(abs(fI[fM==1])-abs(np.fft.fftshift(self._sp_amplitudes.image)[fM==1]))**2).sum()/( (abs(np.fft.fftshift(self._sp_amplitudes.image)[fM==1])**2).sum() + np.finfo("float32").eps ))
+        out["FcFo"] = np.sqrt(abs(fI[fM==1]).sum()/(abs(self._sp_amplitudes.image[fM==0]).sum()+np.finfo("float32").eps))
         out["support_size"] = M.sum()
         return out
 
@@ -116,7 +116,7 @@ class Reconstructor:
         self._intensities_dirty = True
         self._initial_support_dirty = True
         if shifted:
-            self._intensities = fftshift(intensities)
+            self._intensities = np.fft.fftshift(intensities)
         else:
             self._intensities = intensities.copy()
         self._log("Intensities set.","DEBUG")
@@ -125,7 +125,7 @@ class Reconstructor:
         self._intensities_dirty = True
         self._initial_support_dirty = True
         if shifted:
-            self._mask = fftshift(mask)
+            self._mask = np.fft.fftshift(mask)
         else:
             self._mask = mask.copy()
         self._log("Mask set.","DEBUG")
@@ -237,6 +237,9 @@ class Reconstructor:
         if self._phasing_algorithms_configs == []:
             self._log("Reconstruction cannot start! You need to set the phasing algorithm.","ERROR")
             self._ready = False           
+        if self._number_of_outputs_images == None or self._number_of_outputs_scores == None:
+            self._log("Connot prepare reconstruction. Number of outputs need to be set.","ERROR")
+            self._ready = False           
         if self._i_support_algorithms != self._number_of_iterations:
             self._log("Connot prepare reconstruction. Support algorithms initialised are not in line with the set number of iterations.","ERROR")
             self._ready = False
@@ -263,14 +266,14 @@ class Reconstructor:
         if self._mask == None:
             M = self._mask.copy()
         else:
-            M = ones(shape=I.shape,dtype="bool")
+            M = np.ones(shape=I.shape,dtype="bool")
         self._clear_intensities()
         self._sp_intensities_sh = spimage.sp_image_alloc(I.shape[1],I.shape[0],1)
-        self._sp_intensities_sh.image.real[:,:] = float32(I[:,:])
-        self._sp_intensities_sh.mask[:,:] = int32(M[:,:])
+        self._sp_intensities_sh.image.real[:,:] = np.float32(I[:,:])
+        self._sp_intensities_sh.mask[:,:] = np.int32(M[:,:])
         self._clear_amplitudes()
         self._sp_amplitudes = spimage.sp_image_shift(self._sp_intensities_sh)
-        self._sp_amplitudes.image[:] = sqrt(abs(self._sp_amplitudes.image.real))
+        self._sp_amplitudes.image[:] = np.sqrt(abs(self._sp_amplitudes.image.real))
         self._sp_amplitudes.scaled = 1
         self._sp_amplitudes.phased = 0
         self._amplitudes_dirty = False
@@ -286,18 +289,18 @@ class Reconstructor:
                 spimage.sp_image_free(img)
         self._sp_initial_support = spimage.sp_image_alloc(self._Ny,self._Nx,1)
         if "radius" in self._initial_support_config:
-            X,Y = meshgrid(arange(self._Nx),arange(self._Ny))
+            X,Y = np.meshgrid(np.arange(self._Nx),np.arange(self._Ny))
             X = X-(self._Nx-1)/2.
             Y = Y-(self._Ny-1)/2.
-            R = sqrt(X**2 + Y**2)
+            R = np.sqrt(X**2 + Y**2)
             self._phaser_dirty = True
-            self._sp_initial_support.image[:] = float32(fftshift(R) < self._initial_support_config)
+            self._sp_initial_support.image[:] = np.float32(np.fft.fftshift(R) < self._initial_support_config)
         else:
             self._phaser_dirty = True
             S = self._initial_support_config["support_mask"]
             if self._initial_support_config["support_mask_shifted"]:
-                S = fftshift(S)
-            self.sep_initial_support.image[:] = float32(S)
+                S = np.fft.fftshift(S)
+            self.sep_initial_support.image[:] = np.float32(S)
         self._initial_support_dirty = False
         self._log("Initial support initialised.","DEBUG")
 
@@ -305,8 +308,8 @@ class Reconstructor:
         if not self._iterations_dirty:
             self._log("Iterations already initialised.","DEBUG")
             return
-        self._out_iterations_images = int64((linspace(0,self._number_of_iterations,self._number_of_outputs_images)).round())
-        self._out_iterations_scores = int64((linspace(0,self._number_of_iterations,self._number_of_outputs_scores)).round())
+        self._out_iterations_images = np.int64((np.linspace(0,self._number_of_iterations,self._number_of_outputs_images)).round())
+        self._out_iterations_scores = np.int64((np.linspace(0,self._number_of_iterations,self._number_of_outputs_scores)).round())
         self._iterations_dirty = False
         self._support_algorithms_dirty = True
         self._phasing_algorithms_dirty = True
@@ -322,10 +325,10 @@ class Reconstructor:
             if alg_conf["type"] == "area":
                 blur_radius = spimage.sp_smap_alloc(2)
                 spimage.sp_smap_insert(blur_radius, i, alg_conf["blur_init"])
-                spimage.sp_smap_insert(blur_radius, i+alg_conf["number_of_iterations"], alg_conf["blur_final"])
+                spimage.sp_smap_insert(blur_radius, i + alg_conf["number_of_iterations"], alg_conf["blur_final"])
                 support_area = spimage.sp_smap_alloc(2)
                 spimage.sp_smap_insert(support_area, i,alg_conf["area_init"])
-                spimage.sp_smap_insert(support_area, i+alg_conf["number_of_iterations"],alg_conf["area_final"])
+                spimage.sp_smap_insert(support_area, i + alg_conf["number_of_iterations"],alg_conf["area_final"])
                 alg["spimage_support_array"] = spimage.sp_support_array_init(spimage.sp_support_area_alloc(blur_radius, support_area),alg_conf["update_period"])
             elif alg_cong["type"] == "threshold":
                 blur_radius = spimage.sp_smap_alloc(2)
@@ -406,13 +409,13 @@ class Reconstructor:
         iteration0_alg = 0
         iteration0_sup = 0
         iterations_propagated = 0
-        fourier_error = zeros(self._number_of_outputs_scores)
-        real_error = zeros(self._number_of_outputs_scores)
-        support_size = zeros(self._number_of_outputs_scores)
-        real_space = zeros(shape=(self._number_of_outputs_images,self._Ny,self._Nx),dtype="complex128")
-        support = zeros(shape=(self._number_of_outputs_images,self._Ny,self._Nx),dtype="bool")
-        fourier_space = zeros(shape=(self._number_of_outputs_images,self._Ny,self._Nx),dtype="complex128")
-        mask = zeros(shape=(self._number_of_outputs_images,self._Ny,self._Nx),dtype="bool")
+        fourier_error = np.zeros(self._number_of_outputs_scores)
+        real_error = np.zeros(self._number_of_outputs_scores)
+        support_size = np.zeros(self._number_of_outputs_scores)
+        real_space = np.zeros(shape=(self._number_of_outputs_images,self._Ny,self._Nx),dtype="complex128")
+        support = np.zeros(shape=(self._number_of_outputs_images,self._Ny,self._Nx),dtype="bool")
+        fourier_space = np.zeros(shape=(self._number_of_outputs_images,self._Ny,self._Nx),dtype="complex128")
+        mask = np.zeros(shape=(self._number_of_outputs_images,self._Ny,self._Nx),dtype="bool")
         for self._iteration in range(self._number_of_iterations+1):
             change_algorithm = (self._iteration-iteration0_alg == self._phasing_algorithms[i_alg]["number_of_iterations"]) and (self._iteration != self._number_of_iterations)
             change_support = (self._iteration-iteration0_sup == self._support_algorithms[i_sup]["number_of_iterations"]) and (self._iteration != self._number_of_iterations)
@@ -456,8 +459,8 @@ class Reconstructor:
         if not self._ready:
             return
         outputs = []
-        real_space_final = zeros(shape=(Nrepeats,self._Nx,self._Ny),dtype="complex128")
-        support_final = zeros(shape=(Nrepeats,self._Nx,self._Ny),dtype="bool")
+        real_space_final = np.zeros(shape=(Nrepeats,self._Nx,self._Ny),dtype="complex128")
+        support_final = np.zeros(shape=(Nrepeats,self._Nx,self._Ny),dtype="bool")
         for i_rec in range(Nrepeats):
             self._log("Reconstruction %i started" % (i_rec),"INFO")
             outputs = self.reconstruct(i_rec)
@@ -478,12 +481,12 @@ class Reconstructor:
             fimg = tmp.image.copy()
             fmsk = tmp.mask.copy()
         else:
-            fimg = self._phaser.model.image.size*fftn(self._phaser.model.image)
+            fimg = self._phaser.model.image.size*np.fft.fftn(self._phaser.model.image)
             fmsk = self._sp_amplitudes.mask.copy()           
         #if normalize:
         #    fimg = fimg/abs(fimg).sum()
         if shifted:
-            return [fftshift(fimg),fftshift(fmsk)]
+            return [np.fft.fftshift(fimg),np.fft.fftshift(fmsk)]
         else:
             return [fimg,fmsk]
             
@@ -495,7 +498,7 @@ class Reconstructor:
                 tmp1 = spimage.sp_phaser_model_before_projection(self._phaser)
                 tmp2 = spimage.sp_phaser_support(self._phaser)
                 img = tmp1.image.copy()
-                msk = int32(tmp2.image.real)
+                msk = np.int32(tmp2.image.real)
                 #spimage.sp_image_free(tmp1)
                 #spimage.sp_image_free(tmp2)
             elif state == "after_projection":
@@ -505,9 +508,9 @@ class Reconstructor:
                 #spimage.sp_image_free(tmp)
         else:
             img = self._phaser.model.image.copy()
-            msk = array(self._sp_initial_support.image.real,dtype="bool")
+            msk = np.array(self._sp_initial_support.image.real,dtype="bool")
         if shifted:
-            return [fftshift(img),fftshift(msk)]
+            return [np.fft.fftshift(img),np.fft.fftshift(msk)]
         else:
             return [img,msk]
 
@@ -515,9 +518,9 @@ class Reconstructor:
 def get_test_data():
     import scipy.misc
     real = scipy.misc.lena()
-    fourier = fftshift(ifftn(real))
+    fourier = np.fft.fftshift(np.fft.ifftn(real))
     o = {}
-    o["intensities"] = float64(abs(fourier)**2)
-    o["mask"] = ones(shape=fourier.shape,dtype="bool")
+    o["intensities"] = np.float64(abs(fourier)**2)
+    o["mask"] = np.ones(shape=fourier.shape,dtype="bool")
     return o
     
