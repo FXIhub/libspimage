@@ -31,6 +31,8 @@ class Reconstructor:
         self._clear_support_algorithms()
         self._clear_phasing_algorithms()
         self._clear_phaser()
+        self._reconstruction = None
+        self._iteration = None
         self._log("Reconstructor initialized.","DEBUG")
 
     def _clear_intensities(self):
@@ -397,7 +399,7 @@ class Reconstructor:
         self._phaser_dirty = False
         self._log("Phaser initialized.","DEBUG")
 
-    def reconstruct(self,i_rec=0):
+    def reconstruct(self):
         self._prepare_reconstruction()
         if not self._ready:
             return
@@ -421,7 +423,10 @@ class Reconstructor:
             change_algorithm = (self._iteration-iteration0_alg == self._phasing_algorithms[i_alg]["number_of_iterations"]) and (self._iteration != self._number_of_iterations)
             change_support = (self._iteration-iteration0_sup == self._support_algorithms[i_sup]["number_of_iterations"]) and (self._iteration != self._number_of_iterations)
             if change_algorithm or change_support or self._iteration in self._out_iterations_images or self._iteration in self._out_iterations_scores:
-                self._log("Reconstruction %i - Iteration %i" % (i_rec,self._iteration),"INFO")
+                if self._reconstruction == None:
+                    self._log("Iteration %i" % (self._iteration),"INFO")
+                else:
+                    self._log("Reconstruction %i - Iteration %i" % (self._reconstruction,self._iteration),"INFO")
                 # iterate to self._iteration
                 if self._iteration != 0:
                     spimage.sp_phaser_iterate(self._phaser,self._iteration-iterations_propagated)
@@ -448,6 +453,7 @@ class Reconstructor:
                     support_size[i_out_scores] = scores["support_size"]
                     i_out_scores += 1
                     self._log("Outputting scores.","DEBUG")
+        self._iteration = None
         out = {"iteration_index_images":self._out_iterations_images,
                "iteration_index_scores":self._out_iterations_scores,
                "real_space":real_space,
@@ -466,12 +472,13 @@ class Reconstructor:
         outputs = []
         real_space_final = np.zeros(shape=(Nrepeats,self._Nx,self._Ny),dtype="complex128")
         support_final = np.zeros(shape=(Nrepeats,self._Nx,self._Ny),dtype="bool")
-        for i_rec in range(Nrepeats):
-            self._log("Reconstruction %i started" % (i_rec),"INFO")
-            outputs = self.reconstruct(i_rec)
-            real_space_final[i_rec,:,:] = outputs["real_space"][-1,:,:]
-            support_final[i_rec,:,:] = outputs["support"][-1,:,:]
-            self._log("Reconstruction %i exited" % (i_rec),"INFO")
+        for self._reconstruction in range(Nrepeats):
+            self._log("Reconstruction %i started" % (self._reconstruction),"INFO")
+            outputs = self.reconstruct()
+            real_space_final[self._reconstruction,:,:] = outputs["real_space"][-1,:,:]
+            support_final[self._reconstruction,:,:] = outputs["support"][-1,:,:]
+            self._log("Reconstruction %i exited" % (self._reconstruction),"INFO")
+        self._reconstruction = None
         out =  {"single_outputs":outputs,
                 "real_space_final":real_space_final,
                 "support_final":support_final}
