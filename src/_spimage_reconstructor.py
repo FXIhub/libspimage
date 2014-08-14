@@ -116,9 +116,7 @@ class Reconstructor:
 
     def set_intensities(self,intensities,shifted=True):
         """
-        Sets the intensity pattern that shall be phased.
-        By default it is expected that the provided image is the shifted version of the diffraction pattern given as a 2D numpy array.
-        The the default shifted=True indicates that the pixel (0,0) is located in the corner of the physical diffraction pattern. If desired change the default by setting shifted=False.
+        Sets the intensity pattern that shall be phased. By default it is expected that the provided image is the shifted version of the diffraction pattern given as a 2D numpy array. The the default shifted=True indicates that the pixel (0,0) is located in the corner of the physical diffraction pattern. If desired change the default by setting shifted=False.
         """
         self._intensities_dirty = True
         self._initial_support_dirty = True
@@ -130,8 +128,7 @@ class Reconstructor:
 
     def set_mask(self,mask,shifted=True):
         """
-        The mask is a 2D boolean numpy array with the same shape as the provided intensities. Values that equal True indicate valid pixels and values that equal False indicate unknown intensity values at the respective pixel location.
-        The the default shifted=True indicates that the pixel (0,0) is located in the corner of the physical diffraction pattern. If desired change the default by setting shifted=False.
+        The mask is a 2D boolean numpy array with the same shape as the provided intensities. Values that equal True indicate valid pixels and values that equal False indicate unknown intensity values at the respective pixel location. The the default shifted=True indicates that the pixel (0,0) is located in the corner of the physical diffraction pattern. If desired change the default by setting shifted=False.
         """
         self._intensities_dirty = True
         self._initial_support_dirty = True
@@ -142,27 +139,44 @@ class Reconstructor:
         self._log("Mask set.","DEBUG")
 
     def set_number_of_iterations(self,number_of_iterations):
+        """
+        Set the total number of iterations.
+        """
         self._number_of_iterations = number_of_iterations
         self._iterations_dirty = True
         self._log("Number of iterations set.","DEBUG")
 
     def set_number_of_outputs_images(self,number_of_outputs_images):
+        """
+        Specify the number of times that images (such as real space and fourier space and support images etc.) shall be written to the output. The output interval will be calculated from the number of iterations specified by set_number_of_iterations.
+        """
         self._number_of_outputs_images = number_of_outputs_images
         self._iterations_dirty = True      
         self._log("Number of output images set.","DEBUG")
 
     def set_number_of_outputs_scores(self,number_of_outputs_scores):
+        """
+        Specify the number of times that scores (such as real space error and fourier space error and support size etc.) shall be written to the output. The output interval will be calculated from the number of iterations specified by set_number_of_iterations.
+        """
         self._number_of_outputs_scores = number_of_outputs_scores
         self._iterations_dirty = True
         self._log("Number of output scores set.","DEBUG")
 
     def set_number_of_outputs(self,number_of_outputs):
+        """
+        Specify the number of times that scores (such as real space error and fourier space error and support size etc.) and images (such as real space error and fourier space error and support size etc.) shall be written to the output. The output interval will be calculated from the number of iterations specified by set_number_of_iterations. If you like to specify the number of outputs of images and scores separately call the functions set_number_of_outputs_scores and set_number_of_outputs_images.
+        """
         self._number_of_outputs_images = number_of_outputs
         self._number_of_outputs_scores = number_of_outputs
         self._iterations_dirty = True
         self._log("Number of outputs set.","DEBUG")
 
     def set_initial_support(self,**kwargs):
+        """
+        Set the initial support by either giving:
+        - the radius=some-integer-value (in pixels) of a circular support mask
+        - an explicit support mask support_mask=some-2D-boolean-numpy-array, by default shifted and certainly of the same shape as the intensity pattern
+        """
         if not ("radius" in kwargs or "support_mask" in kwargs):
             self._log("set_initial_support requires one of the following key word arguments: radius, support_mask","ERROR")
             return 
@@ -175,12 +189,30 @@ class Reconstructor:
         self._log("Initial support configuration set.","DEBUG")
 
     def set_support_algorithm(self, type,**kwargs):
+        """
+        Set one of the following support-update algorithms with the respective keyord arguments:
+        - area: update_period, blur_init*, blur_final*, area_init**, area_final**
+        - threshold: update_period, blur_init*, blur_final*, threshold_init, threshold_final
+        - static (no keyword arguments for this algorithm)
+        * a gaussian blur is applied with a standard deviation of the kernel with the given blur value in pixel
+        ** area as a fraction of the entire image [0.0...1.0]
+        NOTE: If you like to use a series of support-update algorithms please use instead the function append_support_algorithm.
+        """
         self._clear_support_algorithms()
         kwargs1 = dict(kwargs)
         kwargs1["number_of_iterations"] = None
         self.append_support_algorithm(type, **kwargs1)
 
     def append_support_algorithm(self, type, **kwargs):
+        """
+        Append one of the following support-update algorithms with the respective keyord arguments:
+        - area: number_of_iterations, update_period, blur_init*, blur_final*, area_init**, area_final**
+        - threshold: number_of_iterations, update_period, blur_init*, blur_final*, threshold_init, threshold_final
+        - static: number_of_iterations
+        * a gaussian blur is applied with a standard deviation of the kernel with the given blur value in pixel
+        ** area as a fraction of the entire image [0.0...1.0]
+        NOTE: If you like to use only a single support-update algorithm you might want to use instead the function set_support_algorithm.
+        """
         alg_conf = {"type":type}
         # check input
         if "number_of_iterations" not in kwargs:
@@ -211,12 +243,28 @@ class Reconstructor:
         self._log("Support algorithms appended.","DEBUG")
 
     def set_phasing_algorithm(self, type, **kwargs):
+        """
+        Set one of the following phasing algorithms with the respective keyord arguments:
+        - er (no keyword arguments for this algorithm)
+        - hio: beta_init, beta_final
+        - raar: beta_init, beta_final
+        - diffmap: beta_init, beta_final, gamma1, gamma2
+        NOTE: If you like to use a series of phasing algorithms please use instead the function append_phasing_algorithm.
+        """
         self._clear_phasing_algorithms()
         kwargs1 = dict(kwargs)
         kwargs1["number_of_iterations"] = None
         self.append_phasing_algorithm(type, **kwargs1)
 
     def append_phasing_algorithm(self, type,**kwargs):
+        """
+        Append one of the following phasing algorithms with the respective keyord arguments:
+        - er: number_of_iterations
+        - hio: number_of_iterations, beta_init, beta_final
+        - raar: number_of_itearations, beta_init, beta_final
+        - diffmap: number_of_iterations, beta_init, beta_final, gamma1, gamma2
+        NOTE: If you like to use only a single phasing algorithms you might want to use instead the function set_phasing_algorithm.
+        """
         alg_conf = {"type":type}
         # check input
         if "number_of_iterations" not in kwargs:
@@ -377,6 +425,7 @@ class Reconstructor:
                 spimage.sp_smap_insert(threshold, i + alg["number_of_iterations"], alg["threshold_final"])
                 alg["spimage_support_array"] = spimage.sp_support_array_init(spimage.sp_support_threshold_alloc(blur_radius, threshold),alg["update_period"])
             elif alg["type"] == "static":
+                alg["update_period"] = alg["number_of_iterations"]
                 alg["spimage_support_array"] = spimage.sp_support_array_init(spimage.sp_support_static_alloc(),alg["update_period"])
             else:
                 self._log("No valid support algorithm set. This error should be reported!","ERROR")
@@ -447,6 +496,9 @@ class Reconstructor:
         self._log("Phaser initialized.","DEBUG")
 
     def reconstruct(self):
+        """
+        Performs a single reconstruction with the specified configuration and outputs a dictionary with the results.
+        """
         self._prepare_reconstruction()
         if not self._ready:
             return
@@ -513,6 +565,9 @@ class Reconstructor:
         return out
     
     def reconstruct_loop(self,Nrepeats):
+        """
+        Repeats the reconstruction Nrepeats times with the specified parameters from random seeds of starting phases and outputs the results as a dictionary.
+        """
         self._prepare_reconstruction()
         if not self._ready:
             return
