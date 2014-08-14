@@ -1,4 +1,4 @@
-%module spimage
+%module _spimage
 %{
   /* Includes the header in the wrapper code */
 #include "../include/spimage/colormap.h"
@@ -27,7 +27,6 @@
 #include <numpy/arrayobject.h>
   
   %}
-
 
 %init %{
         import_array();
@@ -146,5 +145,3 @@
 /* %include "../include/spimage/map.h" */
 /* %include "../include/spimage/prtf.h" */
 /* %include "../include/spimage/phasing.h" */
-
-

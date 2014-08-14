@@ -54,9 +54,21 @@ find_package(GSL)
 if(PYTHON_WRAPPERS)
   find_package(PythonLibs)
   find_package(PythonInterp)
+  find_package(Numpy)
+  find_package(SWIG)
+  if(PYTHONLIBS_FOUND AND SWIG_FOUND AND PYTHONINTERP_FOUND AND PYTHON_NUMPY_FOUND)
+    # Taken from plplot. Many thanks!
+    # N.B. This is a nice way to obtain all sorts of python information
+    # using distutils.
+    execute_process(
+	 COMMAND
+  	 ${PYTHON_EXECUTABLE} -c "from distutils import sysconfig; print sysconfig.get_python_lib()"
+  	 OUTPUT_VARIABLE _PYTHON_INSTDIR
+  	 OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    SET(PYTHON_INSTDIR ${_PYTHON_INSTDIR} CACHE PATH "Installation directory for python module.")
+  endif()
 endif(PYTHON_WRAPPERS)
-find_package(Numpy)
-find_package(SWIG)
 IF(USE_CUDA)
   IF(CMAKE_VERSION)
     # CMAKE VERSION was first defined in 2.6.3. Sorry for the hack

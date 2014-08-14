@@ -67,33 +67,24 @@ if(PYTHONLIBS_FOUND AND SWIG_FOUND AND PYTHONINTERP_FOUND AND PYTHON_NUMPY_FOUND
   INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH} ${PYTHON_NUMPY_INCLUDE_DIR})
 
 IF(CUDA_FOUND)
- CUDA_ADD_LIBRARY(_spimage SHARED ${OBJECTS} ${CMAKE_CURRENT_SOURCE_DIR}/spimage_wrap.c)
- CUDA_ADD_CUFFT_TO_TARGET(_spimage)
+ CUDA_ADD_LIBRARY(_spimagepy SHARED ${OBJECTS} ${CMAKE_CURRENT_SOURCE_DIR}/spimage_wrap.c)
+ CUDA_ADD_CUFFT_TO_TARGET(_spimagepy)
 ELSE(CUDA_FOUND)
- ADD_LIBRARY(_spimage SHARED ${OBJECTS} ${CMAKE_CURRENT_SOURCE_DIR}/spimage_wrap.c)
+ ADD_LIBRARY(_spimagepy SHARED ${OBJECTS} ${CMAKE_CURRENT_SOURCE_DIR}/spimage_wrap.c)
 ENDIF(CUDA_FOUND)
- TARGET_LINK_LIBRARIES(_spimage ${SPIMAGE_LIBRARIES} ${PYTHON_LIBRARIES})
-  # Taken from plplot. Many thanks!
-  # N.B. This is a nice way to obtain all sorts of python information
-  # using distutils.
-  execute_process(
-  COMMAND
-  ${PYTHON_EXECUTABLE} -c "from distutils import sysconfig; print sysconfig.get_python_lib()"
-  OUTPUT_VARIABLE PYTHON_INSTDIR
-  OUTPUT_STRIP_TRAILING_WHITESPACE
-  )
+ TARGET_LINK_LIBRARIES(_spimagepy ${SPIMAGE_LIBRARIES} ${PYTHON_LIBRARIES})
   set_target_properties(
-    _spimage
+    _spimagepy
     PROPERTIES SOVERSION 1
     VERSION 1
     PREFIX ""
     SUFFIX ".so"
     INSTALL_NAME_DIR ${PYTHON_INSTDIR}
     )
-  INSTALL(TARGETS _spimage
+  INSTALL(TARGETS _spimagepy
     RUNTIME DESTINATION ${PYTHON_INSTDIR}
     LIBRARY DESTINATION ${PYTHON_INSTDIR}
     ARCHIVE DESTINATION ${PYTHON_INSTDIR}
     )
-  INSTALL(FILES spimage.py DESTINATION  ${PYTHON_INSTDIR})
+  INSTALL(FILES spimage.py _spimage.py _spimage_reconstructor.py _spimage_prtf.py _spimage_log.py DESTINATION  ${PYTHON_INSTDIR})
 endif()
