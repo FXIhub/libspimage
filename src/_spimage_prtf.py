@@ -1,5 +1,4 @@
 import os,re,sys,h5py,numpy,time,cmath
-from scipy.ndimage import mean
 from _spimage_log import logger
 
 
@@ -332,33 +331,6 @@ def center_of_mass(img0,shifted=False):
             import pylab
             pylab.imsave(this_folder+"/testdata/f%i.png" % i,f[i])
     return cm
-
-# for this procedure the center has to lie in the center of a pixel
-def radial_mean(image,mask0=None,cx0=None,cy0=None):
-    if mask0 == None:
-        mask = 1
-    else:
-        mask = mask0
-    Ny, Nx = image.shape
-    if cx0 == None:
-        cx = Nx/2
-    else:
-        cx = cx0
-    if cy0 == None:
-        cy = Ny/2
-    else:
-        cy = cy0
-    NN = Nx*Ny
-    X, Y = numpy.ogrid[0:Ny, 0:Nx]
-    r = numpy.hypot(X - cx, Y - cy)
-    M = numpy.isfinite(image)
-    M *= mask
-    if M.sum() < NN:
-	r[M==False] = -1
-    rbin = r.round().astype(numpy.int)
-    r_ind = numpy.arange(0, rbin.max() +1)
-    image_r = mean(image, labels=rbin, index=r_ind)
-    return r_ind,image_r
 
 def fft_turn180(I):
     return numpy.fft.fftn(numpy.fft.fftn(I))/(1.*I.size)
