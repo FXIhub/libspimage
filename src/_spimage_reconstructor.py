@@ -304,8 +304,8 @@ class Reconstructor:
         if not self._iterations_dirty:
             self._log("Iterations already initialised.","DEBUG")
             return
-        self._out_iterations_images = int16((linspace(0,self._number_of_iterations,self._number_of_outputs_images)).round())
-        self._out_iterations_scores = int16((linspace(0,self._number_of_iterations,self._number_of_outputs_scores)).round())
+        self._out_iterations_images = int64((linspace(0,self._number_of_iterations,self._number_of_outputs_images)).round())
+        self._out_iterations_scores = int64((linspace(0,self._number_of_iterations,self._number_of_outputs_scores)).round())
         self._iterations_dirty = False
         self._support_algorithms_dirty = True
         self._phasing_algorithms_dirty = True
