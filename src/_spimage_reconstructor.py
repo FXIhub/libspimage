@@ -165,28 +165,23 @@ class Reconstructor:
 
     def set_support_algorithm(self, type, number_of_iterations, update_period, **kwargs):
         self._clear_support_algorithms()
-        self.append_support_algorithm(type,number_of_iterations,update_period,**kwargs)
+        self.append_support_algorithm(type,number_of_iterations, update_period,**kwargs)
 
     def append_support_algorithm(self, type, number_of_iterations, update_period, **kwargs):
         alg_conf = {"type":type,"number_of_iterations":number_of_iterations,"update_period":update_period}
         # check input
-        if type not in ["area","threshold"]:
-            self._log("append_support_algorithm accepts algorithms of the following types: area, threshold","ERROR")
+        necessary_kwargs = {"area":["blur_init","blur_final","area_init","area_final"],
+                            "threshold":["blur_init","blur_final","threshold_init","threshold_final"],
+                            "static":[]}
+        if type not in necessary_kwargs:
+            self._log("append_support_algorithm accepts algorithms of the following types: " + str(),"ERROR")
             return
-        if type == "area":
-            for k in ["blur_init","blur_final","area_init","area_final"]:
-                if k not in kwargs:
-                    self._log("append_support_algorithm with the support algorithm \"area\" requires the following argument: " + k, "ERROR")
-                    return
-                else:
-                    alg_conf[k] = kwargs[k]
-        elif type == "threshold":
-            for k in ["blur_radius_init","blur_radius_final","threshold_init","threshold_final"]:
-                if k not in kwargs:
-                    self._log("append_support_algorithm with the support algorithm \"threshold\" requires the following argument: " + k, "ERROR")
-                    return
-                else:
-                    alg_conf[k] = kwargs[k]
+        for k in necessary_kwargs[type]:
+            if k not in kwargs:
+                self._log("append_support_algorithm with the support algorithm \"area\" requires the following argument: " + k, "ERROR")
+                return
+            else:
+                alg_conf[k] = kwargs[k]
         self._support_algorithms_configs.append(alg_conf)
         self._i_support_algorithms += number_of_iterations
         self._support_algorithms_dirty = True
@@ -330,7 +325,7 @@ class Reconstructor:
                 spimage.sp_smap_insert(support_area, i,alg_conf["area_init"])
                 spimage.sp_smap_insert(support_area, i + alg_conf["number_of_iterations"],alg_conf["area_final"])
                 alg["spimage_support_array"] = spimage.sp_support_array_init(spimage.sp_support_area_alloc(blur_radius, support_area),alg_conf["update_period"])
-            elif alg_cong["type"] == "threshold":
+            elif alg_conf["type"] == "threshold":
                 blur_radius = spimage.sp_smap_alloc(2)
                 spimage.sp_smap_insert(blur_radius, i, alg_conf["blur_radius_init"])
                 spimage.sp_smap_insert(blur_radius, i + alg_conf["number_of_iterations"], alg_conf["blur_radius_final"])
@@ -338,6 +333,11 @@ class Reconstructor:
                 spimage.sp_smap_insert(threshold, i, alg_conf["threshold_init"])
                 spimage.sp_smap_insert(threshold, i + alg_conf["number_of_iterations"], alg_conf["threshold_final"])
                 alg["spimage_support_array"] = spimage.sp_support_array_init(spimage.sp_support_threshold_alloc(blur_radius, threshold),alg_conf["update_period"])
+            elif alg_conf["type"] == "static":
+                alg["spimage_support_array"] = spimage.sp_support_array_init(spimage.sp_support_static_alloc(),alg_conf["update_period"])
+            else:
+                self._log("No valid support algorithm set. This error should be reported!","ERROR")
+                return
             i += alg_conf["number_of_iterations"]
             self._support_algorithms.append(alg)
         self._support_algorithms_dirty = False
@@ -389,6 +389,7 @@ class Reconstructor:
         self._clear_phaser()
         self._phaser = spimage.sp_phaser_alloc()
         pe = spimage.SpEngineCUDA
+        self._log("Initialising phaser with the phasing algorithm %s and the support algorithm %s." % (self._phasing_algorithms[0]["type"],self._support_algorithms[0]["type"]))
         spimage.sp_phaser_init(self._phaser, self._phasing_algorithms[0]["spimage_phasing"], self._support_algorithms[0]["spimage_support_array"], pe)
         spimage.sp_phaser_set_amplitudes(self._phaser, self._sp_amplitudes)
         spimage.sp_phaser_init_model(self._phaser, None, spimage.SpModelRandomPhases)
@@ -429,20 +430,24 @@ class Reconstructor:
                     i_alg += 1
                     iteration0_alg = self._iteration
                     self._phaser.algorithm = self._phasing_algorithms[i_alg]["spimage_phasing"]
+                    self._log("Change of phasing algorithm to %s." % self._phasing_algorithms[i_alg]["type"],"INFO")
                 if change_support:
                     i_sup += 1
                     iteration0_sup = self._iteration
-                    self._phaser.sup_algorithm = self._support_algortihms[i_sup]["spimage_support_array"]
+                    self._phaser.sup_algorithm = self._support_algorithms[i_sup]["spimage_support_array"]
+                    self._log("Change of support algorithm to %s." % self._support_algorithms[i_sup]["type"],"INFO")
                 if self._iteration in self._out_iterations_images:
                     [real_space[i_out_images,:,:],support[i_out_images,:,:]] = self._get_curr_model(shifted=True)
                     [fourier_space[i_out_images,:,:],mask[i_out_images,:,:]] = self._get_curr_fmodel(shifted=True)
                     i_out_images += 1
+                    self._log("Outputting images.","DEBUG")
                 if self._iteration in self._out_iterations_scores:
                     scores = self._get_scores()
                     fourier_error[i_out_scores] = scores["fourier_error"]
                     real_error[i_out_scores] = scores["real_error"]
                     support_size[i_out_scores] = scores["support_size"]
                     i_out_scores += 1
+                    self._log("Outputting scores.","DEBUG")
         out = {"iteration_index_images":self._out_iterations_images,
                "iteration_index_scores":self._out_iterations_scores,
                "real_space":real_space,
