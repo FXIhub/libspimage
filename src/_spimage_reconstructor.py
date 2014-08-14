@@ -69,13 +69,13 @@ class Reconstructor:
     def _clear_support_algorithms(self):
         self._support_algorithms = []
         self._support_algorithms_configs = []
-        self._i_support_algorithms = 0
+        self._i_support_algorithms = None
         self._support_algorithms_dirty = True
 
     def _clear_phasing_algorithms(self):
         self._phasing_algorithms = []
         self._phasing_algorithms_configs = []
-        self._i_phasing_algorithms = 0
+        self._i_phasing_algorithms = None
         self._phasing_algorithms_dirty = True
 
     def _clear_phaser(self):
@@ -115,6 +115,11 @@ class Reconstructor:
             f(" %s %s" % (ps,s))
 
     def set_intensities(self,intensities,shifted=True):
+        """
+        Sets the intensity pattern that shall be phased.
+        By default it is expected that the provided image is the shifted version of the diffraction pattern given as a 2D numpy array.
+        The the default shifted=True indicates that the pixel (0,0) is located in the corner of the physical diffraction pattern. If desired change the default by setting shifted=False.
+        """
         self._intensities_dirty = True
         self._initial_support_dirty = True
         if shifted:
@@ -124,6 +129,10 @@ class Reconstructor:
         self._log("Intensities set.","DEBUG")
 
     def set_mask(self,mask,shifted=True):
+        """
+        The mask is a 2D boolean numpy array with the same shape as the provided intensities. Values that equal True indicate valid pixels and values that equal False indicate unknown intensity values at the respective pixel location.
+        The the default shifted=True indicates that the pixel (0,0) is located in the corner of the physical diffraction pattern. If desired change the default by setting shifted=False.
+        """
         self._intensities_dirty = True
         self._initial_support_dirty = True
         if shifted:
@@ -165,15 +174,24 @@ class Reconstructor:
             self._initlal_support_congig["support_mask_shifted"] = kwargs.get("support_mask_shifted",True)
         self._log("Initial support configuration set.","DEBUG")
 
-    def set_support_algorithm(self, type, number_of_iterations, update_period, **kwargs):
+    def set_support_algorithm(self, type,**kwargs):
         self._clear_support_algorithms()
-        self.append_support_algorithm(type,number_of_iterations, update_period,**kwargs)
+        kwargs1 = dict(kwargs)
+        kwargs1["number_of_iterations"] = None
+        self.append_support_algorithm(type, **kwargs1)
 
-    def append_support_algorithm(self, type, number_of_iterations, update_period, **kwargs):
-        alg_conf = {"type":type,"number_of_iterations":number_of_iterations,"update_period":update_period}
+    def append_support_algorithm(self, type, **kwargs):
+        alg_conf = {"type":type}
         # check input
-        necessary_kwargs = {"area":["blur_init","blur_final","area_init","area_final"],
-                            "threshold":["blur_init","blur_final","threshold_init","threshold_final"],
+        if "number_of_iterations" not in kwargs:
+            self._log("append_support_algorithm requires the keyword argument \'number_of_iterations\'.","ERROR")
+            return
+        alg_conf["number_of_iterations"] = kwargs["number_of_iterations"]
+        if alg_conf["number_of_iterations"] == None and len(self._support_algorithms_configs) > 0:
+            self._log("You can not have more than one support algorithm of unspecified number of iterations if the total number of iterations is set to None. Set the total number of iterations by calling set_number_of_iterations and try again.","ERROR")
+            return
+        necessary_kwargs = {"area":["update_period","blur_init","blur_final","area_init","area_final"],
+                            "threshold":["update_period","blur_init","blur_final","threshold_init","threshold_final"],
                             "static":[]}
         if type not in necessary_kwargs:
             self._log("append_support_algorithm accepts algorithms of the following types: " + str(),"ERROR")
@@ -184,18 +202,30 @@ class Reconstructor:
                 return
             else:
                 alg_conf[k] = kwargs[k]
+        if alg_conf["number_of_iterations"] != None:
+            if len(self._support_algorithms_configs) == 0:
+                self._i_support_algorithms = 0
+            self._i_support_algorithms += alg_conf["number_of_iterations"]
         self._support_algorithms_configs.append(alg_conf)
-        self._i_support_algorithms += number_of_iterations
         self._support_algorithms_dirty = True
         self._log("Support algorithms appended.","DEBUG")
 
-    def set_phasing_algorithm(self, type, number_of_iterations, **kwargs):
+    def set_phasing_algorithm(self, type, **kwargs):
         self._clear_phasing_algorithms()
-        self.append_phasing_algorithm(type, number_of_iterations,**kwargs)
+        kwargs1 = dict(kwargs)
+        kwargs1["number_of_iterations"] = None
+        self.append_phasing_algorithm(type, **kwargs1)
 
-    def append_phasing_algorithm(self, type, number_of_iterations,**kwargs):
-        alg_conf = {"type":type,"number_of_iterations":number_of_iterations}
+    def append_phasing_algorithm(self, type,**kwargs):
+        alg_conf = {"type":type}
         # check input
+        if "number_of_iterations" not in kwargs:
+            self._log("append_phasing_algorithm requires the keyword argument \'number_of_iterations\'.","ERROR")
+            return
+        alg_conf["number_of_iterations"] = kwargs["number_of_iterations"]
+        if alg_conf["number_of_iterations"] == None and len(self._phasing_algorithms_configs) > 0:
+            self._log("You can not have more than one phasing algorithm of unspecified number of iterations if the total number of iterations is set to None. Set the total number of iterations by calling set_number_of_iterations and try again.","ERROR")
+            return
         alg_conf["constraints"] = kwargs.get("constratints","")
         # phasing algorithm
         necessary_kwargs = {"raar":["beta_init","beta_final"],
@@ -211,8 +241,11 @@ class Reconstructor:
                 return
             else:
                 alg_conf[k] = kwargs[k]
+        if alg_conf["number_of_iterations"] != None:
+            if len(self._phasing_algorithms_configs) == 0:
+                self._i_phasing_algorithms = 0
+            self._i_phasing_algorithms += alg_conf["number_of_iterations"]
         self._phasing_algorithms_configs.append(alg_conf)
-        self._i_phasing_algorithms += number_of_iterations
         self._phasing_algorithms_dirty = True
         self._log("Phasing algorithm appended.","DEBUG")
 
@@ -237,12 +270,14 @@ class Reconstructor:
         if self._number_of_outputs_images == None or self._number_of_outputs_scores == None:
             self._log("Connot prepare reconstruction. Number of outputs need to be set.","ERROR")
             self._ready = False           
-        if self._i_support_algorithms != self._number_of_iterations:
-            self._log("Connot prepare reconstruction. Support algorithms initialised are not in line with the set number of iterations.","ERROR")
-            self._ready = False
-        if self._i_phasing_algorithms != self._number_of_iterations:
-            self._log("Connot prepare reconstruction. Phasing algorithms initialised are not in line with the set number of iterations.","ERROR")
-            self._ready = False
+        if self._i_support_algorithms != None:
+            if self._i_support_algorithms != self._number_of_iterations:
+                self._log("Connot prepare reconstruction. Support algorithms initialised are not in line with the set number of iterations.","ERROR")
+                self._ready = False
+        if self._i_phasing_algorithms != None:
+            if self._i_phasing_algorithms != self._number_of_iterations:
+                self._log("Connot prepare reconstruction. Phasing algorithms initialised are not in line with the set number of iterations.","ERROR")
+                self._ready = False
         if not self._ready:
             return
         self._init_amplitudes()
@@ -319,28 +354,34 @@ class Reconstructor:
         i = 0
         for alg_conf in self._support_algorithms_configs:
             alg = dict(alg_conf)
-            if alg_conf["type"] == "area":
+            if alg_conf["number_of_iterations"] == None:
+                if len(self._support_algorithms_configs) == 1:
+                    alg["number_of_iterations"] = self._number_of_iterations
+                else:
+                    self._log("Number of iterations can not be None if many support algorithms are specified. Please report this error.","ERROR")
+                    return
+            if alg["type"] == "area":
                 blur_radius = spimage.sp_smap_alloc(2)
-                spimage.sp_smap_insert(blur_radius, i, alg_conf["blur_init"])
-                spimage.sp_smap_insert(blur_radius, i + alg_conf["number_of_iterations"], alg_conf["blur_final"])
+                spimage.sp_smap_insert(blur_radius, i, alg["blur_init"])
+                spimage.sp_smap_insert(blur_radius, i + alg["number_of_iterations"], alg["blur_final"])
                 support_area = spimage.sp_smap_alloc(2)
-                spimage.sp_smap_insert(support_area, i,alg_conf["area_init"])
-                spimage.sp_smap_insert(support_area, i + alg_conf["number_of_iterations"],alg_conf["area_final"])
-                alg["spimage_support_array"] = spimage.sp_support_array_init(spimage.sp_support_area_alloc(blur_radius, support_area),alg_conf["update_period"])
-            elif alg_conf["type"] == "threshold":
+                spimage.sp_smap_insert(support_area, i,alg["area_init"])
+                spimage.sp_smap_insert(support_area, i + alg["number_of_iterations"],alg["area_final"])
+                alg["spimage_support_array"] = spimage.sp_support_array_init(spimage.sp_support_area_alloc(blur_radius, support_area),alg["update_period"])
+            elif alg["type"] == "threshold":
                 blur_radius = spimage.sp_smap_alloc(2)
-                spimage.sp_smap_insert(blur_radius, i, alg_conf["blur_radius_init"])
-                spimage.sp_smap_insert(blur_radius, i + alg_conf["number_of_iterations"], alg_conf["blur_radius_final"])
+                spimage.sp_smap_insert(blur_radius, i, alg["blur_radius_init"])
+                spimage.sp_smap_insert(blur_radius, i + alg["number_of_iterations"], alg["blur_radius_final"])
                 threshold = spimage.sp_smap_alloc(2)
-                spimage.sp_smap_insert(threshold, i, alg_conf["threshold_init"])
-                spimage.sp_smap_insert(threshold, i + alg_conf["number_of_iterations"], alg_conf["threshold_final"])
-                alg["spimage_support_array"] = spimage.sp_support_array_init(spimage.sp_support_threshold_alloc(blur_radius, threshold),alg_conf["update_period"])
-            elif alg_conf["type"] == "static":
-                alg["spimage_support_array"] = spimage.sp_support_array_init(spimage.sp_support_static_alloc(),alg_conf["update_period"])
+                spimage.sp_smap_insert(threshold, i, alg["threshold_init"])
+                spimage.sp_smap_insert(threshold, i + alg["number_of_iterations"], alg["threshold_final"])
+                alg["spimage_support_array"] = spimage.sp_support_array_init(spimage.sp_support_threshold_alloc(blur_radius, threshold),alg["update_period"])
+            elif alg["type"] == "static":
+                alg["spimage_support_array"] = spimage.sp_support_array_init(spimage.sp_support_static_alloc(),alg["update_period"])
             else:
                 self._log("No valid support algorithm set. This error should be reported!","ERROR")
                 return
-            i += alg_conf["number_of_iterations"]
+            i += alg["number_of_iterations"]
             self._support_algorithms.append(alg)
         self._support_algorithms_dirty = False
         self._log("Support algorithms initialised.","DEBUG")
@@ -352,34 +393,40 @@ class Reconstructor:
         i = 0
         for alg_conf in self._phasing_algorithms_configs:
             alg = dict(alg_conf)
+            if alg_conf["number_of_iterations"] == None:
+                if len(self._phasing_algorithms_configs) == 1:
+                    alg["number_of_iterations"] = self._number_of_iterations
+                else:
+                    self._log("Number of iterations can not be None if many phasing algorithms are specified. Please report this error.","ERROR")
+                    return
             # constraints
             constraints = spimage.SpNoConstraints
-            if "constraints" in alg_conf:
-                if "enforce_positivity" in alg_conf["constraints"] and "enforce_real" in alg_conf["constraints"]:
+            if "constraints" in alg:
+                if "enforce_positivity" in alg["constraints"] and "enforce_real" in alg["constraints"]:
                     constraints |= spimage.SpPositiveRealObject
-                elif "enforce_real" in alg_conf["constraints"]:
+                elif "enforce_real" in alg["constraints"]:
                     constraints |= spimage.SpRealObject
-                elif "enforce_positivity" in alg_conf["constraints"]:
+                elif "enforce_positivity" in alg["constraints"]:
                     constraints |= spimage.SpPositiveComplexObject
-                if "enforce_centrosymmetry" in alg_conf["constraints"]:
+                if "enforce_centrosymmetry" in alg["constraints"]:
                     constraints |= spimage.SpCentrosymmetricObject
             # phasing algorithm
-            if alg_conf["type"] in ["raar","hio","diffmap"]:
+            if alg["type"] in ["raar","hio","diffmap"]:
                 alg["beta"] = spimage.sp_smap_alloc(1)
-                spimage.sp_smap_insert(alg["beta"], i,alg_conf["beta_init"])
-                spimage.sp_smap_insert(alg["beta"], i+alg_conf["number_of_iterations"], alg_conf["beta_final"])
-            if alg_conf["type"] == "raar":
+                spimage.sp_smap_insert(alg["beta"], i,alg["beta_init"])
+                spimage.sp_smap_insert(alg["beta"], i+alg["number_of_iterations"], alg["beta_final"])
+            if alg["type"] == "raar":
                 alg["spimage_phasing"] = spimage.sp_phasing_raar_alloc(alg["beta"], constraints)
-            elif alg_conf["type"] == "hio":
+            elif alg["type"] == "hio":
                 alg["spimage_phasing"] = spimage.sp_phasing_hio_alloc(alg["beta"], constraints)
-            elif alg_conf["type"] == "diffmap":
-                alg["spimage_phasing"] = spimage.sp_phasing_diffmap_alloc(alg["beta"], alg_conf["gamma1"], alg_conf["gamma2"], constraints)
-            elif alg_conf["type"] == "er":
+            elif alg["type"] == "diffmap":
+                alg["spimage_phasing"] = spimage.sp_phasing_diffmap_alloc(alg["beta"], alg["gamma1"], alg["gamma2"], constraints)
+            elif alg["type"] == "er":
                 alg["spimage_phasing"] = spimage.sp_phasing_er_alloc(constraints)
             else:
                 self._log("Phasing algorithm %s not implemented. Please report this error!" % type,"ERROR")
                 return
-            i += alg_conf["number_of_iterations"]
+            i += alg["number_of_iterations"]
             self._phasing_algorithms.append(alg)
         self._phasing_algorithms_dirty = False
         self._log("Phasing algorithm initialised.","DEBUG")
