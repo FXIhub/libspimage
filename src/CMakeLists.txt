@@ -63,28 +63,28 @@ MARK_AS_ADVANCED(PYTHON_EXECUTABLE)
 if(PYTHONLIBS_FOUND AND SWIG_FOUND AND PYTHONINTERP_FOUND AND PYTHON_NUMPY_FOUND)
 #MESSAGE("numpy found compiling python wrappers")
   FILE(GLOB spimage_headers "${CMAKE_CURRENT_SOURCE_DIR}/../include/spimage/*.h")
-  add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/spimage_wrap.c COMMAND ${SWIG_EXECUTABLE} -python  -o ${CMAKE_CURRENT_SOURCE_DIR}/spimage_wrap.c ${CMAKE_CURRENT_SOURCE_DIR}/spimage.i DEPENDS ${spimage_headers})
+  add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/spimage_wrap.c COMMAND ${SWIG_EXECUTABLE} -python  -o ${CMAKE_CURRENT_SOURCE_DIR}/spimage_wrap.c ${CMAKE_CURRENT_SOURCE_DIR}/spimage_pybackend.i DEPENDS ${spimage_headers})
   INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH} ${PYTHON_NUMPY_INCLUDE_DIR})
 
 IF(CUDA_FOUND)
- CUDA_ADD_LIBRARY(_spimagepy SHARED ${OBJECTS} ${CMAKE_CURRENT_SOURCE_DIR}/spimage_wrap.c)
- CUDA_ADD_CUFFT_TO_TARGET(_spimagepy)
+ CUDA_ADD_LIBRARY(_spimage_pybackend SHARED ${OBJECTS} ${CMAKE_CURRENT_SOURCE_DIR}/spimage_wrap.c)
+ CUDA_ADD_CUFFT_TO_TARGET(_spimage_pybackend)
 ELSE(CUDA_FOUND)
- ADD_LIBRARY(_spimagepy SHARED ${OBJECTS} ${CMAKE_CURRENT_SOURCE_DIR}/spimage_wrap.c)
+ ADD_LIBRARY(_spimage_pybackend SHARED ${OBJECTS} ${CMAKE_CURRENT_SOURCE_DIR}/spimage_wrap.c)
 ENDIF(CUDA_FOUND)
- TARGET_LINK_LIBRARIES(_spimagepy ${SPIMAGE_LIBRARIES} ${PYTHON_LIBRARIES})
+ TARGET_LINK_LIBRARIES(_spimage_pybackend ${SPIMAGE_LIBRARIES} ${PYTHON_LIBRARIES})
   set_target_properties(
-    _spimagepy
+    _spimage_pybackend
     PROPERTIES SOVERSION 1
     VERSION 1
     PREFIX ""
     SUFFIX ".so"
     INSTALL_NAME_DIR ${PYTHON_INSTDIR}
     )
-  INSTALL(TARGETS _spimagepy
+  INSTALL(TARGETS _spimage_pybackend
     RUNTIME DESTINATION ${PYTHON_INSTDIR}
     LIBRARY DESTINATION ${PYTHON_INSTDIR}
     ARCHIVE DESTINATION ${PYTHON_INSTDIR}
     )
-  INSTALL(FILES spimage.py _spimage.py _spimage_reconstructor.py _spimage_prtf.py _spimage_log.py DESTINATION  ${PYTHON_INSTDIR})
+  INSTALL(FILES spimage.py spimage_pybackend.py _spimage_reconstructor.py _spimage_prtf.py _spimage_log.py DESTINATION  ${PYTHON_INSTDIR})
 endif()

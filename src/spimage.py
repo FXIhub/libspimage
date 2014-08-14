@@ -2,7 +2,7 @@
 # This file combines the wrapped C functions with pure python code
 
 # Wrapped C funcitons
-from _spimage import *
+from spimage_pybackend import *
 
 # Python code
 from _spimage_reconstructor import Reconstructor
