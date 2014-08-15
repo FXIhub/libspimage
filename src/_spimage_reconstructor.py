@@ -2,6 +2,7 @@ import numpy as np
 import spimage
 
 # Set up logger
+import logging
 logger = logging.getLogger('RECONSTRUCTOR')
 logger.setLevel("WARNING")
 

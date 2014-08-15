@@ -11,7 +11,6 @@ logger.setLevel("WARNING")
 from spimage_pybackend import *
 
 # Python code
-from _spimage_log import logger
 from _spimage_reconstructor import Reconstructor
 from _spimage_prtf import prtf
 
