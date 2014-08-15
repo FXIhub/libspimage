@@ -1,7 +1,9 @@
 import numpy as np
-#from pylab import *
 import spimage
-from _spimage_log import logger
+
+# Set up logger
+logger = logging.getLogger('RECONSTRUCTOR')
+logger.setLevel("WARNING")
 
 class Reconstructor:
     def __init__(self):
