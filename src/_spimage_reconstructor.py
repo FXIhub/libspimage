@@ -305,7 +305,7 @@ class Reconstructor:
         if self._mask == None:
             #self._log("Reconstruction cannot start! You need to set the mask.","ERROR")
             self._log("You did not set a mask, therefore initializing without any missing intensity values.","WARNING")
-            self._ready = False
+            self._ready = True
         if self._initial_support_config == None:
             self._log("Reconstruction cannot start! You need to set the initial support.","ERROR")
             self._ready = False
