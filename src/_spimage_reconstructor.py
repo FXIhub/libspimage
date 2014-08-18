@@ -24,7 +24,6 @@ class Reconstructor:
         self._sp_phaser_dirty = True
         # other stuff
         self.clear()
-        self._log("Reconstructor initialized.","DEBUG")
 
     def clear(self):
         self._clear_intensities()
@@ -243,7 +242,7 @@ class Reconstructor:
             self._i_support_algorithms += alg_conf["number_of_iterations"]
         self._support_algorithms_configs.append(alg_conf)
         self._support_algorithms_dirty = True
-        self._log("Support algorithms appended.","DEBUG")
+        self._log("Support algorithm set/appended.","DEBUG")
 
     def set_phasing_algorithm(self, type, **kwargs):
         """
@@ -298,7 +297,7 @@ class Reconstructor:
             self._i_phasing_algorithms += alg_conf["number_of_iterations"]
         self._phasing_algorithms_configs.append(alg_conf)
         self._phasing_algorithms_dirty = True
-        self._log("Phasing algorithm appended.","DEBUG")
+        self._log("Phasing algorithm set/appended.","DEBUG")
 
     def _prepare_reconstruction(self):
         self._ready = True
@@ -378,6 +377,7 @@ class Reconstructor:
             R = np.sqrt(X**2 + Y**2)
             self._phaser_dirty = True
             self._sp_initial_support.image[:] = np.float32(np.fft.fftshift(R) < self._initial_support_config["radius"])
+            print self._sp_initial_support.image,self._sp_initial_support.real.sum()
         else:
             self._phaser_dirty = True
             S = self._initial_support_config["support_mask"]
