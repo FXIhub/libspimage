@@ -435,6 +435,9 @@ class Reconstructor:
                 return
             if alg["center_image"]:
                 spimage.sp_support_array_append(alg["spimage_support_array"],spimage.sp_support_centre_image_alloc())
+                self._log("Enabling center image in real space, it will be done with every support update.")
+            else:
+                self._log("Center real space image disabled.")
             i += alg["number_of_iterations"]
             self._support_algorithms.append(alg)
         self._support_algorithms_dirty = False
