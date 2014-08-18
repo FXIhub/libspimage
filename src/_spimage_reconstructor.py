@@ -570,7 +570,13 @@ class Reconstructor:
                "real_error":real_error,
                "fourier_error":fourier_error,
                "support_size":support_size}
-        print "Reconstruction finished", self._reconstruction
+
+        # Print always something at the end
+        if self._reconstruction is not None:
+            print "Reconstruction finished"
+        else:
+            print "Reconstruction finished: ", self._reconstruction
+
         return out
     
     def reconstruct_loop(self,Nrepeats):
