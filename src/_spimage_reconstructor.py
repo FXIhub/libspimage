@@ -308,7 +308,7 @@ class Reconstructor:
         if self._mask == None:
             #self._log("Reconstruction cannot start! You need to set the mask.","ERROR")
             self._log("You did not set a mask, therefore initializing without any missing intensity values.","WARNING")
-            self._ready = False
+            self._ready = True
         if self._initial_support_config == None:
             self._log("Reconstruction cannot start! You need to set the initial support.","ERROR")
             self._ready = False
@@ -346,7 +346,7 @@ class Reconstructor:
         self._Nx = I.shape[1]
         self._Ny = I.shape[0]
         I[I<0] = 0
-        if self._mask == None:
+        if self._mask != None:
             M = self._mask.copy()
         else:
             M = np.ones(shape=I.shape,dtype="bool")
@@ -403,7 +403,7 @@ class Reconstructor:
             self._log("Support algorithms already initialised.","DEBUG")
             return       
         i = 0
-        for alg_conf in self._support_algorithms_configs:
+        for alg_conf in self._support_algorithms_configs
             alg = dict(alg_conf)
             if alg_conf["number_of_iterations"] == None:
                 if len(self._support_algorithms_configs) == 1:
