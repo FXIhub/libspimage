@@ -377,7 +377,7 @@ class Reconstructor:
             Y = Y-(self._Ny-1)/2.
             R = np.sqrt(X**2 + Y**2)
             self._phaser_dirty = True
-            self._sp_initial_support.image[:] = np.float32(np.fft.fftshift(R) < self._initial_support_config)
+            self._sp_initial_support.image[:] = np.float32(np.fft.fftshift(R) < self._initial_support_config["radius"])
         else:
             self._phaser_dirty = True
             S = self._initial_support_config["support_mask"]
