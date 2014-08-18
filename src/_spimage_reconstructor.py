@@ -216,7 +216,7 @@ class Reconstructor:
         NOTE: If you like to use only a single support-update algorithm you might want to use instead the function set_support_algorithm.
         """
         alg_conf = {"type":type}
-        alg_conf["center_image"] = kwargs.get("center_image",False)
+        alg_conf["center_image"] = kwargs.get("center_image",True)
         # check input
         if "number_of_iterations" not in kwargs:
             self._log("append_support_algorithm requires the keyword argument \'number_of_iterations\'.","ERROR")
@@ -421,8 +421,8 @@ class Reconstructor:
                 alg["spimage_support_array"] = spimage.sp_support_array_init(spimage.sp_support_area_alloc(blur_radius, support_area),alg["update_period"])
             elif alg["type"] == "threshold":
                 blur_radius = spimage.sp_smap_alloc(2)
-                spimage.sp_smap_insert(blur_radius, i, alg["blur_radius_init"])
-                spimage.sp_smap_insert(blur_radius, i + alg["number_of_iterations"], alg["blur_radius_final"])
+                spimage.sp_smap_insert(blur_radius, i, alg["blur_init"])
+                spimage.sp_smap_insert(blur_radius, i + alg["number_of_iterations"], alg["blur_final"])
                 threshold = spimage.sp_smap_alloc(2)
                 spimage.sp_smap_insert(threshold, i, alg["threshold_init"])
                 spimage.sp_smap_insert(threshold, i + alg["number_of_iterations"], alg["threshold_final"])
