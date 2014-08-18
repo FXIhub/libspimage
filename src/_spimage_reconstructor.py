@@ -216,6 +216,7 @@ class Reconstructor:
         NOTE: If you like to use only a single support-update algorithm you might want to use instead the function set_support_algorithm.
         """
         alg_conf = {"type":type}
+        alg_conf["center_image"] = kwargs.get("center_image",False)
         # check input
         if "number_of_iterations" not in kwargs:
             self._log("append_support_algorithm requires the keyword argument \'number_of_iterations\'.","ERROR")
@@ -434,6 +435,8 @@ class Reconstructor:
             else:
                 self._log("No valid support algorithm set. This error should be reported!","ERROR")
                 return
+            if alg["center_image"]:
+                spimage.sp_support_array_append(alg["spimage_support_array"],spimage.sp_support_centre_image_alloc())
             i += alg["number_of_iterations"]
             self._support_algorithms.append(alg)
         self._support_algorithms_dirty = False
