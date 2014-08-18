@@ -307,7 +307,7 @@ class Reconstructor:
             self._ready = False
         if self._mask == None:
             #self._log("Reconstruction cannot start! You need to set the mask.","ERROR")
-            self._log("You did not set a mask, therefore initializing without any missing intensity values.","WARNING")
+            self._log("You did not set a mask, therefore initializing without any missing intensity values.","INFO")
             self._ready = True
         if self._initial_support_config == None:
             self._log("Reconstruction cannot start! You need to set the initial support.","ERROR")
@@ -570,6 +570,7 @@ class Reconstructor:
                "real_error":real_error,
                "fourier_error":fourier_error,
                "support_size":support_size}
+        print "Reconstruction finished", self._reconstruction
         return out
     
     def reconstruct_loop(self,Nrepeats):
