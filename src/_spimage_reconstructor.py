@@ -380,7 +380,7 @@ class Reconstructor:
             self._sp_initial_support.image[:] = np.float32(np.fft.fftshift(R) < self._initial_support_config["radius"])
         else:
             self._phaser_dirty = True
-            S = self._initial_support_config["support_mask"]
+v            S = self._initial_support_config["support_mask"]
             if self._initial_support_config["support_mask_shifted"]:
                 S = np.fft.fftshift(S)
             self.sep_initial_support.image[:] = np.float32(S)
@@ -572,7 +572,7 @@ class Reconstructor:
                "support_size":support_size}
 
         # Print always something at the end
-        if self._reconstruction is not None:
+        if self._reconstruction is None:
             print "Reconstruction finished"
         else:
             print "Reconstruction finished: ", self._reconstruction
