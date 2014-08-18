@@ -371,7 +371,6 @@ class Reconstructor:
             if img != None:
                 spimage.sp_image_free(img)
         self._sp_initial_support = spimage.sp_image_alloc(self._Ny,self._Nx,1)
-        print self._initial_support_config
         if "radius" in self._initial_support_config:
             X,Y = np.meshgrid(np.arange(self._Nx),np.arange(self._Ny))
             X = X-(self._Nx-1)/2.
@@ -379,7 +378,6 @@ class Reconstructor:
             R = np.sqrt(X**2 + Y**2)
             self._phaser_dirty = True
             self._sp_initial_support.image[:] = np.float32(np.fft.fftshift(R) < self._initial_support_config["radius"])
-            print self._sp_initial_support.image,self._sp_initial_support.real.sum()
         else:
             self._phaser_dirty = True
             S = self._initial_support_config["support_mask"]
@@ -405,7 +403,7 @@ class Reconstructor:
             self._log("Support algorithms already initialised.","DEBUG")
             return       
         i = 0
-        for alg_conf in self._support_algorithms_configs
+        for alg_conf in self._support_algorithms_configs:
             alg = dict(alg_conf)
             if alg_conf["number_of_iterations"] == None:
                 if len(self._support_algorithms_configs) == 1:
