@@ -370,6 +370,7 @@ class Reconstructor:
             if img != None:
                 spimage.sp_image_free(img)
         self._sp_initial_support = spimage.sp_image_alloc(self._Ny,self._Nx,1)
+        print self._initial_support_config
         if "radius" in self._initial_support_config:
             X,Y = np.meshgrid(np.arange(self._Nx),np.arange(self._Ny))
             X = X-(self._Nx-1)/2.
