@@ -591,7 +591,7 @@ class Reconstructor:
         support_final = np.zeros(shape=(Nrepeats,self._Nx,self._Ny),dtype="bool")
         for self._reconstruction in range(Nrepeats):
             self._log("Reconstruction %i started" % (self._reconstruction),"INFO")
-            output = self.reconstruct())
+            output = self.reconstruct()
             real_space_final[self._reconstruction,:,:] = output["real_space"][-1,:,:]
             support_final[self._reconstruction,:,:] = output["support"][-1,:,:]
             outputs.append(output)
