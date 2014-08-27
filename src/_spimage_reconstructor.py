@@ -26,6 +26,9 @@ class Reconstructor:
         self.clear()
 
     def clear(self):
+        """
+        Clears the instance reconstructor and deletes all configuration and data associated to it.
+        """
         self._clear_intensities()
         self._clear_amplitudes()
         self._clear_initial_support()
