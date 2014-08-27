@@ -205,7 +205,8 @@ class Reconstructor:
         """
         self._clear_support_algorithms()
         kwargs1 = dict(kwargs)
-        kwargs1["number_of_iterations"] = None
+        if "number_of_iterations" not in kwargs:
+            kwargs1["number_of_iterations"] = None
         self.append_support_algorithm(type, **kwargs1)
 
     def append_support_algorithm(self, type, **kwargs):
@@ -259,7 +260,8 @@ class Reconstructor:
         """
         self._clear_phasing_algorithms()
         kwargs1 = dict(kwargs)
-        kwargs1["number_of_iterations"] = None
+        if "number_of_iterations" not in kwargs:
+            kwargs1["number_of_iterations"] = None
         self.append_phasing_algorithm(type, **kwargs1)
 
     def append_phasing_algorithm(self, type,**kwargs):
