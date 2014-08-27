@@ -7,7 +7,7 @@ logger = logging.getLogger('PRTF')
 logger.setLevel("WARNING")
 
 # Toggle here debug mode for testing the functions
-debug = False
+debug = True
 this_folder = os.path.dirname(os.path.realpath(__file__))
 if debug:
     import matplotlib
