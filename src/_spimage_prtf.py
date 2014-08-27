@@ -219,8 +219,8 @@ def recover_translation(imgA,imgB,enantio=False):
             matplotlib.pyplot.imsave(this_folder+"/testdata/RT_imgfB_turned.png",abs(numpy.fft.fftshift(imgfB_turned)),vmin=0.,vmax=abs(imgfB).max())
             matplotlib.pyplot.imsave(this_folder+"/testdata/RT_imgfB.png",abs(numpy.fft.fftshift(imgfB)),vmin=0.,vmax=abs(imgfB).max())
             matplotlib.pyplot.imsave(this_folder+"/testdata/RT_imgfA.png",abs(numpy.fft.fftshift(imgfA)),vmin=0.,vmax=abs(imgfB).max())
-            matplotlib.pyplot.imsave(this_folder+"/testdata/RT_CC0_%i.png" % k,cc[0])
-            matplotlib.pyplot.imsave(this_folder+"/testdata/RT_CC1_%i.png" % k,cc[1])
+            matplotlib.pyplot.imsave(this_folder+"/testdata/RT_CC0.png",cc[0])
+            matplotlib.pyplot.imsave(this_folder+"/testdata/RT_CC1.png",cc[1])
         Mcc = numpy.array([cc[0].max(),cc[1].max()])
         i_max = Mcc.argmax()
         if i_max == 0:
