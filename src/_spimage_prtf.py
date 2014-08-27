@@ -85,8 +85,8 @@ def prtf(imgs0,msks0,**kwargs):
                 msks[k,:,:] = msks0[i,:,:]
             k += 1
     if debug:
-        out["dbg_imgs"] = imgs.copy()
-        out["dbg_msks"] = msks.copy()
+        out["dbg_imgs0"] = imgs.copy()
+        out["dbg_msks0"] = msks.copy()
 
     # Average reconstructions
     # superimpose for obtaining the averaged result of the reconstruction
@@ -137,6 +137,11 @@ def prtf(imgs0,msks0,**kwargs):
             print "Diff: %f" % (abs(img1-img0).mean()/abs(img0).mean())
         imgs1[i,:,:] = img1[:,:]
         msks1[i,:,:] = numpy.int16(abs(msk1).round())[:,:]
+
+    if debug:
+        out["dbg_imgs1"] = imgs1.copy()
+        out["dbg_msks1"] = msks1.copy()
+
     imgs1_super = imgs1.mean(0)
     msks1_super = msks1.mean(0)
     # Make PRTF
