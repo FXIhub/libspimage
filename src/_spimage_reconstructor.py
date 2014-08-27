@@ -356,12 +356,13 @@ class Reconstructor:
         else:
             M = np.ones(shape=I.shape,dtype="bool")
         self._clear_intensities()
-        self._sp_intensities_sh = spimage.sp_image_alloc(I.shape[1],I.shape[0],1)
-        self._sp_intensities_sh.image.real[:,:] = np.float32(I[:,:])
-        self._sp_intensities_sh.mask[:,:] = np.int32(M[:,:])
+        self._sp_intensities = spimage.sp_image_alloc(I.shape[1],I.shape[0],1)
+        self._sp_intensities.image.real[:,:] = np.float32(I[:,:])
+        self._sp_intensities.mask[:,:] = np.int32(M[:,:])
         self._clear_amplitudes()
-        self._sp_amplitudes = spimage.sp_image_shift(self._sp_intensities_sh)
-        self._sp_amplitudes.image[:] = np.sqrt(abs(self._sp_amplitudes.image.real))
+        self._sp_amplitudes = spimage.sp_image_alloc(I.shape[1],I.shape[0],1)
+        self._sp_amplitudes.image[:] = np.float32(np.sqrt(I))
+        self._sp_amplitudes.mask[:,:] = np.int32(M[:,:])
         self._sp_amplitudes.scaled = 1
         self._sp_amplitudes.phased = 0
         self._amplitudes_dirty = False
