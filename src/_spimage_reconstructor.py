@@ -589,20 +589,27 @@ class Reconstructor:
         self._prepare_reconstruction()
         if not self._ready:
             return
-        outputs = []
+        #outputs = []
+        fourier_space_final = np.zeros(shape=(Nrepeats,self._Nx,self._Ny),dtype="complex128")
         real_space_final = np.zeros(shape=(Nrepeats,self._Nx,self._Ny),dtype="complex128")
-        support_final = np.zeros(shape=(Nrepeats,self._Nx,self._Ny),dtype="bool")
+        scores_final = {}
+        scores_final["real_final"] = np.zeros(Nrepeats)
+        scores_final["fourier_error"] = np.zeros(Nrepeats)
         for self._reconstruction in range(Nrepeats):
             self._log("Reconstruction %i started" % (self._reconstruction),"INFO")
             output = self.reconstruct()
             real_space_final[self._reconstruction,:,:] = output["real_space"][-1,:,:]
+            fourier_space_final[self._reconstruction,:,:] = output["fourier_space"][-1,:,:]
             support_final[self._reconstruction,:,:] = output["support"][-1,:,:]
-            outputs.append(output)
+            scores_final["fourier_error"] = output["fourier_error"][-1]
+            scores_final["real_error"] = output["real_error"][-1]
+            #outputs.append(output)
             self._log("Reconstruction %i exited" % (self._reconstruction),"INFO")
         self._reconstruction = None
-        out =  {"single_outputs":outputs,
+        out =  {#"single_outputs":outputs,
                 "real_space_final":real_space_final,
-                "support_final":support_final}
+                "support_final":support_final,
+                "scores_final":scores_final}
         return out
 
     def _get_curr_fmodel(self,**kwargs):
