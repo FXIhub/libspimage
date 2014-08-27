@@ -96,7 +96,7 @@ class Reconstructor:
         out["real_error"] = np.sqrt((abs(I[M==0])**2).sum()/( (abs(I[M==1])**2).sum() + np.finfo("float32").eps ))
         out["fourier_error"] = np.sqrt((abs(abs(fI[fM==1])-abs(np.fft.fftshift(self._sp_amplitudes.image)[fM==1]))**2).sum()/( (abs(np.fft.fftshift(self._sp_amplitudes.image)[fM==1])**2).sum() + np.finfo("float32").eps ))
         out["FcFo"] = np.sqrt(abs(fI[fM==1]).sum()/(abs(self._sp_amplitudes.image[fM==0]).sum()+np.finfo("float32").eps))
-        out["support_size"] = M.sum()
+        out["support_size"] = M.sum()/float(M.shape[0]*M.shape[1])
         return out
 
     def _log(self,s,mode="INFO"):
