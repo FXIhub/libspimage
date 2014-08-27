@@ -80,7 +80,7 @@ def prtf(imgs0,msks0,**kwargs):
             else:
                 imgs[k,:,:] = imgs0[i,:,:]
                 msks[k,:,:] = msks0[i,:,:]
-            if debug and False:
+            if debug:
                 matplotlib.pyplot.imsave(this_folder+"/testdata/prtf_%i_imgs%i.png" % (K,k),abs(imgs[k]))
                 matplotlib.pyplot.imsave(this_folder+"/testdata/prtf_%i_msks%i.png" % (K,k),abs(msks[k]))
                 matplotlib.pyplot.imsave(this_folder+"/testdata/prtf_%i_imgs0%i.png" % (K,k),abs(imgs0[i]))
