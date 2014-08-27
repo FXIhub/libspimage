@@ -18,7 +18,8 @@ def prtf(imgs0,msks0,**kwargs):
     """
 
     logger0 = kwargs.get("logger",logger)
-    K = numpy.random.randint(1000)
+    #K = numpy.random.randint(1000)
+    K = 0
     enantio = kwargs.get("enantio",True)
     shifted = kwargs.get("shifted",True)
     center_result = kwargs.get("center_result",None)
