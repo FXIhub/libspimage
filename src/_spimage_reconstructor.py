@@ -57,7 +57,7 @@ class Reconstructor:
         self._amplitudes_dirty = True
 
     def _clear_iterations(self):
-         self._number_of_iterations = None
+        self._number_of_iterations = None
         self._number_of_outputs_images = None
         self._number_of_outputs_scores = None
         self._iterations_dirty = True       
