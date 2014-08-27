@@ -18,7 +18,6 @@ def prtf(imgs0,msks0,**kwargs):
     """
 
     out = {}
-    out_dbg = {}
 
     logger0 = kwargs.get("logger",logger)
     #K = numpy.random.randint(1000)
@@ -84,12 +83,11 @@ def prtf(imgs0,msks0,**kwargs):
             else:
                 imgs[k,:,:] = imgs0[i,:,:]
                 msks[k,:,:] = msks0[i,:,:]
-            if debug:
-                matplotlib.pyplot.imsave(this_folder+"/testdata/prtf_%i_imgs%i.png" % (K,k),abs(imgs[k]))
-                matplotlib.pyplot.imsave(this_folder+"/testdata/prtf_%i_msks%i.png" % (K,k),abs(msks[k]))
-                matplotlib.pyplot.imsave(this_folder+"/testdata/prtf_%i_imgs0%i.png" % (K,k),abs(imgs0[i]))
-                matplotlib.pyplot.imsave(this_folder+"/testdata/prtf_%i_msks0%i.png" % (K,k),abs(msks0[i]))
             k += 1
+    if debug:
+        out["dbg_imgs"] = imgs.copy()
+        out["dbg_msks"] = msks.copy()
+
     # Average reconstructions
     # superimpose for obtaining the averaged result of the reconstruction
     imgs1 = numpy.zeros(shape=(N,Ny,Nx),dtype=imgs0.dtype)
