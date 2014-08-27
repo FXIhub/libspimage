@@ -494,9 +494,9 @@ class Reconstructor:
         self._log("Phasing algorithm initialised.","DEBUG")
 
     def _init_phaser(self):
-        if not self._phaser_dirty:
-            self._log("Phaser already initialised.","DEBUG")
-            return
+        #if not self._phaser_dirty:
+        #    self._log("Phaser already initialised.","DEBUG")
+        #    return
         self._clear_phaser()
         self._phaser = spimage.sp_phaser_alloc()
         pe = spimage.SpEngineCUDA
