@@ -7,7 +7,7 @@ logger = logging.getLogger('PRTF')
 logger.setLevel("WARNING")
 
 # Toggle here debug mode for testing the functions
-debug = True
+debug = False
 this_folder = "."#os.path.dirname(os.path.realpath(__file__))
 if debug:
     import matplotlib
@@ -16,6 +16,9 @@ def prtf(imgs0,msks0,**kwargs):
     """
     This function calculates the phase retrieval transfer function from a stack of real-space images and its supports.
     """
+
+    out = {}
+    out_dbg = {}
 
     logger0 = kwargs.get("logger",logger)
     #K = numpy.random.randint(1000)
@@ -186,12 +189,13 @@ def prtf(imgs0,msks0,**kwargs):
 
     msks1_super = numpy.int16(msks1_super)
     msks1 = numpy.int16(msks1)
-    return {"prtf":PRTF,
-            "super_image":imgs1_super,
-            "super_mask":msks1_super,
-            "images":imgs1,
-            "masks":msks1,
-            "fourier_images":fimgs1}
+    out["prtf"] = PRTF
+    out["super_image"] = imgs1_super
+    out["super_mask"] = msks1_super
+    out["images"] = imgs1
+    out["masks"] = msks1
+    out["fourier_images"] = fimgs1
+    return out
 
 
 def recover_translation(imgA,imgB,enantio=False):
