@@ -8,6 +8,7 @@ logger.setLevel("WARNING")
 
 # Toggle here debug mode for testing the functions
 debug = False
+this_dir = os.path.dirname(os.path.realpath(__file__))
 if debug:
     import matplotlib
 
