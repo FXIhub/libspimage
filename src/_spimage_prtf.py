@@ -81,10 +81,10 @@ def prtf(imgs0,msks0,**kwargs):
                 imgs[k,:,:] = imgs0[i,:,:]
                 msks[k,:,:] = msks0[i,:,:]
             if debug and False:
-                matplotlib.imsave(this_folder+"/testdata/prtf_%i_imgs%i.png" % (K,k),abs(imgs[k]))
-                matplotlib.imsave(this_folder+"/testdata/prtf_%i_msks%i.png" % (K,k),abs(msks[k]))
-                matplotlib.imsave(this_folder+"/testdata/prtf_%i_imgs0%i.png" % (K,k),abs(imgs0[i]))
-                matplotlib.imsave(this_folder+"/testdata/prtf_%i_msks0%i.png" % (K,k),abs(msks0[i]))
+                matplotlib.pyplot.imsave(this_folder+"/testdata/prtf_%i_imgs%i.png" % (K,k),abs(imgs[k]))
+                matplotlib.pyplot.imsave(this_folder+"/testdata/prtf_%i_msks%i.png" % (K,k),abs(msks[k]))
+                matplotlib.pyplot.imsave(this_folder+"/testdata/prtf_%i_imgs0%i.png" % (K,k),abs(imgs0[i]))
+                matplotlib.pyplot.imsave(this_folder+"/testdata/prtf_%i_msks0%i.png" % (K,k),abs(msks0[i]))
             k += 1
     # Average reconstructions
     # superimpose for obtaining the averaged result of the reconstruction
@@ -98,9 +98,9 @@ def prtf(imgs0,msks0,**kwargs):
 
         if debug:
             j=0
-            matplotlib.imsave(this_folder+"/testdata/prtf_%i_%i_I_%i.png" % (K,i,j),abs(img1),vmin=0.,vmax=3.)
-            matplotlib.imsave(this_folder+"/testdata/prtf_%i_%i_IP_%i.png" % (K,i,j),numpy.angle(img1) % (2.*numpy.pi),vmin=0.,vmax=2.*numpy.pi)
-            matplotlib.imsave(this_folder+"/testdata/prtf_%i_%i_M_%i.png" % (K,i,j),abs(msk1))
+            matplotlib.pyplot.imsave(this_folder+"/testdata/prtf_%i_%i_I_%i.png" % (K,i,j),abs(img1),vmin=0.,vmax=3.)
+            matplotlib.pyplot.imsave(this_folder+"/testdata/prtf_%i_%i_IP_%i.png" % (K,i,j),numpy.angle(img1) % (2.*numpy.pi),vmin=0.,vmax=2.*numpy.pi)
+            matplotlib.pyplot.imsave(this_folder+"/testdata/prtf_%i_%i_M_%i.png" % (K,i,j),abs(msk1))
         if do_minimize_phase_ramp:
             [img1,translation] = minimize_phase_ramp(img1,shifted=False,periodic_boundary=True)
             msk1 = numpy.int16(abs(fourier_translation(msk1,translation)).round())
@@ -108,9 +108,9 @@ def prtf(imgs0,msks0,**kwargs):
         
         if debug:
             j+=1
-            matplotlib.imsave(this_folder+"/testdata/prtf_%i_%i_I_%i.png" % (K,i,j),abs(img1),vmin=0.,vmax=3.)
-            matplotlib.imsave(this_folder+"/testdata/prtf_%i_%i_IP_%i.png" % (K,i,j),numpy.angle(img1) % (2.*numpy.pi),vmin=0.,vmax=2.*numpy.pi)
-            matplotlib.imsave(this_folder+"/testdata/prtf_%i_%i_A_M_%i.png" % (K,i,j),abs(msk1))
+            matplotlib.pyplot.imsave(this_folder+"/testdata/prtf_%i_%i_I_%i.png" % (K,i,j),abs(img1),vmin=0.,vmax=3.)
+            matplotlib.pyplot.imsave(this_folder+"/testdata/prtf_%i_%i_IP_%i.png" % (K,i,j),numpy.angle(img1) % (2.*numpy.pi),vmin=0.,vmax=2.*numpy.pi)
+            matplotlib.pyplot.imsave(this_folder+"/testdata/prtf_%i_%i_A_M_%i.png" % (K,i,j),abs(msk1))
         if do_maximize_overlap and i!=0:
             [img1,translation,turned] = maximize_overlap(img0,img1,enantio)
             if turned: msk1 = fft_turn180(msk1)
@@ -118,18 +118,18 @@ def prtf(imgs0,msks0,**kwargs):
 
         if debug:
             j+=1
-            matplotlib.imsave(this_folder+"/testdata/prtf_%i_%i_I_%i.png" % (K,i,j),abs(img1),vmin=0.,vmax=3.)
-            matplotlib.imsave(this_folder+"/testdata/prtf_%i_%i_IP_%i.png" % (K,i,j),numpy.angle(img1) % (2.*numpy.pi),vmin=0.,vmax=2.*numpy.pi)
-            matplotlib.imsave(this_folder+"/testdata/prtf_%i_%i_A_M_%i.png" % (K,i,j),abs(msk1))
+            matplotlib.pyplot.imsave(this_folder+"/testdata/prtf_%i_%i_I_%i.png" % (K,i,j),abs(img1),vmin=0.,vmax=3.)
+            matplotlib.pyplot.imsave(this_folder+"/testdata/prtf_%i_%i_IP_%i.png" % (K,i,j),numpy.angle(img1) % (2.*numpy.pi),vmin=0.,vmax=2.*numpy.pi)
+            matplotlib.pyplot.imsave(this_folder+"/testdata/prtf_%i_%i_A_M_%i.png" % (K,i,j),abs(msk1))
         if do_phase_match and i!=0:
             weights = abs(img0)*abs(img1)
             img1 = abs(img1)*numpy.exp(1.j*(numpy.angle(img1)+phase_match(img0,img1,weights)))
 
         if debug:
             j+=1
-            matplotlib.imsave(this_folder+"/testdata/prtf_%i_%i_I_%i.png" % (K,i,j),abs(img1),vmin=0.,vmax=3.)
-            matplotlib.imsave(this_folder+"/testdata/prtf_%i_%i_IP_%i.png" % (K,i,j),numpy.angle(img1) % (2.*numpy.pi),vmin=0.,vmax=2.*numpy.pi)
-            matplotlib.imsave(this_folder+"/testdata/prtf_%i_%i_A_M_%i.png" % (K,i,j),abs(msk1))
+            matplotlib.pyplot.imsave(this_folder+"/testdata/prtf_%i_%i_I_%i.png" % (K,i,j),abs(img1),vmin=0.,vmax=3.)
+            matplotlib.pyplot.imsave(this_folder+"/testdata/prtf_%i_%i_IP_%i.png" % (K,i,j),numpy.angle(img1) % (2.*numpy.pi),vmin=0.,vmax=2.*numpy.pi)
+            matplotlib.pyplot.imsave(this_folder+"/testdata/prtf_%i_%i_A_M_%i.png" % (K,i,j),abs(msk1))
             print "Power: %f" % (abs(img1).sum()/(abs(img0).sum()+numpy.finfo("float32").eps))
             print "Avg. phase: %f,%f" % ((msk0*numpy.angle(img1)).mean(),(msk0*numpy.angle(img0)).mean())
             print "Diff: %f" % (abs(img1-img0).mean()/abs(img0).mean())
@@ -155,8 +155,8 @@ def prtf(imgs0,msks0,**kwargs):
     PRTF = numpy.array(PRTF,dtype="float32")
 
     if debug:
-        matplotlib.imsave(this_folder+"/testdata/superI%i.png" % numpy.random.randint(1000),abs(imgs1_super),vmin=0,vmax=2.)
-        matplotlib.imsave(this_folder+"/testdata/superM%i.png" % numpy.random.randint(1000),abs(msks1_super),vmin=0,vmax=1.)
+        matplotlib.pyplot.imsave(this_folder+"/testdata/superI%i.png" % numpy.random.randint(1000),abs(imgs1_super),vmin=0,vmax=2.)
+        matplotlib.pyplot.imsave(this_folder+"/testdata/superM%i.png" % numpy.random.randint(1000),abs(msks1_super),vmin=0,vmax=1.)
 
     if center_result != None:
         if center_result == "image":
@@ -213,14 +213,14 @@ def recover_translation(imgA,imgB,enantio=False):
         cc = [abs(numpy.fft.ifftn(imgfA*imgfB.conj())),abs(numpy.fft.ifftn(imgfA*imgfB_turned.conj()))]
         if debug:
             os.system("rm %s/testdata/RT*" % this_folder)
-            matplotlib.imsave(this_folder+"/testdata/RT_imgB_turned.png",abs(numpy.fft.fftshift(imgB_turned)),vmin=0.,vmax=abs(imgB).max())
-            matplotlib.imsave(this_folder+"/testdata/RT_imgB.png",abs(numpy.fft.fftshift(imgB)),vmin=0.,vmax=abs(imgB).max())
-            matplotlib.imsave(this_folder+"/testdata/RT_imgA.png",abs(numpy.fft.fftshift(imgA)),vmin=0.,vmax=abs(imgB).max())
-            matplotlib.imsave(this_folder+"/testdata/RT_imgfB_turned.png",abs(numpy.fft.fftshift(imgfB_turned)),vmin=0.,vmax=abs(imgfB).max())
-            matplotlib.imsave(this_folder+"/testdata/RT_imgfB.png",abs(numpy.fft.fftshift(imgfB)),vmin=0.,vmax=abs(imgfB).max())
-            matplotlib.imsave(this_folder+"/testdata/RT_imgfA.png",abs(numpy.fft.fftshift(imgfA)),vmin=0.,vmax=abs(imgfB).max())
-            matplotlib.imsave(this_folder+"/testdata/RT_CC0_%i.png" % k,cc[0])
-            matplotlib.imsave(this_folder+"/testdata/RT_CC1_%i.png" % k,cc[1])
+            matplotlib.pyplot.imsave(this_folder+"/testdata/RT_imgB_turned.png",abs(numpy.fft.fftshift(imgB_turned)),vmin=0.,vmax=abs(imgB).max())
+            matplotlib.pyplot.imsave(this_folder+"/testdata/RT_imgB.png",abs(numpy.fft.fftshift(imgB)),vmin=0.,vmax=abs(imgB).max())
+            matplotlib.pyplot.imsave(this_folder+"/testdata/RT_imgA.png",abs(numpy.fft.fftshift(imgA)),vmin=0.,vmax=abs(imgB).max())
+            matplotlib.pyplot.imsave(this_folder+"/testdata/RT_imgfB_turned.png",abs(numpy.fft.fftshift(imgfB_turned)),vmin=0.,vmax=abs(imgfB).max())
+            matplotlib.pyplot.imsave(this_folder+"/testdata/RT_imgfB.png",abs(numpy.fft.fftshift(imgfB)),vmin=0.,vmax=abs(imgfB).max())
+            matplotlib.pyplot.imsave(this_folder+"/testdata/RT_imgfA.png",abs(numpy.fft.fftshift(imgfA)),vmin=0.,vmax=abs(imgfB).max())
+            matplotlib.pyplot.imsave(this_folder+"/testdata/RT_CC0_%i.png" % k,cc[0])
+            matplotlib.pyplot.imsave(this_folder+"/testdata/RT_CC1_%i.png" % k,cc[1])
         Mcc = numpy.array([cc[0].max(),cc[1].max()])
         i_max = Mcc.argmax()
         if i_max == 0:
@@ -337,9 +337,9 @@ def minimize_phase_ramp(img,shifted=False,periodic_boundary=False):
 
     translation = (v2[1:]-numpy.pi)/(2*numpy.pi)*numpy.array(pimgf.shape)
     if debug:
-        matplotlib.imsave(this_folder+"/testdata/subtract_phase_ramp_img0.png",abs(img))
-        matplotlib.imsave(this_folder+"/testdata/subtract_phase_ramp_img1.png",abs(res))
-        matplotlib.imsave(this_folder+"/testdata/subtract_phase_ramp_img0t.png",abs(fourier_translation(img,translation)))
+        matplotlib.pyplot.imsave(this_folder+"/testdata/subtract_phase_ramp_img0.png",abs(img))
+        matplotlib.pyplot.imsave(this_folder+"/testdata/subtract_phase_ramp_img1.png",abs(res))
+        matplotlib.pyplot.imsave(this_folder+"/testdata/subtract_phase_ramp_img0t.png",abs(fourier_translation(img,translation)))
     return [res,translation]
 
 def center_of_mass(img0,shifted=False):
@@ -354,7 +354,7 @@ def center_of_mass(img0,shifted=False):
             f[i,:] = numpy.fft.fftshift(f[i,:])[:]
         cm[i] = (f[i,:]*img[:]).sum()
         if debug:
-            matplotlib.imsave(this_folder+"/testdata/f%i.png" % i,f[i])
+            matplotlib.pyplot.imsave(this_folder+"/testdata/f%i.png" % i,f[i])
     return cm
 
 def fft_turn180(I):
