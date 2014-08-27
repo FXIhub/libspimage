@@ -57,7 +57,7 @@ class Reconstructor:
         self._amplitudes_dirty = True
 
     def _clear_iterations(self):
-        self._number_of_iterations = None
+         self._number_of_iterations = None
         self._number_of_outputs_images = None
         self._number_of_outputs_scores = None
         self._iterations_dirty = True       
@@ -594,6 +594,7 @@ class Reconstructor:
         #outputs = []
         fourier_space_final = np.zeros(shape=(Nrepeats,self._Nx,self._Ny),dtype="complex128")
         real_space_final = np.zeros(shape=(Nrepeats,self._Nx,self._Ny),dtype="complex128")
+        support_final = np.zeros(shape=(Nrepeats,self._Nx,self._Ny),dtype="bool")
         scores_final = {}
         scores_final["real_final"] = np.zeros(Nrepeats)
         scores_final["fourier_error"] = np.zeros(Nrepeats)
@@ -610,6 +611,7 @@ class Reconstructor:
         self._reconstruction = None
         out =  {#"single_outputs":outputs,
                 "real_space_final":real_space_final,
+                "fourier_space_final":real_space_final,
                 "support_final":support_final,
                 "scores_final":scores_final}
         return out
