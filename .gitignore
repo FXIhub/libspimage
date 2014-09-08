@@ -1,0 +1,10 @@
+.gitignore
+*~
+\#*#
+.#*
+CMakeCache.txt
+CMakeFiles*
+src/spimage_pybackend.py
+src/spimage_wrap.c
+build*
+Linux_x86_64
