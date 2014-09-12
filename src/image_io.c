@@ -1732,8 +1732,16 @@ static Image * read_mrc(const char * filename){
   /* read image size */
   fread((void *)dims,sizeof(int),3,fp);
   fread((void *)&type,sizeof(int),1,fp);
+  fseek(fp,40,SEEK_SET);
+  float pixel_size[3];
+  fread((void *)pixel_size,sizeof(float),3,fp);
+
+  
   fseek(fp,header_size,SEEK_SET);
   Image * ret = sp_image_alloc(dims[0],dims[1],dims[2]);
+  for(int i = 0;i<3;i++){
+    ret->detector->pixel_size[i] = pixel_size[i];
+  }
   if(type == 1){
     int size = sizeof(short)*dims[0]*dims[1]*dims[2];
     short *  buffer = sp_malloc(size);
