@@ -2074,6 +2074,7 @@ void write_cxi(const Image * img,const char * filename){
 
 Image * read_cxi(const char * filename){
   hid_t dataset_id;
+  hid_t mask_id;
   hid_t file_id;
   int status;
   H5E_auto_t func;
@@ -2083,7 +2084,7 @@ Image * read_cxi(const char * filename){
   /* turn off warning to check file and version because they might not exist */
   H5Eset_auto(H5E_DEFAULT,NULL,NULL);  
 
-  file_id = H5Fopen(filename, H5F_ACC_RDONLY,H5P_DEFAULT);
+  file_id = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
   if(file_id < 0){
     sp_error_warning("Unable to open %s",filename);
     H5Eset_auto(H5E_DEFAULT,func,client_data);
@@ -2112,12 +2113,12 @@ Image * read_cxi(const char * filename){
   }
 
   Image * ret;
-  if(dims[2] == 1){
+  if (dims[2] == 1) {
     ret = sp_image_alloc(dims[1],dims[0],1);
-  }else{
+  } else {
     ret = sp_image_alloc(dims[2],dims[1],dims[0]);
   }
-  if(H5Tget_class(H5Dget_type(dataset_id)) == H5T_COMPOUND){
+  if (H5Tget_class(H5Dget_type(dataset_id)) == H5T_COMPOUND) {
     // Assume data is complex
     hid_t complex_id = H5Tcreate(H5T_COMPOUND,
 				 sizeof(Complex));
@@ -2125,19 +2126,31 @@ Image * read_cxi(const char * filename){
     H5Tinsert(complex_id, "i", sizeof(real), H5T_NATIVE_FLOAT);
     status = H5Dread(dataset_id, complex_id, H5S_ALL, H5S_ALL,
 		     H5P_DEFAULT, ret->image->data);
-    for(int i = 0;i<sp_image_size(ret);i++){
-      ret->mask->data[i] = 1;
-    }
-  }else{
+  } else {
     float * buffer = sp_malloc(dims[0]*dims[1]*dims[2]*sizeof(float));
     status = H5Dread(dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL,
 		     H5P_DEFAULT, buffer);
-    for(int i = 0;i<sp_image_size(ret);i++){
+    for (int i = 0; i<sp_image_size(ret); i++) {
       ret->image->data[i] = sp_cinit(buffer[i],0);
-      ret->mask->data[i] = 1;
-    }  
+    }
   }
   H5Dclose(dataset_id);
+  
+  status = H5Lexists(file_id, "/entry_1/image_1/mask", H5P_DEFAULT);
+  if (status > 0) {
+    mask_id = H5Dopen(file_id, "/entry_1/image_1/mask", H5P_DEFAULT);
+    if (mask_id < 0) {
+      sp_error_warning("Unable to open mask in file %s",filename);
+    }
+    status = H5Dread(mask_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL,
+                     H5P_DEFAULT, ret->mask->data);
+    H5Dclose(mask_id);
+  } else {
+    for (int i = 0; i<sp_image_size(ret); i++) {
+      ret->mask->data[i] = 1;
+    }
+  }
+  
   H5Fclose(file_id);
   //H5close();
   return ret;
