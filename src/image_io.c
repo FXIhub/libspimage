@@ -42,9 +42,10 @@ static int write_mrc(const Image * img,const char * filename);
 static Image * read_anton_datafile(hid_t file_id,hid_t dataset_id, const char * filename);
 static void write_cxi(const Image * img,const char * filename);
 static Image * read_cxi(const char * filename);
+static void append_cxi(const Image *img, const char *filename, long long flags);
 
 
-void sp_image_write(const Image * img, const char * filename, int flags){
+void sp_image_write(const Image * img, const char * filename, long long flags){
   char buffer[1024];
   strcpy(buffer,filename);
   for(int i = 0;i<strlen(buffer);i++){
@@ -74,7 +75,8 @@ void sp_image_write(const Image * img, const char * filename, int flags){
     }
     write_xplor(img,filename);
   }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".cxi") == 0)){
-    write_cxi(img,filename);
+    //write_cxi(img,filename);
+    append_cxi(img, filename, flags);
   }else if(strrchr(buffer,'.') && (strcmp(strrchr(buffer,'.'),".mrc") == 0|| strcmp(strrchr(buffer,'.'),".map") == 0)){
     write_mrc(img,filename);
   }else{
@@ -1897,7 +1899,7 @@ int write_xplor(const Image * img, const char * filename){
   return 0;
 }
 
-void write_cxi(const Image * img,const char * filename){
+void write_cxi(const Image * img, const char *filename) {
   hsize_t  dims[3];
   hid_t dataspace_id;
   hid_t dataset_id;
@@ -2155,3 +2157,599 @@ Image * read_cxi(const char * filename){
   //H5close();
   return ret;
 }
+
+/*
+ * Implementation notes: append_cxi(image, filename, flag)
+ * -------------------------------------------------------
+ * Takes an image and appends to a CXIDB file with filename. There are 4 flags implemented:
+ *
+ * 1 = create new file
+ * 2 = append entry to existing file
+ * 4 = append image to existing entry
+ * 8 = append data to existing image
+ *
+ * The function always appends to the last entry or image.
+ * Flag 1 has priority in current implementation, i.e. odd becomes 1,
+ * otherwise higher flag has priority, i.e. 6 becomes 4, 14 becomes 8, etc.
+ * Flag 1,2 are intended to be used for experimental (unphased) data
+ * and flag 4,8 should be used for phased images.
+ * In addition, the last 32 bits are used to specify the iteration number for flag 4,8.
+ */
+
+void append_cxi(const Image *img, const char *filename, long long flag) {
+  hsize_t dims[3];
+  hsize_t maxdims[3];
+  hid_t dataspace_id;
+  hid_t dataset_id;
+  hid_t mask_id;
+  hid_t file_id;
+  int status;
+  char *data_type_string[] = {"intensity", "amplitude", "unphased amplitude"};
+  char *str;
+  char path_string[50];
+  H5E_auto_t func;
+  void *client_data;
+  
+  hid_t mem_type_id;
+  if (sizeof(real) == sizeof(float)) {
+    mem_type_id = H5T_NATIVE_FLOAT;
+  } else if (sizeof(real) == sizeof(double)) {
+    mem_type_id = H5T_NATIVE_DOUBLE;
+  };
+  
+  hid_t complex_id = H5Tcreate(H5T_COMPOUND, sizeof(Complex));
+  H5Tinsert(complex_id, "r", 0, mem_type_id);
+  H5Tinsert(complex_id, "i", sizeof(real), mem_type_id);
+  
+  if (flag & 1) {
+    // Create new file
+    write_cxi(img, filename);
+    
+  } else if (flag & 14) {
+    // Open existing file
+    H5Eget_auto(H5E_DEFAULT, &func, &client_data);
+    /* turn off warning to check file and version because they might not exist */
+    H5Eset_auto(H5E_DEFAULT, NULL, NULL);
+    file_id = H5Fopen(filename, H5F_ACC_RDWR, H5P_DEFAULT);
+    if (file_id < 0) {
+      sp_error_warning("Unable to open %s", filename);
+      H5Eset_auto(H5E_DEFAULT, func, client_data);
+      //H5close();
+      return;
+    }
+    H5Eset_auto(H5E_DEFAULT, func, client_data);
+    
+    if (flag & 12) {
+      // Open existing entry
+      status = H5Lexists(file_id, "/entry_1", H5P_DEFAULT);
+      if (status > 0) {
+        int entry_number = 0;
+        while (status > 0) {
+          entry_number++;
+          sprintf(path_string, "/entry_%d", entry_number+1);
+          status = H5Lexists(file_id, path_string, H5P_DEFAULT);
+        }
+        
+        if (flag & 8) {
+          // Open existing image
+          sprintf(path_string, "/entry_%d/image_1", entry_number);
+          status = H5Lexists(file_id, path_string, H5P_DEFAULT);
+          if (status > 0) {
+            // Parameters to select hyperslab
+            hsize_t count[3] = {1,1,1};
+            hsize_t offset[3] = {0,0,0}; // hsize_t offset[3] = {stackSlice,0,0};
+            hsize_t stride[3] = {1,1,1}; // the step between each count
+            hsize_t block[3];
+            int ndims = 3;
+            
+            int image_number = 0;
+            while (status > 0) {
+              image_number++;
+              sprintf(path_string, "/entry_%d/image_%d", entry_number, image_number+1);
+              status = H5Lexists(file_id, path_string, H5P_DEFAULT);
+            }
+            
+            // data
+            sprintf(path_string, "/entry_%d/image_%d/data", entry_number, image_number);
+            dataset_id = H5Dopen(file_id, path_string, H5P_DEFAULT);
+            if (dataset_id < 0) {
+              sp_error_warning("Unable to open %s in %s", path_string, filename);
+              return;
+            }
+            
+            dataspace_id = H5Dget_space(dataset_id);
+            if (dataspace_id < 0) {
+              sp_error_warning("Cannot get dataspace in %s", filename);
+            }
+            status = H5Sget_simple_extent_dims(dataspace_id, dims, maxdims);
+            // Use the existing dimensions as block size and offset
+            for (int i=0; i<ndims; i++) {
+              block[i] = dims[i];
+            }
+            block[0] = 1;
+            offset[0] = dims[0];
+            // Extend the dataset
+            dims[0]++;
+            H5Dset_extent(dataset_id, dims);
+            // Get enlarged dataspace
+            H5Sclose(dataspace_id);
+            dataspace_id = H5Dget_space(dataset_id);
+            if (dataspace_id < 0) {
+              sp_error_warning("Cannot get dataspace in %s", filename);
+            }
+            
+            hid_t memspace_id = H5Screate_simple(ndims, block, NULL);
+            
+            status = H5Sselect_hyperslab(dataspace_id, H5S_SELECT_SET, offset, stride, count, block);
+            if (status < 0) {
+              sp_error_warning("Cannot select hyperslab in %s", filename);
+            }
+            status = H5Dwrite(dataset_id, complex_id, memspace_id, dataspace_id, H5P_DEFAULT, img->image->data);
+            if (status < 0) {
+              sp_error_warning("Cannot write to %s", filename);
+            }
+            
+            H5Sclose(memspace_id);
+            H5Sclose(dataspace_id);
+            H5Dclose(dataset_id);
+            
+            // iteration number
+            long long current_iteration = flag >> 32;
+            ndims = 1;
+            sprintf(path_string, "/entry_%d/image_%d/iteration_number", entry_number, image_number);
+            dataset_id = H5Dopen(file_id, path_string, H5P_DEFAULT);
+            if (dataset_id < 0) {
+              sp_error_warning("Unable to open %s in %s", path_string, filename);
+            }
+            
+            dataspace_id = H5Dget_space(dataset_id);
+            if (dataspace_id < 0) {
+              sp_error_warning("Cannot get dataspace in %s", filename);
+            }
+            status = H5Sget_simple_extent_dims(dataspace_id, dims, maxdims);
+            // Use the existing dimensions as block size and offset
+            block[0] = 1;
+            offset[0] = dims[0];
+            // Extend the dataset
+            dims[0]++;
+            H5Dset_extent(dataset_id, dims);
+            // Get enlarged dataspace
+            H5Sclose(dataspace_id);
+            dataspace_id = H5Dget_space(dataset_id);
+            if (dataspace_id < 0) {
+              sp_error_warning("Cannot get dataspace in %s", filename);
+            }
+            
+            memspace_id = H5Screate_simple(ndims, block, NULL);
+            
+            status = H5Sselect_hyperslab(dataspace_id, H5S_SELECT_SET, offset, stride, count, block);
+            if (status < 0) {
+              sp_error_warning("Cannot select hyperslab in %s", filename);
+            }
+            status = H5Dwrite(dataset_id, H5T_NATIVE_INT32, memspace_id, dataspace_id, H5P_DEFAULT, &current_iteration);
+            if (status < 0) {
+              sp_error_warning("Cannot write to %s", filename);
+            }
+            
+            H5Sclose(memspace_id);
+            H5Sclose(dataspace_id);
+            H5Dclose(dataset_id);
+            
+            // mask
+            ndims = 3;
+            sprintf(path_string, "/entry_%d/image_%d/mask", entry_number, image_number);
+            mask_id = H5Dopen(file_id, path_string, H5P_DEFAULT);
+            if (mask_id < 0) {
+              sp_error_warning("Unable to open %s in %s", path_string, filename);
+            }
+            
+            dataspace_id = H5Dget_space(mask_id);
+            if (mask_id < 0) {
+              sp_error_warning("Cannot get dataspace in %s", filename);
+            }
+            status = H5Sget_simple_extent_dims(dataspace_id, dims, maxdims);
+            // Use the existing dimensions as block size and offset
+            for (int i=0; i<ndims; i++) {
+              block[i] = dims[i];
+            }
+            block[0] = 1;
+            offset[0] = dims[0];
+            // Extend the dataset
+            dims[0]++;
+            H5Dset_extent(mask_id, dims);
+            // Get enlarged dataspace
+            H5Sclose(dataspace_id);
+            dataspace_id = H5Dget_space(mask_id);
+            if (dataspace_id < 0) {
+              sp_error_warning("Cannot get dataspace in %s", filename);
+            }
+            
+            memspace_id = H5Screate_simple(ndims, block, NULL);
+            
+            status = H5Sselect_hyperslab(dataspace_id, H5S_SELECT_SET, offset, stride, count, block);
+            if (status < 0) {
+              sp_error_warning("Cannot select hyperslab in %s", filename);
+            }
+            status = H5Dwrite(mask_id, H5T_NATIVE_INT, memspace_id, dataspace_id, H5P_DEFAULT, img->mask->data);
+            if (status < 0) {
+              sp_error_warning("Cannot write to %s", filename);
+            }
+            
+            H5Sclose(memspace_id);
+            H5Sclose(dataspace_id);
+            H5Dclose(mask_id);
+            
+          } else {
+            sp_error_warning("Unable to locate /entry_%d/image_1 in file %s", entry_number, filename);
+          }
+          
+        } else {
+          // Create new image
+          int image_number = 0;
+          sprintf(path_string, "/entry_%d/image_1", entry_number);
+          status = H5Lexists(file_id, path_string, H5P_DEFAULT);
+          while (status > 0) {
+            image_number++;
+            sprintf(path_string, "/entry_%d/image_%d", entry_number, image_number+1);
+            status = H5Lexists(file_id, path_string, H5P_DEFAULT);
+          }
+          
+          sprintf(path_string, "/entry_%d", entry_number);
+          hid_t entry_n = H5Gopen(file_id, path_string, H5P_DEFAULT);
+          sprintf(path_string, "/entry_%d/data_1", entry_number);
+          hid_t data_1 = H5Gopen(file_id, path_string, H5P_DEFAULT);
+          sprintf(path_string, "image_%d", image_number+1);
+          hid_t image_n = H5Gcreate(entry_n, path_string, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+          if (image_n < 0) {
+            sp_error_warning("Unable to create /entry_%d/%s in file %s", entry_number, path_string, filename);
+          }
+          if (img->scaled && img->phased) {
+            str = data_type_string[1];
+          } else if (img->scaled) {
+            str = data_type_string[2];
+          } else if (!img->scaled) {
+            str = data_type_string[0];
+          }
+          hid_t string_type = H5Tcopy(H5T_C_S1);  
+          H5Tset_size(string_type, strlen(str));
+          
+          dataset_id = H5Dcreate (image_n, "data_type", string_type, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+          H5Dwrite(dataset_id, string_type, H5S_ALL, H5S_ALL, H5P_DEFAULT, str);
+          H5Dclose(dataset_id);
+          
+          hid_t source_1 = H5Gcreate(image_n, "source_1", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+          {
+            double c = 299792458;
+            double h = 6.62606957e-34; // in J.s
+            float energy = h*c/img->detector->wavelength;
+            dataset_id = H5Dcreate(source_1, "energy", H5T_NATIVE_FLOAT, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+            H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL, H5P_DEFAULT, &energy);
+            H5Dclose(dataset_id);
+          }
+          H5Gclose(source_1);
+          
+          hid_t detector_1 = H5Gcreate(image_n, "detector_1", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+          
+          dataset_id = H5Dcreate(detector_1, "distance", H5T_NATIVE_FLOAT,dataspace_id,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
+          H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
+                   H5P_DEFAULT, &img->detector->detector_distance);
+          H5Dclose(dataset_id);
+          
+          dataset_id = H5Dcreate(detector_1, "x_pixel_size", H5T_NATIVE_FLOAT,dataspace_id,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
+          H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
+                   H5P_DEFAULT, &(img->detector->pixel_size[0]));
+          H5Dclose(dataset_id);
+          
+          dataset_id = H5Dcreate(detector_1, "y_pixel_size", H5T_NATIVE_FLOAT,dataspace_id,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
+          H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
+                   H5P_DEFAULT, &(img->detector->pixel_size[1]));
+          H5Dclose(dataset_id);
+          H5Sclose(dataspace_id);
+          
+          dataset_id = H5Dcreate(image_n, "is_fft_shifted", H5T_NATIVE_INT,dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+          H5Dwrite(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL,
+                   H5P_DEFAULT, &img->shifted);
+          H5Dclose(dataset_id);
+          
+          dims[0] = 3;
+          dataspace_id = H5Screate_simple(1, dims, NULL);
+          float cxi_center[3] = {img->detector->image_center[0]+1.0/2,
+            img->detector->image_center[1]+1.0/2,
+            img->detector->image_center[2]+1.0/2};
+          
+          dataset_id = H5Dcreate(image_n, "image_center", H5T_NATIVE_FLOAT,dataspace_id,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
+          H5Dwrite(dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL,
+                   H5P_DEFAULT, cxi_center);
+          H5Dclose(dataset_id);
+          
+          // prepare stacks
+          dims[2] = sp_c3matrix_x(img->image);
+          dims[1] = sp_c3matrix_y(img->image);
+          dims[0] = sp_c3matrix_z(img->image);
+          int ndims = 3;
+          maxdims[0] = H5S_UNLIMITED;
+          for (int i=1; i<3; i++)
+            maxdims[i] = dims[i];
+          
+          hid_t plist = H5Pcreate(H5P_DATASET_CREATE);
+          H5Pset_chunk(plist, ndims, dims);
+          H5Pset_deflate(plist, 6); // compression level 0-9, higher level = more compression/slower speed!
+          
+          // data
+          dataspace_id = H5Screate_simple(ndims, dims, maxdims);
+          if (dataspace_id < 0) {
+            sp_error_warning("Cannot create dataspace in %s", filename);
+          }
+          if (img->phased) {
+            dataset_id = H5Dcreate(image_n, "data", complex_id, dataspace_id, H5P_DEFAULT, plist, H5P_DEFAULT);
+            if (dataset_id < 0) {
+              sp_error_warning("Cannot create dataset in %s", filename);
+            }
+            H5Pset_chunk_cache(H5Dget_access_plist(dataset_id), H5D_CHUNK_CACHE_NSLOTS_DEFAULT, dims[1]*dims[2], 1);
+            H5Dwrite(dataset_id, complex_id, H5S_ALL, H5S_ALL, H5P_DEFAULT, img->image->data);
+          } else {
+            float *data = malloc(sp_image_size(img)*sizeof(float));
+            for(int i =0;i<sp_image_size(img);i++) {
+              data[i] = sp_real(img->image->data[i]);
+            }
+            dataset_id = H5Dcreate(image_n, "data", H5T_NATIVE_FLOAT, dataspace_id, H5P_DEFAULT, plist, H5P_DEFAULT);
+            H5Pset_chunk_cache(H5Dget_access_plist(dataset_id), H5D_CHUNK_CACHE_NSLOTS_DEFAULT, dims[1]*dims[2], 1);
+            H5Dwrite(dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
+            free(data);
+          }
+          H5Sclose(dataspace_id);
+          
+          // axes attribute
+          const char *axes = "iteration_number:y:x";
+          hsize_t block_size = 1;
+          ndims = 1;
+          string_type = H5Tcopy(H5T_C_S1);  
+          H5Tset_size(string_type, strlen(axes));
+          
+          dataspace_id = H5Screate_simple(ndims, &block_size, NULL);
+          hid_t axes_id = H5Acreate(dataset_id, "axes", string_type, dataspace_id, H5P_DEFAULT, H5P_DEFAULT);
+          status = H5Awrite(axes_id, string_type, axes);
+          if (status < 0) {
+            sp_error_warning("Failure to write axes attribute in %s", filename);
+          }
+          H5Aclose(axes_id);
+          H5Sclose(dataspace_id);
+          H5Dclose(dataset_id);
+          
+          // mask
+          ndims = 3;
+          dataspace_id = H5Screate_simple(ndims, dims, maxdims);
+          if (dataspace_id < 0) {
+            sp_error_warning("Cannot create dataspace in %s", filename);
+          }          
+          mask_id = H5Dcreate(image_n, "mask", H5T_NATIVE_INT, dataspace_id, H5P_DEFAULT, plist, H5P_DEFAULT);
+          H5Pset_chunk_cache(H5Dget_access_plist(mask_id), H5D_CHUNK_CACHE_NSLOTS_DEFAULT, dims[1]*dims[2], 1);
+          H5Dwrite(mask_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, img->mask->data);
+          H5Sclose(dataspace_id);
+          
+          // axes attribute
+          ndims = 1;
+          dataspace_id = H5Screate_simple(ndims, &block_size, NULL);
+          axes_id = H5Acreate(mask_id, "axes", string_type, dataspace_id, H5P_DEFAULT, H5P_DEFAULT);
+          if (axes_id < 0) {
+            sp_error_warning("Failure code %d to write axes attribute in %s", axes_id, filename);
+          }
+          status = H5Awrite(axes_id, string_type, axes);
+          if (status < 0) {
+            sp_error_warning("Failure to write axes attribute in %s", filename);
+          }
+          H5Aclose(axes_id);
+          H5Sclose(dataspace_id);
+          H5Dclose(mask_id);
+          
+          // iteration number
+          long long iteration_number[1] = {flag >> 32};
+          ndims = 1;
+          dims[0] = 1;
+          maxdims[0] = H5S_UNLIMITED;
+          H5Pset_chunk(plist, ndims, dims);
+          H5Pset_deflate(plist, 6);
+          
+          dataspace_id = H5Screate_simple(ndims, dims, maxdims);
+          if (dataspace_id < 0) {
+            sp_error_warning("Cannot create dataspace in %s", filename);
+          }          
+          dataset_id = H5Dcreate(image_n, "iteration_number", H5T_NATIVE_INT32, dataspace_id, H5P_DEFAULT, plist, H5P_DEFAULT);
+          if (dataset_id < 0) {
+            sp_error_warning("Cannot create dataset in %s", filename);
+          }
+          H5Pset_chunk_cache(H5Dget_access_plist(dataset_id), H5D_CHUNK_CACHE_NSLOTS_DEFAULT, 1, 1);
+          H5Dwrite(dataset_id, H5T_NATIVE_INT32, H5S_ALL, H5S_ALL, H5P_DEFAULT, iteration_number);
+          H5Dclose(dataset_id);
+          H5Sclose(dataspace_id);
+          
+          // orientation
+          if (img->detector->orientation) {
+            int i = 0;
+            float orientation[6];
+            for(int r=0;r<3;r++){
+              for(int c=0;c<2;c++){
+                orientation[i++] = sp_matrix_get(img->detector->orientation,r,c);	
+              }
+            }
+            dims[0] = 6;
+            ndims = 1;
+            hid_t geometry_1 = H5Gcreate(detector_1,"geometry_1", H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
+            dataspace_id = H5Screate_simple( ndims, dims, NULL );
+            dataset_id = H5Dcreate(geometry_1, "orientation", H5T_NATIVE_FLOAT,dataspace_id,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
+            H5Dwrite(dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL,
+                     H5P_DEFAULT, orientation);
+            H5Dclose(dataset_id);
+            H5Sclose(dataspace_id);
+            H5Gclose(geometry_1);
+          }
+          H5Gclose(detector_1);
+          H5Gclose(image_n);
+          H5Gclose(entry_n);
+          H5Pclose(plist);  
+          H5Fclose(file_id);
+          
+          sprintf(path_string, "/entry_%d/image_%d/data", entry_number, image_number+1);
+          H5Lcreate_soft(path_string, data_1, "data", H5P_DEFAULT, H5P_DEFAULT);
+          //H5close();
+          
+        }
+        
+      } else {
+        sp_error_warning("Unable to locate /entry_1 in file %s", filename);
+      }
+      
+    } else {
+      // Create new entry
+      int entry_number = 0;
+      sprintf(path_string, "/entry_%d", entry_number+1);
+      status = H5Lexists(file_id, path_string, H5P_DEFAULT);
+      while (status > 0) {
+        entry_number++;
+        sprintf(path_string, "/entry_%d", entry_number+1);
+        status = H5Lexists(file_id, path_string, H5P_DEFAULT);
+      }
+      
+      sprintf(path_string, "entry_%d", entry_number+1);
+      hid_t entry_n = H5Gcreate(file_id, path_string, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+      hid_t data_1 = H5Gcreate(entry_n, "data_1", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+      hid_t image_1 = H5Gcreate(entry_n, "image_1", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+      if (img->scaled && img->phased) {
+        str = data_type_string[1];
+      } else if (img->scaled) {
+        str = data_type_string[2];
+      } else if (!img->scaled) {
+        str = data_type_string[0];
+      }
+      hid_t string_type = H5Tcopy(H5T_C_S1);  
+      H5Tset_size(string_type, strlen(str));
+      
+      dataset_id = H5Dcreate (image_1, "data_type", string_type, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+      H5Dwrite(dataset_id, string_type, H5S_ALL, H5S_ALL, H5P_DEFAULT, str);
+      H5Dclose(dataset_id);
+      
+      hid_t source_1 = H5Gcreate(image_1, "source_1", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+      {
+        double c = 299792458;
+        double h = 6.62606957e-34; // in J.s
+        float energy = h*c/img->detector->wavelength;
+        dataset_id = H5Dcreate(source_1, "energy", H5T_NATIVE_FLOAT, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+        H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL, H5P_DEFAULT, &energy);
+        H5Dclose(dataset_id);
+      }
+      H5Gclose(source_1);
+      
+      hid_t detector_1 = H5Gcreate(image_1,"detector_1", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+      
+      dataset_id = H5Dcreate(detector_1, "distance", H5T_NATIVE_FLOAT,dataspace_id,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
+      H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
+               H5P_DEFAULT, &img->detector->detector_distance);
+      H5Dclose(dataset_id);
+      
+      dataset_id = H5Dcreate(detector_1, "x_pixel_size", H5T_NATIVE_FLOAT,dataspace_id,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
+      H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
+               H5P_DEFAULT, &(img->detector->pixel_size[0]));
+      H5Dclose(dataset_id);
+      
+      dataset_id = H5Dcreate(detector_1, "y_pixel_size", H5T_NATIVE_FLOAT,dataspace_id,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
+      H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
+               H5P_DEFAULT, &(img->detector->pixel_size[1]));
+      H5Dclose(dataset_id);
+      H5Sclose(dataspace_id);
+      
+      dataset_id = H5Dcreate(image_1, "is_fft_shifted", H5T_NATIVE_INT,dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+      H5Dwrite(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL,
+               H5P_DEFAULT, &img->shifted);
+      H5Dclose(dataset_id);
+      
+      dims[0] = 3;
+      dataspace_id = H5Screate_simple(1,dims,NULL);
+      float cxi_center[3] = {img->detector->image_center[0]+1.0/2,
+        img->detector->image_center[1]+1.0/2,
+        img->detector->image_center[2]+1.0/2};
+      
+      dataset_id = H5Dcreate(image_1, "image_center", H5T_NATIVE_FLOAT,dataspace_id,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
+      H5Dwrite(dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL,
+               H5P_DEFAULT, cxi_center);
+      H5Dclose(dataset_id);
+      
+      dims[2] = sp_c3matrix_x(img->image);
+      dims[1] = sp_c3matrix_y(img->image);
+      dims[0] = sp_c3matrix_z(img->image);
+      int ndims = 3;
+      if (dims[0] == 1) {
+        ndims = 2;
+        dims[0] = dims[1];
+        dims[1] = dims[2];
+      }
+      hid_t plist = H5Pcreate (H5P_DATASET_CREATE);
+      H5Pset_chunk(plist,ndims,dims);
+      H5Pset_deflate(plist,6);
+      
+      dataspace_id = H5Screate_simple(ndims, dims, NULL);
+      if (img->phased) {
+        dataset_id = H5Dcreate(image_1, "data", complex_id,dataspace_id,H5P_DEFAULT,plist,H5P_DEFAULT);
+        H5Dwrite(dataset_id, complex_id, H5S_ALL, H5S_ALL,
+                 H5P_DEFAULT, img->image->data);
+        H5Dclose(dataset_id);
+      } else {
+        float *data = malloc(sp_image_size(img)*sizeof(float));
+        for(int i =0;i<sp_image_size(img);i++){
+          data[i] = sp_real(img->image->data[i]);
+        }
+        dataset_id = H5Dcreate(image_1, "data", H5T_NATIVE_FLOAT,dataspace_id,H5P_DEFAULT,plist,H5P_DEFAULT);
+        H5Dwrite(dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL,
+                 H5P_DEFAULT, data);
+        free(data);
+        H5Dclose(dataset_id);
+      }
+      H5Sclose(dataspace_id);
+      
+      dataspace_id = H5Screate_simple( ndims, dims, NULL );
+      mask_id = H5Dcreate(image_1, "mask", H5T_NATIVE_INT,dataspace_id,H5P_DEFAULT,plist,H5P_DEFAULT);
+      H5Dwrite(mask_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL,
+               H5P_DEFAULT, img->mask->data);
+      H5Dclose(dataset_id);
+      H5Sclose(dataspace_id);
+      
+      if (img->detector->orientation) {
+        int i = 0;
+        float orientation[6];
+        for(int r=0;r<3;r++){
+          for(int c=0;c<2;c++){
+            orientation[i++] = sp_matrix_get(img->detector->orientation,r,c);	
+          }
+        }
+        dims[0] = 6;
+        ndims = 1;
+        hid_t geometry_1 = H5Gcreate(detector_1,"geometry_1", H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
+        dataspace_id = H5Screate_simple(ndims, dims, NULL);
+        dataset_id = H5Dcreate(geometry_1, "orientation", H5T_NATIVE_FLOAT,dataspace_id,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
+        H5Dwrite(dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL,
+                 H5P_DEFAULT, orientation);
+        H5Dclose(dataset_id);
+        H5Sclose(dataspace_id);
+        H5Gclose(geometry_1);
+      }
+      H5Gclose(detector_1);
+      H5Gclose(image_1);
+      H5Gclose(entry_n);
+      H5Pclose(plist);  
+      H5Fclose(file_id);
+      
+      sprintf(path_string, "/entry_%d/image_1/data", entry_number+1);
+      H5Lcreate_soft(path_string, data_1, "data", H5P_DEFAULT, H5P_DEFAULT);
+      //H5close();
+      
+    }
+    
+    H5Fclose(file_id);
+    //H5close();
+    
+  } else {
+    sp_error_warning("Unknown flag = %d, unable to create %s", flag, filename);
+  }
+  
+  H5Tclose(complex_id);
+  
+} //append_cxi()

@@ -18,12 +18,13 @@ extern "C"
  * 
  * \param img The image to be output
  * \param filename The name of the file to be created
- * \param flags describe the colormap
+ * \param flags describe the colormap, data precision, iteration number, and type of functionality
  *
  * The file type is infered from the filename extension.
  * Supported extensions are:
  *
  *   - .h5 - Create an hdf5 file
+ *   - .cxi - Create a CXIDB file
  *   - .tiff or .tif - Create a TIFF file
  *   - .png - Create a png file
  *   - .vtk - Create a VTK file
@@ -33,15 +34,22 @@ extern "C"
  * in the Image structure with the specified precision.
  *
  * The meaning of the flags depends on the type of file created:
- * There are only flags for .h5 and .png files, for the others this
- * value is ignored 
+ * There are only flags for .h5, .cxi and .png files, for the others this
+ * value is ignored. The last 32 bits were added to flags for .cxi support
+ * and contain the iteration number of the reconstructed image.
  * 
  <table>
  <tr> <td>File type</td>    <td>Flag Value</td><td>          Meaning</td></tr>
  *
  *<tr><td>       .h5</td></tr>
  *<tr><td></td><td>              sizeof(float)</td><td>      Data should be written in single precision</td></tr>
-  <tr><td></td><td>              sizeof(double)</td><td>     Data should be written in double precision</td></tr>
+ *<tr><td></td><td>              sizeof(double)</td><td>     Data should be written in double precision</td></tr>
+ *<tr><td>       .cxi</td></tr>
+ *<tr><td></td><td>              create</td><td>             Data should be written to new file</td></tr>
+ *<tr><td></td><td>              append entry</td><td>       Data should be appended to existing file as new entry</td></tr>
+ *<tr><td></td><td>              append image</td><td>       Data should be appended to existing entry as new image</td></tr>
+ *<tr><td></td><td>              append data</td><td>        Data should be appended to existing image</td></tr>
+ *<tr><td></td><td>              iteration number</td><td>   The last 32 bits are interpreted as the iteration number of the image</td></tr> 
  *<tr><td>       .png</td></tr>
  *<tr><td></td><td>              SpColormapGrayScale    </td><td>Image will use a grayscale color palete</td></tr>
  *<tr><td></td><td>              SpColormapTraditional  </td><td>Image will use the traditional color map</td></tr>
@@ -52,7 +60,7 @@ extern "C"
  *<tr><td></td><td>              SpColormapLogScale     </td><td>Image will be written in log scale</td></tr>
  *  </table>
  */
-spimage_EXPORT void sp_image_write(const Image * img,const char * filename, int flags);
+spimage_EXPORT void sp_image_write(const Image *img, const char *filename, long long flags);
 
 
 /*! Reads an image from the specified filename
@@ -65,6 +73,7 @@ spimage_EXPORT void sp_image_write(const Image * img,const char * filename, int 
  * Supported extensions are:
  *
  * .h5 - Reads a hdf5 file
+ * .cxi - Reads a CXIDB file
  * .tiff or .tif - Reads a TIFF file
  * .png - Reads a png file
  *
