@@ -2209,7 +2209,7 @@ void append_cxi(const Image *img, const char *filename, long long flag) {
   H5Tinsert(complex_id, "r", 0, mem_type_id);
   H5Tinsert(complex_id, "i", sizeof(real), mem_type_id);
   
-  if (flag & 1) {
+  if (flag == 0 || flag & 1) {
     // Create new file
     write_cxi(img, filename);
     
@@ -2540,7 +2540,7 @@ void append_cxi(const Image *img, const char *filename, long long flag) {
           dataspace_id = H5Screate_simple(ndims, &block_size, NULL);
           axes_id = H5Acreate(mask_id, "axes", string_type, dataspace_id, H5P_DEFAULT, H5P_DEFAULT);
           if (axes_id < 0) {
-            sp_error_warning("Failure code %d to write axes attribute in %s", axes_id, filename);
+            sp_error_warning("Failure to write axes attribute in %s", axes_id, filename);
           }
           status = H5Awrite(axes_id, string_type, axes);
           if (status < 0) {
