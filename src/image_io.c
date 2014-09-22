@@ -42,7 +42,7 @@ static int write_mrc(const Image * img,const char * filename);
 static Image * read_anton_datafile(hid_t file_id,hid_t dataset_id, const char * filename);
 static void write_cxi(const Image * img,const char * filename);
 static Image * read_cxi(const char * filename);
-static void append_cxi(const Image *img, const char *filename, long long flags);
+static void append_cxi(const Image *img, const char *filename, long long flag);
 
 
 void sp_image_write(const Image * img, const char * filename, long long flags){
@@ -2072,13 +2072,14 @@ void write_cxi(const Image * img, const char *filename) {
     H5Sclose(dataspace_id);
     H5Gclose(geometry_1);
   }
+  H5Lcreate_soft("/entry_1/image_1/data", data_1,"data", H5P_DEFAULT,H5P_DEFAULT);
+  
   H5Gclose(detector_1);
+  H5Gclose(data_1);
   H5Gclose(image_1);
   H5Gclose(entry_1);
   H5Pclose(plist);  
   H5Fclose(file_id);
-
-  H5Lcreate_soft("/entry_1/image_1/data", data_1,"data", H5P_DEFAULT,H5P_DEFAULT);
   //H5close();
 }
 
@@ -2591,14 +2592,14 @@ void append_cxi(const Image *img, const char *filename, long long flag) {
             H5Sclose(dataspace_id);
             H5Gclose(geometry_1);
           }
-          H5Gclose(detector_1);
-          H5Gclose(image_n);
-          H5Gclose(entry_n);
-          H5Pclose(plist);  
-          H5Fclose(file_id);
-          
           sprintf(path_string, "/entry_%d/image_%d/data", entry_number, image_number+1);
           H5Lcreate_soft(path_string, data_1, "data", H5P_DEFAULT, H5P_DEFAULT);
+          
+          H5Gclose(detector_1);
+          H5Gclose(data_1);
+          H5Gclose(image_n);
+          H5Gclose(entry_n);
+          H5Pclose(plist);
           //H5close();
           
         }
@@ -2739,14 +2740,14 @@ void append_cxi(const Image *img, const char *filename, long long flag) {
         H5Sclose(dataspace_id);
         H5Gclose(geometry_1);
       }
+      sprintf(path_string, "/entry_%d/image_1/data", entry_number+1);
+      H5Lcreate_soft(path_string, data_1, "data", H5P_DEFAULT, H5P_DEFAULT);
+      
       H5Gclose(detector_1);
+      H5Gclose(data_1);
       H5Gclose(image_1);
       H5Gclose(entry_n);
       H5Pclose(plist);  
-      H5Fclose(file_id);
-      
-      sprintf(path_string, "/entry_%d/image_1/data", entry_number+1);
-      H5Lcreate_soft(path_string, data_1, "data", H5P_DEFAULT, H5P_DEFAULT);
       //H5close();
       
     }
