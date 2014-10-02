@@ -128,6 +128,7 @@
 %include "../include/spimage/statistics.h"
 %include "../include/spimage/support_update.h"	
 %include "../include/spimage/time_util.h"
+%include "../include/spimage/find_center.h"
 
 /* %include "../include/spimage/image.h" */
 /* %include "../include/spimage/fft.h" */
