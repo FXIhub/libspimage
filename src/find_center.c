@@ -51,24 +51,17 @@ int sp_find_center_refine(Image *img, const int search_radius, int crop_radius, 
       (int)ceil(img->detector->image_center[1]) + crop_radius + search_radius >= sp_image_y(img)) {
   */
   if (crop_radius > min_crop_radius) {
-    printf("bad crop_radius %d\n", (int)ceil(img->detector->image_center[0]) - crop_radius - search_radius);
-    printf("bad crop_radius %d\n", (int)ceil(img->detector->image_center[0]) + crop_radius + search_radius);
-    printf("bad crop_radius %d\n", (int)ceil(img->detector->image_center[1]) - crop_radius - search_radius);
-    printf("bad crop_radius %d\n", (int)ceil(img->detector->image_center[1]) + crop_radius + search_radius);
     return 0;
   }
 
   if (crop_radius == 0) {
-    printf("crop_radius set to %d\n", min_crop_radius);
     crop_radius = min_crop_radius;
   }
 
   Image *mask;
   if (precalculated_mask == NULL) {
-    printf("calculate mask\n");
     mask = sp_find_center_refine_calculate_mask(img, search_radius);
   } else {
-    printf("don't calculate mask\n");
     mask = precalculated_mask;
   }
 
@@ -77,8 +70,6 @@ int sp_find_center_refine(Image *img, const int search_radius, int crop_radius, 
   for (int x = (int)ceil(img->detector->image_center[0])-crop_radius; x < (int)ceil(img->detector->image_center[0])+crop_radius; x++) {
     for (int y = (int)ceil(img->detector->image_center[1])-crop_radius; y < (int)ceil(img->detector->image_center[0]); y++) {
       if (x < 0 || x >= sp_image_x(img) || y < 0 || y >= sp_image_y(img)) {
-	printf("What, this should not happen\n");
-	printf("%d x %d\n", x, y);
 	return 0;
       }
       if (sp_image_mask_get(mask, x, y, 0) == 0) {
@@ -116,7 +107,6 @@ int sp_find_center_refine(Image *img, const int search_radius, int crop_radius, 
   Image *result_map = sp_image_alloc(2*search_radius+1, 2*search_radius+1, 1);
   real sum;
   real a, b;
-  printf("number_of_pixels = %d\n", number_of_pixels_in_comparison);
   for (int cx = -search_radius; cx <= search_radius; cx++) {
     for (int cy = -search_radius; cy <= search_radius; cy++) {
       sum = 0.;
@@ -126,7 +116,6 @@ int sp_find_center_refine(Image *img, const int search_radius, int crop_radius, 
 	//sum += fabs(a-b) / fabs(a+b);
 	sum += fabs(a-b);
       }
-      //printf("%d x %d: %g\n", cx, cy, sum);
       sp_image_set(result_map, search_radius+cx, search_radius+cy, 0, sp_cinit(sum, 0.0));
     }
   }
