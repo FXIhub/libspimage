@@ -1,7 +1,7 @@
-LibSPImage - Image Reconstruction Library
-=========================================
+LibSPImage - Image Processing Library
+=====================================
 
-LibSPImage is a library for image processing used by Hawk
+LibSPImage is a library for image processing used by Hawk.
 
 <br>
 Principle Authors:<br>
