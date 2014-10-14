@@ -134,7 +134,7 @@ This will automatically install the API in your python distribution and put the 
 Help
 ----
 
-There are four sources of documentation for LibSPImage:
+There are two sources of documentation for LibSPImage:
 
 * This README
 * The LibSPImage API is documented in-place in the code
