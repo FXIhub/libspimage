@@ -57,7 +57,9 @@ If you don't have git installed, you can follow the link and click `Download ZIP
 - Create and go into a build directory:
 
     `cd libspimage`
+
     `mkdir build`
+
     `cd build`
 
 - Run ccmake and point it to the base directory:
@@ -116,7 +118,7 @@ Make sure that all the dependencies have been found if they're installed in non-
 
 - If everything went well you should see a screen just like the one above and be able to press `g` to generate the Makefiles and exit.
 
-- Now just run:
+- Now run:
 
     `make`
 
