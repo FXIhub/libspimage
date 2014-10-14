@@ -89,13 +89,9 @@ CMAKE_INSTALL_PREFIX            */usr/local
 CMAKE_OSX_ARCHITECTURES         *                                                                                                                   
 CMAKE_OSX_DEPLOYMENT_TARGET     *                                                                                                                   
 CMAKE_OSX_SYSROOT               */Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk                 
-CUDA_BUILD_CUBIN                *OFF                                                                                                                
-CUDA_BUILD_EMULATION            *OFF                                                                                                                
 CUDA_HOST_COMPILER              */usr/bin/cc                                                                                                        
-CUDA_SDK_ROOT_DIR               *CUDA_SDK_ROOT_DIR-NOTFOUND                                                                                         
 CUDA_SEPARABLE_COMPILATION      *OFF                                                                                                                
-CUDA_TOOLKIT_ROOT_DIR           *CUDA_TOOLKIT_ROOT_DIR-NOTFOUND                                                                                     
-CUDA_VERBOSE_BUILD              *OFF                                                                                                                
+CUDA_TOOLKIT_ROOT_DIR           */usr/local/cuda                                                                                                    
 DMALLOC_USE                     *OFF                                                                                                                
 DOUBLE_PRECISION                *OFF                                                                                                                
 GSL_CONFIG                      */usr/local/bin/gsl-config                                                                                          
@@ -105,6 +101,10 @@ HDF5_INCLUDE_DIR                */usr/local/include
 HDF5_LIBRARY                    */usr/local/lib/libhdf5.dylib                                                                                       
 INCLUDE_DEPENDENCIES            *OFF                                                                                                                
 PYTHON_INSTDIR                  */Library/Python/2.7/site-packages                                                                                  
+PYTHON_WRAPPERS                 *ON                                                                                                                 
+SP_MEM_DEBUG                    *OFF                                                                                                                
+SWIG_EXECUTABLE                 */usr/local/bin/swig                                                                                                
+USE_CUDA                        *ON                                                                                                                 
 
 Press [enter] to edit option                              CMake Version 3.0.2
 Press [c] to configure
@@ -128,7 +128,7 @@ This will build things and place the result in the build directory. If the build
 
     `make install`
 
-This will automatically install the API in your python distribution and put the library and its header files in your library path.
+This will automatically install the API in your python distribution and put the library and its header files in your library path. You may have to obtain administrative permissions using `sudo make install` for the install to successfully complete.
 
 
 Help
