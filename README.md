@@ -128,7 +128,7 @@ This will build things and place the result in the build directory. If the build
 
     `make install`
 
-This will automatically install the API in your python distribution and put the library and its header files in your library path. You may have to obtain administrative permissions using `sudo make install` for the install to successfully complete.
+This will automatically install the API in your python distribution and put the library and its header files in your library path. You may have to obtain administrative permissions by typing `sudo make install` for the install to successfully complete.
 
 
 Help
