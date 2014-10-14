@@ -50,19 +50,19 @@ Once all the dependencies are installed, building and installing LibSPImage shou
 
 - Clone the repository to your local computer:
 
-    $ git clone https://github.com/filipemaia/libspimage.git
+    `git clone https://github.com/filipemaia/libspimage.git`
 
 If you don't have git installed, you can follow the link and click `Download ZIP`, but we recommend that you install git (available through Homebrew).
 
 - Create and go into a build directory:
 
-    $ cd libspimage
-    $ mkdir build
-    $ cd build
+    `cd libspimage`
+    `mkdir build`
+    `cd build`
 
 - Run ccmake and point it to the base directory:
 
-    $ ccmake ..
+    `ccmake ..`
 
 You will see something like:
 
@@ -118,13 +118,13 @@ Make sure that all the dependencies have been found if they're installed in non-
 
 - Now just run:
 
-    $ make
+    `make`
 
 This will build things and place the result in the build directory. If the build is slow, you can specify `make -j 2` to use 2 threads.
 
-- If you want to install, just do:
+- If you want to install, just run:
 
-    $ make install
+    `make install`
 
 This will automatically install the API in your python distribution and put the library and its header files in your library path.
 
