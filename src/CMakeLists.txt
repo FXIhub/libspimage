@@ -86,5 +86,5 @@ ENDIF(CUDA_FOUND)
     LIBRARY DESTINATION ${PYTHON_INSTDIR}
     ARCHIVE DESTINATION ${PYTHON_INSTDIR}
     )
-  INSTALL(FILES spimage.py spimage_pybackend.py _spimage_reconstructor.py _spimage_prtf.py DESTINATION  ${PYTHON_INSTDIR})
+  INSTALL(FILES spimage.py spimage_pybackend.py _spimage_reconstructor.py _spimage_prtf.py _spimage_io.py DESTINATION  ${PYTHON_INSTDIR})
 endif()
