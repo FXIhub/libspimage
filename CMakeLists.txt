@@ -134,13 +134,38 @@ ENDIF(DEBUG_MEM)
 	
 
 IF(DMALLOC_USE)
-		    FIND_LIBRARY (DMALLOC_LIBRARY dmalloc /usr/lib /sw/lib)
-		    FIND_PATH (DMALLOC_INCLUDE_DIR dmalloc.h PATHS /usr/include /sw/include)	
-		    IF(DMALLOC_LIBRARY)
-		    		    ADD_DEFINITIONS(-D_USE_DMALLOC)
-				    SET(LINK_TO_DMALLOC 1)
-		    ENDIF(DMALLOC_LIBRARY)
+  FIND_LIBRARY (DMALLOC_LIBRARY dmalloc /usr/lib /sw/lib)
+  FIND_PATH (DMALLOC_INCLUDE_DIR dmalloc.h PATHS /usr/include /sw/include)	
+  IF(DMALLOC_LIBRARY)
+    ADD_DEFINITIONS(-D_USE_DMALLOC)
+    SET(LINK_TO_DMALLOC 1)
+  ENDIF(DMALLOC_LIBRARY)
 ENDIF(DMALLOC_USE)
+
+
+# when building, don't use the install RPATH already
+# (but later on when installing)
+SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE) 
+
+IF(APPLE)
+  # There's a problem with install_name_tool which cannot
+  # handle duplicate rpaths, so we'll take the calculated risk
+  # of not including rpaths in the build on macosx
+  SET(CMAKE_SKIP_BUILD_RPATH  TRUE)
+ELSE(APPLE)
+  SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
+ENDIF(APPLE)
+
+# add the automatically determined parts of the RPATH
+# which point to directories outside the build tree to the install RPATH
+SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+# the RPATH to be used when installing, but only if it's not a system directory
+LIST(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib${LIBRARY_SUFFIX}" isSystemDir)
+IF("${isSystemDir}" STREQUAL "-1")
+  SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib${LIBRARY_SUFFIX}")
+ENDIF("${isSystemDir}" STREQUAL "-1")
+
 
 configure_file(${PROJECT_SOURCE_DIR}/include/config.h.in 
   ${PROJECT_BINARY_DIR}/config.h)
