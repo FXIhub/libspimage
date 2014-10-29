@@ -549,11 +549,11 @@ Image * _sp_image_convolute_with_mask_fft(Image * a, Image * kernel, int * downs
     dsout->detector->image_center[i] /= ds[i];
     dsout->detector->pixel_size[i] *= ds[i];
   }
-  for(int z = 0; z<sp_image_z(out); z+=ds[2]){
-    for(int y = 0; y<sp_image_y(out); y+=ds[1]){
-      for(int x = 0; x<sp_image_x(out); x+=ds[0]){
-	sp_image_set(dsout,x/ds[0],y/ds[1],z/ds[2],sp_image_get(out,x,y,z));
-	sp_image_mask_set(dsout,x/ds[0],y/ds[1],z/ds[2],sp_image_mask_get(out,x,y,z));
+  for(int z = 0; z<sp_image_z(dsout); z++){
+    for(int y = 0; y<sp_image_y(dsout); y++){
+      for(int x = 0; x<sp_image_x(dsout); x++){
+	sp_image_set(dsout,x,y,z,sp_image_get(out,x*ds[0],y*ds[1],z*ds[2]));
+	sp_image_mask_set(dsout,x,y,z,sp_image_mask_get(out,x*ds[0],y*ds[1],z*ds[2]));
       }
     }
   }
