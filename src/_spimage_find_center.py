@@ -11,7 +11,7 @@ def find_center(img, msk, method=None, **kwargs):
     x,y = find_center(img, msk)
     x,y = find_center(img, msk, method='quadrant',  x0=0, y0=0, dmax=None, solver='L-BFGS-B')
 
-    x,y = find_center(img, msk, method='pixelwise_fast', x0=0, y0=0, dmax=5, rmax=None, downsampling=1)
+    x,y = find_center(img, msk, method='pixelwise_fast', x0=0, y0=0, dmax=5, rmax=None)
     x,y = find_center(img, msk, method='pixelwise_slow', x0=0, y0=0, dmax=5, rmax=None)
     """
 
@@ -156,20 +156,20 @@ def find_center_quadrant(img, msk, x0=0, y0=0, dmax=None, solver='L-BFGS-B'):
     y = m.res["x"][1]
     return x,y
 
-def find_center_pixelwise_fast(img, msk, x0, y0, dmax=5, rmax=None, downsampling=1.):
+def find_center_pixelwise_fast(img, msk, x0, y0, dmax=5, rmax=None):
     """
     Find center of diffraction pattern using a pixelwise comparison of centry-symmetric pixels.
 
     This is a faster C implementation.
     """
     if rmax is not None: msk &= (spimage.rgrid(msk.shape, (x0,y0)) < rmax)
-    I = spimage.sp_image_alloc(int(np.ceil(img.shape[1]/float(downsampling))), int(np.ceil(img.shape[0]/float(downsampling))), 1)
-    I.image[:] = img[::downsampling,::downsampling]
-    I.mask[:]  = msk[::downsampling,::downsampling]
-    I.detector.image_center[:] = np.array([x0/float(downsampling) + img.shape[1]/2, y0/float(downsampling) + img.shape[0]/2, 0 ])
+    I = spimage.sp_image_alloc(int(np.ceil(img.shape[1])), int(np.ceil(img.shape[0])), 1)
+    I.image[:] = img
+    I.mask[:]  = msk
+    I.detector.image_center[:] = np.array([x0 + img.shape[1]/2, y0 + img.shape[0]/2, 0 ])
     success = spimage.sp_find_center_refine(I, dmax, 0, None)
-    x = (I.detector.image_center[0]  - img.shape[1]/2 ) * downsampling
-    y = (I.detector.image_center[1]  - img.shape[0]/2 ) * downsampling
+    x = (I.detector.image_center[0]  - img.shape[1]/2 )
+    y = (I.detector.image_center[1]  - img.shape[0]/2 )
     return x,y
 
 def find_center_pixelwise_slow(img, msk, x0, y0, dmax=5, rmax=None):
