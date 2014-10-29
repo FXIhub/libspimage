@@ -458,8 +458,11 @@ Image * _sp_image_convolute_with_mask_rs(Image * a, Image * kernel, int * downsa
   }
 
   Image * dsout = sp_image_alloc(sp_image_x(out)/ds[0],sp_image_y(out)/ds[1],sp_image_z(out)/ds[2]);
-  memcpy(out->detector,dsout->detector,sizeof(Detector));
-
+  memcpy(dsout->detector,out->detector,sizeof(Detector));
+  for(int i = 0;i<3;i++){
+    dsout->detector->image_center[i] /= ds[i];
+    dsout->detector->pixel_size[i] *= ds[i];
+  }
   for(int z = 0; z<sp_image_z(out); z+=ds[2]){
     for(int y = 0; y<sp_image_y(out); y+=ds[1]){
       for(int x = 0; x<sp_image_x(out); x+=ds[0]){
@@ -541,7 +544,11 @@ Image * _sp_image_convolute_with_mask_fft(Image * a, Image * kernel, int * downs
   }
   int * ds = downsampling;
   Image * dsout = sp_image_alloc(sp_image_x(out)/ds[0],sp_image_y(out)/ds[1],sp_image_z(out)/ds[2]);
-  memcpy(out->detector,dsout->detector,sizeof(Detector));
+  memcpy(dsout->detector,out->detector,sizeof(Detector));
+  for(int i = 0;i<3;i++){
+    dsout->detector->image_center[i] /= ds[i];
+    dsout->detector->pixel_size[i] *= ds[i];
+  }
   for(int z = 0; z<sp_image_z(out); z+=ds[2]){
     for(int y = 0; y<sp_image_y(out); y+=ds[1]){
       for(int x = 0; x<sp_image_x(out); x+=ds[0]){
