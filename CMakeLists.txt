@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 2.6)
 
+if(POLICY CMP0042)
+  cmake_policy(SET CMP0042 NEW) # CMake 3.0
+endif()
+
 PROJECT (spimage)
 
 INCLUDE(CTest)
