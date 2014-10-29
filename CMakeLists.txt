@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 2.6)
 
+if(POLICY CMP0042)
+  cmake_policy(SET CMP0042 NEW) # CMake 3.0
+endif()
+
 PROJECT (spimage)
 
 INCLUDE(CTest)
@@ -90,7 +94,7 @@ IF(USE_CUDA)
     ADD_DEFINITIONS(-D_USE_CUDA)
     # Set a reasonable minimum arch
     if(NOT CUDA_NVCC_FLAGS)
-      SET(CUDA_NVCC_FLAGS "-arch=sm_13")
+      SET(CUDA_NVCC_FLAGS "-arch=sm_20")
     endif()
     message(STATUS "CUDA found. Using CUDA.")
   ELSE(CUDA_FOUND)

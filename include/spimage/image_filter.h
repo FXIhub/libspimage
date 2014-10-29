@@ -67,6 +67,35 @@ spimage_EXPORT Image * sp_gaussian_filter(Image * in, real radius, int in_place)
  */
 spimage_EXPORT Image * sp_image_convolute(Image * a, Image * b, int * size);
 
+
+/*! Convolutes Image a with Image kernel taking the mask in account 
+ * 
+ * \param a input image a
+ * \param kernel input convolution kernel
+ * \param downsampling a 3 element array describing how much to downsample in each dimension.
+ * If NULL then no downsampling is done.
+
+ * \return the convolution of a with kernel after properly padding the images and taking the mask in account.
+ *
+ * Points outside the mask of a are first interpolated and then used.
+ * The resulting mask will be the same as the one from image a.
+ * The mask of the kernel is ignored.
+ */
+spimage_EXPORT Image * sp_image_convolute_with_mask(Image * a, Image * kernel, int * downsampling);
+
+/*! Interpolates the parts of Image a at the points where mask is 0 using the points
+ *  where mask is 1 with the given kernel.
+ * 
+ * \param a input image a
+ * \param kernel input convolution kernel
+ * \param mask the mask defining what values to use and what values to interpolate.
+
+ * \return the image which matches the input a, except for the points which were interpolated. Interpolated points have a mask set to 127.
+ *
+ * The mask of the kernel is ignored.
+ */
+spimage_EXPORT Image * sp_image_interpolate_mask(Image * a, Image * kernel, sp_i3matrix * mask);
+
 /*! Convolutes Image a with Image b 
  *
  * \param a input image a
