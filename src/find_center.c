@@ -277,7 +277,7 @@ int sp_find_center_refine_minimal_mask(Image *img, const int search_radius, int 
 	  }
 	}
       }
-            printf("pos [%d, %d] error = %g\n",cx,cy,(sum2)/sum);
+      //            printf("pos [%d, %d] error = %g\n",cx,cy,(sum2)/sum);
       //      sp_image_set(result_map, search_radius+cx, search_radius+cy, 0, sp_cinit((sum2)/sum, 0.0));
       if((sum2)/sum < min_score){
 	min_score = (sum2)/sum;
@@ -289,6 +289,6 @@ int sp_find_center_refine_minimal_mask(Image *img, const int search_radius, int 
   //  sp_image_free(result_map);
   img->detector->image_center[0] = min_cx;
   img->detector->image_center[1] = min_cy;
-  printf("pos [%f, %f] error = %g\n", img->detector->image_center[0],img->detector->image_center[1],min_score);
+  //  printf("pos [%f, %f] error = %g\n", img->detector->image_center[0],img->detector->image_center[1],min_score);
   return 0;
 }
