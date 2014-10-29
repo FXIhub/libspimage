@@ -1229,7 +1229,7 @@ void sp_image_high_pass(Image * in, real radius, int type){
 void _sp_image_free(Image * in, const char * file, int line){
   _sp_c3matrix_free(in->image,file,line);
   _sp_i3matrix_free(in->mask,file,line);
-#ifdef _DEBUG_MEM
+#ifdef SP_MEM_DEBUG
   _sp_free(in->detector,file,line);
   _sp_free(in,file,line);
 #else
