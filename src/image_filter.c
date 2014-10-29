@@ -638,3 +638,18 @@ Image * _sp_image_interpolate_mask_rs(Image * a, Image * kernel, sp_i3matrix * m
 
   return out;
 }
+
+/* Filter using a centered gaussian window of side edge_size */
+Image * sp_gaussian_kernel(real radius, int nx, int ny, int nz){
+  Image * res = sp_image_alloc(nx,ny,nz);
+  real norm = 0;
+  for(int i = 0;i<sp_image_size(res);i++){
+    real r = sp_image_dist(res,i,SP_TO_CENTER);
+    r *= r;
+    r /= 2*radius*radius;
+    res->image->data[i] = sp_cinit(exp(-r),0);
+    norm += exp(-r);
+  }
+  sp_image_scale(res,1.0/norm);
+  return res;
+}

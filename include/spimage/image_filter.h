@@ -239,6 +239,16 @@ spimage_EXPORT real sp_point_convolute(const Image * a,const Image * b, int inde
  * and then returns the absolute difference between this averaged image and the input img
  */
 spimage_EXPORT Image * sp_image_local_variance(Image * img, Image * window);
+
+/*! Returns a normalized gaussian kernel, with the given radius centered in the image center.
+ *
+ * \param radius the radius of the kernel
+ * \param nx the size of the resulting image
+ * \param ny the size of the resulting image
+ * \param nz the size of the resulting image
+ * \return The normalized gaussian kernel
+ */
+  spimage_EXPORT Image * sp_gaussian_kernel(real radius, int nx, int ny, int nz);
 /*@}*/
 
 #ifdef __cplusplus
