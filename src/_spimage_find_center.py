@@ -156,7 +156,7 @@ def find_center_pixelwise(img, msk, x0, y0, dmax=5, rmax=None, downsampling=1.):
     """
     Find center of diffraction pattern using a pixelwise comparison of centry-symmetric pixels.
     """
-    print dmax, rmax, downsampling
+    print dmax, rmax, downsampling, img.dtype, msk.dtype, img.shape, msk.shape
     #rmax = None
     #if rmax is not None: msk &= (spimage.rgrid(msk.shape, (x0,y0)) < rmax)
     I = spimage.sp_image_alloc(np.ceil(img.shape[1]/float(downsampling)).astype(int), np.ceil(img.shape[0]/float(downsampling)).astype(int), 1)
