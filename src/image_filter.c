@@ -431,11 +431,28 @@ static Image * _sp_image_convolute_with_mask_fft(Image * a, Image * kernel, int 
 
 Image * sp_image_convolute_with_mask(Image * a, Image * kernel, int * downsampling){
   Image * out = sp_image_interpolate_mask(a,  kernel, a->mask);
+  Image * ret;
   if(sp_image_size(kernel) < 50){
-    return _sp_image_convolute_with_mask_rs(out, kernel, downsampling);
+    ret = _sp_image_convolute_with_mask_rs(out, kernel, downsampling);
   }else{
-    return _sp_image_convolute_with_mask_fft(out, kernel, downsampling);
+    ret = _sp_image_convolute_with_mask_fft(out, kernel, downsampling);
   }
+  sp_image_free(out);
+  
+  int default_ds[3] = {1,1,1};
+  int * ds = default_ds;
+  if(downsampling){
+    ds = downsampling;
+  }
+  // Maintain the original mask
+  for(int z = 0; z<sp_image_z(ret); z++){
+    for(int y = 0; y<sp_image_y(ret); y++){
+      for(int x = 0; x<sp_image_x(ret); x++){
+	sp_image_mask_set(ret,x,y,z,sp_image_mask_get(a,x*ds[0],y*ds[1],z*ds[2]));
+      }
+    }
+  }
+  return ret;
 }
 
 Image * _sp_image_convolute_with_mask_rs(Image * a, Image * kernel, int * downsampling){
