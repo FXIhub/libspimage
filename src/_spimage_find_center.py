@@ -161,7 +161,7 @@ def find_center_pixelwise(img, msk, x0, y0, dmax=5, rmax=None, downsampling=1.):
     #if rmax is not None: msk &= (spimage.rgrid(msk.shape, (x0,y0)) < rmax)
     test = np.ceil(img.shape[1]/float(downsampling)).astype(int)
     print test, type(test)
-    I = spimage.sp_image_alloc(np.ceil(img.shape[1]/float(downsampling)).astype(int), np.ceil(img.shape[0]/float(downsampling)).astype(int), 1)
+    I = spimage.sp_image_alloc(int(np.ceil(img.shape[1]/float(downsampling))), int(np.ceil(img.shape[0]/float(downsampling))), 1)
     I.image[:] = img[::downsampling,::downsampling]
     I.mask[:]  = msk[::downsampling,::downsampling]
     I.detector.image_center[:] = np.array([x0/float(downsampling) + img.shape[1]/2, y0/float(downsampling) + img.shape[0]/2, 0 ])
