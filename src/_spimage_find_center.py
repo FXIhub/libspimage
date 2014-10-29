@@ -27,6 +27,8 @@ def find_center(img, msk, method=None, **kwargs):
     # Find center using slow implementation of "pixelwise" method
     elif method == 'pixelwise_slow':
         x,y = find_center_pixelwise_slow(img, msk, **kwargs)
+    elif method == 'blurred':
+        x,y = find_center_blurred(img, msk, **kwargs)
     # Return 0,0 if method is not defined
     else:
         x,y = (0,0)
@@ -243,6 +245,30 @@ def find_center_pixelwise_slow(img, msk, x0, y0, dmax=5, rmax=None):
     y = cy_r-(s[0]-1)/2.
     print "Final: ", x,y
     return x,y
+
+def find_center_blurred(img, msk, x0=0, y0=0, threshold=12, blur_radius=4, dmax=None):
+    I = spimage.sp_image_alloc(img.shape[1],img.shape[0],1)
+    I.image[:] = img * (img >= threshold)
+    kernel = spimage.sp_gaussian_kernel(blur_radius,(int)(blur_radius*8+1),(int)(blur_radius*8+1),1)
+    I.mask[:] = msk[:]
+    I.detector.image_center[:] = np.array([x0 + img.shape[1]/2,
+                                           y0 + img.shape[0]/2, 0 ])
+    c = spimage.sp_image_convolute_with_mask(I,kernel,np.array([1,1,1]).astype(np.int32))
+    ds = spimage.sp_image_alloc(img.shape[1]/4,img.shape[0]/4,1)
+    ds.image[:] = c.image[:-3:4,:-3:4]
+    ds.mask[:] = c.mask[:-3:4,:-3:4]
+    ds.detector.image_center[:] = c.detector.image_center[:] / 4.0
+    spimage.sp_find_center_refine_minimal_mask(ds, 1+dmax/4, 0)
+    c.detector.image_center[:] = ds.detector.image_center[:] * 4.0
+    spimage.sp_image_free(ds)
+    spimage.sp_find_center_refine_minimal_mask(c, 4, 0)
+    x = c.detector.image_center[0] - img.shape[1]/2
+    y = c.detector.image_center[1] - img.shape[0]/2
+    spimage.sp_image_free(I)
+    spimage.sp_image_free(kernel)
+    spimage.sp_image_free(c)
+    return (x,y)
+    
 
 def _symmetrize(M,cx,cy):
     M_new = M.copy()
