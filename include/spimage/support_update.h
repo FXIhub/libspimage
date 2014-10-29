@@ -21,6 +21,7 @@ typedef struct{
 }SpSupportAreaParameters;
 
 typedef struct{
+  void * dummy;
 }SpSupportCentreImageParameters;
 
 /*! This structure is private */
@@ -33,6 +34,7 @@ typedef struct{
 }SpSupportTemplateParameters;
 
 typedef struct{
+  void * dummy;
 }SpSupportStaticParameters;
 
 typedef struct{

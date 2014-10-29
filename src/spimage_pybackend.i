@@ -106,6 +106,17 @@
 }
 
 
+%typemap(in) int * {
+  PyArrayObject *arr;
+  if(PyArray_Check($input) == 0 || PyArray_ISINTEGER($input) == 0 
+     || PyArray_TYPE($input) != NPY_INT){
+    PyErr_SetString( PyExc_TypeError, "int * argument not an int32 numpy array" );
+    return NULL;
+  } 
+  arr = (PyArrayObject *)($input);
+  $1 = (int *)arr->data;
+}
+
 %include "../include/spimage/image.h"
 %include "../include/spimage/colormap.h"
 %include "../include/spimage/cuda_util.h"
@@ -128,6 +139,7 @@
 %include "../include/spimage/statistics.h"
 %include "../include/spimage/support_update.h"	
 %include "../include/spimage/time_util.h"
+%include "../include/spimage/find_center.h"
 
 /* %include "../include/spimage/image.h" */
 /* %include "../include/spimage/fft.h" */

@@ -399,6 +399,8 @@ real sp_point_convolute(const Image * a,const Image * b, int index){
   return out;
 }
 
+Image * sp_image_fft_convolute_with_mask(Image * a, Image * kernel);
+
 Image * sp_image_local_variance(Image * img, Image * window){
   int i;
   int size[3] = {sp_c3matrix_x(img->image)+sp_c3matrix_x(window->image)-1,sp_c3matrix_y(img->image)+sp_c3matrix_y(window->image)-1,sp_c3matrix_z(img->image)+sp_c3matrix_z(window->image)-1};
@@ -423,3 +425,248 @@ Image * sp_image_local_variance(Image * img, Image * window){
   return res;
 }
 
+
+static Image * _sp_image_convolute_with_mask_rs(Image * a, Image * kernel, int * downsampling);
+static Image * _sp_image_convolute_with_mask_fft(Image * a, Image * kernel, int * downsampling);
+
+Image * sp_image_convolute_with_mask(Image * a, Image * kernel, int * downsampling){
+  Image * out = sp_image_interpolate_mask(a,  kernel, a->mask);
+  Image * ret;
+  if(sp_image_size(kernel) < 50){
+    ret = _sp_image_convolute_with_mask_rs(out, kernel, downsampling);
+  }else{
+    ret = _sp_image_convolute_with_mask_fft(out, kernel, downsampling);
+  }
+  sp_image_free(out);
+  
+  int default_ds[3] = {1,1,1};
+  int * ds = default_ds;
+  if(downsampling){
+    ds = downsampling;
+  }
+  // Maintain the original mask
+  for(int z = 0; z<sp_image_z(ret); z++){
+    for(int y = 0; y<sp_image_y(ret); y++){
+      for(int x = 0; x<sp_image_x(ret); x++){
+	sp_image_mask_set(ret,x,y,z,sp_image_mask_get(a,x*ds[0],y*ds[1],z*ds[2]));
+      }
+    }
+  }
+  return ret;
+}
+
+Image * _sp_image_convolute_with_mask_rs(Image * a, Image * kernel, int * downsampling){
+  /* Based on astropy.nddata.convolution.convolve2d_boundary_none */
+  /* Need a first pass to replace masked out values with value convolved from
+     neighboring values */
+  Image * out = a;//sp_image_interpolate_mask(a,  kernel, a->mask);
+  //  return  sp_image_fft_convolute_with_mask(out, kernel);
+  /* Now run the proper convolution 
+    We might want to consider doing this part with an FFT 
+  */
+  int wkx = sp_image_x(kernel)/2;
+  int wky = sp_image_y(kernel)/2;
+  int wkz = sp_image_z(kernel)/2;
+
+  int default_downsampling[3] = {1,1,1};
+  int * ds = default_downsampling;
+  if(downsampling){
+    ds = downsampling;
+  }
+
+  Image * dsout = sp_image_alloc(sp_image_x(out)/ds[0],sp_image_y(out)/ds[1],sp_image_z(out)/ds[2]);
+  memcpy(dsout->detector,out->detector,sizeof(Detector));
+  for(int i = 0;i<3;i++){
+    dsout->detector->image_center[i] /= ds[i];
+    dsout->detector->pixel_size[i] *= ds[i];
+  }
+  for(int z = 0; z<sp_image_z(out); z+=ds[2]){
+    for(int y = 0; y<sp_image_y(out); y+=ds[1]){
+      for(int x = 0; x<sp_image_x(out); x+=ds[0]){
+	if(sp_image_mask_get(a,x,y,z) != 0){
+	  Complex num = sp_cinit(0,0);
+	  Complex den = sp_cinit(0,0);
+	  for(int zz = z-wkz; zz<z + sp_image_z(kernel) - wkz; zz++){
+	    if(zz < 0 || zz >= sp_image_z(out)){
+	      continue;
+	    }
+	    for(int yy = y-wky; yy<y + sp_image_y(kernel) - wky; yy++){
+	      if(yy < 0 || yy >= sp_image_y(out)){
+		continue;
+	      }
+	      for(int xx = x-wkx; xx<x + sp_image_x(kernel) - wkx; xx++){
+		if(xx < 0 || xx >= sp_image_x(out)){
+		  continue;
+		}
+		if(sp_image_mask_get(out,xx,yy,zz) != 0){
+		  
+		  Complex val = sp_image_get(out,xx,yy,zz);
+		  Complex ker = sp_image_get(kernel,(wkx + xx - x), (wky + yy - y), (wkz + zz - z));
+		  sp_cincr(num,sp_cmul(val,ker));
+		  sp_cincr(den,ker);
+		}			
+	      }
+	    }
+	  }
+	  if(sp_cabs(den)){
+	    sp_image_set(dsout,x/ds[0],y/ds[1],z/ds[2],sp_cdiv(num,den));	   
+	  }else{
+	    sp_image_set(dsout,x/ds[0],y/ds[1],z/ds[2],sp_image_get(a,x,y,z));
+	  }
+	}
+	sp_image_mask_set(dsout,x/ds[0],y/ds[1],z/ds[2],sp_image_mask_get(a,x,y,z)); 
+      }
+    }
+  }
+  sp_image_free(out);
+  return dsout;
+}
+
+
+Image * _sp_image_convolute_with_mask_fft(Image * a, Image * kernel, int * downsampling){
+  //  int token = sp_timer_start();
+  Image * Skernel = sp_image_shift(kernel);
+  Image * m_a = sp_image_duplicate(a,SP_COPY_DETECTOR|SP_COPY_MASK|SP_COPY_DATA);
+  for(int i = 0;i<sp_image_size(m_a);i++){
+    if(m_a->mask->data[i] == 0){
+      m_a->image->data[i] = sp_cinit(0,0);
+    }
+  }
+  Image * out = sp_image_convolute(m_a, Skernel,NULL);
+
+  for(int i = 0;i<sp_image_size(m_a);i++){
+    if(m_a->mask->data[i] == 0){
+      m_a->image->data[i] = sp_cinit(0,0);
+    }else{
+      m_a->image->data[i] = sp_cinit(1,0);
+    }
+  }
+  Image * den = sp_image_convolute(m_a, Skernel,NULL);
+
+  for(int i = 0;i<sp_image_size(out);i++){
+    if(sp_real(den->image->data[i]) != 0){
+      sp_cscale(out->image->data[i],1/sp_real(den->image->data[i]));
+      out->mask->data[i] = 1;
+    }else{
+      out->mask->data[i] = 0;
+    }
+  }
+  sp_image_free(Skernel);
+  sp_image_free(m_a);
+  sp_image_free(den);
+  //  printf("fft_convolute_mask %lld us\n",sp_timer_elapsed(token));
+  //  sp_timer_stop(token);
+  if(downsampling == NULL || (downsampling[0] == 1 && downsampling[1] == 1 && downsampling[2] == 1)){
+    return out;
+  }
+  int * ds = downsampling;
+  Image * dsout = sp_image_alloc(sp_image_x(out)/ds[0],sp_image_y(out)/ds[1],sp_image_z(out)/ds[2]);
+  memcpy(dsout->detector,out->detector,sizeof(Detector));
+  for(int i = 0;i<3;i++){
+    dsout->detector->image_center[i] /= ds[i];
+    dsout->detector->pixel_size[i] *= ds[i];
+  }
+  for(int z = 0; z<sp_image_z(dsout); z++){
+    for(int y = 0; y<sp_image_y(dsout); y++){
+      for(int x = 0; x<sp_image_x(dsout); x++){
+	sp_image_set(dsout,x,y,z,sp_image_get(out,x*ds[0],y*ds[1],z*ds[2]));
+	sp_image_mask_set(dsout,x,y,z,sp_image_mask_get(out,x*ds[0],y*ds[1],z*ds[2]));
+      }
+    }
+  }
+  sp_image_free(out);
+  return dsout;   
+}
+
+
+static Image * _sp_image_interpolate_mask_fft(Image * a, Image * kernel, sp_i3matrix * mask);
+static Image * _sp_image_interpolate_mask_rs(Image * a, Image * kernel, sp_i3matrix * mask);
+
+Image * sp_image_interpolate_mask(Image * a, Image * kernel, sp_i3matrix * mask){
+  if(sp_image_size(kernel) < 50){
+    return _sp_image_interpolate_mask_rs(a, kernel, mask);
+  }else{
+    return _sp_image_interpolate_mask_fft(a, kernel, mask);
+  }
+}
+
+
+Image * _sp_image_interpolate_mask_fft(Image * a, Image * kernel, sp_i3matrix * mask){
+  //  int token = sp_timer_start();
+  Image * out = _sp_image_convolute_with_mask_fft(a, kernel,NULL);
+  for(int i = 0;i<sp_image_size(a);i++){
+    if(a->mask->data[i]){
+      out->image->data[i] = a->image->data[i];
+    }
+  }
+  //  printf("convolute_interp_mask %lld us\n",sp_timer_elapsed(token));
+  //  sp_timer_stop(token);
+  return out;
+}
+
+
+Image * _sp_image_interpolate_mask_rs(Image * a, Image * kernel, sp_i3matrix * mask){
+  //  int token = sp_timer_start();
+  Image * out = sp_image_duplicate(a,SP_COPY_DETECTOR|SP_COPY_MASK|SP_COPY_DATA);
+
+  int wkx = sp_image_x(kernel)/2;
+  int wky = sp_image_y(kernel)/2;
+  int wkz = sp_image_z(kernel)/2;
+    
+  for(int z = 0; z<sp_image_z(a); z++){
+    for(int y = 0; y<sp_image_y(a); y++){
+      for(int x = 0; x<sp_image_x(a); x++){
+	if(sp_i3matrix_get(mask,x,y,z) == 0){
+	  Complex num = sp_cinit(0,0);
+	  Complex den = sp_cinit(0,0);
+	  for(int zz = z-wkz; zz<z + sp_image_z(kernel) - wkz; zz++){
+	    if(zz < 0 || zz >= sp_image_z(a)){
+	      continue;
+	    }
+	    for(int yy = y-wky; yy<y + sp_image_y(kernel) - wky; yy++){
+	      if(yy < 0 || yy >= sp_image_y(a)){
+		continue;
+	      }
+	      for(int xx = x-wkx; xx<x + sp_image_x(kernel) - wkx; xx++){
+		if(xx < 0 || xx >= sp_image_x(a)){
+		  continue;
+		}
+		if(sp_i3matrix_get(mask,xx,yy,zz) != 0){
+		  Complex val = sp_image_get(a,xx,yy,zz);
+		  Complex ker = sp_image_get(kernel,(wkx + xx - x), (wky + yy - y), (wkz + zz - z));
+		  sp_cincr(num,sp_cmul(val,ker));
+		  sp_cincr(den,ker);
+		}
+	      }
+	    }
+	  }
+	  if(sp_cabs(den)){
+	    sp_image_set(out,x,y,z,sp_cdiv(num,den));	   
+	    sp_image_mask_set(out,x,y,z,127);	   
+	  }else{
+	    sp_image_set(out,x,y,z,sp_image_get(a,x,y,z));
+	  }
+	}
+      }
+    }
+  }
+  //  printf("convolute_interp_mask %lld us\n",sp_timer_elapsed(token));
+  //  sp_timer_stop(token);
+
+  return out;
+}
+
+/* Filter using a centered gaussian window of side edge_size */
+Image * sp_gaussian_kernel(real radius, int nx, int ny, int nz){
+  Image * res = sp_image_alloc(nx,ny,nz);
+  real norm = 0;
+  for(int i = 0;i<sp_image_size(res);i++){
+    real r = sp_image_dist(res,i,SP_TO_CENTER);
+    r *= r;
+    r /= 2*radius*radius;
+    res->image->data[i] = sp_cinit(exp(-r),0);
+    norm += exp(-r);
+  }
+  sp_image_scale(res,1.0/norm);
+  return res;
+}

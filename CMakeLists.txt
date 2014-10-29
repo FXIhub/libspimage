@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 2.6)
 
-
-	
 if(POLICY CMP0042)
   cmake_policy(SET CMP0042 NEW) # CMake 3.0
 endif()
@@ -100,7 +98,7 @@ IF(USE_CUDA)
     ADD_DEFINITIONS(-D_USE_CUDA)
     # Set a reasonable minimum arch
     if(NOT CUDA_NVCC_FLAGS)
-      SET(CUDA_NVCC_FLAGS "-arch=sm_13")
+      SET(CUDA_NVCC_FLAGS "-arch=sm_20")
     endif()
     message(STATUS "CUDA found. Using CUDA.")
   ELSE(CUDA_FOUND)
@@ -128,9 +126,9 @@ ELSE(DOUBLE_PRECISION)
 	ADD_DEFINITIONS(-D_SP_SINGLE_PRECISION)
 ENDIF(DOUBLE_PRECISION)
 
-IF(DEBUG_MEM)
-	ADD_DEFINITIONS(-D_SP_DEBUG_MEM)
-ENDIF(DEBUG_MEM)
+IF(SP_MEM_DEBUG)
+	ADD_DEFINITIONS(-D_SP_MEM_DEBUG)
+ENDIF(SP_MEM_DEBUG)
 	
 
 IF(DMALLOC_USE)
@@ -193,6 +191,7 @@ LIST(APPEND SPIMAGE_SRC "${CMAKE_SOURCE_DIR}/src/interpolation_kernels.c" "${CMA
 LIST(APPEND SPIMAGE_SRC "${CMAKE_SOURCE_DIR}/src/list.c" "${CMAKE_SOURCE_DIR}/src/prtf.c" "${CMAKE_SOURCE_DIR}/src/phasing.c")
 LIST(APPEND SPIMAGE_SRC "${CMAKE_SOURCE_DIR}/src/colormap.c" "${CMAKE_SOURCE_DIR}/src/cuda_util.c" "${CMAKE_SOURCE_DIR}/src/support_update.c")
 LIST(APPEND SPIMAGE_SRC "${CMAKE_SOURCE_DIR}/src/image_io.c" "${CMAKE_SOURCE_DIR}/src/image_filter.c")
+LIST(APPEND SPIMAGE_SRC "${CMAKE_SOURCE_DIR}/src/find_center.c")
 
 ADD_SUBDIRECTORY(src)
 ADD_SUBDIRECTORY(include)
