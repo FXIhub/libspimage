@@ -94,7 +94,7 @@ IF(USE_CUDA)
     ADD_DEFINITIONS(-D_USE_CUDA)
     # Set a reasonable minimum arch
     if(NOT CUDA_NVCC_FLAGS)
-      SET(CUDA_NVCC_FLAGS "-arch=sm_13")
+      SET(CUDA_NVCC_FLAGS "-arch=sm_20")
     endif()
     message(STATUS "CUDA found. Using CUDA.")
   ELSE(CUDA_FOUND)
