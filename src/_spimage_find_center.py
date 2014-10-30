@@ -9,7 +9,7 @@ def find_center(img, msk, method=None, **kwargs):
 
     usage:
     x,y = find_center(img, msk)
-    x,y = find_center(img, msk, method='quadrant',  x0=0, y0=0, dmax=None, solver='L-BFGS-B')
+    x,y = find_center(img, msk, method='quadrant',  x0=0, y0=0, dmax=None, threshold=None, solver='L-BFGS-B')
 
     x,y = find_center(img, msk, method='pixelwise_fast', x0=0, y0=0, dmax=5, rmax=None)
     x,y = find_center(img, msk, method='pixelwise_slow', x0=0, y0=0, dmax=5, rmax=None)
@@ -36,7 +36,7 @@ def find_center(img, msk, method=None, **kwargs):
     return x,y
 
 
-def find_center_quadrant(img, msk, x0=0, y0=0, dmax=None, solver='L-BFGS-B'):
+def find_center_quadrant(img, msk, x0=0, y0=0, dmax=None, threshold=None, solver='L-BFGS-B'):
     """
     Find the center of a diffraction pattern using the quadrant method.
     For every possible center shift (within - dmax ... + dmax) a centrosymmetric mask is calculated.
@@ -83,9 +83,10 @@ def find_center_quadrant(img, msk, x0=0, y0=0, dmax=None, solver='L-BFGS-B'):
             self.maxshift = maxshift
             self.solver = solver
 
-        def manipulate(self, threshold=13.):
-            self.image[self.image < threshold] = 1.
-            self.image = np.log(self.image)
+        def manipulate(self, threshold=None):
+            if threshold is not None:
+                self.image[self.image < threshold] = 0.
+            #self.image = np.log(self.image)
             
         def update_center(self, x0,y0):
             self.yt = max(2*y0, 0)
@@ -152,7 +153,7 @@ def find_center_quadrant(img, msk, x0=0, y0=0, dmax=None, solver='L-BFGS-B'):
             return E
 
     m = Minimizer(img, msk, x0, y0, dmax, solver)
-    m.manipulate()
+    m.manipulate(threshold)
     m.start()
     x = m.res["x"][0]
     y = m.res["x"][1]
