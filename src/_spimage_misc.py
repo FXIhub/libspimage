@@ -1,6 +1,6 @@
 import numpy as np
 import scipy as sp
-__all__ = ['grid', 'rgrid']
+__all__ = ['grid', 'rgrid', 'DICT_physical_constants']
 
 def grid(shape, center=None):
     if center is None: center = (0,0)
@@ -15,4 +15,12 @@ def rgrid(shape, center=None):
     rr = np.sqrt( (xx**2) + (yy**2) )
     rr[np.where(rr == 0)] = 1e-20
     return rr
+
+DICT_physical_constants = {'e':1.60217657E-19,
+                           'c':299792458.,
+                           'h':6.62606957E-34,
+                           're':2.8179403267E-15,
+                           'barn':1E-28,
+                           'u':1.66053886E-27}
+
 
