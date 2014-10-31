@@ -4,7 +4,75 @@ import scipy.signal
 from scipy.optimize import leastsq
 import scipy.stats
 import spimage
-__all__ = ['fit_sphere_model', 'get_sphere_model_size', 'get_sphere_model_scale']
+__all__ = ['fit_sphere_diameter', 'fit_sphere_model', 'get_sphere_model_size', 'get_sphere_model_scale']
+
+
+def fit_sphere_diameter(img, msk, method=None, full_output=False, **kwargs):
+    """
+    Fit the diameter of a sphere to diffraction data.
+
+    usage:
+    ======
+    diameter = fit_sphere_diameter(img, msk)
+    diameter = fit_sphere_diameter(img, msk, method='pearson', ...)
+
+    """
+    # Default method for fitting of diameter
+    if method is None: method = 'pearson'
+
+    # Fit the diameter using Pearson correlation
+    if method == 'pearson':
+        diameter, info = fit_sphere_diameter_pearson(img, msk, full_output=True, **kwargs)
+    else:
+        diameter, info = [1., "There is no fitting diameter method %s" %method]
+        print info
+
+    # Return with/without full information
+    if full_output:
+        return diameter, info
+    else:
+        return diameter
+
+
+def fit_sphere_diameter_pearson(img, msk,x0=0, y0=0, rmax=None, downsampling=1, do_brute=True, full_output=False):
+    """
+    Fit the diameter of a sphere using pearson correlation.
+
+    """
+    # Handle defaults
+    if rmax is None: rmax = max(img.shape)/2
+
+    # Downsample image
+    X,Y = numpy.meshgrid(numpy.arange(0.,img.shape[1],1.),numpy.arange(0.,img.shape[0],1.))
+    msk = msk[::downsampling,::downsampling]
+    s = img.shape
+    cx = (s[1]-1)/2.+x0
+    cy = (s[0]-1)/2.+y0
+    print X-cx
+    print Y-cy
+    print spimage.grid(s, (y0,x0))[1]
+    print spimage.grid(s, (y0,x0))[0]
+    Rsq = (X-cx)**2+(Y-cy)**2
+    Mr = (rmax**2)>=Rsq
+    Mr = Mr[::downsampling,::downsampling]
+    Xm = X[msk*Mr]
+    Ym = Y[msk*Mr]
+
+    # First fit the radius
+    # Start with brute force with a sensible range
+    # We'll assume at least 20x oversampling
+    if(do_brute):
+        pixel_size = (D*wavelength/(p * image.shape[0]))
+        range = [(pixel_size, pixel_size*image.shape[0]/(40))]
+        Ns = 10 * range[0][1]/range[0][0]
+        r = scipy.optimize.brute(err, range, Ns=Ns)[0]
+
+    # End with least square
+    # r, success = leastsq(err, r, maxfev=maxfev,xtol=1e-3)
+    r, cov_r, infodict, mesg, ier = leastsq(err, r, maxfev=maxfev,xtol=1e-3, full_output=1)
+    # print infodict
+    r = r[0]
+
 
 
 #from pylab import *

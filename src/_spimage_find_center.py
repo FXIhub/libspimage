@@ -8,9 +8,11 @@ def find_center(img, msk, method=None, **kwargs):
     Find the center of a diffraction pattern.
 
     usage:
+    ======
     x,y = find_center(img, msk)
     x,y = find_center(img, msk, method='quadrant',  x0=0, y0=0, dmax=None, threshold=None, solver='L-BFGS-B')
 
+    x,y = find_center(img, msk, method='blurred', x0=0, y0=0, threshold=None, blur_radius=4, dmax=5)
     x,y = find_center(img, msk, method='pixelwise_fast', x0=0, y0=0, dmax=5, rmax=None)
     x,y = find_center(img, msk, method='pixelwise_slow', x0=0, y0=0, dmax=5, rmax=None)
     """
@@ -27,13 +29,14 @@ def find_center(img, msk, method=None, **kwargs):
     # Find center using slow implementation of "pixelwise" method
     elif method == 'pixelwise_slow':
         x,y = find_center_pixelwise_slow(img, msk, **kwargs)
+    # Find center using blurred version of 'pixelwise' method
     elif method == 'blurred':
         x,y = find_center_blurred(img, msk, **kwargs)
     # Return 0,0 if method is not defined
     else:
         x,y = (0,0)
         print "There is no center finding method %s" %method
-    return x,y
+    return (x,y)
 
 
 def find_center_quadrant(img, msk, x0=0, y0=0, dmax=None, threshold=None, solver='L-BFGS-B'):
@@ -54,6 +57,10 @@ def find_center_quadrant(img, msk, x0=0, y0=0, dmax=None, threshold=None, solver
 
     with w_i being the respective centrosymmetric masks for i=A,B,C,D
     is minimized using a given solver (default = 'L-BFGS-B').
+
+    usage: 
+    ======
+    x,y = find_center_quadrant(img, msk,  x0=0, y0=0, dmax=None, threshold=None, solver='L-BFGS-B')
     """    
     class CentroSymmetricMask:
         def __init__(self, mask, dx, dy):
@@ -157,13 +164,17 @@ def find_center_quadrant(img, msk, x0=0, y0=0, dmax=None, threshold=None, solver
     m.start()
     x = m.res["x"][0]
     y = m.res["x"][1]
-    return x,y
+    return (x,y)
 
 def find_center_pixelwise_fast(img, msk, x0, y0, dmax=5, rmax=None):
     """
     Find center of diffraction pattern using a pixelwise comparison of centry-symmetric pixels.
 
     This is a faster C implementation.
+
+    usage:
+    ======
+    x,y = find_center_pixelwise_fast(img, msk, x0, y0, dmax=5, rmax=None)
     """
     if rmax is not None: msk &= (spimage.rgrid(msk.shape, (x0,y0)) < rmax)
     I = spimage.sp_image_alloc(int(np.ceil(img.shape[1])), int(np.ceil(img.shape[0])), 1)
@@ -173,6 +184,7 @@ def find_center_pixelwise_fast(img, msk, x0, y0, dmax=5, rmax=None):
     success = spimage.sp_find_center_refine(I, dmax, 0, None)
     x = (I.detector.image_center[0]  - img.shape[1]/2 )
     y = (I.detector.image_center[1]  - img.shape[0]/2 )
+    spimage.sp_image_free(I)
     return x,y
 
 def find_center_pixelwise_slow(img, msk, x0, y0, dmax=5, rmax=None):
@@ -180,6 +192,10 @@ def find_center_pixelwise_slow(img, msk, x0, y0, dmax=5, rmax=None):
     Find center of diffraction pattern using pixelwise comparison of centro-symmetric pixels.
     
     This is the original python implementation taken from owl/fit.py
+    
+    usage:
+    ======
+    x,y = find_center_pixelwise_slow(img, msk, x0, y0, dmax=5, rmax=None)
     """
     s = img.shape
     if rmax is None: rmax = np.sqrt(2)*max(s)
@@ -244,12 +260,19 @@ def find_center_pixelwise_slow(img, msk, x0, y0, dmax=5, rmax=None):
     cy_r = cy_sam1[cyi_min]
     x = cx_r-(s[1]-1)/2.
     y = cy_r-(s[0]-1)/2.
-    print "Final: ", x,y
-    return x,y
+    return (x,y)
 
-def find_center_blurred(img, msk, x0=0, y0=0, threshold=12, blur_radius=4, dmax=None):
+def find_center_blurred(img, msk, x0=0, y0=0, threshold=None, blur_radius=4, dmax=5):
+    """
+    Find the center using blurred version of 'pixelwise' method.
+
+    usage: 
+    ======
+    x,y = find_center_blurred(img, msk, x0=0, y0=0, threshold=None, blur_radius=4, dmax=5)
+    """
     I = spimage.sp_image_alloc(img.shape[1],img.shape[0],1)
-    I.image[:] = img * (img >= threshold)
+    if threshold is not None: 
+        I.image[:] = img * (img >= threshold)
     kernel = spimage.sp_gaussian_kernel(blur_radius,(int)(blur_radius*8+1),(int)(blur_radius*8+1),1)
     I.mask[:] = msk[:]
     I.detector.image_center[:] = np.array([x0 + img.shape[1]/2,
@@ -271,6 +294,9 @@ def find_center_blurred(img, msk, x0=0, y0=0, threshold=12, blur_radius=4, dmax=
     return (x,y)
     
 
+# ================ #
+# Helper functions #
+# =================#
 def _symmetrize(M,cx,cy):
     M_new = M.copy()
     M_new *= _turn180(M,cx,cy)
