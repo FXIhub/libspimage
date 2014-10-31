@@ -453,7 +453,6 @@ static int shift_coordinate(int i, int size, int shift_origin, int pad){
 
 Image * sp_image_shift(Image * img){
   Image * out;
-  const int small_constant = 0.001;    
   int pad = 1;
   int pad_z = 1;
   if(img->num_dimensions == 2){
@@ -462,13 +461,13 @@ Image * sp_image_shift(Image * img){
   int new_origin[3];
 
   if(img->shifted){
-    new_origin[0] = ceil((sp_image_x(img)-1.0)/2.0-small_constant);
-    new_origin[1] = ceil((sp_image_y(img)-1.0)/2.0-small_constant);
-    new_origin[2] = ceil((sp_image_z(img)-1.0)/2.0-small_constant);
+    new_origin[0] = ceil((sp_image_x(img)-1.0)/2.0);
+    new_origin[1] = ceil((sp_image_y(img)-1.0)/2.0);
+    new_origin[2] = ceil((sp_image_z(img)-1.0)/2.0);
   }else{
-    new_origin[0] = ceil(img->detector->image_center[0]-small_constant);
-    new_origin[1] = ceil(img->detector->image_center[1]-small_constant);
-    new_origin[2] = ceil(img->detector->image_center[2]-small_constant);
+    new_origin[0] = ceil(img->detector->image_center[0]);
+    new_origin[1] = ceil(img->detector->image_center[1]);
+    new_origin[2] = ceil(img->detector->image_center[2]);
   }
   int new_size[3] = {shift_size(sp_image_x(img),new_origin[0],pad),
 		     shift_size(sp_image_y(img),new_origin[1],pad),
@@ -522,18 +521,14 @@ Image * sp_image_shift2(Image * img){
   int x,y,z;
   int newx,newy,newz;
   real max_x,max_y,max_z;//changed from int
-  const int small_constant = 0.001;    
-  int new_origin[3] = {ceil(img->detector->image_center[0]-small_constant),
-		       ceil(img->detector->image_center[1]-small_constant),
-		       ceil(img->detector->image_center[2]-small_constant)};
+  int new_origin[3] = {ceil(img->detector->image_center[0]),
+		       ceil(img->detector->image_center[1]),
+		       ceil(img->detector->image_center[2])};
   
 
 
   /* for purposes of shifting the image the pixels which goes to the upper left of the image is
      the ceil(img->detector->image_center) pixel 
-     
-     A small constant is subtracted from img->detector->image_center to deal with numerical errors
-     when the image_center is an integer (say 50).
   */
 
   /* fft shift the image */

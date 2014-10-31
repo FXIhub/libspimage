@@ -4,7 +4,7 @@ LibSPImage - Image Processing Library
 LibSPImage is a library for image processing used by Hawk.
 
 <br>
-Principle Authors:<br>
+Authors:<br>
 Filipe Maia     ||  <filipe.c.maia@gmail.com><br>
 Tomas Ekeberg   ||  <ekeberg@xray.bmc.uu.se><br>
 Max Hantke      ||  <max.hantke@icm.uu.se><br>
