@@ -54,6 +54,7 @@ def fit_sphere_diameter_pearson(img, msk, diameter, intensity, wavelength, pixel
 
     # End with least square
     [diameter], cov, infodict, mesg, ier = leastsq(E_fit_m, diameter, maxfev=maxfev, xtol=1e-3, full_output=True)
+    diameter = abs(diameter)
     return diameter, infodict
 
 def fit_sphere_intensity(img, msk, diameter, intensity, wavelength, pixelsize, detector_distance, full_output=False, x0=0, y0=0, adup=1, queff=1, mat='water', rmax=None, downsampling=1, maxfev=1000):
@@ -88,16 +89,26 @@ def _prepare_for_fitting(img, msk, x0, y0, rmax, downsampling):
     s = img.shape # Shape of image
     Y,X = spimage.grid(s, (0,0)) # Non-centered grid vectors in [px]
     Mr = spimage.rmask(s, rmax, (x0,y0))      # Radial mask
-    msk = msk[::downsampling,::downsampling]  # Downsampling of mask
-    Mr  = Mr[::downsampling, ::downsampling]  # Downsampling of radial mask
     msk *= Mr   # Merge mask and radial mask
+    img, msk = _downsample_image_and_mask(img, msk, downsampling)    
     Xm = X[msk] # Non-centered (masked) grid x vectors in [px]
     Ym = Y[msk] # Non-centered (masked) grid y vectors in [px]
     Xmc = Xm - x0   # Centered (masked) grid x vectors in [px]
     Ymc = Ym - y0   # Centered (masked) grid y vectors in [px]
-    img = img[::downsampling, ::downsampling] # Downsample image
     return Xmc, Ymc, img, msk
-    
+
+def _downsample_image_and_mask(img, msk, blur_radius):
+    img = img[::blur_radius, ::blur_radius] # Downsample image
+    msk = msk[::blur_radius, ::blur_radius] # Downsampling of mask
+    #I = spimage.sp_image_alloc(img.shape[1],img.shape[0],1)
+    #I.image[:] = img[:]
+    #I.mask[:] = msk[:]
+    #kernel = spimage.sp_gaussian_kernel(float(blur_radius),int(blur_radius*8+1),int(blur_radius*8+1),1)
+    #c = spimage.sp_image_convolute_with_mask(I,kernel,np.array([1,1,1]).astype(np.int32))
+    #img = c.image
+    #msk = c.mask
+    return img, msk
+
 def I_sphere_diffraction(A,q,s):
     """
     scattered intensity from homogeneous sphere.

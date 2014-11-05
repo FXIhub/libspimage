@@ -270,13 +270,13 @@ def find_center_blurred(img, msk, x0=0, y0=0, threshold=None, blur_radius=4., dm
     ======
     x,y = find_center_blurred(img, msk, x0=0, y0=0, threshold=None, blur_radius=4, dmax=5)
     """
+    if threshold is not None: threshold = img.min()
     I = spimage.sp_image_alloc(img.shape[1],img.shape[0],1)
-    if threshold is not None: 
-        I.image[:] = img * (img >= threshold)
-    kernel = spimage.sp_gaussian_kernel(float(blur_radius),int(blur_radius*8+1),int(blur_radius*8+1),1)
+    I.image[:] = img * (img >= threshold)
     I.mask[:] = msk[:]
     I.detector.image_center[:] = np.array([x0 + img.shape[1]/2,
                                            y0 + img.shape[0]/2, 0 ])
+    kernel = spimage.sp_gaussian_kernel(float(blur_radius),int(blur_radius*8+1),int(blur_radius*8+1),1)
     c = spimage.sp_image_convolute_with_mask(I,kernel,np.array([1,1,1]).astype(np.int32))
     ds = spimage.sp_image_alloc(img.shape[1]/4,img.shape[0]/4,1)
     ds.image[:] = c.image[:-3:4,:-3:4]
