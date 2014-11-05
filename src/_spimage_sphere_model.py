@@ -33,28 +33,32 @@ def fit_sphere_diameter(img, msk, diameter, intensity, wavelength, pixelsize, de
     else:
         return diameter
 
-def fit_sphere_diameter_pearson(img, msk, diameter, intensity, wavelength, pixelsize, detector_distance, full_output=False,  x0=0, y0=0, adup=1, queff=1, mat='water', rmax=None, downsampling=1, do_brute=False, maxfev=1000):
+def fit_sphere_diameter_pearson(img, msk, diameter, intensity, wavelength, pixelsize, detector_distance, full_output=False,  x0=0, y0=0, adup=1, queff=1, mat='water', rmax=None, downsampling=1, do_brute=0, maxfev=1000):
     """
     Fit the diameter of a sphere using pearson correlation.
 
     """
     Xmc, Ymc, img, msk = _prepare_for_fitting(img, msk, x0, y0, rmax, downsampling)
     Rmc = numpy.sqrt(Xmc**2 + Ymc**2)
-    S  = sphere_model_convert_intensity_to_scaling(intensity, diameter, wavelength, pixelsize, detector_distance, queff, adup, mat)
+    #imsave('grid.png', Rmc.reshape((img.shape)))
+    S   = sphere_model_convert_intensity_to_scaling(intensity, diameter, wavelength, pixelsize, detector_distance, queff, adup, mat)
     I_fit_m = lambda d: I_sphere_diffraction(S,Rmc,sphere_model_convert_diameter_to_size(d, wavelength, pixelsize, detector_distance))
     E_fit_m = lambda d: 1-scipy.stats.pearsonr(I_fit_m(d),img[msk])[0]
 
     # Start with brute force with a sensible range
     # We'll assume at least 20x oversampling
     if do_brute:
-        dmin = sphere_model_convert_size_to_diameter(1./img.shape[0], wavelength, pixelsize, detector_distance)
-        range = [(dmin, dmin*img.shape[0]/(40))]
-        Ns = 10 * range[0][1]/range[0][0]
-        diameter = scipy.optimize.brute(E_fit_m, range, Ns=Ns)[0]
+        dmin = sphere_model_convert_size_to_diameter(1./(downsampling*img.shape[0]), wavelength, pixelsize, detector_distance)
+        dmax = dmin*downsampling*img.shape[0]/40
+        Ns = do_brute
+        diameter = scipy.optimize.brute(E_fit_m, [(dmin, dmax)], Ns=Ns)[0]
 
     # End with least square
-    [diameter], cov, infodict, mesg, ier = leastsq(E_fit_m, diameter, maxfev=maxfev, xtol=1e-3, full_output=True)
+    [diameter], cov, infodict, mesg, ier = leastsq(E_fit_m, diameter, maxfev=maxfev, xtol=1e-5, full_output=True)
     diameter = abs(diameter)
+    #pcov = cov * (E_fit_m(diameter)**2).sum()/(img.shape[0]*img.shape[1] - 1)
+    err = (E_fit_m(diameter)**2).sum()/(img.shape[0]*img.shape[1] - 1)
+    #print err
     return diameter, infodict
 
 def fit_sphere_intensity(img, msk, diameter, intensity, wavelength, pixelsize, detector_distance, full_output=False, x0=0, y0=0, adup=1, queff=1, mat='water', rmax=None, downsampling=1, maxfev=1000):
@@ -78,6 +82,8 @@ def fit_sphere_intensity(img, msk, diameter, intensity, wavelength, pixelsize, d
     I_fit_m = lambda i: I_sphere_diffraction(sphere_model_convert_intensity_to_scaling(i, diameter, wavelength, pixelsize, detector_distance, queff, adup, mat),Rmc,size)
     E_fit_m = lambda i: I_fit_m(i) - img[msk]
     [intensity], cov, infodict, mesg, ier = leastsq(E_fit_m, intensity, maxfev=maxfev, xtol=1e-3, full_output=True)
+    err = (E_fit_m(intensity)**2).sum()/(img.shape[0]*img.shape[1] - 1)
+    #print err, cov
 
     if full_output:
         return intensity, infodict
@@ -90,24 +96,13 @@ def _prepare_for_fitting(img, msk, x0, y0, rmax, downsampling):
     Y,X = spimage.grid(s, (0,0)) # Non-centered grid vectors in [px]
     Mr = spimage.rmask(s, rmax, (x0,y0))      # Radial mask
     msk *= Mr   # Merge mask and radial mask
-    img, msk = _downsample_image_and_mask(img, msk, downsampling)    
+    img = img[::downsampling, ::downsampling]
+    msk = msk[::downsampling, ::downsampling]
     Xm = X[msk] # Non-centered (masked) grid x vectors in [px]
     Ym = Y[msk] # Non-centered (masked) grid y vectors in [px]
     Xmc = Xm - x0   # Centered (masked) grid x vectors in [px]
     Ymc = Ym - y0   # Centered (masked) grid y vectors in [px]
     return Xmc, Ymc, img, msk
-
-def _downsample_image_and_mask(img, msk, blur_radius):
-    img = img[::blur_radius, ::blur_radius] # Downsample image
-    msk = msk[::blur_radius, ::blur_radius] # Downsampling of mask
-    #I = spimage.sp_image_alloc(img.shape[1],img.shape[0],1)
-    #I.image[:] = img[:]
-    #I.mask[:] = msk[:]
-    #kernel = spimage.sp_gaussian_kernel(float(blur_radius),int(blur_radius*8+1),int(blur_radius*8+1),1)
-    #c = spimage.sp_image_convolute_with_mask(I,kernel,np.array([1,1,1]).astype(np.int32))
-    #img = c.image
-    #msk = c.mask
-    return img, msk
 
 def I_sphere_diffraction(A,q,s):
     """
