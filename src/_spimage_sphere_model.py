@@ -5,7 +5,7 @@ from scipy.optimize import leastsq
 import scipy.stats
 import spimage
 from pylab import *
-__all__ = ['fit_sphere_diameter', 'fit_sphere_intensity', 'I_sphere_diffraction', 'sphere_model_convert_diameter_to_size', 'sphere_model_convert_intensity_to_scaling']
+__all__ = ['fit_sphere_diameter', 'fit_sphere_intensity', 'fit_full_sphere_model', 'I_sphere_diffraction', 'sphere_model_convert_diameter_to_size', 'sphere_model_convert_intensity_to_scaling', 'sphere_model_convert_scaling_to_intensity']
 
 def fit_sphere_diameter(img, msk, diameter, intensity, wavelength, pixelsize, detector_distance, method=None, full_output=False, **kwargs):
     """
@@ -90,6 +90,25 @@ def fit_sphere_intensity(img, msk, diameter, intensity, wavelength, pixelsize, d
     else:
         return intensity
 
+def fit_full_sphere_model(img, msk, diameter, intensity, wavelength, pixelsize, detector_distance, full_output=False, x0=0, y0=0, adup=1, queff=1, mat='water', rmax=None, downsampling=1, maxfev=1000):
+
+    Xm, Ym, img, msk = _prepare_for_fitting(img, msk, 0, 0, rmax, downsampling)
+    Rmc     = lambda x,y:     numpy.sqrt((Xm - x)**2 + (Ym - y)**2)
+    size    = lambda d:       sphere_model_convert_diameter_to_size(d, wavelength, pixelsize, detector_distance)
+    scaling = lambda i,d:     sphere_model_convert_intensity_to_scaling(i, d, wavelength, pixelsize, detector_distance, queff, adup, mat)
+    I_fit_m = lambda x,y,d,i: I_sphere_diffraction(scaling(i,d), Rmc(x,y), size(d))
+    E_fit_m = lambda p:       I_fit_m(p[0],p[1],p[2],p[3]) - img[msk]
+    p, cov, infodict, mesg, ier = leastsq(E_fit_m, numpy.array([x0,y0,diameter,intensity]), maxfev=maxfev, xtol=1e-5, full_output=True)
+    err = (E_fit_m(p)**2).sum()/(img.shape[0]*img.shape[1] - 1)
+    pcov = numpy.diag(cov)*err
+    #print err, cov, infodict, mesg, ier
+    #print pcov
+    [x0, y0, diameter, intensity] = p
+    if full_output:
+        return x0, y0, diameter, intensity, infodict
+    else:
+        return x0, y0, diameter, intensity
+    
 def _prepare_for_fitting(img, msk, x0, y0, rmax, downsampling):
     if rmax is None: rmax = max(img.shape)/2  # Handle default of rmax
     s = img.shape # Shape of image
