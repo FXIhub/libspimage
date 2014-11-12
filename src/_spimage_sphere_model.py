@@ -98,7 +98,7 @@ def fit_full_sphere_model(img, msk, diameter, intensity, wavelength, pixelsize, 
     scaling = lambda i,d:     sphere_model_convert_intensity_to_scaling(i, d, wavelength, pixelsize, detector_distance, queff, adup, mat)
     I_fit_m = lambda x,y,d,i: I_sphere_diffraction(scaling(i,d), Rmc(x,y), size(d))
     E_fit_m = lambda p:       I_fit_m(p[0],p[1],p[2],p[3]) - img[msk]
-    p, cov, infodict, mesg, ier = leastsq(E_fit_m, numpy.array([x0,y0,diameter,intensity]), maxfev=maxfev, xtol=1e-5, full_output=True)
+    p, cov, infodict, mesg, ier = spimage.leastsqbound(E_fit_m, numpy.array([x0,y0,diameter,intensity]), maxfev=maxfev, xtol=1e-5, full_output=True)
     err = (E_fit_m(p)**2).sum()/(img.shape[0]*img.shape[1] - 1)
     pcov = numpy.diag(cov)*err
     #print err, cov, infodict, mesg, ier
