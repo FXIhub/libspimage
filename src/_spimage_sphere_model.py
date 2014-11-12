@@ -90,21 +90,28 @@ def fit_sphere_intensity(img, msk, diameter, intensity, wavelength, pixelsize, d
     else:
         return intensity
 
-def fit_full_sphere_model(img, msk, diameter, intensity, wavelength, pixelsize, detector_distance, full_output=False, x0=0, y0=0, adup=1, queff=1, mat='water', rmax=None, downsampling=1, maxfev=1000):
-
+def fit_full_sphere_model(img, msk, diameter, intensity, wavelength, pixelsize, detector_distance, full_output=False, x0=0, y0=0, adup=1, queff=1, mat='water', rmax=None, downsampling=1, maxfev=1000, deltab=0.1):
     Xm, Ym, img, msk = _prepare_for_fitting(img, msk, 0, 0, rmax, downsampling)
     Rmc     = lambda x,y:     numpy.sqrt((Xm - x)**2 + (Ym - y)**2)
     size    = lambda d:       sphere_model_convert_diameter_to_size(d, wavelength, pixelsize, detector_distance)
     scaling = lambda i,d:     sphere_model_convert_intensity_to_scaling(i, d, wavelength, pixelsize, detector_distance, queff, adup, mat)
     I_fit_m = lambda x,y,d,i: I_sphere_diffraction(scaling(i,d), Rmc(x,y), size(d))
     E_fit_m = lambda p:       I_fit_m(p[0],p[1],p[2],p[3]) - img[msk]
-    p, cov, infodict, mesg, ier = spimage.leastsqbound(E_fit_m, numpy.array([x0,y0,diameter,intensity]), maxfev=maxfev, xtol=1e-5, full_output=True)
+    x0_bound = (x0-deltab*x0, x0+deltab*x0)
+    y0_bound = (y0-deltab*y0, y0+deltab*y0)
+    d_bound  = (diameter-deltab*diameter, diameter+deltab*diameter)
+    i_bound  = (intensity-deltab*intensity, intensity+deltab*intensity)
+    bounds   = np.array([x0_bound, y0_bound , d_bound, i_bound])
+    p, cov, infodict, mesg, ier = spimage.leastsqbound(E_fit_m, numpy.array([x0,y0,diameter,intensity]), maxfev=maxfev, xtol=1e-5, full_output=True, bounds=bounds)
     err = (E_fit_m(p)**2).sum()/(img.shape[0]*img.shape[1] - 1)
-    pcov = numpy.diag(cov)*err
-    #print err, cov, infodict, mesg, ier
-    #print pcov
     [x0, y0, diameter, intensity] = p
     if full_output:
+        if cov is not None:
+            pcov = numpy.diag(cov)*err
+        else:
+            pcov = numpy.array(4*[None])
+        infodict["error"] = err
+        infodict["pcov"]  = pcov
         return x0, y0, diameter, intensity, infodict
     else:
         return x0, y0, diameter, intensity
