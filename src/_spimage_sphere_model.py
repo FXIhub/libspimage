@@ -40,7 +40,6 @@ def fit_sphere_diameter_pearson(img, msk, diameter, intensity, wavelength, pixel
     """
     Xmc, Ymc, img, msk = _prepare_for_fitting(img, msk, x0, y0, rmax, downsampling)
     Rmc = numpy.sqrt(Xmc**2 + Ymc**2)
-    #imsave('grid.png', Rmc.reshape((img.shape)))
     S   = sphere_model_convert_intensity_to_scaling(intensity, diameter, wavelength, pixelsize, detector_distance, queff, adup, mat)
     I_fit_m = lambda d: I_sphere_diffraction(S,Rmc,sphere_model_convert_diameter_to_size(d, wavelength, pixelsize, detector_distance))
     E_fit_m = lambda d: 1-scipy.stats.pearsonr(I_fit_m(d),img[msk])[0]
@@ -56,10 +55,18 @@ def fit_sphere_diameter_pearson(img, msk, diameter, intensity, wavelength, pixel
     # End with least square
     [diameter], cov, infodict, mesg, ier = leastsq(E_fit_m, diameter, maxfev=maxfev, xtol=1e-5, full_output=True)
     diameter = abs(diameter)
-    #pcov = cov * (E_fit_m(diameter)**2).sum()/(img.shape[0]*img.shape[1] - 1)
     err = (E_fit_m(diameter)**2).sum()/(img.shape[0]*img.shape[1] - 1)
-    #print err
-    return diameter, infodict
+
+    if full_output:
+        if cov is not None:
+            pcov = cov[0,0]*err
+        else:
+            pcov = None
+        infodict['error'] = err
+        infodict['pcov'] = pcov
+        return diameter, infodict
+    else:
+        return diameter
 
 def fit_sphere_intensity(img, msk, diameter, intensity, wavelength, pixelsize, detector_distance, full_output=False, x0=0, y0=0, adup=1, queff=1, mat='water', rmax=None, downsampling=1, maxfev=1000):
     """
@@ -83,9 +90,14 @@ def fit_sphere_intensity(img, msk, diameter, intensity, wavelength, pixelsize, d
     E_fit_m = lambda i: I_fit_m(i) - img[msk]
     [intensity], cov, infodict, mesg, ier = leastsq(E_fit_m, intensity, maxfev=maxfev, xtol=1e-3, full_output=True)
     err = (E_fit_m(intensity)**2).sum()/(img.shape[0]*img.shape[1] - 1)
-    #print err, cov
-
+    
     if full_output:
+        if cov is not None:
+            pcov = cov[0,0]*err
+        else:
+            pcov = None
+        infodict['error'] = err
+        infodict['pcov'] = pcov
         return intensity, infodict
     else:
         return intensity
@@ -107,6 +119,7 @@ def fit_full_sphere_model(img, msk, diameter, intensity, wavelength, pixelsize, 
     [x0, y0, diameter, intensity] = p
     if full_output:
         if cov is not None:
+            print cov
             pcov = numpy.diag(cov)*err
         else:
             pcov = numpy.array(4*[None])
