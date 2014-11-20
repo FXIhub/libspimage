@@ -33,7 +33,7 @@ def fit_sphere_diameter(img, msk, diameter, intensity, wavelength, pixelsize, de
     else:
         return diameter
 
-def fit_sphere_diameter_pearson(img, msk, diameter, intensity, wavelength, pixelsize, detector_distance, full_output=False,  x0=0, y0=0, adup=1, queff=1, mat='water', rmax=None, downsampling=1, do_brute=0, maxfev=1000):
+def fit_sphere_diameter_pearson(img, msk, diameter, intensity, wavelength, pixelsize, detector_distance, full_output=False,  x0=0, y0=0, adup=1, queff=1, mat='water', rmax=None, downsampling=1, do_brute_evals=0, maxfev=1000):
     """
     Fit the diameter of a sphere using pearson correlation.
 
@@ -46,17 +46,17 @@ def fit_sphere_diameter_pearson(img, msk, diameter, intensity, wavelength, pixel
 
     # Start with brute force with a sensible range
     # We'll assume at least 20x oversampling
-    if do_brute:
+    if do_brute_evals:
         dmin = sphere_model_convert_size_to_diameter(1./(downsampling*img.shape[0]), wavelength, pixelsize, detector_distance)
         dmax = dmin*downsampling*img.shape[0]/40
-        Ns = do_brute
+        Ns = do_brute_evals
         diameter = scipy.optimize.brute(E_fit_m, [(dmin, dmax)], Ns=Ns)[0]
 
     # End with least square
     [diameter], cov, infodict, mesg, ier = leastsq(E_fit_m, diameter, maxfev=maxfev, xtol=1e-5, full_output=True)
     diameter = abs(diameter)
     err = (E_fit_m(diameter)**2).sum()/(img.shape[0]*img.shape[1] - 1)
-
+    err /= img[msk].sum()
     if full_output:
         if cov is not None:
             pcov = cov[0,0]*err
@@ -90,7 +90,7 @@ def fit_sphere_intensity(img, msk, diameter, intensity, wavelength, pixelsize, d
     E_fit_m = lambda i: I_fit_m(i) - img[msk]
     [intensity], cov, infodict, mesg, ier = leastsq(E_fit_m, intensity, maxfev=maxfev, xtol=1e-3, full_output=True)
     err = (E_fit_m(intensity)**2).sum()/(img.shape[0]*img.shape[1] - 1)
-    
+    err /= img[msk].sum()
     if full_output:
         if cov is not None:
             pcov = cov[0,0]*err
@@ -116,10 +116,10 @@ def fit_full_sphere_model(img, msk, diameter, intensity, wavelength, pixelsize, 
     bounds   = np.array([x0_bound, y0_bound , d_bound, i_bound])
     p, cov, infodict, mesg, ier = spimage.leastsqbound(E_fit_m, numpy.array([x0,y0,diameter,intensity]), maxfev=maxfev, xtol=1e-5, full_output=True, bounds=bounds)
     err = (E_fit_m(p)**2).sum()/(img.shape[0]*img.shape[1] - 1)
+    err /= img[msk].sum()
     [x0, y0, diameter, intensity] = p
     if full_output:
         if cov is not None:
-            print cov
             pcov = numpy.diag(cov)*err
         else:
             pcov = numpy.array(4*[None])
