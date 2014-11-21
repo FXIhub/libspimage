@@ -127,7 +127,7 @@ def fit_sphere_intensity_poisson(img, msk, diameter, intensity, wavelength, pixe
     nr_photons = ((img[msk]>0)*numpy.round(img[msk]/adup)).sum()
     size = sphere_model_convert_diameter_to_size(diameter, wavelength, pixelsize, detector_distance)
     i0 = intensity
-    I = numpy.random.poisson(I_sphere_diffraction(sphere_model_convert_intensity_to_scaling(i0, diameter, wavelength, pixelsize, detector_distance, queff, 1, mat),Rmc,size))
+    I = I_sphere_diffraction(sphere_model_convert_intensity_to_scaling(i0, diameter, wavelength, pixelsize, detector_distance, queff, 1, mat),Rmc,size)
     I_fit_m = lambda i: (i/i0)*I
     E_fit_m = lambda i: I_fit_m(i).sum() - nr_photons
     intensity = scipy.optimize.newton(E_fit_m, intensity, maxiter=maxfev, tol=1e-3)
