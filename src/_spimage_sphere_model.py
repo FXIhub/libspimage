@@ -55,14 +55,16 @@ def fit_sphere_diameter_pearson(img, msk, diameter, intensity, wavelength, pixel
     # End with least square
     [diameter], cov, infodict, mesg, ier = leastsq(E_fit_m, diameter, maxfev=maxfev, xtol=1e-5, full_output=True)
     diameter = abs(diameter)
-    err = (E_fit_m(diameter)**2).sum()/(img.shape[0]*img.shape[1] - 1)
-    err /= img[msk].sum()
+
+    # Reduced Chi-squared and standard error
+    chisquared = ((I_fit_m(diameter) - img[msk])**2).sum()/(img.shape[0]*img.shape[1] - 1)
+    if cov is not None:
+        pcov = cov[0,0]*chisquared
+    else:
+        pcov = None
+    
     if full_output:
-        if cov is not None:
-            pcov = cov[0,0]*err
-        else:
-            pcov = None
-        infodict['error'] = err
+        infodict['error'] = chisquared
         infodict['pcov'] = pcov
         return diameter, infodict
     else:
@@ -89,14 +91,16 @@ def fit_sphere_intensity(img, msk, diameter, intensity, wavelength, pixelsize, d
     I_fit_m = lambda i: I_sphere_diffraction(sphere_model_convert_intensity_to_scaling(i, diameter, wavelength, pixelsize, detector_distance, queff, adup, mat),Rmc,size)
     E_fit_m = lambda i: I_fit_m(i) - img[msk]
     [intensity], cov, infodict, mesg, ier = leastsq(E_fit_m, intensity, maxfev=maxfev, xtol=1e-3, full_output=True)
-    err = (E_fit_m(intensity)**2).sum()/(img.shape[0]*img.shape[1] - 1)
-    err /= img[msk].sum()
+
+    # Reduced Chi-squared and standard error
+    chisquared = (E_fit_m(intensity)**2).sum()/(img.shape[0]*img.shape[1] - 1)
+    if cov is not None:
+        pcov = cov[0,0]*chisquared
+    else:
+        pcov = None
+    
     if full_output:
-        if cov is not None:
-            pcov = cov[0,0]*err
-        else:
-            pcov = None
-        infodict['error'] = err
+        infodict['error'] = chisquared
         infodict['pcov'] = pcov
         return intensity, infodict
     else:
@@ -115,15 +119,17 @@ def fit_full_sphere_model(img, msk, diameter, intensity, wavelength, pixelsize, 
     i_bound  = (intensity-deltab*intensity, intensity+deltab*intensity)
     bounds   = np.array([x0_bound, y0_bound , d_bound, i_bound])
     p, cov, infodict, mesg, ier = spimage.leastsqbound(E_fit_m, numpy.array([x0,y0,diameter,intensity]), maxfev=maxfev, xtol=1e-5, full_output=True, bounds=bounds)
-    err = (E_fit_m(p)**2).sum()/(img.shape[0]*img.shape[1] - 1)
-    err /= img[msk].sum()
     [x0, y0, diameter, intensity] = p
+
+    # Reduced Chi-squared and standard errors
+    chisquared = (E_fit_m(p)**2).sum()/(img.shape[0]*img.shape[1] - len(p))
+    if cov is not None:
+        pcov = numpy.diag(cov)*chisquared
+    else:
+        pcov = numpy.array(4*[None])
+    
     if full_output:
-        if cov is not None:
-            pcov = numpy.diag(cov)*err
-        else:
-            pcov = numpy.array(4*[None])
-        infodict["error"] = err
+        infodict["error"] = chisquared
         infodict["pcov"]  = pcov
         return x0, y0, diameter, intensity, infodict
     else:
