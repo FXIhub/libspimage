@@ -69,12 +69,12 @@ def fit_sphere_intensity(img, msk, diameter, intensity, wavelength, pixelsize, d
     ======
     intensity = fit_sphere_intensity(img, msk, diameter, intensity, wavelength, pixelsize, detector_size)
     intensity = fit_sphere_intensity(img, msk, diameter, intensity, wavelength, pixelsize, detector_size, method='pixelwise', ...)
-    intensity = fit_sphere_intensity(img, msk, diameter, intensity, wavelength, pixelsize, detector_size, method='poisson', ...)
+    intensity = fit_sphere_intensity(img, msk, diameter, intensity, wavelength, pixelsize, detector_size, method='nrphotons', ...)
 
     """
     if method is None: method = 'pixelwise'
     if method == 'pixelwise': intensity, info = fit_sphere_intensity_pixelwise(img, msk, diameter, intensity, wavelength, pixelsize, detector_distance, full_output=True, **kwargs)
-    elif method == 'poisson': intensity, info = fit_sphere_intensity_poisson(img, msk, diameter, intensity, wavelength, pixelsize, detector_distance, full_output=True, **kwargs)
+    elif method == 'nrphotons': intensity, info = fit_sphere_intensity_nrphotons(img, msk, diameter, intensity, wavelength, pixelsize, detector_distance, full_output=True, **kwargs)
     else: intensity, info = [intensity, "There is no fitting intensity method %s" %method]
 
     if full_output: return intensity, info
@@ -117,7 +117,7 @@ def fit_sphere_intensity_pixelwise(img, msk, diameter, intensity, wavelength, pi
     else:
         return intensity
 
-def fit_sphere_intensity_poisson(img, msk, diameter, intensity, wavelength, pixelsize, detector_distance, full_output=False, x0=0, y0=0, adup=1, queff=1, mat='water', rmax=None, downsampling=1, maxfev=1000):
+def fit_sphere_intensity_nrphotons(img, msk, diameter, intensity, wavelength, pixelsize, detector_distance, full_output=False, x0=0, y0=0, adup=1, queff=1, mat='water', rmax=None, downsampling=1, maxfev=1000):
     """
     Fit the intensity [mJ / um^2] on a sphere to diffraction data using least square optimization.
     The cost function is defined as the difference between the nr. of estimated photons scattered in both model and data.
@@ -126,13 +126,9 @@ def fit_sphere_intensity_poisson(img, msk, diameter, intensity, wavelength, pixe
     Rmc = numpy.sqrt(Xmc**2 + Ymc**2)
     nr_photons = ((img[msk]>0)*numpy.round(img[msk]/adup)).sum()
     size = sphere_model_convert_diameter_to_size(diameter, wavelength, pixelsize, detector_distance)
-    i0 = intensity
-    I = I_sphere_diffraction(sphere_model_convert_intensity_to_scaling(i0, diameter, wavelength, pixelsize, detector_distance, queff, 1, mat),Rmc,size)
-    I_fit_m = lambda i: (i/i0)*I
+    I_fit_m = lambda i: I_sphere_diffraction(sphere_model_convert_intensity_to_scaling(i, diameter, wavelength, pixelsize, detector_distance, queff, 1, mat),Rmc,size)
     E_fit_m = lambda i: I_fit_m(i).sum() - nr_photons
     intensity = scipy.optimize.newton(E_fit_m, intensity, maxiter=maxfev, tol=1e-3)
-    #cov = None
-    #infodict = {}
     [intensity], cov, infodict, mesg, ier = leastsq(E_fit_m, intensity, maxfev=maxfev, xtol=1e-3, full_output=True)
     
     # Reduced Chi-squared and standard error
