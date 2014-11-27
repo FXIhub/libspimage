@@ -19,6 +19,7 @@ def fit_sphere_diameter(img, msk, diameter, intensity, wavelength, pixelsize, de
     """
     if method is None: method = 'pearson'
     if method == 'pearson': diameter, info = fit_sphere_diameter_pearson(img, msk, diameter, intensity, wavelength, pixelsize, detector_distance, full_output=True, **kwargs)
+    elif method == 'pixelwise': diameter, info = fit_sphere_diameter_pixelwise(img, msk, diameter, intensity, wavelength, pixelsize, detector_distance, full_output=True, **kwargs)
     else: diameter, info = [diameter, "There is no fitting diameter method %s" %method]
 
     if full_output: return diameter, info
@@ -61,6 +62,35 @@ def fit_sphere_diameter_pearson(img, msk, diameter, intensity, wavelength, pixel
     else:
         return diameter
 
+def fit_sphere_diameter_pixelwise(img, msk, diameter, intensity, wavelength, pixelsize, detector_distance, full_output=False, x0=0, y0=0, adup=1, queff=1, mat='water', rmax=None, downsampling=1, maxfev=1000, deltab=0.5, do_photon_counting=False):
+    """
+    Fit the diameter of a sphere minimizing sum of pixelwise difference.
+    """
+    Xmc, Ymc, img, msk, = _prepare_for_fitting(img, msk, x0, y0, rmax, downsampling, adup, do_photon_counting)
+    Rmc = numpy.sqrt(Xmc**2 + Ymc**2)
+    S   = sphere_model_convert_intensity_to_scaling(intensity, diameter, wavelength, pixelsize, detector_distance, queff, 1, mat)
+    I_fit_m = lambda d: I_sphere_diffraction(S,Rmc,sphere_model_convert_diameter_to_size(d, wavelength, pixelsize, detector_distance))
+    E_fit_m = lambda d: I_fit_m(d) - img[msk]
+    
+    bounds  = np.array([(diameter-deltab*diameter, diameter+deltab*diameter)])
+    p, cov, infodict, mesg, ier = leastsq(E_fit_m, numpy.array([diameter]), maxfev=maxfev, xtol=1e-5, full_output=True)
+    #p, cov, infodict, mesg, ier = spimage.leastsqbound(E_fit_m, numpy.array([diameter]), maxfev=maxfev, xtol=1e-5, full_output=True, bounds=bounds)
+    [diameter] = p
+    
+    # Reduced Chi-squared and standard error
+    chisquared = ((I_fit_m(diameter) - img[msk])**2).sum()/(img.shape[0]*img.shape[1] - 1)
+    if cov is not None:
+        pcov = cov[0,0]*chisquared
+    else:
+        pcov = None
+    #print pcov
+    if full_output:
+        infodict['error'] = chisquared
+        infodict['pcov']  = pcov
+        return diameter, infodict
+    else:
+        return diameter
+    
 def fit_sphere_intensity(img, msk, diameter, intensity, wavelength, pixelsize, detector_distance, method=None, full_output=False, **kwargs):
     """
     Fit the the intensity of a sphere to diffraction data.
@@ -145,7 +175,7 @@ def fit_sphere_intensity_nrphotons(img, msk, diameter, intensity, wavelength, pi
     else:
         return intensity
     
-def fit_full_sphere_model(img, msk, diameter, intensity, wavelength, pixelsize, detector_distance, full_output=False, x0=0, y0=0, adup=1, queff=1, mat='water', rmax=None, downsampling=1, maxfev=1000, deltab=0.1, do_photon_counting=False):
+def fit_full_sphere_model(img, msk, diameter, intensity, wavelength, pixelsize, detector_distance, full_output=False, x0=0, y0=0, adup=1, queff=1, mat='water', rmax=None, downsampling=1, maxfev=1000, deltab=0.2, do_photon_counting=False):
     Xm, Ym, img, msk = _prepare_for_fitting(img, msk, 0, 0, rmax, downsampling, adup, do_photon_counting)
     Rmc     = lambda x,y:     numpy.sqrt((Xm - x)**2 + (Ym - y)**2)
     size    = lambda d:       sphere_model_convert_diameter_to_size(d, wavelength, pixelsize, detector_distance)
@@ -166,7 +196,6 @@ def fit_full_sphere_model(img, msk, diameter, intensity, wavelength, pixelsize, 
         pcov = numpy.diag(cov)*chisquared
     else:
         pcov = numpy.array(4*[None])
-    
     if full_output:
         infodict["error"] = chisquared
         infodict["pcov"]  = pcov
