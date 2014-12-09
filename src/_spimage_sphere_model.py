@@ -208,14 +208,14 @@ def _prepare_for_fitting(img, msk, x0, y0, rmax, downsampling, adup, do_photon_c
     s = img.shape # Shape of image
     Y,X = spimage.grid(s, (0,0)) # Non-centered grid vectors in [px]
     Mr = spimage.rmask(s, rmax, (x0,y0))      # Radial mask
-    msk *= Mr   # Merge mask and radial mask
+    msk = msk * Mr   # Merge mask and radial mask
     img = img[::downsampling, ::downsampling]
     msk = msk[::downsampling, ::downsampling]
     Xm = X[msk] # Non-centered (masked) grid x vectors in [px]
     Ym = Y[msk] # Non-centered (masked) grid y vectors in [px]
     Xmc = Xm - x0   # Centered (masked) grid x vectors in [px]
     Ymc = Ym - y0   # Centered (masked) grid y vectors in [px]
-    img /= adup
+    img = img / adup
     if do_photon_counting: img = numpy.round(img) * (img > 0)
     return Xmc, Ymc, img, msk
 
