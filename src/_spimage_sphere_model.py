@@ -35,7 +35,7 @@ def fit_sphere_diameter_pearson(img, msk, diameter, intensity, wavelength, pixel
     S   = sphere_model_convert_intensity_to_scaling(intensity, diameter, wavelength, pixelsize, detector_distance, queff, 1, mat)
     I_fit_m = lambda d: I_sphere_diffraction(S,Rmc,sphere_model_convert_diameter_to_size(d, wavelength, pixelsize, detector_distance))
     def E_fit_m(d):
-        if I_fit_m(d).max() == I_fit_m(d).min(): return 1.
+        if not (img[msk].std() and I_fit_m(d).std()): return 1.
         else: return 1-scipy.stats.pearsonr(I_fit_m(d),img[msk])[0]
         
     # Start with brute force with a sensible range
@@ -185,8 +185,8 @@ def fit_sphere_intensity_nrphotons(img, msk, diameter, intensity, wavelength, pi
 def fit_full_sphere_model(img, msk, diameter, intensity, wavelength, pixelsize, detector_distance, full_output=False, x0=0, y0=0, adup=1, queff=1, mat='water', rmax=None, downsampling=1, maxfev=1000, deltab=0.2, do_photon_counting=False):
     diameter = max(diameter, 1.)
     intensity = max(intensity,1.)
-    x0 = min(x0, img.shape[1])
-    y0 = min(y0, img.shape[0])
+    #x0 = min(x0, img.shape[1])
+    #y0 = min(y0, img.shape[0])
     Xm, Ym, img, msk = _prepare_for_fitting(img, msk, 0, 0, rmax, downsampling, adup, do_photon_counting)
     Rmc     = lambda x,y:     numpy.sqrt((Xm - x)**2 + (Ym - y)**2)
     size    = lambda d:       sphere_model_convert_diameter_to_size(d, wavelength, pixelsize, detector_distance)

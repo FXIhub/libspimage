@@ -36,8 +36,12 @@ def find_center(img, msk, method=None, **kwargs):
     else:
         x,y = (0,0)
         print "There is no center finding method %s" %method
-    return (x,y)
 
+    # Check for reasonable numbers
+    if abs(x) > img.shape[1]/2: x = 0
+    if abs(y) > img.shape[0]/2: y = 0
+    
+    return (x,y)
 
 def find_center_quadrant(img, msk, x0=0, y0=0, dmax=None, threshold=None, solver='L-BFGS-B'):
     """
