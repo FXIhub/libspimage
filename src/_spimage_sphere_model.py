@@ -34,8 +34,10 @@ def fit_sphere_diameter_pearson(img, msk, diameter, intensity, wavelength, pixel
     Rmc = numpy.sqrt(Xmc**2 + Ymc**2)
     S   = sphere_model_convert_intensity_to_scaling(intensity, diameter, wavelength, pixelsize, detector_distance, queff, 1, mat)
     I_fit_m = lambda d: I_sphere_diffraction(S,Rmc,sphere_model_convert_diameter_to_size(d, wavelength, pixelsize, detector_distance))
-    E_fit_m = lambda d: 1-scipy.stats.pearsonr(I_fit_m(d),img[msk])[0]
-
+    def E_fit_m(d):
+        if I_fit_m(d).max() == I_fit_m(d).min(): return 1.
+        else: return 1-scipy.stats.pearsonr(I_fit_m(d),img[msk])[0]
+        
     # Start with brute force with a sensible range
     # We'll assume at least 20x oversampling
     if do_brute_evals:
