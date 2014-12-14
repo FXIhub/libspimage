@@ -131,15 +131,20 @@ def fit_sphere_intensity_pixelwise(img, msk, diameter, intensity, wavelength, pi
     size = sphere_model_convert_diameter_to_size(diameter, wavelength, pixelsize, detector_distance)
     I_fit_m = lambda i: I_sphere_diffraction(sphere_model_convert_intensity_to_scaling(i, diameter, wavelength, pixelsize, detector_distance, queff, 1, mat),Rmc,size)
     E_fit_m = lambda i: I_fit_m(i) - img[msk]
-    [intensity], cov, infodict, mesg, ier = leastsq(E_fit_m, intensity, maxfev=maxfev, xtol=1e-3, full_output=True)
-    
-    # Reduced Chi-squared and standard error
-    chisquared = (E_fit_m(intensity)**2).sum()/(img.shape[0]*img.shape[1] - 1)
-    if cov is not None:
-        pcov = cov[0,0]*chisquared
+
+    if len(img[msk]):
+        [intensity], cov, infodict, mesg, ier = leastsq(E_fit_m, intensity, maxfev=maxfev, xtol=1e-3, full_output=True)
+        # Reduced Chi-squared and standard error
+        chisquared = (E_fit_m(intensity)**2).sum()/(img.shape[0]*img.shape[1] - 1)
+        if cov is not None:
+            pcov = cov[0,0]*chisquared
+        else:
+            pcov = None
     else:
+        infodict={}
         pcov = None
-    
+        chisquared = 0
+        
     if full_output:
         infodict['error'] = chisquared
         infodict['pcov'] = pcov
@@ -176,6 +181,10 @@ def fit_sphere_intensity_nrphotons(img, msk, diameter, intensity, wavelength, pi
         return intensity
     
 def fit_full_sphere_model(img, msk, diameter, intensity, wavelength, pixelsize, detector_distance, full_output=False, x0=0, y0=0, adup=1, queff=1, mat='water', rmax=None, downsampling=1, maxfev=1000, deltab=0.2, do_photon_counting=False):
+    diameter = max(diameter, 1.)
+    intensity = max(intensity,1.)
+    x0 = min(x0, img.shape[1])
+    y0 = min(y0, img.shape[0])
     Xm, Ym, img, msk = _prepare_for_fitting(img, msk, 0, 0, rmax, downsampling, adup, do_photon_counting)
     Rmc     = lambda x,y:     numpy.sqrt((Xm - x)**2 + (Ym - y)**2)
     size    = lambda d:       sphere_model_convert_diameter_to_size(d, wavelength, pixelsize, detector_distance)
