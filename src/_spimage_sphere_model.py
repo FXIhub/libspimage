@@ -74,7 +74,7 @@ def fit_sphere_diameter_pixelwise(img, msk, diameter, intensity, wavelength, pix
     I_fit_m = lambda d: I_sphere_diffraction(S,Rmc,sphere_model_convert_diameter_to_size(d, wavelength, pixelsize, detector_distance))
     E_fit_m = lambda d: I_fit_m(d) - img[msk]
     
-    bounds  = np.array([(diameter-deltab*diameter, diameter+deltab*diameter)])
+    bounds  = numpy.array([(diameter-deltab*diameter, diameter+deltab*diameter)])
     p, cov, infodict, mesg, ier = leastsq(E_fit_m, numpy.array([diameter]), maxfev=maxfev, xtol=1e-5, full_output=True)
     #p, cov, infodict, mesg, ier = spimage.leastsqbound(E_fit_m, numpy.array([diameter]), maxfev=maxfev, xtol=1e-5, full_output=True, bounds=bounds)
     [diameter] = p
@@ -197,7 +197,7 @@ def fit_full_sphere_model(img, msk, diameter, intensity, wavelength, pixelsize, 
     y0_bound = (None, None)
     d_bound  = (diameter-deltab*diameter, diameter+deltab*diameter)
     i_bound = (None, None)
-    bounds   = np.array([x0_bound, y0_bound , d_bound, i_bound])
+    bounds   = numpy.array([x0_bound, y0_bound , d_bound, i_bound])
     p, cov, infodict, mesg, ier = spimage.leastsqbound(E_fit_m, numpy.array([x0,y0,diameter,intensity]), maxfev=maxfev, xtol=1e-5, full_output=True, bounds=bounds)
     [x0, y0, diameter, intensity] = p
 
