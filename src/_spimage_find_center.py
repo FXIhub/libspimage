@@ -43,7 +43,7 @@ def find_center(img, msk, method=None, **kwargs):
     
     return (x,y)
 
-def find_center_quadrant(img, msk, x0=0, y0=0, dmax=None, threshold=None, solver='L-BFGS-B'):
+def find_center_quadrant(img, msk, dmax=5, x0=0, y0=0, threshold=None, solver='L-BFGS-B'):
     """
     Find the center of a diffraction pattern using the quadrant method.
     For every possible center shift (within - dmax ... + dmax) a centrosymmetric mask is calculated.

@@ -111,3 +111,27 @@ def _downsample3d(array,factor,mask):
                 x_max = min([(x_new+1)*factor,Nx])
                 array_new[z_new,y_new,x_new] = array[z_min:z_max,y_min:y_max,x_min:x_max].sum()/(1.*mask[z_min:z_max,y_min:y_max,x_min:x_max].sum())
     return array_new
+
+def crop(pattern,cropLength,center='middle',bg=0):
+    if center == 'middle':
+        x_center = (pattern.shape[1] - 1)/2.
+        y_center = (pattern.shape[0] - 1)/2.
+        temp = pattern.copy()
+    else:
+        if center == "center_of_mass":
+            [y_center,x_center] = center_of_mass(pattern,True)
+            x_center = numpy.ceil(pattern.shape[0]/2.) + x_center
+            y_center = numpy.ceil(pattern.shape[0]/2.) + y_center
+        else:
+            x_center = center[1]
+            y_center = center[0]
+        temp = recenter(pattern,x_center,y_center)
+
+    x_start = (pattern.shape[1]-cropLength)/2
+    y_start = (pattern.shape[1]-cropLength)/2
+    x_stop = x_start+cropLength
+    y_stop = y_start+cropLength
+
+    patternCropped = numpy.ones(shape=(cropLength,cropLength),dtype=pattern.dtype)*bg
+    patternCropped = temp[y_start:y_stop,x_start:x_stop]
+    return patternCropped
