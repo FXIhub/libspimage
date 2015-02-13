@@ -11,6 +11,8 @@ logger.setLevel("WARNING")
 from spimage_pybackend import *
 
 # Python code
+from _spimage_conventions import *
+from _spimage_resample import downsample
 from _spimage_reconstructor import Reconstructor
 from _spimage_prtf import prtf
 from _spimage_io import CXILoader

@@ -1,7 +1,7 @@
 import numpy as np
 import scipy as sp
 import spimage
-
+from _spimage_conventions import pos_to_center,center_to_pos
 
 def find_center(img, msk, method=None, **kwargs):
     """
@@ -184,10 +184,10 @@ def find_center_pixelwise_fast(img, msk, x0, y0, dmax=5, rmax=None):
     I = spimage.sp_image_alloc(int(np.ceil(img.shape[1])), int(np.ceil(img.shape[0])), 1)
     I.image[:] = img
     I.mask[:]  = msk
-    I.detector.image_center[:] = np.array([x0 + img.shape[1]/2, y0 + img.shape[0]/2, 0 ])
+    I.detector.image_center[:] = np.array([center_to_pos(x0,img.shape[1]), center_to_pos(y0,img.shape[0]), 0 ])
     success = spimage.sp_find_center_refine(I, dmax, 0, None)
-    x = (I.detector.image_center[0]  - img.shape[1]/2 )
-    y = (I.detector.image_center[1]  - img.shape[0]/2 )
+    x = pos_to_center(I.detector.image_center[0],img.shape[1])
+    y = pos_to_center(I.detector.image_center[1],img.shape[0])
     spimage.sp_image_free(I)
     return x,y
 
@@ -278,8 +278,8 @@ def find_center_blurred(img, msk, x0=0, y0=0, threshold=None, blur_radius=4., dm
     I = spimage.sp_image_alloc(img.shape[1],img.shape[0],1)
     I.image[:] = img * (img >= threshold)
     I.mask[:] = msk[:]
-    I.detector.image_center[:] = np.array([x0 + img.shape[1]/2,
-                                           y0 + img.shape[0]/2, 0 ])
+    I.detector.image_center[:] = np.array([center_to_pos(x0,img.shape[1]),
+                                           center_to_pos(y0,img.shape[0]), 0 ])
     kernel = spimage.sp_gaussian_kernel(float(blur_radius),int(blur_radius*8+1),int(blur_radius*8+1),1)
     c = spimage.sp_image_convolute_with_mask(I,kernel,np.array([1,1,1]).astype(np.int32))
     ds = spimage.sp_image_alloc(img.shape[1]/4,img.shape[0]/4,1)
@@ -290,14 +290,13 @@ def find_center_blurred(img, msk, x0=0, y0=0, threshold=None, blur_radius=4., dm
     c.detector.image_center[:] = ds.detector.image_center[:] * 4.0
     spimage.sp_image_free(ds)
     spimage.sp_find_center_refine_minimal_mask(c, 4, 0)
-    x = c.detector.image_center[0] - img.shape[1]/2
-    y = c.detector.image_center[1] - img.shape[0]/2
+    x = pos_to_center(c.detector.image_center[0],img.shape[1])
+    y = pos_to_center(c.detector.image_center[1],img.shape[0])
     spimage.sp_image_free(I)
     spimage.sp_image_free(kernel)
     spimage.sp_image_free(c)
     return (x,y)
     
-
 # ================ #
 # Helper functions #
 # =================#
