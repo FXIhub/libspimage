@@ -19,5 +19,6 @@ from _spimage_io import CXILoader
 from _spimage_find_center import find_center
 from _spimage_sphere_model import *
 from _spimage_misc import *
+from _spimage_patterson import *
 from _spimage_material import Material, DICT_atomic_composition
 from leastsqbound import leastsqbound
