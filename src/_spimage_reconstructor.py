@@ -8,12 +8,9 @@ logger.setLevel("WARNING")
 
 class Reconstructor:
     def __init__(self):
-        # mask and intensities
-        self._intensities = None
+        # mask
         self._mask = None
         # wrapped C-object instances
-        self._sp_intensities = None
-        self._sp_intensities_sh = None
         self._sp_amplitudes = None
         self._sp_amplitudes_sh = None
         self._sp_amplitudes_dirty = True
@@ -29,7 +26,6 @@ class Reconstructor:
         """
         Clears the instance reconstructor and deletes all configuration and data associated to it.
         """
-        self._clear_intensities()
         self._clear_amplitudes()
         self._clear_initial_support()
         self._clear_iterations()
@@ -40,21 +36,15 @@ class Reconstructor:
         self._iteration = None
         self._log("Reconstructor initialized.","DEBUG")
 
-    def _clear_intensities(self):
-        for img in [self._sp_intensities,self._sp_intensities_sh]:
-            if img != None:
-                spimage.sp_image_free(img)
-        self._sp_intensities = None
-        self._sp_intensities_sh = None
-        self._amplitudes_dirty = True
-
     def _clear_amplitudes(self):
         for img in [self._sp_amplitudes,self._sp_amplitudes_sh]:
             if img != None:
                 spimage.sp_image_free(img)
+        self._amplitudes = None
         self._sp_amplitudes = None
         self._sp_amplitudes_sh = None
         self._amplitudes_dirty = True
+
 
     def _clear_iterations(self):
         self._number_of_iterations = None
@@ -123,24 +113,30 @@ class Reconstructor:
         """
         Sets the intensity pattern that shall be phased. By default it is expected that the provided image is the shifted version of the diffraction pattern given as a 2D numpy array. If \"shifted=True\" pixel (0,0) is located in the corner of the physical diffraction pattern. If desired change to \"shifted=False\".
         """
-        self._intensities_dirty = True
+        self._amplitudes_dirty = True
         self._initial_support_dirty = True
+        A = np.array(intensities,dtype="float")
+        if (A<0).sum() > 0:
+            self._log("Intensities found that have negative values. These values are set to zero.")
+            A[A<0] = 0.
+        A = np.sqrt(A)
         if shifted:
-            self._intensities = np.fft.fftshift(intensities)
+            self._amplitudes = np.fft.fftshift(A)
         else:
-            self._intensities = intensities.copy()
+            self._amplitudes = A
         self._log("Intensities set.","DEBUG")
 
     def set_mask(self,mask,shifted=True):
         """
         The mask is a 2D boolean numpy array with the same shape as the provided intensities. Values that equal True indicate valid pixels and values that equal False indicate unknown intensity values at the respective pixel location. If \"shifted=True\" pixel (0,0) is located in the corner of the physical diffraction pattern. If desired change to \"shifted=False\".
         """
-        self._intensities_dirty = True
+        self._amplitudes_dirty = True
         self._initial_support_dirty = True
+        M = np.array(mask,dtype="bool")
         if shifted:
-            self._mask = np.fft.fftshift(mask)
+            self._mask = np.fft.fftshift(M)
         else:
-            self._mask = mask.copy()
+            self._mask = M
         self._log("Mask set.","DEBUG")
 
     def set_number_of_iterations(self,number_of_iterations):
@@ -180,7 +176,7 @@ class Reconstructor:
         """
         Set the initial support by either giving:
         - the \"radius=initial_support_radius_in_pixels\" of the circular support mask
-        - an explicit support mask \"support_mask=2D_boolean_numpy_array\", by default shifted and certainly of the same shape as the intensity pattern
+        - an explicit support mask \"support_mask=2D_boolean_numpy_array\", by default shifted and of the same shape as the intensity pattern
         """
         if not ("radius" in kwargs or "support_mask" in kwargs):
             self._log("set_initial_support requires one of the following key word arguments: radius, support_mask","ERROR")
@@ -311,12 +307,11 @@ class Reconstructor:
 
     def _prepare_reconstruction(self):
         self._ready = True
-        if self._intensities is None:
+        if self._amplitudes is None:
             self._log("Reconstruction cannot start! You need to set the intensities.","ERROR")
             self._ready = False
         if self._mask is None:
-            #self._log("Reconstruction cannot start! You need to set the mask.","ERROR")
-            self._log("You did not set a mask, therefore initializing without any missing intensity values.","INFO")
+            self._log("You did not set a mask, therefore initializing without masking any pixels of intensity pattern.","INFO")
             self._ready = True
         if self._initial_support_config is None:
             self._log("Reconstruction cannot start! You need to set the initial support.","ERROR")
@@ -330,11 +325,11 @@ class Reconstructor:
         if self._number_of_outputs_images is None or self._number_of_outputs_scores is None:
             self._log("Connot prepare reconstruction. Number of outputs need to be set.","ERROR")
             self._ready = False           
-        if self._i_support_algorithms != None:
+        if self._i_support_algorithms is not None:
             if self._i_support_algorithms != self._number_of_iterations:
                 self._log("Connot prepare reconstruction. Support algorithms initialised are not in line with the set number of iterations.","ERROR")
                 self._ready = False
-        if self._i_phasing_algorithms != None:
+        if self._i_phasing_algorithms is not None:
             if self._i_phasing_algorithms != self._number_of_iterations:
                 self._log("Connot prepare reconstruction. Phasing algorithms initialised are not in line with the set number of iterations.","ERROR")
                 self._ready = False
@@ -351,21 +346,18 @@ class Reconstructor:
         if not self._amplitudes_dirty:
             self._log("Amplitudes already initialised.","DEBUG")
             return
-        I = self._intensities.copy()
-        self._Nx = I.shape[1]
-        self._Ny = I.shape[0]
-        I[I<0] = 0
+        A = self._amplitudes
+        self._Nx = A.shape[1]
+        self._Ny = A.shape[0]
         if self._mask != None:
             M = self._mask.copy()
         else:
-            M = np.ones(shape=I.shape,dtype="bool")
-        self._clear_intensities()
-        self._sp_intensities = spimage.sp_image_alloc(I.shape[1],I.shape[0],1)
-        self._sp_intensities.image.real[:,:] = np.float32(I[:,:])
-        self._sp_intensities.mask[:,:] = np.int32(M[:,:])
-        self._clear_amplitudes()
-        self._sp_amplitudes = spimage.sp_image_alloc(I.shape[1],I.shape[0],1)
-        self._sp_amplitudes.image[:] = np.float32(np.sqrt(I))
+            M = np.ones(shape=A.shape,dtype="bool")
+        for img in [self._sp_amplitudes,self._sp_amplitudes_sh]:
+            if img != None:
+                spimage.sp_image_free(img)
+        self._sp_amplitudes = spimage.sp_image_alloc(A.shape[0],A.shape[1],1)
+        self._sp_amplitudes.image[:,:] = np.float32(A[:,:])
         self._sp_amplitudes.mask[:,:] = np.int32(M[:,:])
         self._sp_amplitudes.scaled = 1
         self._sp_amplitudes.phased = 0
