@@ -226,7 +226,7 @@ class Reconstructor:
             self._log("append_support_algorithm requires the keyword argument \'number_of_iterations\'.","ERROR")
             return
         alg_conf["number_of_iterations"] = kwargs["number_of_iterations"]
-        if alg_conf["number_of_iterations"] == None and len(self._support_algorithms_configs) > 0:
+        if alg_conf["number_of_iterations"] is None and len(self._support_algorithms_configs) > 0:
             self._log("You can not have more than one support algorithm of unspecified number of iterations if the total number of iterations is set to None. Set the total number of iterations by calling set_number_of_iterations and try again.","ERROR")
             return
         necessary_kwargs = {"area":["update_period","blur_init","blur_final","area_init","area_final"],
@@ -283,7 +283,7 @@ class Reconstructor:
             self._log("append_phasing_algorithm requires the keyword argument \'number_of_iterations\'.","ERROR")
             return
         alg_conf["number_of_iterations"] = kwargs["number_of_iterations"]
-        if alg_conf["number_of_iterations"] == None and len(self._phasing_algorithms_configs) > 0:
+        if alg_conf["number_of_iterations"] is None and len(self._phasing_algorithms_configs) > 0:
             self._log("You can not have more than one phasing algorithm of unspecified number of iterations if the total number of iterations is set to None. Set the total number of iterations by calling set_number_of_iterations and try again.","ERROR")
             return
         alg_conf["constraints"] = kwargs.get("constratints","")
@@ -311,14 +311,14 @@ class Reconstructor:
 
     def _prepare_reconstruction(self):
         self._ready = True
-        if self._intensities == None:
+        if self._intensities is None:
             self._log("Reconstruction cannot start! You need to set the intensities.","ERROR")
             self._ready = False
-        if self._mask == None:
+        if self._mask is None:
             #self._log("Reconstruction cannot start! You need to set the mask.","ERROR")
             self._log("You did not set a mask, therefore initializing without any missing intensity values.","INFO")
             self._ready = True
-        if self._initial_support_config == None:
+        if self._initial_support_config is None:
             self._log("Reconstruction cannot start! You need to set the initial support.","ERROR")
             self._ready = False
         if self._support_algorithms_configs == []:
@@ -327,7 +327,7 @@ class Reconstructor:
         if self._phasing_algorithms_configs == []:
             self._log("Reconstruction cannot start! You need to set the phasing algorithm.","ERROR")
             self._ready = False           
-        if self._number_of_outputs_images == None or self._number_of_outputs_scores == None:
+        if self._number_of_outputs_images is None or self._number_of_outputs_scores is None:
             self._log("Connot prepare reconstruction. Number of outputs need to be set.","ERROR")
             self._ready = False           
         if self._i_support_algorithms != None:
@@ -415,7 +415,7 @@ class Reconstructor:
         i = 0
         for alg_conf in self._support_algorithms_configs:
             alg = dict(alg_conf)
-            if alg_conf["number_of_iterations"] == None:
+            if alg_conf["number_of_iterations"] is None:
                 if len(self._support_algorithms_configs) == 1:
                     alg["number_of_iterations"] = self._number_of_iterations
                 else:
@@ -460,7 +460,7 @@ class Reconstructor:
         i = 0
         for alg_conf in self._phasing_algorithms_configs:
             alg = dict(alg_conf)
-            if alg_conf["number_of_iterations"] == None:
+            if alg_conf["number_of_iterations"] is None:
                 if len(self._phasing_algorithms_configs) == 1:
                     alg["number_of_iterations"] = self._number_of_iterations
                 else:
@@ -540,7 +540,7 @@ class Reconstructor:
             change_algorithm = (self._iteration-iteration0_alg == self._phasing_algorithms[i_alg]["number_of_iterations"]) and (self._iteration != self._number_of_iterations)
             change_support = (self._iteration-iteration0_sup == self._support_algorithms[i_sup]["number_of_iterations"]) and (self._iteration != self._number_of_iterations)
             if change_algorithm or change_support or self._iteration in self._out_iterations_images or self._iteration in self._out_iterations_scores:
-                if self._reconstruction == None:
+                if self._reconstruction is None:
                     self._log("Iteration %i" % (self._iteration),"INFO")
                 else:
                     self._log("Reconstruction %i - Iteration %i" % (self._reconstruction,self._iteration),"INFO")
