@@ -38,7 +38,7 @@ class Reconstructor:
 
     def _clear_amplitudes(self):
         for img in [self._sp_amplitudes,self._sp_amplitudes_sh]:
-            if img != None:
+            if img is not None:
                 spimage.sp_image_free(img)
         self._amplitudes = None
         self._sp_amplitudes = None
@@ -54,7 +54,7 @@ class Reconstructor:
 
     def _clear_initial_support(self):
         for img in [self._sp_initial_support,self._sp_initial_support_sh]:
-            if img != None:
+            if img is not None:
                 spimage.sp_image_free(img)
         self._sp_initial_support = None
         self._sp_initial_support_sh = None
@@ -74,7 +74,7 @@ class Reconstructor:
         self._phasing_algorithms_dirty = True
 
     def _clear_phaser(self):
-        if self._sp_phaser != None:
+        if self._sp_phaser is not None:
             spimage.sp_phaser_free(self._sp_phaser)          
         self._sp_phaser = None
         self._phaser_dirty = True
@@ -90,7 +90,7 @@ class Reconstructor:
         return out
 
     def _log(self,s,mode="INFO"):
-        if logger != None:
+        if logger is not None:
             prefix = []
             ps = ""
             if len(prefix) > 0:
@@ -237,7 +237,7 @@ class Reconstructor:
                 return
             else:
                 alg_conf[k] = kwargs[k]
-        if alg_conf["number_of_iterations"] != None:
+        if alg_conf["number_of_iterations"] is not None:
             if len(self._support_algorithms_configs) == 0:
                 self._i_support_algorithms = 0
             self._i_support_algorithms += alg_conf["number_of_iterations"]
@@ -297,7 +297,7 @@ class Reconstructor:
                 return
             else:
                 alg_conf[k] = kwargs[k]
-        if alg_conf["number_of_iterations"] != None:
+        if alg_conf["number_of_iterations"] is not None:
             if len(self._phasing_algorithms_configs) == 0:
                 self._i_phasing_algorithms = 0
             self._i_phasing_algorithms += alg_conf["number_of_iterations"]
@@ -349,12 +349,12 @@ class Reconstructor:
         A = self._amplitudes
         self._Nx = A.shape[1]
         self._Ny = A.shape[0]
-        if self._mask != None:
+        if self._mask is not None:
             M = self._mask.copy()
         else:
             M = np.ones(shape=A.shape,dtype="bool")
         for img in [self._sp_amplitudes,self._sp_amplitudes_sh]:
-            if img != None:
+            if img is not None:
                 spimage.sp_image_free(img)
         self._sp_amplitudes = spimage.sp_image_alloc(A.shape[0],A.shape[1],1)
         self._sp_amplitudes.image[:,:] = np.float32(A[:,:])
@@ -370,7 +370,7 @@ class Reconstructor:
             self._log("Initial support already initialised.","DEBUG")
             return
         for img in [self._sp_initial_support,self._sp_initial_support_sh]:
-            if img != None:
+            if img is not None:
                 spimage.sp_image_free(img)
         self._sp_initial_support = spimage.sp_image_alloc(self._Ny,self._Nx,1)
         if "radius" in self._initial_support_config:
