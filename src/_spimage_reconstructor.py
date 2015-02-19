@@ -121,7 +121,7 @@ class Reconstructor:
 
     def set_intensities(self,intensities,shifted=True):
         """
-        Sets the intensity pattern that shall be phased. By default it is expected that the provided image is the shifted version of the diffraction pattern given as a 2D numpy array. The the default shifted=True indicates that the pixel (0,0) is located in the corner of the physical diffraction pattern. If desired change the default by setting shifted=False.
+        Sets the intensity pattern that shall be phased. By default it is expected that the provided image is the shifted version of the diffraction pattern given as a 2D numpy array. If \"shifted=True\" pixel (0,0) is located in the corner of the physical diffraction pattern. If desired change to \"shifted=False\".
         """
         self._intensities_dirty = True
         self._initial_support_dirty = True
@@ -133,7 +133,7 @@ class Reconstructor:
 
     def set_mask(self,mask,shifted=True):
         """
-        The mask is a 2D boolean numpy array with the same shape as the provided intensities. Values that equal True indicate valid pixels and values that equal False indicate unknown intensity values at the respective pixel location. The the default shifted=True indicates that the pixel (0,0) is located in the corner of the physical diffraction pattern. If desired change the default by setting shifted=False.
+        The mask is a 2D boolean numpy array with the same shape as the provided intensities. Values that equal True indicate valid pixels and values that equal False indicate unknown intensity values at the respective pixel location. If \"shifted=True\" pixel (0,0) is located in the corner of the physical diffraction pattern. If desired change to \"shifted=False\".
         """
         self._intensities_dirty = True
         self._initial_support_dirty = True
@@ -179,8 +179,8 @@ class Reconstructor:
     def set_initial_support(self,**kwargs):
         """
         Set the initial support by either giving:
-        - the radius=some-integer-value (in pixels) of a circular support mask
-        - an explicit support mask support_mask=some-2D-boolean-numpy-array, by default shifted and certainly of the same shape as the intensity pattern
+        - the \"radius=initial_support_radius_in_pixels\" of the circular support mask
+        - an explicit support mask \"support_mask=2D_boolean_numpy_array\", by default shifted and certainly of the same shape as the intensity pattern
         """
         if not ("radius" in kwargs or "support_mask" in kwargs):
             self._log("set_initial_support requires one of the following key word arguments: radius, support_mask","ERROR")
@@ -256,6 +256,10 @@ class Reconstructor:
         - hio: beta_init, beta_final
         - raar: beta_init, beta_final
         - diffmap: beta_init, beta_final, gamma1, gamma2
+        If desired specify additional constraints in a list of strings:
+        - enforce_positivity
+        - enforce_real
+        - enforce_centrosymmetry
         NOTE: If you like to use a series of phasing algorithms please use instead the function append_phasing_algorithm.
         """
         self._clear_phasing_algorithms()
