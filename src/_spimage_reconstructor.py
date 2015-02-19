@@ -616,7 +616,7 @@ class Reconstructor:
             fimg = tmp.image.copy()
             fmsk = tmp.mask.copy()
         else:
-            fimg = self._phaser.model.image.size*np.fft.fftn(self._phaser.model.image)
+            fimg = np.fft.fftn(self._phaser.model.image)#*self._phaser.model.image.size
             fmsk = self._sp_amplitudes.mask.copy()           
         #if normalize:
         #    fimg = fimg/abs(fimg).sum()
