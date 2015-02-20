@@ -163,7 +163,7 @@ def fit_sphere_intensity_nrphotons(img, msk, diameter_nm, intensity_mJ_per_um2, 
     Rmc = numpy.sqrt(Xmc**2 + Ymc**2)
     nr_photons = img[msk].sum()
     size = sphere_model_convert_diameter_to_size(diameter_nm, wavelength_nm, pixelsize_um, detector_distance_mm)
-    I_fit_m = lambda i: I_sphere_diffraction(sphere_model_convert_intensity_to_scaling(i, diameter_nm, wavelength_nm, pixelsize_um, detector_distance_mm, detector_qe, 1, material),Rmc,size)
+    I_fit_m = lambda i: I_sphere_diffraction(sphere_model_convert_intensity_to_scaling(i, diameter_nm, wavelength_nm, pixelsize_um, detector_distance_mm, detector_quantum_efficiency, 1, material),Rmc,size)
     E_fit_m = lambda i: I_fit_m(i).sum() - nr_photons
     intensity_mJ_per_um2 = scipy.optimize.newton(E_fit_m, intensity_mJ_per_um2, maxiter=maxfev, tol=1e-3)
     [intensity_mJ_per_um2], cov, infodict, mesg, ier = leastsq(E_fit_m, intensity_mJ_per_um2, maxfev=maxfev, xtol=1e-3, full_output=True)
@@ -187,7 +187,7 @@ def fit_full_sphere_model(img, msk, diameter_nm, intensity_mJ_per_um2, wavelengt
     intensity_mJ_per_um2 = max(intensity_mJ_per_um2,1.)
     #x0 = min(x0, img.shape[1])
     #y0 = min(y0, img.shape[0])
-    Xm, Ym, img, msk = _prepare_for_fitting(img, msk, 0, 0, rmax, downsampling, adup, do_photon_counting)
+    Xm, Ym, img, msk = _prepare_for_fitting(img, msk, 0, 0, rmax, downsampling, detector_adu_photon, do_photon_counting)
     Rmc     = lambda x,y:     numpy.sqrt((Xm - x)**2 + (Ym - y)**2)
     size    = lambda d:       sphere_model_convert_diameter_to_size(d, wavelength_nm, pixelsize_um, detector_distance_mm)
     scaling = lambda i,d:     sphere_model_convert_intensity_to_scaling(i, d, wavelength_nm, pixelsize_um, detector_distance_mm, detector_qe, 1, material)
