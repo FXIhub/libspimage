@@ -12,6 +12,7 @@ from spimage_pybackend import *
 
 # Python code
 from _spimage_conventions import *
+from _spimage_cxi import *
 from _spimage_resample import downsample,crop
 from _spimage_reconstructor import Reconstructor
 from _spimage_prtf import prtf

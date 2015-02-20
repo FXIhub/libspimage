@@ -45,7 +45,6 @@ class Reconstructor:
         self._sp_amplitudes_sh = None
         self._amplitudes_dirty = True
 
-
     def _clear_iterations(self):
         self._number_of_iterations = None
         self._number_of_outputs_images = None
@@ -575,14 +574,14 @@ class Reconstructor:
 
         return out
     
-    def reconstruct_loop(self,Nrepeats):
+    def reconstruct_loop(self,Nrepeats,full_output=False):
         """
         Repeats the reconstruction Nrepeats times with the specified parameters from random seeds of starting phases and outputs the results as a dictionary.
         """
         self._prepare_reconstruction()
         if not self._ready:
             return
-        #outputs = []
+        single_outputs = []
         fourier_space_final = np.zeros(shape=(Nrepeats,self._Nx,self._Ny),dtype="complex128")
         real_space_final = np.zeros(shape=(Nrepeats,self._Nx,self._Ny),dtype="complex128")
         support_final = np.zeros(shape=(Nrepeats,self._Nx,self._Ny),dtype="bool")
@@ -597,14 +596,15 @@ class Reconstructor:
             support_final[self._reconstruction,:,:] = output["support"][-1,:,:]
             scores_final["real_error"][self._reconstruction] = output["real_error"][-1]
             scores_final["fourier_error"][self._reconstruction] = output["fourier_error"][-1]
-            #outputs.append(output)
+            single_outputs.append(output)
             self._log("Reconstruction %i exited" % (self._reconstruction),"INFO")
         self._reconstruction = None
-        out =  {#"single_outputs":outputs,
-                "real_space_final":real_space_final,
+        out =  {"real_space_final":real_space_final,
                 "fourier_space_final":real_space_final,
                 "support_final":support_final,
                 "scores_final":scores_final}
+        if full_output:
+            out["single_outputs"] = single_outputs
         return out
 
     def _get_curr_fmodel(self,**kwargs):
