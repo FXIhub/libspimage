@@ -104,7 +104,7 @@ def prtf(imgs0,msks0,**kwargs):
             matplotlib.pyplot.imsave(this_folder+"/testdata/prtf_%i_%i_IP_%i.png" % (K,i,j),numpy.angle(img1) % (2.*numpy.pi),vmin=0.,vmax=2.*numpy.pi)
             matplotlib.pyplot.imsave(this_folder+"/testdata/prtf_%i_%i_M_%i.png" % (K,i,j),abs(msk1))
         if do_minimize_phase_ramp:
-            print "Minimize phase ramp"
+            #print "Minimize phase ramp"
             [img1,translation] = minimize_phase_ramp(img1,shifted=False,periodic_boundary=True)
             msk1 = numpy.int16(abs(fourier_translation(msk1,translation)).round())
         
@@ -115,7 +115,7 @@ def prtf(imgs0,msks0,**kwargs):
             matplotlib.pyplot.imsave(this_folder+"/testdata/prtf_%i_%i_IP_%i.png" % (K,i,j),numpy.angle(img1) % (2.*numpy.pi),vmin=0.,vmax=2.*numpy.pi)
             matplotlib.pyplot.imsave(this_folder+"/testdata/prtf_%i_%i_A_M_%i.png" % (K,i,j),abs(msk1))
         if do_maximize_overlap and i!=0:
-            print "Maximize overlap"
+            #print "Maximize overlap"
             [img1,translation,turned] = maximize_overlap(img0,img1,enantio)
             if turned: msk1 = fft_turn180(msk1)
             msk1 = abs(fourier_translation(msk1,translation))
@@ -126,7 +126,7 @@ def prtf(imgs0,msks0,**kwargs):
             matplotlib.pyplot.imsave(this_folder+"/testdata/prtf_%i_%i_IP_%i.png" % (K,i,j),numpy.angle(img1) % (2.*numpy.pi),vmin=0.,vmax=2.*numpy.pi)
             matplotlib.pyplot.imsave(this_folder+"/testdata/prtf_%i_%i_A_M_%i.png" % (K,i,j),abs(msk1))
         if do_phase_match and i!=0:
-            print "Do phase match"
+            #print "Do phase match"
             weights = abs(img0)*abs(img1)
             img1 = abs(img1)*numpy.exp(1.j*(numpy.angle(img1)+phase_match(img0,img1,weights)))
 
@@ -302,7 +302,7 @@ def maximize_overlap(imgA0,imgB0,enantio=False):
     imgB = imgB0.copy()
     [translation,turned] = recover_translation(imgA,imgB,enantio)
     if turned: imgB = fft_turn180(imgB)
-    print translation,turned
+    #print translation,turned
     imgB = fourier_translation(imgB,translation)
     return [imgB,translation,turned]
 
