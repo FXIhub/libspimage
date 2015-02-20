@@ -416,7 +416,7 @@ const Image * sp_phaser_model_before_projection(SpPhaser *ph) {
     }
     ph->model_before_projection_iteration = ph->iteration;
     if (ph->engine == SpEngineCPU) {
-      sp_image_memcpy(ph->model, ph->gp);
+      sp_image_memcpy(ph->model_before_projection, ph->gp);
     } else if (ph->engine == SpEngineCUDA) {
 #ifdef _USE_CUDA
       /* transfer the model from the graphics card to the main memory */
