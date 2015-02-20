@@ -600,7 +600,7 @@ class Reconstructor:
             self._log("Reconstruction %i exited" % (self._reconstruction),"INFO")
         self._reconstruction = None
         out =  {"real_space_final":real_space_final,
-                "fourier_space_final":real_space_final,
+                "fourier_space_final":fourier_space_final,
                 "support_final":support_final,
                 "scores_final":scores_final}
         if full_output:
