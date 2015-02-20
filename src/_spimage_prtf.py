@@ -40,7 +40,7 @@ def prtf(imgs0,msks0,**kwargs):
         if not shifted: "not "
         s += "shifted\n"
         s += "- "
-        if pixels_to_exclude == None:
+        if pixels_to_exclude is None:
             s += "no pixels specified to exclude\n"
         else:
             s += "%i pixels specified to exclude\n" % pixel_to_exclude.sum()
@@ -57,7 +57,7 @@ def prtf(imgs0,msks0,**kwargs):
         if not do_align_com_support: s += "not "
         s += "aligning center of mass of support\n"
         s += "- "
-        if center_result == None: 
+        if center_result is None: 
             s += "no centering of the resulting image\n"
         else:
             s += "centering result in mode %s\n" % center_result
@@ -157,7 +157,7 @@ def prtf(imgs0,msks0,**kwargs):
     # mask zeros
     PRTF = numpy.zeros_like(imgs)
     tmp = abs(fimgs1) != 0.
-    if pixels_to_exclude != None:
+    if pixels_to_exclude is not None:
         tmp *=  pixels_to_exclude
     PRTF[tmp] = fimgs1[tmp]/abs(fimgs1[tmp])
     PRTF = abs(PRTF.mean(0))
@@ -169,7 +169,7 @@ def prtf(imgs0,msks0,**kwargs):
         matplotlib.pyplot.imsave(this_folder+"/testdata/superI%i.png" % no,abs(imgs1_super),vmin=0,vmax=2.)
         matplotlib.pyplot.imsave(this_folder+"/testdata/superM%i.png" % no,abs(msks1_super),vmin=0,vmax=1.)
 
-    if center_result != None:
+    if center_result is not None:
         if center_result == "image":
             CM = center_of_mass(abs(imgs1_super),True)
         elif center_result == "support_times_image":
@@ -285,7 +285,7 @@ def pixel_translation(A,t,order=1):
 # (transferred into python from libspimage)
 def phase_match(imgA,imgB,weights=None): # typically weights = (abs(imgA)*abs(imgB))
     diff = numpy.angle(imgA)-numpy.angle(imgB)
-    if weights == None:
+    if weights is None:
         w = 1/(1.*len(diff.flatten()) + numpy.finfo('float64').eps)
     else:
         w = weights / (weights.sum() + numpy.finfo('float64').eps)
