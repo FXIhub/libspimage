@@ -190,18 +190,18 @@ def prtf(imgs0,msks0,**kwargs):
     #        imgs1_super = fft_turn180(imgs1_super)
     #        msks1_super = abs(fft_turn180(msks1_super))
 
-    if shifted:
-        imgs1_super = numpy.fft.fftshift(imgs1_super)
-        msks1_super = numpy.fft.fftshift(msks1_super)
-        for i in range(N):
-            fimgs1[i,:,:] = numpy.fft.fftshift(fimgs1[i,:,:])
-            imgs1[i,:,:] = numpy.fft.fftshift(imgs1[i,:,:])
-            msks1[i,:,:] = numpy.fft.fftshift(msks1[i,:,:])
-        PRTF = numpy.fft.fftshift(PRTF)
+    #if shifted:
+    #    imgs1_super = numpy.fft.fftshift(imgs1_super)
+    #    msks1_super = numpy.fft.fftshift(msks1_super)
+    #    for i in range(N):
+    #        fimgs1[i,:,:] = numpy.fft.fftshift(fimgs1[i,:,:])
+    #        imgs1[i,:,:] = numpy.fft.fftshift(imgs1[i,:,:])
+    #        msks1[i,:,:] = numpy.fft.fftshift(msks1[i,:,:])
+    #    PRTF = numpy.fft.fftshift(PRTF)
 
     msks1_super = numpy.int16(msks1_super)
     msks1 = numpy.int16(msks1)
-    out["prtf"] = PRTF
+    out["prtf"] = numpy.fft.fftshift(PRTF)
     out["prtf_r"] = radial_mean(numpy.fft.fftshift(PRTF),cx=PRTF.shape[1]/2,cy=PRTF.shape[0]/2)
     out["super_image"] = imgs1_super
     out["super_mask"] = msks1_super
