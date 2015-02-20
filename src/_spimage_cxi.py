@@ -9,22 +9,36 @@ class CXIWriter:
         self.f = h5py.File(filename,"w")
         self.N = N
         self.logger = logger
-    def write_dict(self,data,i,group_prefix=""):
-        for k in data.keys():
-            name = prefix+"/"+k
-            if isinstance(data[k],dict):
-                if name not in self.f:
-                    self.f.create_group(name)
-                self.write(data[k],name)
+    def write_stack(self,data,name=""):
+        for i in range(self.N):
+            for k,d in data.items():
+                name_k = name+"/"+k
+                if isinstance(d,dict):
+                    if name_k not in self.f:
+                        self.f.create_group(name_k)
+                    self.write_slice(d,name_k,i=i)
+                else:
+                    if len(list(d.shape)) > 1:
+                        d_s = d[i,:]
+                    else:
+                        d_s = d[i]
+                    self.write_to_dataset(d_s,name_k,i=i)
+    def write_slice(self,data,name="",i=None):
+        for k,d in data.items():
+            name_k = name+"/"+k
+            if isinstance(d,dict):
+                if name_k not in self.f:
+                    self.f.create_group(name_k)
+                self.write_slice(d,name_k,i=i)
             else:
-                self.write_to_dataset(name,data[k],i)
-    def write_to_dataset(self,name,data,i):
+                self.write_to_dataset(d,name_k,i=i)
+    def write_to_dataset(self,data,name,i=None):
         if self.logger != None:
             self.logger.debug("Write dataset %s of event %i." % (name,i))
         if name not in self.f:
             t0 = time.time()
             if numpy.isscalar(data):
-                if i == -1:
+                if i is None:
                     s = [1]
                 else:
                     s= [self.N]
@@ -34,7 +48,7 @@ class CXIWriter:
                 axes = "experiment_identifier:value"
             else:
                 s = list(data.shape)
-                if i != -1:
+                if i is not None:
                     s.insert(0,self.N)
                 t=data.dtype
                 axes = "experiment_identifier:y:x"
@@ -44,7 +58,7 @@ class CXIWriter:
             if self.logger != None:
                 self.logger.debug("Create dataset %s within %.1f sec.",name,t1-t0)
 
-        if i == -1:
+        if i is None:
             if numpy.isscalar(data):
                 self.f[name][0] = data
             else:
