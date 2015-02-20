@@ -19,11 +19,11 @@ def _downsample2d(array,factor,mode="pick",**kwargs):
     min_N_pixels = kwargs.get("min_N_pixels",1)
     factor = int(round(factor))
     if factor == 1:
-        if mask == None:
+        if mask is None:
             return array.copy()
         else:
             return [array.copy(),mask.copy()]
-    if mask == None:
+    if mask is None:
         mask = None
     else:
         mask = numpy.array(mask,dtype="int16")
@@ -37,7 +37,7 @@ def _downsample2d(array,factor,mode="pick",**kwargs):
         pick = pick.flatten()
         A = array.flatten().copy()
         array_new = (A[pick]).reshape((Ny_new,Nx_new))
-        if mask != None:
+        if mask is not None:
             M = mask.flatten().copy()
             mask_new = (M[pick]).reshape((Ny_new,Nx_new))
             return [array_new,mask_new]
@@ -60,16 +60,16 @@ def _downsample2d(array,factor,mode="pick",**kwargs):
         superp_order = superp.argsort()
         A = A[superp_order]
         A = A.reshape((Nx_new*Ny_new,factor*factor))
-        if mask == None:
+        if mask is None:
             B = A.sum(1)
             return B.reshape((Ny_new,Nx_new))
-        if mask != None:
+        if mask is not None:
             AM = numpy.zeros(shape=(Ny,Nx),dtype="int16")
             AM[:mask.shape[0],:mask.shape[1]] = mask[:,:]
             AM = AM.flat
             AM = AM[superp_order]
             AM = AM.reshape((Nx_new*Ny_new,factor*factor))
-            if bad_bits == None:
+            if bad_bits is None:
                 B = (A*AM).sum(1)
                 BN = AM.sum(1)
                 BM = BN != 0
