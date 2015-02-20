@@ -17,7 +17,7 @@ def _downsample2d(array,factor,mode="pick",**kwargs):
     mask         = kwargs.get("mask",None)
     bad_bits     = kwargs.get("bad_bits",None)
     min_N_pixels = kwargs.get("min_N_pixels",1)
-    factor = int(round(factor0))
+    factor = int(round(factor))
     if factor == 1:
         if mask == None:
             return array.copy()
@@ -30,9 +30,8 @@ def _downsample2d(array,factor,mode="pick",**kwargs):
     Nx = array.shape[1]
     Ny = array.shape[0]
     if mode == "pick": 
-        Y,X = numpy.indices(array2.shape)
+        Y,X = numpy.indices(array.shape)
         pick = ((Y%factor == 0)*(X%factor == 0))
-        print pick.shape
         Ny_new = pick[:,0].sum()
         Nx_new = pick[0,:].sum()
         pick = pick.flatten()

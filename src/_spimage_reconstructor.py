@@ -80,8 +80,8 @@ class Reconstructor:
 
     def _get_scores(self):
         out = {}
-        [I,M] = self._get_curr_model(shifted=True)
-        [fI,fM] = self._get_curr_fmodel(shifted=True)
+        [I,M] = self._get_curr_model(shifted=False)
+        [fI,fM] = self._get_curr_fmodel(shifted=False)
         out["real_error"] = np.sqrt((abs(I[M==0])**2).sum()/( (abs(I[M==1])**2).sum() + np.finfo("float32").eps ))
         out["fourier_error"] = np.sqrt((abs(abs(fI[fM==1])-abs(np.fft.fftshift(self._sp_amplitudes.image)[fM==1]))**2).sum()/( (abs(np.fft.fftshift(self._sp_amplitudes.image)[fM==1])**2).sum() + np.finfo("float32").eps ))
         out["FcFo"] = np.sqrt(abs(fI[fM==1]).sum()/(abs(self._sp_amplitudes.image[fM==0]).sum()+np.finfo("float32").eps))
@@ -108,9 +108,9 @@ class Reconstructor:
                 f = logger.error
             f(" %s %s" % (ps,s))
 
-    def set_intensities(self,intensities,shifted=True):
+    def set_intensities(self,intensities,shifted=False):
         """
-        Sets the intensity pattern that shall be phased. By default it is expected that the provided image is the shifted version of the diffraction pattern given as a 2D numpy array. If \"shifted=True\" pixel (0,0) is located in the corner of the physical diffraction pattern. If desired change to \"shifted=False\".
+        Sets the intensity pattern that shall be phased. By default it is expected that the provided image is the non-shifted version of the diffraction pattern given as a 2D numpy array (diffraction pattern representation). If desired change to \"shifted=False\". If \"shifted=True\" pixel (0,0) is located in the corner of the physical diffraction pattern.
         """
         self._amplitudes_dirty = True
         self._initial_support_dirty = True
@@ -119,20 +119,20 @@ class Reconstructor:
             self._log("Intensities found that have negative values. These values are set to zero.")
             A[A<0] = 0.
         A = np.sqrt(A)
-        if shifted:
+        if not shifted:
             self._amplitudes = np.fft.fftshift(A)
         else:
             self._amplitudes = A
         self._log("Intensities set.","DEBUG")
 
-    def set_mask(self,mask,shifted=True):
+    def set_mask(self,mask,shifted=False):
         """
-        The mask is a 2D boolean numpy array with the same shape as the provided intensities. Values that equal True indicate valid pixels and values that equal False indicate unknown intensity values at the respective pixel location. If \"shifted=True\" pixel (0,0) is located in the corner of the physical diffraction pattern. If desired change to \"shifted=False\".
+        The mask is a 2D boolean numpy array with the same shape as the provided intensities. Values that equal True indicate valid pixels and values that equal False indicate unknown intensity values at the respective pixel location. By default it is expected that the provided image is the non-shifted version of the diffraction pattern given as a 2D numpy array (diffraction pattern representation). If desired change to \"shifted=False\". If \"shifted=True\" pixel (0,0) is located in the corner of the physical diffraction pattern.
         """
         self._amplitudes_dirty = True
         self._initial_support_dirty = True
         M = np.array(mask,dtype="bool")
-        if shifted:
+        if not shifted:
             self._mask = np.fft.fftshift(M)
         else:
             self._mask = M
@@ -175,17 +175,17 @@ class Reconstructor:
         """
         Set the initial support by either giving:
         - the \"radius=initial_support_radius_in_pixels\" of the circular support mask
-        - an explicit support mask \"support_mask=2D_boolean_numpy_array\", by default shifted and of the same shape as the intensity pattern
+        - an explicit support mask \"support_mask=2D_boolean_numpy_array\", non-shifted and of the same shape as the intensity pattern
         """
         if not ("radius" in kwargs or "support_mask" in kwargs):
             self._log("set_initial_support requires one of the following key word arguments: radius, support_mask","ERROR")
             return 
+        self._support_dirty = True
         self._initial_support_config = {}
         if "radius" in kwargs:
             self._initial_support_config["radius"] = kwargs["radius"]
         else:
             self._initial_support_config["support_mask"] = kwargs["support_mask"]
-            self._initlal_support_congig["support_mask_shifted"] = kwargs.get("support_mask_shifted",True)
         self._log("Initial support configuration set.","DEBUG")
 
     def set_support_algorithm(self, type,**kwargs):
@@ -382,8 +382,6 @@ class Reconstructor:
         else:
             self._phaser_dirty = True
             S = self._initial_support_config["support_mask"]
-            if self._initial_support_config["support_mask_shifted"]:
-                S = np.fft.fftshift(S)
             self.sep_initial_support.image[:] = np.float32(S)
         self._initial_support_dirty = False
         self._log("Initial support initialised.","DEBUG")
@@ -550,8 +548,8 @@ class Reconstructor:
                     self._phaser.sup_algorithm = self._support_algorithms[i_sup]["spimage_support_array"]
                     self._log("Change of support algorithm to %s." % self._support_algorithms[i_sup]["type"],"INFO")
                 if self._iteration in self._out_iterations_images:
-                    [real_space[i_out_images,:,:],support[i_out_images,:,:]] = self._get_curr_model(shifted=True)
-                    [fourier_space[i_out_images,:,:],mask[i_out_images,:,:]] = self._get_curr_fmodel(shifted=True)
+                    [real_space[i_out_images,:,:],support[i_out_images,:,:]] = self._get_curr_model(shifted=False)
+                    [fourier_space[i_out_images,:,:],mask[i_out_images,:,:]] = self._get_curr_fmodel(shifted=False)
                     i_out_images += 1
                     self._log("Outputting images.","DEBUG")
                 if self._iteration in self._out_iterations_scores:
@@ -620,7 +618,7 @@ class Reconstructor:
             fmsk = self._sp_amplitudes.mask.copy()           
         #if normalize:
         #    fimg = fimg/abs(fimg).sum()
-        if shifted:
+        if not shifted:
             return [np.fft.fftshift(fimg),np.fft.fftshift(fmsk)]
         else:
             return [fimg,fmsk]
@@ -644,7 +642,7 @@ class Reconstructor:
         else:
             img = self._phaser.model.image.copy()
             msk = np.array(self._sp_initial_support.image.real,dtype="bool")
-        if shifted:
+        if not shifted:
             return [np.fft.fftshift(img),np.fft.fftshift(msk)]
         else:
             return [img,msk]
