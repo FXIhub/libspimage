@@ -1,5 +1,6 @@
 import numpy as np
 import scipy as sp
+from scipy import constants
 __all__ = ['grid', 'rgrid', 'rmask', 'DICT_physical_constants']
 
 def grid(shape, center=None):
@@ -22,11 +23,11 @@ def rmask(shape, r, center=None):
     rmask = r**2 >= (yy**2 + xx**2)
     return rmask
 
-DICT_physical_constants = {'e':1.60217657E-19,
-                           'c':299792458.,
-                           'h':6.62606957E-34,
-                           're':2.8179403267E-15,
+DICT_physical_constants = {'e':constants.e,
+                           'c':constants.c,
+                           'h':constants.h,
+                           're':constants.value("classical electron radius"),
                            'barn':1E-28,
-                           'u':1.66053886E-27}
+                           'u':constants.value("atomic mass constant")}
 
 

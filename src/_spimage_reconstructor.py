@@ -8,12 +8,9 @@ logger.setLevel("WARNING")
 
 class Reconstructor:
     def __init__(self):
-        # mask and intensities
-        self._intensities = None
+        # mask
         self._mask = None
         # wrapped C-object instances
-        self._sp_intensities = None
-        self._sp_intensities_sh = None
         self._sp_amplitudes = None
         self._sp_amplitudes_sh = None
         self._sp_amplitudes_dirty = True
@@ -29,7 +26,6 @@ class Reconstructor:
         """
         Clears the instance reconstructor and deletes all configuration and data associated to it.
         """
-        self._clear_intensities()
         self._clear_amplitudes()
         self._clear_initial_support()
         self._clear_iterations()
@@ -40,18 +36,11 @@ class Reconstructor:
         self._iteration = None
         self._log("Reconstructor initialized.","DEBUG")
 
-    def _clear_intensities(self):
-        for img in [self._sp_intensities,self._sp_intensities_sh]:
-            if img != None:
-                spimage.sp_image_free(img)
-        self._sp_intensities = None
-        self._sp_intensities_sh = None
-        self._amplitudes_dirty = True
-
     def _clear_amplitudes(self):
         for img in [self._sp_amplitudes,self._sp_amplitudes_sh]:
-            if img != None:
+            if img is not None:
                 spimage.sp_image_free(img)
+        self._amplitudes = None
         self._sp_amplitudes = None
         self._sp_amplitudes_sh = None
         self._amplitudes_dirty = True
@@ -64,7 +53,7 @@ class Reconstructor:
 
     def _clear_initial_support(self):
         for img in [self._sp_initial_support,self._sp_initial_support_sh]:
-            if img != None:
+            if img is not None:
                 spimage.sp_image_free(img)
         self._sp_initial_support = None
         self._sp_initial_support_sh = None
@@ -84,15 +73,15 @@ class Reconstructor:
         self._phasing_algorithms_dirty = True
 
     def _clear_phaser(self):
-        if self._sp_phaser != None:
+        if self._sp_phaser is not None:
             spimage.sp_phaser_free(self._sp_phaser)          
         self._sp_phaser = None
         self._phaser_dirty = True
 
     def _get_scores(self):
         out = {}
-        [I,M] = self._get_curr_model(shifted=True)
-        [fI,fM] = self._get_curr_fmodel(shifted=True)
+        [I,M] = self._get_curr_model(shifted=False)
+        [fI,fM] = self._get_curr_fmodel(shifted=False)
         out["real_error"] = np.sqrt((abs(I[M==0])**2).sum()/( (abs(I[M==1])**2).sum() + np.finfo("float32").eps ))
         out["fourier_error"] = np.sqrt((abs(abs(fI[fM==1])-abs(np.fft.fftshift(self._sp_amplitudes.image)[fM==1]))**2).sum()/( (abs(np.fft.fftshift(self._sp_amplitudes.image)[fM==1])**2).sum() + np.finfo("float32").eps ))
         out["FcFo"] = np.sqrt(abs(fI[fM==1]).sum()/(abs(self._sp_amplitudes.image[fM==0]).sum()+np.finfo("float32").eps))
@@ -100,7 +89,7 @@ class Reconstructor:
         return out
 
     def _log(self,s,mode="INFO"):
-        if logger != None:
+        if logger is not None:
             prefix = []
             ps = ""
             if len(prefix) > 0:
@@ -119,28 +108,34 @@ class Reconstructor:
                 f = logger.error
             f(" %s %s" % (ps,s))
 
-    def set_intensities(self,intensities,shifted=True):
+    def set_intensities(self,intensities,shifted=False):
         """
-        Sets the intensity pattern that shall be phased. By default it is expected that the provided image is the shifted version of the diffraction pattern given as a 2D numpy array. The the default shifted=True indicates that the pixel (0,0) is located in the corner of the physical diffraction pattern. If desired change the default by setting shifted=False.
+        Sets the intensity pattern that shall be phased. By default it is expected that the provided image is the non-shifted version of the diffraction pattern given as a 2D numpy array (diffraction pattern representation). If desired change to \"shifted=False\". If \"shifted=True\" pixel (0,0) is located in the corner of the physical diffraction pattern.
         """
-        self._intensities_dirty = True
+        self._amplitudes_dirty = True
         self._initial_support_dirty = True
-        if shifted:
-            self._intensities = np.fft.fftshift(intensities)
+        A = np.array(intensities,dtype="float")
+        if (A<0).sum() > 0:
+            self._log("Intensities found that have negative values. These values are set to zero.")
+            A[A<0] = 0.
+        A = np.sqrt(A)
+        if not shifted:
+            self._amplitudes = np.fft.fftshift(A)
         else:
-            self._intensities = intensities.copy()
+            self._amplitudes = A
         self._log("Intensities set.","DEBUG")
 
-    def set_mask(self,mask,shifted=True):
+    def set_mask(self,mask,shifted=False):
         """
-        The mask is a 2D boolean numpy array with the same shape as the provided intensities. Values that equal True indicate valid pixels and values that equal False indicate unknown intensity values at the respective pixel location. The the default shifted=True indicates that the pixel (0,0) is located in the corner of the physical diffraction pattern. If desired change the default by setting shifted=False.
+        The mask is a 2D boolean numpy array with the same shape as the provided intensities. Values that equal True indicate valid pixels and values that equal False indicate unknown intensity values at the respective pixel location. By default it is expected that the provided image is the non-shifted version of the diffraction pattern given as a 2D numpy array (diffraction pattern representation). If desired change to \"shifted=False\". If \"shifted=True\" pixel (0,0) is located in the corner of the physical diffraction pattern.
         """
-        self._intensities_dirty = True
+        self._amplitudes_dirty = True
         self._initial_support_dirty = True
-        if shifted:
-            self._mask = np.fft.fftshift(mask)
+        M = np.array(mask,dtype="bool")
+        if not shifted:
+            self._mask = np.fft.fftshift(M)
         else:
-            self._mask = mask.copy()
+            self._mask = M
         self._log("Mask set.","DEBUG")
 
     def set_number_of_iterations(self,number_of_iterations):
@@ -179,18 +174,18 @@ class Reconstructor:
     def set_initial_support(self,**kwargs):
         """
         Set the initial support by either giving:
-        - the radius=some-integer-value (in pixels) of a circular support mask
-        - an explicit support mask support_mask=some-2D-boolean-numpy-array, by default shifted and certainly of the same shape as the intensity pattern
+        - the \"radius=initial_support_radius_in_pixels\" of the circular support mask
+        - an explicit support mask \"support_mask=2D_boolean_numpy_array\", non-shifted and of the same shape as the intensity pattern
         """
         if not ("radius" in kwargs or "support_mask" in kwargs):
             self._log("set_initial_support requires one of the following key word arguments: radius, support_mask","ERROR")
             return 
+        self._support_dirty = True
         self._initial_support_config = {}
         if "radius" in kwargs:
             self._initial_support_config["radius"] = kwargs["radius"]
         else:
             self._initial_support_config["support_mask"] = kwargs["support_mask"]
-            self._initlal_support_congig["support_mask_shifted"] = kwargs.get("support_mask_shifted",True)
         self._log("Initial support configuration set.","DEBUG")
 
     def set_support_algorithm(self, type,**kwargs):
@@ -226,7 +221,7 @@ class Reconstructor:
             self._log("append_support_algorithm requires the keyword argument \'number_of_iterations\'.","ERROR")
             return
         alg_conf["number_of_iterations"] = kwargs["number_of_iterations"]
-        if alg_conf["number_of_iterations"] == None and len(self._support_algorithms_configs) > 0:
+        if alg_conf["number_of_iterations"] is None and len(self._support_algorithms_configs) > 0:
             self._log("You can not have more than one support algorithm of unspecified number of iterations if the total number of iterations is set to None. Set the total number of iterations by calling set_number_of_iterations and try again.","ERROR")
             return
         necessary_kwargs = {"area":["update_period","blur_init","blur_final","area_init","area_final"],
@@ -241,7 +236,7 @@ class Reconstructor:
                 return
             else:
                 alg_conf[k] = kwargs[k]
-        if alg_conf["number_of_iterations"] != None:
+        if alg_conf["number_of_iterations"] is not None:
             if len(self._support_algorithms_configs) == 0:
                 self._i_support_algorithms = 0
             self._i_support_algorithms += alg_conf["number_of_iterations"]
@@ -256,6 +251,10 @@ class Reconstructor:
         - hio: beta_init, beta_final
         - raar: beta_init, beta_final
         - diffmap: beta_init, beta_final, gamma1, gamma2
+        If desired specify additional constraints in a list of strings:
+        - enforce_positivity
+        - enforce_real
+        - enforce_centrosymmetry
         NOTE: If you like to use a series of phasing algorithms please use instead the function append_phasing_algorithm.
         """
         self._clear_phasing_algorithms()
@@ -279,7 +278,7 @@ class Reconstructor:
             self._log("append_phasing_algorithm requires the keyword argument \'number_of_iterations\'.","ERROR")
             return
         alg_conf["number_of_iterations"] = kwargs["number_of_iterations"]
-        if alg_conf["number_of_iterations"] == None and len(self._phasing_algorithms_configs) > 0:
+        if alg_conf["number_of_iterations"] is None and len(self._phasing_algorithms_configs) > 0:
             self._log("You can not have more than one phasing algorithm of unspecified number of iterations if the total number of iterations is set to None. Set the total number of iterations by calling set_number_of_iterations and try again.","ERROR")
             return
         alg_conf["constraints"] = kwargs.get("constratints","")
@@ -297,7 +296,7 @@ class Reconstructor:
                 return
             else:
                 alg_conf[k] = kwargs[k]
-        if alg_conf["number_of_iterations"] != None:
+        if alg_conf["number_of_iterations"] is not None:
             if len(self._phasing_algorithms_configs) == 0:
                 self._i_phasing_algorithms = 0
             self._i_phasing_algorithms += alg_conf["number_of_iterations"]
@@ -307,14 +306,13 @@ class Reconstructor:
 
     def _prepare_reconstruction(self):
         self._ready = True
-        if self._intensities == None:
+        if self._amplitudes is None:
             self._log("Reconstruction cannot start! You need to set the intensities.","ERROR")
             self._ready = False
-        if self._mask == None:
-            #self._log("Reconstruction cannot start! You need to set the mask.","ERROR")
-            self._log("You did not set a mask, therefore initializing without any missing intensity values.","INFO")
+        if self._mask is None:
+            self._log("You did not set a mask, therefore initializing without masking any pixels of intensity pattern.","INFO")
             self._ready = True
-        if self._initial_support_config == None:
+        if self._initial_support_config is None:
             self._log("Reconstruction cannot start! You need to set the initial support.","ERROR")
             self._ready = False
         if self._support_algorithms_configs == []:
@@ -323,14 +321,14 @@ class Reconstructor:
         if self._phasing_algorithms_configs == []:
             self._log("Reconstruction cannot start! You need to set the phasing algorithm.","ERROR")
             self._ready = False           
-        if self._number_of_outputs_images == None or self._number_of_outputs_scores == None:
+        if self._number_of_outputs_images is None or self._number_of_outputs_scores is None:
             self._log("Connot prepare reconstruction. Number of outputs need to be set.","ERROR")
             self._ready = False           
-        if self._i_support_algorithms != None:
+        if self._i_support_algorithms is not None:
             if self._i_support_algorithms != self._number_of_iterations:
                 self._log("Connot prepare reconstruction. Support algorithms initialised are not in line with the set number of iterations.","ERROR")
                 self._ready = False
-        if self._i_phasing_algorithms != None:
+        if self._i_phasing_algorithms is not None:
             if self._i_phasing_algorithms != self._number_of_iterations:
                 self._log("Connot prepare reconstruction. Phasing algorithms initialised are not in line with the set number of iterations.","ERROR")
                 self._ready = False
@@ -347,21 +345,18 @@ class Reconstructor:
         if not self._amplitudes_dirty:
             self._log("Amplitudes already initialised.","DEBUG")
             return
-        I = self._intensities.copy()
-        self._Nx = I.shape[1]
-        self._Ny = I.shape[0]
-        I[I<0] = 0
-        if self._mask != None:
+        A = self._amplitudes
+        self._Nx = A.shape[1]
+        self._Ny = A.shape[0]
+        if self._mask is not None:
             M = self._mask.copy()
         else:
-            M = np.ones(shape=I.shape,dtype="bool")
-        self._clear_intensities()
-        self._sp_intensities = spimage.sp_image_alloc(I.shape[1],I.shape[0],1)
-        self._sp_intensities.image.real[:,:] = np.float32(I[:,:])
-        self._sp_intensities.mask[:,:] = np.int32(M[:,:])
-        self._clear_amplitudes()
-        self._sp_amplitudes = spimage.sp_image_alloc(I.shape[1],I.shape[0],1)
-        self._sp_amplitudes.image[:] = np.float32(np.sqrt(I))
+            M = np.ones(shape=A.shape,dtype="bool")
+        for img in [self._sp_amplitudes,self._sp_amplitudes_sh]:
+            if img is not None:
+                spimage.sp_image_free(img)
+        self._sp_amplitudes = spimage.sp_image_alloc(A.shape[0],A.shape[1],1)
+        self._sp_amplitudes.image[:,:] = np.float32(A[:,:])
         self._sp_amplitudes.mask[:,:] = np.int32(M[:,:])
         self._sp_amplitudes.scaled = 1
         self._sp_amplitudes.phased = 0
@@ -374,7 +369,7 @@ class Reconstructor:
             self._log("Initial support already initialised.","DEBUG")
             return
         for img in [self._sp_initial_support,self._sp_initial_support_sh]:
-            if img != None:
+            if img is not None:
                 spimage.sp_image_free(img)
         self._sp_initial_support = spimage.sp_image_alloc(self._Ny,self._Nx,1)
         if "radius" in self._initial_support_config:
@@ -387,8 +382,6 @@ class Reconstructor:
         else:
             self._phaser_dirty = True
             S = self._initial_support_config["support_mask"]
-            if self._initial_support_config["support_mask_shifted"]:
-                S = np.fft.fftshift(S)
             self.sep_initial_support.image[:] = np.float32(S)
         self._initial_support_dirty = False
         self._log("Initial support initialised.","DEBUG")
@@ -411,7 +404,7 @@ class Reconstructor:
         i = 0
         for alg_conf in self._support_algorithms_configs:
             alg = dict(alg_conf)
-            if alg_conf["number_of_iterations"] == None:
+            if alg_conf["number_of_iterations"] is None:
                 if len(self._support_algorithms_configs) == 1:
                     alg["number_of_iterations"] = self._number_of_iterations
                 else:
@@ -456,7 +449,7 @@ class Reconstructor:
         i = 0
         for alg_conf in self._phasing_algorithms_configs:
             alg = dict(alg_conf)
-            if alg_conf["number_of_iterations"] == None:
+            if alg_conf["number_of_iterations"] is None:
                 if len(self._phasing_algorithms_configs) == 1:
                     alg["number_of_iterations"] = self._number_of_iterations
                 else:
@@ -536,7 +529,7 @@ class Reconstructor:
             change_algorithm = (self._iteration-iteration0_alg == self._phasing_algorithms[i_alg]["number_of_iterations"]) and (self._iteration != self._number_of_iterations)
             change_support = (self._iteration-iteration0_sup == self._support_algorithms[i_sup]["number_of_iterations"]) and (self._iteration != self._number_of_iterations)
             if change_algorithm or change_support or self._iteration in self._out_iterations_images or self._iteration in self._out_iterations_scores:
-                if self._reconstruction == None:
+                if self._reconstruction is None:
                     self._log("Iteration %i" % (self._iteration),"INFO")
                 else:
                     self._log("Reconstruction %i - Iteration %i" % (self._reconstruction,self._iteration),"INFO")
@@ -555,8 +548,8 @@ class Reconstructor:
                     self._phaser.sup_algorithm = self._support_algorithms[i_sup]["spimage_support_array"]
                     self._log("Change of support algorithm to %s." % self._support_algorithms[i_sup]["type"],"INFO")
                 if self._iteration in self._out_iterations_images:
-                    [real_space[i_out_images,:,:],support[i_out_images,:,:]] = self._get_curr_model(shifted=True)
-                    [fourier_space[i_out_images,:,:],mask[i_out_images,:,:]] = self._get_curr_fmodel(shifted=True)
+                    [real_space[i_out_images,:,:],support[i_out_images,:,:]] = self._get_curr_model(shifted=False)
+                    [fourier_space[i_out_images,:,:],mask[i_out_images,:,:]] = self._get_curr_fmodel(shifted=False)
                     i_out_images += 1
                     self._log("Outputting images.","DEBUG")
                 if self._iteration in self._out_iterations_scores:
@@ -577,22 +570,16 @@ class Reconstructor:
                "fourier_error":fourier_error,
                "support_size":support_size}
 
-        # Print always something at the end
-        if self._reconstruction is None:
-            print "Reconstruction finished"
-        else:
-            print "Reconstruction finished: ", self._reconstruction
-
         return out
     
-    def reconstruct_loop(self,Nrepeats):
+    def reconstruct_loop(self,Nrepeats,full_output=False):
         """
         Repeats the reconstruction Nrepeats times with the specified parameters from random seeds of starting phases and outputs the results as a dictionary.
         """
         self._prepare_reconstruction()
         if not self._ready:
             return
-        #outputs = []
+        single_outputs = []
         fourier_space_final = np.zeros(shape=(Nrepeats,self._Nx,self._Ny),dtype="complex128")
         real_space_final = np.zeros(shape=(Nrepeats,self._Nx,self._Ny),dtype="complex128")
         support_final = np.zeros(shape=(Nrepeats,self._Nx,self._Ny),dtype="bool")
@@ -607,14 +594,15 @@ class Reconstructor:
             support_final[self._reconstruction,:,:] = output["support"][-1,:,:]
             scores_final["real_error"][self._reconstruction] = output["real_error"][-1]
             scores_final["fourier_error"][self._reconstruction] = output["fourier_error"][-1]
-            #outputs.append(output)
+            single_outputs.append(output)
             self._log("Reconstruction %i exited" % (self._reconstruction),"INFO")
         self._reconstruction = None
-        out =  {#"single_outputs":outputs,
-                "real_space_final":real_space_final,
-                "fourier_space_final":real_space_final,
+        out =  {"real_space_final":real_space_final,
+                "fourier_space_final":fourier_space_final,
                 "support_final":support_final,
                 "scores_final":scores_final}
+        if full_output:
+            out["single_outputs"] = single_outputs
         return out
 
     def _get_curr_fmodel(self,**kwargs):
@@ -626,11 +614,11 @@ class Reconstructor:
             fimg = tmp.image.copy()
             fmsk = tmp.mask.copy()
         else:
-            fimg = self._phaser.model.image.size*np.fft.fftn(self._phaser.model.image)
+            fimg = np.fft.fftn(self._phaser.model.image)#*self._phaser.model.image.size
             fmsk = self._sp_amplitudes.mask.copy()           
         #if normalize:
         #    fimg = fimg/abs(fimg).sum()
-        if shifted:
+        if not shifted:
             return [np.fft.fftshift(fimg),np.fft.fftshift(fmsk)]
         else:
             return [fimg,fmsk]
@@ -654,7 +642,7 @@ class Reconstructor:
         else:
             img = self._phaser.model.image.copy()
             msk = np.array(self._sp_initial_support.image.real,dtype="bool")
-        if shifted:
+        if not shifted:
             return [np.fft.fftshift(img),np.fft.fftshift(msk)]
         else:
             return [img,msk]

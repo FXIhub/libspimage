@@ -31,7 +31,7 @@ def prtf(imgs0,msks0,**kwargs):
     do_phase_match = kwargs.get("real_space_phase_match",True)
     do_align_com_support = kwargs.get("align_com_support",False)
 
-    if logger0 != None:
+    if logger0 is not None:
         s = "  "
         s += "- "
         if not enantio: "no "
@@ -40,7 +40,7 @@ def prtf(imgs0,msks0,**kwargs):
         if not shifted: "not "
         s += "shifted\n"
         s += "- "
-        if pixels_to_exclude == None:
+        if pixels_to_exclude is None:
             s += "no pixels specified to exclude\n"
         else:
             s += "%i pixels specified to exclude\n" % pixel_to_exclude.sum()
@@ -57,7 +57,7 @@ def prtf(imgs0,msks0,**kwargs):
         if not do_align_com_support: s += "not "
         s += "aligning center of mass of support\n"
         s += "- "
-        if center_result == None: 
+        if center_result is None: 
             s += "no centering of the resulting image\n"
         else:
             s += "centering result in mode %s\n" % center_result
@@ -104,6 +104,7 @@ def prtf(imgs0,msks0,**kwargs):
             matplotlib.pyplot.imsave(this_folder+"/testdata/prtf_%i_%i_IP_%i.png" % (K,i,j),numpy.angle(img1) % (2.*numpy.pi),vmin=0.,vmax=2.*numpy.pi)
             matplotlib.pyplot.imsave(this_folder+"/testdata/prtf_%i_%i_M_%i.png" % (K,i,j),abs(msk1))
         if do_minimize_phase_ramp:
+            #print "Minimize phase ramp"
             [img1,translation] = minimize_phase_ramp(img1,shifted=False,periodic_boundary=True)
             msk1 = numpy.int16(abs(fourier_translation(msk1,translation)).round())
         
@@ -114,6 +115,7 @@ def prtf(imgs0,msks0,**kwargs):
             matplotlib.pyplot.imsave(this_folder+"/testdata/prtf_%i_%i_IP_%i.png" % (K,i,j),numpy.angle(img1) % (2.*numpy.pi),vmin=0.,vmax=2.*numpy.pi)
             matplotlib.pyplot.imsave(this_folder+"/testdata/prtf_%i_%i_A_M_%i.png" % (K,i,j),abs(msk1))
         if do_maximize_overlap and i!=0:
+            #print "Maximize overlap"
             [img1,translation,turned] = maximize_overlap(img0,img1,enantio)
             if turned: msk1 = fft_turn180(msk1)
             msk1 = abs(fourier_translation(msk1,translation))
@@ -124,6 +126,7 @@ def prtf(imgs0,msks0,**kwargs):
             matplotlib.pyplot.imsave(this_folder+"/testdata/prtf_%i_%i_IP_%i.png" % (K,i,j),numpy.angle(img1) % (2.*numpy.pi),vmin=0.,vmax=2.*numpy.pi)
             matplotlib.pyplot.imsave(this_folder+"/testdata/prtf_%i_%i_A_M_%i.png" % (K,i,j),abs(msk1))
         if do_phase_match and i!=0:
+            #print "Do phase match"
             weights = abs(img0)*abs(img1)
             img1 = abs(img1)*numpy.exp(1.j*(numpy.angle(img1)+phase_match(img0,img1,weights)))
 
@@ -154,45 +157,52 @@ def prtf(imgs0,msks0,**kwargs):
     # mask zeros
     PRTF = numpy.zeros_like(imgs)
     tmp = abs(fimgs1) != 0.
-    if pixels_to_exclude != None:
+    if pixels_to_exclude is not None:
         tmp *=  pixels_to_exclude
     PRTF[tmp] = fimgs1[tmp]/abs(fimgs1[tmp])
     PRTF = abs(PRTF.mean(0))
     PRTF[(fimgs == 0).sum(0) != 0] = 0.
     PRTF = numpy.array(PRTF,dtype="float32")
 
+    no = numpy.random.randint(1000)
     if debug:
-        matplotlib.pyplot.imsave(this_folder+"/testdata/superI%i.png" % numpy.random.randint(1000),abs(imgs1_super),vmin=0,vmax=2.)
-        matplotlib.pyplot.imsave(this_folder+"/testdata/superM%i.png" % numpy.random.randint(1000),abs(msks1_super),vmin=0,vmax=1.)
+        matplotlib.pyplot.imsave(this_folder+"/testdata/superI%i.png" % no,abs(imgs1_super),vmin=0,vmax=2.)
+        matplotlib.pyplot.imsave(this_folder+"/testdata/superM%i.png" % no,abs(msks1_super),vmin=0,vmax=1.)
 
-    if center_result != None:
+    if center_result is not None:
         if center_result == "image":
-            CM = center_of_mass(abs(imgs1_super))
+            CM = center_of_mass(abs(imgs1_super),True)
         elif center_result == "support_times_image":
-            CM = center_of_mass(msks1_super*abs(imgs1_super))
+            CM = center_of_mass(msks1_super*abs(imgs1_super),True)
         elif center_result == "support":
-            CM = center_of_mass(msks1_super)
+            CM = center_of_mass(msks1_super,True)
+        
         imgs1_super = pixel_translation(imgs1_super,CM,3)
         msks1_super = pixel_translation(msks1_super,CM,3)
+        if debug:
+            matplotlib.pyplot.imsave(this_folder+"/testdata/superI%i_centered.png" % no,abs(imgs1_super),vmin=0,vmax=2.)
+            matplotlib.pyplot.imsave(this_folder+"/testdata/superM%i_centered.png" % no,abs(msks1_super),vmin=0,vmax=1.)
 
-    if do_align_com_support:
-        com = center_of_mass(msks1_super)
-        if com[0] > 0 and com[1] > 0:
-            imgs1_super = fft_turn180(imgs1_super)
-            msks1_super = abs(fft_turn180(msks1_super))
 
-    if shifted:
-        imgs1_super = numpy.fft.fftshift(imgs1_super)
-        msks1_super = numpy.fft.fftshift(msks1_super)
-        for i in range(N):
-            fimgs1[i,:,:] = numpy.fft.fftshift(fimgs1[i,:,:])
-            imgs1[i,:,:] = numpy.fft.fftshift(imgs1[i,:,:])
-            msks1[i,:,:] = numpy.fft.fftshift(msks1[i,:,:])
-        PRTF = numpy.fft.fftshift(PRTF)
+    #if do_align_com_support:
+    #    com = center_of_mass(msks1_super,True)
+    #    if com[0] > 0 and com[1] > 0:
+    #        imgs1_super = fft_turn180(imgs1_super)
+    #        msks1_super = abs(fft_turn180(msks1_super))
+
+    #if shifted:
+    #    imgs1_super = numpy.fft.fftshift(imgs1_super)
+    #    msks1_super = numpy.fft.fftshift(msks1_super)
+    #    for i in range(N):
+    #        fimgs1[i,:,:] = numpy.fft.fftshift(fimgs1[i,:,:])
+    #        imgs1[i,:,:] = numpy.fft.fftshift(imgs1[i,:,:])
+    #        msks1[i,:,:] = numpy.fft.fftshift(msks1[i,:,:])
+    #    PRTF = numpy.fft.fftshift(PRTF)
 
     msks1_super = numpy.int16(msks1_super)
     msks1 = numpy.int16(msks1)
-    out["prtf"] = PRTF
+    out["prtf"] = numpy.fft.fftshift(PRTF)
+    out["prtf_r"] = radial_mean(numpy.fft.fftshift(PRTF),cx=PRTF.shape[1]/2,cy=PRTF.shape[0]/2)
     out["super_image"] = imgs1_super
     out["super_mask"] = msks1_super
     out["images"] = imgs1
@@ -275,7 +285,7 @@ def pixel_translation(A,t,order=1):
 # (transferred into python from libspimage)
 def phase_match(imgA,imgB,weights=None): # typically weights = (abs(imgA)*abs(imgB))
     diff = numpy.angle(imgA)-numpy.angle(imgB)
-    if weights == None:
+    if weights is None:
         w = 1/(1.*len(diff.flatten()) + numpy.finfo('float64').eps)
     else:
         w = weights / (weights.sum() + numpy.finfo('float64').eps)
@@ -292,6 +302,7 @@ def maximize_overlap(imgA0,imgB0,enantio=False):
     imgB = imgB0.copy()
     [translation,turned] = recover_translation(imgA,imgB,enantio)
     if turned: imgB = fft_turn180(imgB)
+    #print translation,turned
     imgB = fourier_translation(imgB,translation)
     return [imgB,translation,turned]
 
@@ -367,3 +378,53 @@ def center_of_mass(img0,shifted=False):
 
 def fft_turn180(I):
     return numpy.fft.fftn(numpy.fft.fftn(I))/(1.*I.size)
+
+def get_R_and_Theta_map(Nx,Ny,cx=None,cy=None):
+    if not cx:
+        cx = (Nx-1)/2.0
+    if not cy:
+        cy = (Ny-1)/2.0
+    x = numpy.arange(0,Nx,1.0)-cx
+    y = numpy.arange(0,Ny,1.0)-cy
+    X,Y = numpy.meshgrid(x,y)
+    R = numpy.sqrt(X**2+Y**2)
+    R = R.round()
+    Theta = numpy.arctan(-Y/(X+numpy.finfo('float64').eps))
+    Theta[X<0] += numpy.pi
+    Theta += numpy.pi/2.0
+    #numpy.imsave("Theta.png" , Theta)
+    #numpy.imsave("X.png" , X)
+    #numpy.imsave("Y.png" , Y)
+    return [R,Theta]
+
+def _radial(image,mode="mean",**kwargs):
+    if mode == "mean": f = numpy.mean
+    elif mode == "sum": f = numpy.sum
+    elif mode == "std": f = numpy.std
+    elif mode == "median": f = numpy.median
+    else:
+        print "ERROR: No valid mode given for radial projection."
+        return
+    if 'cx' in kwargs: cx = kwargs['cx']
+    else: cx = (image.shape[1]-1)/2.0
+    if 'cy' in kwargs: cy = kwargs['cy'] 
+    else: cy = (image.shape[0]-1)/2.0
+    R = get_R_and_Theta_map(image.shape[1],image.shape[0],cx,cy)[0]
+    R = R.round()
+    R[numpy.isfinite(image)==False] = -1
+    radii = numpy.arange(R.min(),R.max()+1,1)
+    if radii[0] == -1:
+        radii = radii[1:]
+    values = numpy.zeros_like(radii)
+    for i in range(0,len(radii)):
+        values[i] = f(image[R==radii[i]])
+    if 'rout' in kwargs: return numpy.array([radii,values])
+    else: return values
+def radial_sum(image,**kwargs):
+    return _radial(image,"sum",**kwargs)
+def radial_std(image,**kwargs):
+    return _radial(image,"std",**kwargs)
+def radial_mean(image,**kwargs):
+    return _radial(image,"mean",**kwargs)
+def radial_median(image,**kwargs):
+    return _radial(image,"median",**kwargs)
