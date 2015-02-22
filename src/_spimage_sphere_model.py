@@ -74,17 +74,10 @@ def fit_sphere_diameter_pixelwise(img, msk, diameter_nm, intensity_mJ_per_um2, w
     I_fit_m = lambda d: I_sphere_diffraction(S,Rmc,sphere_model_convert_diameter_to_size(d, wavelength_nm, pixelsize_um, detector_distance_mm))
     E_fit_m = lambda d: I_fit_m(d) - img[msk]
     
-<<<<<<< HEAD
-    bounds  = numpy.array([(diameter-deltab*diameter, diameter+deltab*diameter)])
-    p, cov, infodict, mesg, ier = leastsq(E_fit_m, numpy.array([diameter]), maxfev=maxfev, xtol=1e-5, full_output=True)
-    #p, cov, infodict, mesg, ier = spimage.leastsqbound(E_fit_m, numpy.array([diameter]), maxfev=maxfev, xtol=1e-5, full_output=True, bounds=bounds)
-    [diameter] = p
-=======
     bounds  = numpy.array([(diameter_nm-deltab*diameter_nm, diameter_nm+deltab*diameter_nm)])
     p, cov, infodict, mesg, ier = leastsq(E_fit_m, numpy.array([diameter_nm]), maxfev=maxfev, xtol=1e-5, full_output=True)
     #p, cov, infodict, mesg, ier = spimage.leastsqbound(E_fit_m, numpy.array([diameter_nm]), maxfev=maxfev, xtol=1e-5, full_output=True, bounds=bounds)
     [diameter_nm] = p
->>>>>>> e0e5ecbd33a0e68211178e35bfbde973d79a5437
     
     # Reduced Chi-squared and standard error
     chisquared = ((I_fit_m(diameter_nm) - img[msk])**2).sum()/(img.shape[0]*img.shape[1] - 1)
@@ -209,13 +202,8 @@ def fit_full_sphere_model(img, msk, diameter_nm, intensity_mJ_per_um2, wavelengt
     d_bound  = (diameter_nm-deltab*diameter_nm, diameter_nm+deltab*diameter_nm)
     i_bound = (None, None)
     bounds   = numpy.array([x0_bound, y0_bound , d_bound, i_bound])
-<<<<<<< HEAD
-    p, cov, infodict, mesg, ier = spimage.leastsqbound(E_fit_m, numpy.array([x0,y0,diameter,intensity]), maxfev=maxfev, xtol=1e-5, full_output=True, bounds=bounds)
-    [x0, y0, diameter, intensity] = p
-=======
     p, cov, infodict, mesg, ier = spimage.leastsqbound(E_fit_m, numpy.array([x0,y0,diameter_nm,intensity_mJ_per_um2]), maxfev=maxfev, xtol=1e-5, full_output=True, bounds=bounds)
     [x0, y0, diameter_nm, intensity_mJ_per_um2] = p
->>>>>>> e0e5ecbd33a0e68211178e35bfbde973d79a5437
 
     # Reduced Chi-squared and standard errors
     chisquared = (E_fit_m(p)**2).sum()/(img.shape[0]*img.shape[1] - len(p))
