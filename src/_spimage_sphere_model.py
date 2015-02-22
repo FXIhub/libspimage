@@ -4,7 +4,7 @@ import scipy.signal
 from scipy.optimize import leastsq
 import scipy.stats
 import spimage
-from pylab import *
+#from pylab import *
 __all__ = ['fit_sphere_diameter', 'fit_sphere_intensity', 'fit_full_sphere_model', 'I_sphere_diffraction', 'sphere_model_convert_diameter_to_size', 'sphere_model_convert_intensity_to_scaling', 'sphere_model_convert_scaling_to_intensity']
 
 def fit_sphere_diameter(img, msk, diameter, intensity, wavelength, pixelsize, detector_distance, method=None, full_output=False, **kwargs):
@@ -42,7 +42,8 @@ def fit_sphere_diameter_pearson(img, msk, diameter, intensity, wavelength, pixel
     # We'll assume at least 20x oversampling
     if do_brute_evals:
         dmin = sphere_model_convert_size_to_diameter(1./(downsampling*img.shape[0]), wavelength, pixelsize, detector_distance)
-        dmax = dmin*downsampling*img.shape[0]/40
+        dmax = dmin*downsampling*img.shape[0]/20
+        #print dmin, dmax
         Ns = do_brute_evals
         diameter = scipy.optimize.brute(E_fit_m, [(dmin, dmax)], Ns=Ns)[0]
 
@@ -74,7 +75,7 @@ def fit_sphere_diameter_pixelwise(img, msk, diameter, intensity, wavelength, pix
     I_fit_m = lambda d: I_sphere_diffraction(S,Rmc,sphere_model_convert_diameter_to_size(d, wavelength, pixelsize, detector_distance))
     E_fit_m = lambda d: I_fit_m(d) - img[msk]
     
-    bounds  = np.array([(diameter-deltab*diameter, diameter+deltab*diameter)])
+    bounds  = numpy.array([(diameter-deltab*diameter, diameter+deltab*diameter)])
     p, cov, infodict, mesg, ier = leastsq(E_fit_m, numpy.array([diameter]), maxfev=maxfev, xtol=1e-5, full_output=True)
     #p, cov, infodict, mesg, ier = spimage.leastsqbound(E_fit_m, numpy.array([diameter]), maxfev=maxfev, xtol=1e-5, full_output=True, bounds=bounds)
     [diameter] = p
@@ -197,7 +198,7 @@ def fit_full_sphere_model(img, msk, diameter, intensity, wavelength, pixelsize, 
     y0_bound = (None, None)
     d_bound  = (diameter-deltab*diameter, diameter+deltab*diameter)
     i_bound = (None, None)
-    bounds   = np.array([x0_bound, y0_bound , d_bound, i_bound])
+    bounds   = numpy.array([x0_bound, y0_bound , d_bound, i_bound])
     p, cov, infodict, mesg, ier = spimage.leastsqbound(E_fit_m, numpy.array([x0,y0,diameter,intensity]), maxfev=maxfev, xtol=1e-5, full_output=True, bounds=bounds)
     [x0, y0, diameter, intensity] = p
 
