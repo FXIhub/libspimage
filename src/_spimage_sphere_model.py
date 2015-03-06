@@ -233,8 +233,8 @@ def _prepare_for_fitting(img, msk, x0, y0, rmax, downsampling, adup, do_photon_c
     Xc = X - x0   # Centered (masked) grid x vectors in [px]
     Yc = Y - y0   # Centered (masked) grid y vectors in [px]
     qmap = spimage.generate_absqmap(Xc,Yc,pixel_size,detector_distance)
-    Xc = x_to_qx(Xc,pixel_size,detector_distance)
-    Yc = y_to_qy(Yc,pixel_size,detector_distance)
+    Xc = spimage.x_to_qx(Xc,pixel_size,detector_distance)
+    Yc = spimage.y_to_qy(Yc,pixel_size,detector_distance)
     Xmc = Xc[msk] # Non-centered (masked) grid x vectors in [px]
     Ymc = Yc[msk] # Non-centered (masked) grid y vectors in [px]
     img = img / adup

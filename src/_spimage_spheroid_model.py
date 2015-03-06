@@ -13,8 +13,8 @@ def fit_spheroid_shape(img, msk, diameter_a, diameter_c, phi, intensity, wavelen
 
     usage:
     ======
-    diameter, flattening, phi = fit_spheroid_shape(img, msk)
-    diameter, flattening, phi = fit_spheroid_shape(img, msk, method='pearson', ...)
+    diameter_a, diamter_c, phi = fit_spheroid_shape(img, msk)
+    diameter_a, diamter_c, phi = fit_spheroid_shape(img, msk, method='pearson', ...)
 
     """
     if method is None: method = 'pearson'
@@ -33,7 +33,7 @@ def fit_spheroid_shape_pearson(img, msk, diameter_a, diameter_c, phi, intensity,
     diameter = (diameter_a**2*diameter_c)**(1/3.)
     S   = sphere_model_convert_intensity_to_scaling(intensity, diameter, wavelength, pixel_size, detector_distance, detector_quantum_efficiency, 1, material)
     size    = lambda d: sphere_model_convert_diameter_to_size(d, wavelength, pixel_size, detector_distance)
-    I_fit_m = lambda d_a,d_c,p: I_spheroid_diffraction(S,Xmc,Ymc,size(d_a),size(d_c),0.,p)
+    I_fit_m = lambda da,dc,p: I_spheroid_diffraction(S,Xmc,Ymc,size(da),size(dc),0.,p)
     def E_fit_m(p):
         if not (img[msk].std() and I_fit_m(p[0],p[1],p[2]).std()): return numpy.ones(len(p))
         else: return 1-scipy.stats.pearsonr(I_fit_m(p[0],p[1],p[2]),img[msk])[0]*numpy.ones(len(p))
@@ -43,6 +43,11 @@ def fit_spheroid_shape_pearson(img, msk, diameter_a, diameter_c, phi, intensity,
     p, cov, infodict, mesg, ier = leastsq(E_fit_m, p0, maxfev=maxfev, xtol=1e-5, full_output=True)
     [diameter_a, diameter_c, phi] = p
     phi = phi % numpy.pi
+    
+    if diameter_a > diameter_c:
+        print "Try again"
+        return fit_spheroid_shape_pearson(img, msk, diameter_c, diameter_a, phi+numpy.pi/2., intensity, wavelength, pixel_size, detector_distance, full_output,
+                                          x0, y0, detector_adu_photon, detector_quantum_efficiency, material, rmax, downsampling, do_brute_evals, maxfev, do_photon_counting, deltab)
     
     # Reduced Chi-squared and standard error
     chisquared = ((I_fit_m(diameter_a, diameter_c, phi) - img[msk])**2).sum()/(img.shape[0]*img.shape[1] - 1)
@@ -128,8 +133,8 @@ def fit_full_spheroid_model(img, msk, diameter_a, diameter_c, phi, intensity, wa
     #y0 = min(y0, img.shape[0])
     Xm, Ym, img, msk = _prepare_for_fitting(img, msk, 0, 0, rmax, downsampling, detector_adu_photon, do_photon_counting, pixel_size, detector_distance)
     size = lambda d: sphere_model_convert_diameter_to_size(d, wavelength, pixel_size, detector_distance)
-    diameter = lambda da,dc: (da**2*dc)**(1/3.)
-    scaling = lambda i,da,dc: sphere_model_convert_intensity_to_scaling(i, diameter(da,dc), wavelength, pixel_size, detector_distance, detector_quantum_efficiency, 1, material)
+    d = lambda da,dc: (da**2*dc)**(1/3.)
+    scaling = lambda i,da,dc: sphere_model_convert_intensity_to_scaling(i, d(da,dc), wavelength, pixel_size, detector_distance, detector_quantum_efficiency, 1, material)
     I_fit_m = lambda x,y,da,dc,p,i: I_spheroid_diffraction(scaling(i,da,dc), Xm-x, Ym-y, size(da), size(dc), 0., p)
     E_fit_m = lambda p: I_fit_m(p[0],p[1],p[2],p[3],p[4],p[5]) - img[msk]
     p0 = numpy.array([x0,y0,diameter_a,diameter_c,phi,intensity])
@@ -139,7 +144,7 @@ def fit_full_spheroid_model(img, msk, diameter_a, diameter_c, phi, intensity, wa
     d_a_bound  = ((1-deltab)*diameter_a, (1+deltab)*diameter_a)
     d_c_bound  = ((1-deltab)*diameter_c, (1+deltab)*diameter_c)
     p_bound = (None, None)
-    i_bound  = (None, None)#((1-deltab)*intensity, (1+deltab)*intensity)
+    i_bound  = (None, None)
     bounds   = numpy.array([x0_bound, y0_bound , d_a_bound, d_c_bound, p_bound, i_bound])
     p, cov, info, mesg, ier = spimage.leastsqbound(E_fit_m, p0, maxfev=maxfev, xtol=1e-5, full_output=True, bounds=bounds)
     p, cov, info, mesg, ier = spimage.leastsqbound(E_fit_m, p, maxfev=maxfev, xtol=1e-5, full_output=True, bounds=bounds)
@@ -201,3 +206,5 @@ def I_spheroid_diffraction(A,qX,qY,a,c,theta,phi):
     _I = lambda A,qX,qY,a,c,theta,phi: abs(A)*(3.*(sin(qH(qX,qY,a,c,theta,phi))-qH(qX,qY,a,c,theta,phi)*cos(qH(qX,qY,a,c,theta,phi)))/(qH(qX,qY,a,c,theta,phi)**3+eps))**2
     I = lambda A,qX,qY,a,c,theta,phi: (qH(qX,qY,a,c,theta,phi)**6 < res)*abs(A) + (qH(qX,qY,a,c,theta,phi)**6 >= res)*_I(A,qX,qY,a,c,theta,phi)
     return I(A,2*pi*qX,2*pi*qY,a,c,theta,phi)
+
+#_convert_to_non_flat = lambda diameter_a,diameter_c,phi: [diameter_a,diameter_c,phi] if (diameter_c >= diameter_a) else [diameter_c,diameter_a,phi+numpy.pi/2.]
