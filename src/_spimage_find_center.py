@@ -2,6 +2,7 @@ import numpy as np
 import scipy as sp
 import spimage
 from _spimage_conventions import pos_to_center,center_to_pos
+from _spimage_utils import _symmetrize,_turn180,_gaussian_smooth_2d1d
 
 def find_center(img, msk, method=None, **kwargs):
     """
@@ -297,48 +298,3 @@ def find_center_blurred(img, msk, x0=0, y0=0, threshold=None, blur_radius=4., dm
     spimage.sp_image_free(c)
     return (x,y)
     
-# ================ #
-# Helper functions #
-# =================#
-def _symmetrize(M,cx,cy):
-    M_new = M.copy()
-    M_new *= _turn180(M,cx,cy)
-    return M_new
-        
-def _turnccw(array2d):
-    array2d_turned = np.zeros(shape=(array2d.shape[1],array2d.shape[0]),dtype=array2d.dtype)
-    N = len(array2d_turned)-1
-    for x in range(0,len(array2d[0])):
-        array2d_turned[N-x,:] = array2d[:,x].T
-    return array2d_turned
-
-def _turn180(img,cx=None,cy=None):
-    if cx == None:
-        cx1 = (img.shape[0]-1)/2
-    if cy == None:
-        cy1 = (img.shape[0]-1)/2
-    cx1 = round(cx*2)/2.
-    cy1 = round(cy*2)/2.
-    Nx1 = int(2*min([cx1,img.shape[1]-1-cx1]))+1
-    Ny1 = int(2*min([cy1,img.shape[0]-1-cy1]))+1
-    y_start = int(round(cy1-(Ny1-1)/2.))
-    y_stop = int(round(cy1+(Ny1-1)/2.))+1
-    x_start = int(round(cx1-(Nx1-1)/2.))
-    x_stop = int(round(cx1+(Nx1-1)/2.))+1
-    img_new = np.zeros(shape=(img.shape[0],img.shape[1]),dtype=img.dtype)
-    img_new[y_start:y_stop,x_start:x_stop] = _turnccw(_turnccw(img[y_start:y_stop,x_start:x_stop]))
-    return img_new
-
-def _gaussian_smooth_2d1d(I,sm,precision=1.):
-    N = 2*int(np.round(precision*sm))+1
-    if len(I.shape) == 2:
-        kernel = np.zeros(shape=(N,N))
-        X,Y = np.meshgrid(np.arange(0,N,1),np.arange(0,N,1))
-        X = X-N/2
-        kernel = np.exp(X**2/(2.0*sm**2))
-        kernel /= kernel.sum()
-        Ism = sp.signal.convolve2d(I,kernel,mode='same',boundary='wrap')
-        return Ism
-    elif len(I.shape) == 1:
-        print "Error input"
-        return []
