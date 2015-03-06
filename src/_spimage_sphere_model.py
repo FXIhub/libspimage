@@ -397,7 +397,7 @@ def sphere_model_convert_scaling_to_intensity(scaling, diameter, wavelength, pix
     dn    = spimage.Material(material_type=material).get_dn(photon_energy_eV=ph_eV) # []
     QE    = detector_qe           # []
     ADUP  = detector_adu_photon   # [ADU / Np]
-    K     = scaling/QE/ADUP       # [Np / m^2
+    K     = scaling/QE/ADUP       # [Np / m^2]
     #I0    = K/(rho_e*p/D*re*V)**2 # [Np / m^2]
     I0    = K/(dn.real*p/D*2*numpy.pi/wl**2*V)**2 # [Np/m^2]
     i     = I0 * ey_J             # [J/m^2]

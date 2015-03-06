@@ -24,7 +24,7 @@ def fit_spheroid_shape(img, msk, diameter_a, diameter_c, phi, intensity, wavelen
     if full_output: return diameter_a, diameter_c, phi, info
     else: return diameter_a, diameter_c, phi, info
 
-def fit_spheroid_shape_pearson(img, msk, diameter_a, diameter_c, phi, intensity, wavelength, pixel_size, detector_distance, full_output=False,  x0=0, y0=0, detector_adu_photon=1, detector_quantum_efficiency=1, material='water', rmax=None, downsampling=1, do_brute_evals=0, maxfev=1000, do_photon_counting=False, deltab=0.5):
+def fit_spheroid_shape_pearson(img, msk, diameter_a, diameter_c, phi, intensity, wavelength, pixel_size, detector_distance, full_output=False,  x0=0, y0=0, detector_adu_photon=1, detector_quantum_efficiency=1, material='water', rmax=None, downsampling=1, do_brute_evals=0, maxfev=1000, do_photon_counting=False, deltab=0.5, force_prolate=True):
     """
     Fit the shape of a spheroid using pearson correlation.
 
@@ -38,14 +38,23 @@ def fit_spheroid_shape_pearson(img, msk, diameter_a, diameter_c, phi, intensity,
         if not (img[msk].std() and I_fit_m(p[0],p[1],p[2]).std()): return numpy.ones(len(p))
         else: return 1-scipy.stats.pearsonr(I_fit_m(p[0],p[1],p[2]),img[msk])[0]*numpy.ones(len(p))
     
+    # Start with brute force with a sensible range
+    # We'll assume at least 20x oversampling
+    if do_brute_evals:
+        dmin = sphere_model_convert_size_to_diameter(1./(downsampling*img.shape[0]), wavelength, pixel_size, detector_distance)
+        dmax = dmin*downsampling*img.shape[0]/20
+        pmin = 0.
+        pmax = numpy.pi
+        Ns = do_brute_evals
+        diameter = scipy.optimize.brute(E_fit_m, [(dmin, dmax),(dmin,dmax),(pmin,pmax)], Ns=Ns)[0]
+
     # End with least square
     p0 = numpy.array([diameter_a,diameter_c,phi])
     p, cov, infodict, mesg, ier = leastsq(E_fit_m, p0, maxfev=maxfev, xtol=1e-5, full_output=True)
     [diameter_a, diameter_c, phi] = p
     phi = phi % numpy.pi
     
-    if diameter_a > diameter_c:
-        print "Try again"
+    if force_prolate and diameter_a > diameter_c:
         return fit_spheroid_shape_pearson(img, msk, diameter_c, diameter_a, phi+numpy.pi/2., intensity, wavelength, pixel_size, detector_distance, full_output,
                                           x0, y0, detector_adu_photon, detector_quantum_efficiency, material, rmax, downsampling, do_brute_evals, maxfev, do_photon_counting, deltab)
     
