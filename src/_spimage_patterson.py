@@ -2,7 +2,7 @@ import numpy
 import scipy.signal
 import scipy.ndimage
 
-def patterson(I,M,image_threshold=0.,mask_smooth=1.,mask_threshold=1.,darkfield_x=None,darkfied_y=None,darkfield_sigma=None,normalize_median=False):
+def patterson(I,M,image_threshold=0.,mask_smooth=1.,mask_threshold=1.,darkfield_x=None,darkfield_y=None,darkfield_sigma=None,normalize_median=False):
     I = numpy.clip(I, image_threshold, numpy.inf)
     K = kernel(M,smooth=mask_smooth,threshold=mask_threshold,x=darkfield_x,y=darkfield_y,sigma=darkfield_sigma)
     P = numpy.fft.fftshift(numpy.fft.fft2(numpy.fft.fftshift(K*I)))
