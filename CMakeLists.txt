@@ -99,8 +99,7 @@ IF(USE_CUDA)
     # Set a reasonable minimum arch
     if(NOT CUDA_NVCC_FLAGS)
       # This ensure that the code also runs on cards with computing cap. as low as 1.1
-      SET(CUDA_NVCC_FLAGS "-gencode=arch=compute_11,code=sm_11 -gencode=arch=compute_20,code=sm_20")
-      #SET(CUDA_NVCC_FLAGS "-arch=sm_20")
+      SET(CUDA_NVCC_FLAGS "--Wno-deprecated-gpu-targets -gencode=arch=compute_11,code=compute_11 -gencode=arch=compute_20,code=compute_20")
     endif()
     message(STATUS "CUDA found. Using CUDA.")
   ELSE(CUDA_FOUND)
