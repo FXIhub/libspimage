@@ -16,7 +16,7 @@ class CXIWriter:
                 if isinstance(d,dict):
                     if name_k not in self.f:
                         self.f.create_group(name_k)
-                    self.write_slice(d,name_k,i=i)
+                        self.write_stack(d,name_k)
                 else:
                     if len(list(d.shape)) > 1:
                         d_s = d[i,:]

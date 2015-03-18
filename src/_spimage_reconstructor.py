@@ -175,15 +175,18 @@ class Reconstructor:
         """
         Set the initial support by either giving:
         - the \"radius=initial_support_radius_in_pixels\" of the circular support mask
+        - the \"area=initial_support_area_fraction_of_whole_image\" of the circular support mask
         - an explicit support mask \"support_mask=2D_boolean_numpy_array\", non-shifted and of the same shape as the intensity pattern
         """
-        if not ("radius" in kwargs or "support_mask" in kwargs):
-            self._log("set_initial_support requires one of the following key word arguments: radius, support_mask","ERROR")
+        if not ("radius" in kwargs or "support_mask" in kwargs or "area" in kwargs):
+            self._log("set_initial_support requires one of the following key word arguments: radius, area, support_mask","ERROR")
             return 
         self._support_dirty = True
         self._initial_support_config = {}
         if "radius" in kwargs:
             self._initial_support_config["radius"] = kwargs["radius"]
+        elif "area" in kwargs:
+            self._initial_support_config["area"] = kwargs["area"]
         else:
             self._initial_support_config["support_mask"] = kwargs["support_mask"]
         self._log("Initial support configuration set.","DEBUG")
@@ -372,13 +375,17 @@ class Reconstructor:
             if img is not None:
                 spimage.sp_image_free(img)
         self._sp_initial_support = spimage.sp_image_alloc(self._Ny,self._Nx,1)
-        if "radius" in self._initial_support_config:
+        if "radius" in self._initial_support_config or "area" in self._initial_support_config:
             X,Y = np.meshgrid(np.arange(self._Nx),np.arange(self._Ny))
             X = X-(self._Nx-1)/2.
             Y = Y-(self._Ny-1)/2.
             R = np.sqrt(X**2 + Y**2)
             self._phaser_dirty = True
-            self._sp_initial_support.image[:] = np.float32(np.fft.fftshift(R) < self._initial_support_config["radius"])
+            if "radius" in self._initial_support_config:
+                r = self._initial_support_config["radius"]
+            else:
+                r = np.sqrt( self._initial_support_config["area"] * self._Nx * self._Ny / np.pi )
+            self._sp_initial_support.image[:] = np.float32(np.fft.fftshift(R) < r)
         else:
             self._phaser_dirty = True
             S = self._initial_support_config["support_mask"]
