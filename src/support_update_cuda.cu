@@ -426,7 +426,6 @@ int sp_support_close_update_support_cuda(SpSupportAlgorithm *alg, SpPhaser * ph)
   return 0;
 }
 
-// !CHANGE!
 int sp_support_centre_image_cuda(SpSupportAlgorithm * alg, SpPhaser * ph){
   cutilSafeCall(cudaMemcpy(ph->pixel_flags->data,ph->d_pixel_flags,sizeof(int)*ph->image_size,cudaMemcpyDeviceToHost));
 
@@ -446,7 +445,7 @@ int sp_support_centre_image_cuda(SpSupportAlgorithm * alg, SpPhaser * ph){
 	dx = 0;
 	dy = (image_y-1)/2;
 	dz = 0;
-	sp_image_translate(ph->model,dx,dy,dz,SP_TRANSLATE_WRAP_AROUND);
+	sp_image_fourier_translate(ph->model,dx,dy,dz);
 	sp_pixel_flags_translate_mask(ph->pixel_flags,dx,dy,dz);
 	break;
       }
@@ -456,7 +455,7 @@ int sp_support_centre_image_cuda(SpSupportAlgorithm * alg, SpPhaser * ph){
 	dx = (image_x-1)/2;
 	dy = 0;
 	dz = 0;
-	sp_image_translate(ph->model,dx,dy,dz,SP_TRANSLATE_WRAP_AROUND);
+	sp_image_fourier_translate(ph->model,dx,dy,dz);
 	sp_pixel_flags_translate_mask(ph->pixel_flags,dx,dy,dz);
 	break;
       }
@@ -471,7 +470,7 @@ int sp_support_centre_image_cuda(SpSupportAlgorithm * alg, SpPhaser * ph){
 	  dx = (image_x-1)/2;
 	  dy = 0;
 	  dz = 0;
-	  sp_image_translate(ph->model,dx,dy,dz,SP_TRANSLATE_WRAP_AROUND);
+	  sp_image_fourier_translate(ph->model,dx,dy,dz);			
 	  sp_pixel_flags_translate_mask(ph->pixel_flags,dx,dy,dz);
 	  break;
 	}
@@ -484,7 +483,7 @@ int sp_support_centre_image_cuda(SpSupportAlgorithm * alg, SpPhaser * ph){
 	  dx = 0;
 	  dy = (image_y-1)/2;
 	  dz = 0;
-	  sp_image_translate(ph->model,dx,dy,dz,SP_TRANSLATE_WRAP_AROUND);
+	  sp_image_fourier_translate(ph->model,dx,dy,dz);			
 	  sp_pixel_flags_translate_mask(ph->pixel_flags,dx,dy,dz);
 	  break;
 	}
@@ -497,7 +496,7 @@ int sp_support_centre_image_cuda(SpSupportAlgorithm * alg, SpPhaser * ph){
 	  dx = 0;
 	  dy = 0;
 	  dz = (image_z-1)/2;
-	  sp_image_translate(ph->model,dx,dy,dz,SP_TRANSLATE_WRAP_AROUND);
+	  sp_image_fourier_translate(ph->model,dx,dy,dz);			
 	  sp_pixel_flags_translate_mask(ph->pixel_flags,dx,dy,dz);
 	  break;
 	}
@@ -511,7 +510,7 @@ int sp_support_centre_image_cuda(SpSupportAlgorithm * alg, SpPhaser * ph){
   dx = 0-sp_vector_get(com,0);
   dy = 0-sp_vector_get(com,1);
   dz = 0-sp_vector_get(com,2);
-  sp_image_translate(ph->model,dx,dy,dz,SP_TRANSLATE_WRAP_AROUND);
+  sp_image_fourier_translate(ph->model,dx,dy,dz);				
   sp_pixel_flags_translate_mask(ph->pixel_flags,dx,dy,dz);
 
   cutilSafeCall(cudaMemcpy(ph->d_pixel_flags,ph->pixel_flags->data,sizeof(int)*ph->image_size,cudaMemcpyHostToDevice));
