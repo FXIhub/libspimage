@@ -153,5 +153,4 @@ def radial_mean(image,**kwargs):
 def radial_median(image,**kwargs):
     return _radial(image,"median",**kwargs)
 
-detector_pixel_to_resolution_element = lambda i_pixel, pixel_size, detector_distance, wavelength:
-    wavelength / 4. / numpy.sin( numpy.arctan2( i_pixel * pixel_size, detector_distance ) / 2. )
+detector_pixel_to_resolution_element = lambda i_pixel, pixel_size, detector_distance, wavelength: wavelength / 4. / numpy.sin( numpy.arctan2( i_pixel * pixel_size, detector_distance ) / 2. )
