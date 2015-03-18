@@ -15,7 +15,7 @@ from _spimage_conventions import *
 from _spimage_cxi import *
 from _spimage_resample import downsample,crop
 from _spimage_reconstructor import Reconstructor
-from _spimage_prtf import prtf
+from _spimage_prtf import prtf,detector_pixel_to_resolution_element
 from _spimage_io import CXILoader
 from _spimage_find_center import find_center
 from _spimage_sphere_model import *
