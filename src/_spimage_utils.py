@@ -38,3 +38,53 @@ def _gaussian_smooth_2d1d(I,sm,precision=1.):
     elif len(I.shape) == 1:
         print "Error input"
         return []
+
+def get_R_and_Theta_map(Nx,Ny,cx=None,cy=None):
+    if not cx:
+        cx = (Nx-1)/2.0
+    if not cy:
+        cy = (Ny-1)/2.0
+    x = numpy.arange(0,Nx,1.0)-cx
+    y = numpy.arange(0,Ny,1.0)-cy
+    X,Y = numpy.meshgrid(x,y)
+    R = numpy.sqrt(X**2+Y**2)
+    R = R.round()
+    Theta = numpy.arctan(-Y/(X+numpy.finfo('float64').eps))
+    Theta[X<0] += numpy.pi
+    Theta += numpy.pi/2.0
+    #numpy.imsave("Theta.png" , Theta)
+    #numpy.imsave("X.png" , X)
+    #numpy.imsave("Y.png" , Y)
+    return [R,Theta]
+
+def _radial(image,mode="mean",**kwargs):
+    if mode == "mean": f = numpy.mean
+    elif mode == "sum": f = numpy.sum
+    elif mode == "std": f = numpy.std
+    elif mode == "median": f = numpy.median
+    else:
+        print "ERROR: No valid mode given for radial projection."
+        return
+    if 'cx' in kwargs: cx = kwargs['cx']
+    else: cx = (image.shape[1]-1)/2.0
+    if 'cy' in kwargs: cy = kwargs['cy'] 
+    else: cy = (image.shape[0]-1)/2.0
+    R = get_R_and_Theta_map(image.shape[1],image.shape[0],cx,cy)[0]
+    R = R.round()
+    R[numpy.isfinite(image)==False] = -1
+    radii = numpy.arange(R.min(),R.max()+1,1)
+    if radii[0] == -1:
+        radii = radii[1:]
+    values = numpy.zeros_like(radii)
+    for i in range(0,len(radii)):
+        values[i] = f(image[R==radii[i]])
+    if 'rout' in kwargs: return numpy.array([radii,values])
+    else: return values
+def radial_sum(image,**kwargs):
+    return _radial(image,"sum",**kwargs)
+def radial_std(image,**kwargs):
+    return _radial(image,"std",**kwargs)
+def radial_mean(image,**kwargs):
+    return _radial(image,"mean",**kwargs)
+def radial_median(image,**kwargs):
+    return _radial(image,"median",**kwargs)
