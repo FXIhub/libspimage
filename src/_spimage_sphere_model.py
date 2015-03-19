@@ -22,6 +22,8 @@ def fit_sphere_diameter(img, msk, diameter, intensity, wavelength, pixel_size, d
     elif method == 'pixelwise': diameter, info = fit_sphere_diameter_pixelwise(img, msk, diameter, intensity, wavelength, pixel_size, detector_distance, full_output=True, **kwargs)
     else: diameter, info = [diameter, "There is no fitting diameter method %s" %method]
 
+    diameter = abs(diameter)
+
     if full_output: return diameter, info
     else: return diameter
 
@@ -76,6 +78,7 @@ def fit_sphere_diameter_pixelwise(img, msk, diameter, intensity, wavelength, pix
     bounds  = numpy.array([(diameter-deltab*diameter, diameter+deltab*diameter)])
     p, cov, infodict, mesg, ier = leastsq(E_fit_m, numpy.array([diameter]), maxfev=maxfev, xtol=1e-5, full_output=True)
     [diameter] = p
+    diameter = abs(diameter)
     
     # Reduced Chi-squared and standard error
     chisquared = ((I_fit_m(diameter) - img[msk])**2).sum()/(img.shape[0]*img.shape[1] - 1)
@@ -197,6 +200,7 @@ def fit_full_sphere_model(img, msk, diameter, intensity, wavelength, pixel_size,
         bounds   = numpy.array([x0_bound, y0_bound , d_bound, i_bound])
         p, cov, infodict, mesg, ier = spimage.leastsqbound(E_fit_m, numpy.array([x0,y0,diameter,intensity]), maxfev=maxfev, xtol=1e-5, full_output=True, bounds=bounds)
         [dx0, dy0, diameter, intensity] = p
+        diameter = abs(diameter)
         x0 += dx0
         y0 += dy0
 

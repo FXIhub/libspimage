@@ -20,7 +20,10 @@ def fit_spheroid_shape(img, msk, diameter_a, diameter_c, phi, intensity, wavelen
     if method is None: method = 'pearson'
     if method == 'pearson': diameter_a, diameter_c, phi, info = fit_spheroid_shape_pearson(img, msk, diameter_a, diameter_c, phi, intensity, wavelength, pixel_size, detector_distance, full_output=True, **kwargs)
     else: diameter_a, diameter_c, phi, info = [diameter_a, diameter_c, phi, "There is no fitting dimensions method %s" %method]
-
+    
+    diameter_a = abs(diameter_a)
+    diameter_c = abs(diameter_c)
+    
     if full_output: return diameter_a, diameter_c, phi, info
     else: return diameter_a, diameter_c, phi, info
 
@@ -52,6 +55,8 @@ def fit_spheroid_shape_pearson(img, msk, diameter_a, diameter_c, phi, intensity,
     p0 = numpy.array([diameter_a,diameter_c,phi])
     p, cov, infodict, mesg, ier = leastsq(E_fit_m, p0, maxfev=maxfev, xtol=1e-5, full_output=True)
     [diameter_a, diameter_c, phi] = p
+    diameter_a = abs(diameter_a)
+    diameter_c = abs(diameter_c)
     phi = phi % numpy.pi
     
     if force_prolate and diameter_a > diameter_c:
@@ -156,14 +161,18 @@ def fit_full_spheroid_model(img, msk, diameter_a, diameter_c, phi, intensity, wa
         p_bound = (None, None)
         i_bound  = (None, None)
         bounds   = numpy.array([x0_bound, y0_bound , d_a_bound, d_c_bound, p_bound, i_bound])
+        #print p0
         p, cov, info, mesg, ier = spimage.leastsqbound(E_fit_m, p0, maxfev=maxfev, xtol=1e-5, full_output=True, bounds=bounds)
         [dx0, dy0, diameter_a, diameter_c, phi, intensity] = p
+        diameter_a = abs(diameter_a)
+        diameter_c = abs(diameter_c)
         x0 += dx0
         y0 += dy0
         phi = phi % numpy.pi
 
     # Reduced Chi-squared and standard errors
     chisquared = (E_fit_m(p)**2).sum()/(img.shape[0]*img.shape[1] - len(p))
+    #print cov
     if cov is not None:
         pcov = numpy.diag(cov)*chisquared
     else:
