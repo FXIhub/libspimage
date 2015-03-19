@@ -139,13 +139,13 @@ def fit_spheroid_intensity_pixelwise(img, msk, diameter_a, diameter_c, phi, inte
     else:
         return intensity
 
-def fit_full_spheroid_model(img, msk, diameter_a, diameter_c, phi, intensity, wavelength, pixel_size, detector_distance, full_output=False, x0=0, y0=0, detector_adu_photon=1., detector_quantum_efficiency=1., material='water', rmax=None, downsampling=1, maxfev=1000, deltab=0.2, do_photon_counting=False,N=1):
+def fit_full_spheroid_model(img, msk, diameter_a, diameter_c, phi, intensity, wavelength, pixel_size, detector_distance, full_output=False, x0=0, y0=0, detector_adu_photon=1., detector_quantum_efficiency=1., material='water', rmax=None, downsampling=1, maxfev=1000, deltab=0.2, do_photon_counting=False,n=1):
     diameter_a = max(diameter_a, 1.E-9)
     diameter_c = max(diameter_c, 1.E-9)
     #intensity = max(intensity,1.)
     #x0 = min(x0, img.shape[1])
     #y0 = min(y0, img.shape[0])
-    for i in range(N):
+    for i in range(n):
         Xm, Ym, img, msk = _prepare_for_fitting(img, msk, x0, y0, rmax, downsampling, detector_adu_photon, do_photon_counting, pixel_size, detector_distance)
         size = lambda d: sphere_model_convert_diameter_to_size(d, wavelength, pixel_size, detector_distance)
         d = lambda da,dc: (da**2*dc)**(1/3.)
