@@ -182,9 +182,9 @@ def fit_sphere_intensity_nrphotons(img, msk, diameter, intensity, wavelength, pi
     else:
         return intensity
     
-def fit_full_sphere_model(img, msk, diameter, intensity, wavelength, pixel_size, detector_distance, full_output=False, x0=0, y0=0, detector_adu_photon=1., detector_quantum_efficiency=1., material='water', rmax=None, downsampling=1, maxfev=1000, deltab=0.2, do_photon_counting=False, N=1):
+def fit_full_sphere_model(img, msk, diameter, intensity, wavelength, pixel_size, detector_distance, full_output=False, x0=0, y0=0, detector_adu_photon=1., detector_quantum_efficiency=1., material='water', rmax=None, downsampling=1, maxfev=1000, deltab=0.2, do_photon_counting=False, n=1):
     diameter = max(diameter, 1.E-9)
-    for i in range(N):
+    for i in range(n):
         Xm, Ym, _img, _msk = _prepare_for_fitting(img, msk, x0, y0, rmax, downsampling, detector_adu_photon, do_photon_counting, pixel_size, detector_distance)
         Rmc     = lambda dx,dy:     numpy.sqrt((Xm - dx)**2 + (Ym - dy)**2)
         size    = lambda d:       sphere_model_convert_diameter_to_size(d, wavelength, pixel_size, detector_distance)
@@ -203,6 +203,9 @@ def fit_full_sphere_model(img, msk, diameter, intensity, wavelength, pixel_size,
         diameter = abs(diameter)
         x0 += dx0
         y0 += dy0
+        if (numpy.isfinite(p) == False).sum() > 0:
+            break
+
 
     # Reduced Chi-squared and standard errors
     chisquared = (E_fit_m(p)**2).sum()/(_img.shape[0]*_img.shape[1] - len(p))
