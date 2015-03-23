@@ -89,3 +89,22 @@ def radial_mean(image,**kwargs):
 def radial_median(image,**kwargs):
     return _radial(image,"median",**kwargs)
 
+def cone_pixel_average(image,N_theta,cx=None,cy=None):
+    [R,Theta] = get_R_and_Theta_map(image.shape[1],image.shape[0],cx,cy)
+    R[numpy.isfinite(image) == False] = -1
+    radii = numpy.arange(R.min(),R.max()+1,1)
+    if radii[0] == -1:
+        radii = radii[1:]
+    values = numpy.zeros(shape=(N_theta,len(radii)))
+    for j in range(0,N_theta):
+        theta_min = j/(1.0*N_theta)*2.0*numpy.pi
+        theta_max = (j+1)/(1.0*N_theta)*2.0*numpy.pi
+        theta_center = (theta_max+theta_min)/2.0
+        theta_interval = theta_max-theta_min
+        theta_image = image[abs(Theta-theta_center)<=theta_interval/2.0]
+        theta_R = R[abs(Theta-theta_center)<=theta_interval/2.0]
+        for i in range(0,len(radii)):
+            temp = theta_image[theta_R==radii[i]].copy()
+            temp = temp[numpy.isfinite(temp)]
+            values[j,i] = temp.mean()
+    return [radii,values]

@@ -5,6 +5,7 @@ import warnings
 from numpy import array, take, eye, triu, transpose, dot, finfo
 from numpy import empty_like, sqrt, cos, sin, arcsin, asarray
 from numpy import atleast_1d, shape, issubdtype, dtype, inexact
+from numpy import isfinite
 from scipy.optimize import _minpack, leastsq
 
 
@@ -345,21 +346,27 @@ def leastsqbound(func, x0, args=(), bounds=None, Dfun=None, full_output=0,
     x = i2e(retval[0])  # internal params to external params
 
     if full_output:
-        # convert fjac from internal params to external
-        grad = _internal2external_grad(retval[0], bounds)
-        retval[1]['fjac'] = (retval[1]['fjac'].T / take(grad,
-                             retval[1]['ipvt'] - 1)).T
+        failed = (isfinite(retval[0]) == False).sum() > 0
+        if not failed:
+            # convert fjac from internal params to external
+            grad = _internal2external_grad(retval[0], bounds)
+            retval[1]['fjac'] = (retval[1]['fjac'].T / 
+                                 take(grad, retval[1]['ipvt'] - 1)).T
+
         cov_x = None
         if info in [1, 2, 3, 4]:
-            from numpy.dual import inv
-            from numpy.linalg import LinAlgError
-            perm = take(eye(n), retval[1]['ipvt'] - 1, 0)
-            r = triu(transpose(retval[1]['fjac'])[:n, :])
-            R = dot(r, perm)
-            try:
-                cov_x = inv(dot(transpose(R), R))
-            except LinAlgError:
-                pass
+            if not failed:
+                from numpy.dual import inv
+                from numpy.linalg import LinAlgError
+                perm = take(eye(n), retval[1]['ipvt'] - 1, 0)
+                r = triu(transpose(retval[1]['fjac'])[:n, :])
+                R = dot(r, perm)
+                try:
+                    cov_x = inv(dot(transpose(R), R))
+                except LinAlgError:
+                    pass
+            else:
+                cov_x = None
         return (x, cov_x) + retval[1:-1] + (mesg, info)
     else:
         return (x, info)

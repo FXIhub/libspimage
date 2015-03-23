@@ -153,7 +153,6 @@ def fit_full_spheroid_model(img, msk, diameter_a, diameter_c, phi, intensity, wa
         I_fit_m = lambda dx,dy,da,dc,p,i: I_spheroid_diffraction(scaling(i,da,dc), Xm-dx, Ym-dy, size(da), size(dc), 0., p)
         E_fit_m = lambda p: I_fit_m(p[0],p[1],p[2],p[3],p[4],p[5]) - img[msk]
         p0 = numpy.array([0,0,diameter_a,diameter_c,phi,intensity])
-        #print "err0",(E_fit_m(p0)**2).sum()/(img[msk]**2).sum()
         x0_bound = (None, None)
         y0_bound = (None, None)
         d_a_bound  = ((1-deltab)*diameter_a, (1+deltab)*diameter_a)
@@ -161,7 +160,6 @@ def fit_full_spheroid_model(img, msk, diameter_a, diameter_c, phi, intensity, wa
         p_bound = (None, None)
         i_bound  = (None, None)
         bounds   = numpy.array([x0_bound, y0_bound , d_a_bound, d_c_bound, p_bound, i_bound])
-        #print p0
         p, cov, info, mesg, ier = spimage.leastsqbound(E_fit_m, p0, maxfev=maxfev, xtol=1e-5, full_output=True, bounds=bounds)
         [dx0, dy0, diameter_a, diameter_c, phi, intensity] = p
         diameter_a = abs(diameter_a)
@@ -169,6 +167,8 @@ def fit_full_spheroid_model(img, msk, diameter_a, diameter_c, phi, intensity, wa
         x0 += dx0
         y0 += dy0
         phi = phi % numpy.pi
+        if (numpy.isfinite(p) == False).sum() > 0:
+            break
 
     # Reduced Chi-squared and standard errors
     chisquared = (E_fit_m(p)**2).sum()/(img.shape[0]*img.shape[1] - len(p))

@@ -203,6 +203,9 @@ def fit_full_sphere_model(img, msk, diameter, intensity, wavelength, pixel_size,
         diameter = abs(diameter)
         x0 += dx0
         y0 += dy0
+        if (numpy.isfinite(p) == False).sum() > 0:
+            break
+
 
     # Reduced Chi-squared and standard errors
     chisquared = (E_fit_m(p)**2).sum()/(_img.shape[0]*_img.shape[1] - len(p))
