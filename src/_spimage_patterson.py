@@ -1,8 +1,10 @@
-import numpy
+import numpy,time
 from scipy.ndimage.filters import gaussian_filter
 from scipy.ndimage.morphology import distance_transform_edt
+# NOTE: The scipy FFT for real input is much faster than the implementation from numpy
+from scipy.fftpack import fftn,fftshift
 
-def patterson(image, mask, floor_cut=0., mask_smooth=1., darkfield_x=None, darkfield_y=None, darkfield_sigma=None, normalize_median=False, radial_boost=False, subtract_fourier_kernel=False, full_output=False):
+def patterson(image, mask, floor_cut=0., mask_smooth=1., darkfield_x=None, darkfield_y=None, darkfield_sigma=None, normalize_median=False, radial_boost=False, radial_boost_sigma=None, subtract_fourier_kernel=False, full_output=False):
     info = {}
     # Making sure that we leave memory of the input arrays untouched
     M = numpy.array(mask.copy(),dtype=numpy.float64)
@@ -19,15 +21,18 @@ def patterson(image, mask, floor_cut=0., mask_smooth=1., darkfield_x=None, darkf
         cy = (Ny-1)/2
         X,Y = numpy.meshgrid(numpy.arange(Nx),numpy.arange(Ny))
         R = numpy.hypot(X - cx, Y - cx)
-        s = 200.
+        if radial_boost_sigma is None:
+            s = (Nx + Ny)/5
+        else:
+            s = radial_boost_sigma
         G = numpy.exp(-R**2/(2*s**2))
         I = I * R**4 * G
     # Make kernel
     K = kernel(M,smooth=mask_smooth,x=darkfield_x,y=darkfield_y,sigma=darkfield_sigma)
     # Fourier transform
-    P = numpy.fft.fftshift(numpy.fft.fftn(K*I))
+    P = fftshift(fftn(K*I))
     if subtract_fourier_kernel:
-        fK = numpy.fft.fftshift(numpy.fft.fftn(K))
+        fK = fftshift(fftn(K))
         if full_output:
             info["patterson0"] = P.copy()
             if normalize_median:
@@ -41,10 +46,10 @@ def patterson(image, mask, floor_cut=0., mask_smooth=1., darkfield_x=None, darkf
     if full_output:
         info["kernel"] = K
         info["intensities"] = K*I
-        P_nk = numpy.fft.fftshift(numpy.fft.fft2(numpy.fft.fftshift(numpy.array(image,dtype=numpy.float64))))
-        if normalize_median:
-            P_nk /= numpy.median(abs(P_nk))
-        info["patterson_no_kernel"] = P_nk
+        #P_nk = numpy.fft.fftshift(numpy.fft.fft2(numpy.fft.fftshift(numpy.array(image,dtype=numpy.float64))))
+        #if normalize_median:
+        #    P_nk /= numpy.median(abs(P_nk))
+        #info["patterson_no_kernel"] = P_nk
         return P, info
     else:
         return P
