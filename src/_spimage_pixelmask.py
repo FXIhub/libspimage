@@ -54,5 +54,3 @@ def disk_mask(mask,cx,cy,radius_extension_factor):
     r_max = R[mask==1].max()
     _mask = R <= r_max*radius_extension_factor
     return _mask
-
-    

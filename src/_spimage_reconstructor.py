@@ -12,7 +12,6 @@ class Reconstructor:
         self._mask = None
         # wrapped C-object instances
         self._sp_amplitudes = None
-        self._sp_amplitudes_sh = None
         self._sp_amplitudes_dirty = True
         self._sp_initial_support = None
         self._sp_initial_support_sh = None
@@ -37,12 +36,11 @@ class Reconstructor:
         self._log("Reconstructor initialized.","DEBUG")
 
     def _clear_amplitudes(self):
-        for img in [self._sp_amplitudes,self._sp_amplitudes_sh]:
+        for img in [self._sp_amplitudes]:
             if img is not None:
                 spimage.sp_image_free(img)
         self._amplitudes = None
         self._sp_amplitudes = None
-        self._sp_amplitudes_sh = None
         self._amplitudes_dirty = True
 
     def _clear_iterations(self):
@@ -355,7 +353,7 @@ class Reconstructor:
             M = self._mask.copy()
         else:
             M = np.ones(shape=A.shape,dtype="bool")
-        for img in [self._sp_amplitudes,self._sp_amplitudes_sh]:
+        for img in [self._sp_amplitudes]:
             if img is not None:
                 spimage.sp_image_free(img)
         self._sp_amplitudes = spimage.sp_image_alloc(A.shape[0],A.shape[1],1)
