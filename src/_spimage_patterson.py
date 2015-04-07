@@ -1,32 +1,72 @@
 import numpy,time
+import _spimage_utils
 from scipy.ndimage.filters import gaussian_filter
 from scipy.ndimage.morphology import distance_transform_edt
 # NOTE: The scipy FFT for real input is much faster than the implementation from numpy
 from scipy.fftpack import fftn,fftshift
+from scipy.signal import convolve2d
 
-def patterson(image, mask, floor_cut=0., mask_smooth=1., darkfield_x=None, darkfield_y=None, darkfield_sigma=None, normalize_median=False, radial_boost=False, radial_boost_sigma=None, subtract_fourier_kernel=False, full_output=False):
+def patterson(image, mask, floor_cut=None, mask_smooth=1., darkfield_x=None, darkfield_y=None, darkfield_sigma=None, normalize_median=False, radial_boost=False, log_boost=False, gauss_damp=False, gauss_damp_sigma=None, gauss_damp_threshold=None, subtract_fourier_kernel=False, full_output=False):
     info = {}
     # Making sure that we leave memory of the input arrays untouched
     M = numpy.array(mask.copy(),dtype=numpy.float64)
     I = numpy.array(image.copy(),dtype=numpy.float64)
     # Clipping
-    #I = numpy.clip(I*M, floor_cut, numpy.inf)
-    tmp = I <= floor_cut
-    if tmp.sum() > 0:
-        I[tmp] = 0.
-    if radial_boost:
-        # Radial boost: Multiply intensities by radius**4
+    if floor_cut is not None:
+        tmp = I <= floor_cut
+        if tmp.sum() > 0:
+            I[tmp] = 0.
+    I0 = I.copy()
+    if radial_boost or gauss_damp:
         Ny, Nx = I.shape
         cx = (Nx-1)/2
         cy = (Ny-1)/2
         X,Y = numpy.meshgrid(numpy.arange(Nx),numpy.arange(Ny))
         R = numpy.hypot(X - cx, Y - cx)
-        if radial_boost_sigma is None:
-            s = (Nx + Ny)/5
+    if radial_boost:
+        # Radial boost: Multiply intensities by radius**4
+        I = I * R**4
+    if log_boost:
+        if floor_cut is not None:
+            I = numpy.clip(I,floor_cut,numpy.inf)
+        I = numpy.log10(I)
+    if gauss_damp:
+        if gauss_damp_sigma is None:
+            s = None
+            if gauss_damp_threshold is None:
+                s = (Nx + Ny)/4.
+            else:
+                Ir = I0.copy()
+                Ir[M==0] = numpy.inf
+                r,Ir = _spimage_utils.radial_mean(Ir,rout=True)
+                inf = numpy.isfinite(Ir)==False
+                if inf.sum() > 0:
+                    tmp = Ir[inf==False][0]
+                    for i in numpy.arange(len(r)):
+                        if inf[i]:
+                            Ir[i] = tmp
+                        else:
+                            tmp = Ir[i]
+                #import matplotlib.pyplot as pypl
+                #fig = pypl.figure()
+                #ax = fig.add_subplot(111)
+                #ax.plot(r,Ir)
+                Ir = gaussian_filter(Ir,len(Ir)/100.)
+                #ax.plot(r,Ir)
+                tmp = Ir > gauss_damp_threshold
+                if tmp.sum() != 0:
+                    s = r[tmp][-1]
+                if s is not None:
+                    ax.axvline(s)
+                #fig.savefig("./Ir_%i.png" % (numpy.random.randint(1000)))
+                #pypl.close(fig)
         else:
-            s = radial_boost_sigma
-        G = numpy.exp(-R**2/(2*s**2))
-        I = I * R**4 * G
+            s = gauss_damp_sigma
+        if s is not None:
+            G = numpy.exp(-R**2/(2*s**2))    
+            I = I * G
+        else:
+            print "WARNING: Gaussian kernel could not be applied. Sigma undefined."
     # Make kernel
     K = kernel(M,smooth=mask_smooth,x=darkfield_x,y=darkfield_y,sigma=darkfield_sigma)
     # Fourier transform
@@ -37,19 +77,17 @@ def patterson(image, mask, floor_cut=0., mask_smooth=1., darkfield_x=None, darkf
             info["patterson0"] = P.copy()
             if normalize_median:
                 info["patterson0"] /= numpy.median(abs(P))
-        s_fK = abs(fK[fK.shape[0]/2,:]).sum() + abs(fK[:,fK.shape[1]/2]).sum()
-        s_P = abs(P[P.shape[0]/2,:]).sum() + abs(P[:,P.shape[1]/2]).sum()
-        P = abs(P) - abs(fK / s_fK * s_P)
+        from scipy.optimize import leastsq
+        err = lambda c: abs(P - c*fK).flatten()
+        c = leastsq(err,1.)[0]
+        P = P - c * fK
     if normalize_median:
         # Normalization
         P /= numpy.median(abs(P))
     if full_output:
         info["kernel"] = K
-        info["intensities"] = K*I
-        #P_nk = numpy.fft.fftshift(numpy.fft.fft2(numpy.fft.fftshift(numpy.array(image,dtype=numpy.float64))))
-        #if normalize_median:
-        #    P_nk /= numpy.median(abs(P_nk))
-        #info["patterson_no_kernel"] = P_nk
+        info["intensities"] = I0
+        info["intensities_times_kernel"] = K*I
         return P, info
     else:
         return P
@@ -68,3 +106,4 @@ def kernel(mask,smooth=1.,x=None,y=None,sigma=None):
         G = numpy.exp(-R**2/(2*sigma**2))
         K = K*G
     return K
+

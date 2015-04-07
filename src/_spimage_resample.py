@@ -112,6 +112,10 @@ def _downsample3d(array,factor,mask):
     return array_new
 
 def crop(pattern,cropLength,center='middle',bg=0):
+    if cropLength > min(list(pattern.shape)):
+        print "WARNING: Could not crop image to larger size."
+        return pattern.copy()
+
     if center == 'middle':
         x_center = (pattern.shape[1] - 1)/2.
         y_center = (pattern.shape[0] - 1)/2.
