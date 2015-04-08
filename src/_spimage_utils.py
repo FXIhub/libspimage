@@ -77,7 +77,11 @@ def _radial(image,mode="mean",**kwargs):
         radii = radii[1:]
     values = numpy.zeros_like(radii)
     for i in range(0,len(radii)):
-        values[i] = f(image[R==radii[i]])
+        tmp = R==radii[i]
+        if tmp.sum() > 0:
+            values[i] = f(image[tmp])
+        else:
+            values[i] = numpy.nan
     if 'rout' in kwargs: return numpy.array([radii,values])
     else: return values
 def radial_sum(image,**kwargs):

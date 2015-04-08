@@ -6,7 +6,7 @@ from scipy.ndimage.morphology import distance_transform_edt
 from scipy.fftpack import fftn,fftshift
 from scipy.signal import convolve2d
 
-def patterson(image, mask, floor_cut=None, mask_smooth=1., darkfield_x=None, darkfield_y=None, darkfield_sigma=None, normalize_median=False, radial_boost=False, log_boost=False, gauss_damp=False, gauss_damp_sigma=None, gauss_damp_threshold=None, subtract_fourier_kernel=False, full_output=False):
+def patterson(image, mask, floor_cut=None, mask_smooth=1., darkfield_x=None, darkfield_y=None, darkfield_sigma=None, normalize_median=False, radial_boost=False, log_boost=False, gauss_damp=False, gauss_damp_sigma=None, gauss_damp_threshold=None, subtract_fourier_kernel=False, log_min=1., full_output=False):
     info = {}
     # Making sure that we leave memory of the input arrays untouched
     M = numpy.array(mask.copy(),dtype=numpy.float64)
@@ -26,10 +26,6 @@ def patterson(image, mask, floor_cut=None, mask_smooth=1., darkfield_x=None, dar
     if radial_boost:
         # Radial boost: Multiply intensities by radius**4
         I = I * R**4
-    if log_boost:
-        if floor_cut is not None:
-            I = numpy.clip(I,floor_cut,numpy.inf)
-        I = numpy.log10(I)
     if gauss_damp:
         if gauss_damp_sigma is None:
             s = None
@@ -56,8 +52,8 @@ def patterson(image, mask, floor_cut=None, mask_smooth=1., darkfield_x=None, dar
                 tmp = Ir > gauss_damp_threshold
                 if tmp.sum() != 0:
                     s = r[tmp][-1]
-                if s is not None:
-                    ax.axvline(s)
+                #if s is not None:
+                #    ax.axvline(s)
                 #fig.savefig("./Ir_%i.png" % (numpy.random.randint(1000)))
                 #pypl.close(fig)
         else:
@@ -67,6 +63,11 @@ def patterson(image, mask, floor_cut=None, mask_smooth=1., darkfield_x=None, dar
             I = I * G
         else:
             print "WARNING: Gaussian kernel could not be applied. Sigma undefined."
+    if log_boost:
+        tmp = I <= log_min
+        if tmp.sum() > 0:
+            I[tmp] = log_min
+        I = numpy.log10(I)
     # Make kernel
     K = kernel(M,smooth=mask_smooth,x=darkfield_x,y=darkfield_y,sigma=darkfield_sigma)
     # Fourier transform
@@ -92,9 +93,9 @@ def patterson(image, mask, floor_cut=None, mask_smooth=1., darkfield_x=None, dar
     else:
         return P
 
-def kernel(mask,smooth=1.,x=None,y=None,sigma=None):
+def kernel(mask,smooth=5.,x=None,y=None,sigma=None):
     K = distance_transform_edt(mask, sampling=None, return_distances=True, return_indices=False, distances=None, indices=None)
-    K = K > (smooth * 5)
+    K = K > (smooth/5.)
     K = gaussian_filter(numpy.array(K,dtype=numpy.float64),smooth)
     if x is not None and y is not None and sigma is not None: 
         # multiply by gaussian darkfield kernel
