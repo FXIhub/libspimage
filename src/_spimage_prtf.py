@@ -1,5 +1,6 @@
 import numpy
 import spimage
+import time 
 
 def array_to_image(img,msk=None):
     s = img.shape
@@ -14,9 +15,10 @@ def array_to_image(img,msk=None):
     return sp_img
 
 def prtf(images_rs,supports,translate=True,enantio=True,full_out=False):
-    s = images_rs[0].shape
-    N = len(images_rs)
-    S = (N,s[0],s[1])
+    S = images_rs.shape
+    s = list(S)
+    N = s.pop(0)
+    s = tuple(s)
 
     image0_rs = images_rs[0]
     image0_fs = numpy.fft.fftn(image0_rs)
@@ -31,14 +33,12 @@ def prtf(images_rs,supports,translate=True,enantio=True,full_out=False):
     spimage.sp_image_free(sp_image0_fs)
 
     sum_fs = image0_fs.copy()
-    tmp = abs(sum_fs) > 0.
-    if tmp.sum() > 0:
-        sum_fs[tmp] /= abs(sum_fs[tmp])
+    sum_fs[abs(sum_fs) > 0.] /= abs(sum_fs[abs(sum_fs) > 0.])
 
     sp_sum_fs = array_to_image(sum_fs)
 
     zeros = numpy.zeros(shape=s,dtype="int")
-    zeros[tmp == False] = 1
+    zeros[abs(sum_fs) <= 0.] = 1
 
     sp_avg_img = array_to_image(image0_rs)
     avg_msk = numpy.zeros(shape=s,dtype="float")
@@ -51,17 +51,16 @@ def prtf(images_rs,supports,translate=True,enantio=True,full_out=False):
     for i,img,sup in zip(range(1,N),images_rs[1:],supports[1:]):
         # Initialize image
         sp_img = array_to_image(img,sup)
-        
+
         # Translate and enantio matching
         if translate:
             spimage.sp_image_superimpose(sp_avg_img,sp_img,spimage.SpEnantiomorph)
             spimage.sp_image_phase_match(sp_avg_img,sp_img,2)
         spimage.sp_image_add(sp_avg_img,sp_img)
 
-        sup_t = numpy.array(sp_img.mask,dtype="bool")
-        if sup_t.sum() > 0:
-            avg_msk[sup_t] += 1
-        
+        if sp_img.mask.sum() > 0:
+            avg_msk[sp_img.mask == 0] += 1
+
         # Cache image and support
         images_rs_super[i,:] = sp_img.image[:]
         masks_rs_super[i,:] = sp_img.mask[:]
@@ -74,8 +73,7 @@ def prtf(images_rs,supports,translate=True,enantio=True,full_out=False):
         
         # Count zeros
         positive = abs(sp_tmp.image) > 0.
-        if positive.sum() > 0:
-            sp_tmp.image[positive] /= abs(sp_tmp.image)[positive]
+        sp_tmp.image[positive] /= abs(sp_tmp.image)[positive]
         zeros += (positive == False)
         
         spimage.sp_image_add(sp_sum_fs,sp_tmp)
@@ -86,8 +84,7 @@ def prtf(images_rs,supports,translate=True,enantio=True,full_out=False):
   
     sp_prtf = spimage.sp_image_duplicate(sp_sum_fs,spimage.SP_COPY_DATA|spimage.SP_COPY_MASK)
     sp_prtf.image[:] /= N
-    if zeros.sum() > 0:
-        sp_prtf.image[zeros > 0] = 0.
+    sp_prtf.image[zeros > 0] = 0.
     spimage.sp_image_dephase(sp_prtf)
 
     avg_img = sp_avg_img.image[:].copy()
