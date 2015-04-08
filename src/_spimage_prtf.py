@@ -1,5 +1,6 @@
 import numpy
 import spimage
+import time 
 
 def array_to_image(img,msk=None):
     s = img.shape
@@ -56,9 +57,10 @@ def prtf(images_rs,supports,translate=True,enantio=True,full_out=False):
             spimage.sp_image_superimpose(sp_avg_img,sp_img,spimage.SpEnantiomorph)
             spimage.sp_image_phase_match(sp_avg_img,sp_img,2)
         spimage.sp_image_add(sp_avg_img,sp_img)
+
         if sp_img.mask.sum() > 0:
-            avg_msk[sp_img.mask] += 1
-        
+            avg_msk[sp_img.mask == 0] += 1
+
         # Cache image and support
         images_rs_super[i,:] = sp_img.image[:]
         masks_rs_super[i,:] = sp_img.mask[:]
