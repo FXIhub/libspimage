@@ -404,18 +404,17 @@ def sphere_model_convert_scaling_to_intensity(scaling, diameter, wavelength, pix
     return i
 
 
-def fit_sphere_diameter_radial(r, img_r, msk_r, diameter, intensity, wavelength, pixel_size, detector_distance, full_output=False, detector_adu_photon=1, detector_quantum_efficiency=1, material='water', maxfev=1000, do_brute_evals=0):
-    if len(img_r.shape) > 1 or len(msk_r.shape) > 1:
+def fit_sphere_diameter_radial(r, img_r, diameter, intensity, wavelength, pixel_size, detector_distance, full_output=False, detector_adu_photon=1, detector_quantum_efficiency=1, material='water', maxfev=1000, do_brute_evals=0):
+    if len(img_r.shape) > 1 or len(r.shape) > 1:
         print "Error: Inputs have to be one-dimensional."
         return
     S = sphere_model_convert_intensity_to_scaling(intensity, diameter, wavelength, pixel_size, detector_distance, detector_quantum_efficiency, 1, material)
-    Rm = numpy.array(r, dtype="float")
-    Rm = spimage.x_to_qx(Rm, pixel_size, detector_distance)
-    Rm = Rm[msk_r]
-    I_fit_m = lambda d: I_sphere_diffraction(S,Rm,sphere_model_convert_diameter_to_size(d, wavelength, pixel_size, detector_distance))
+    R = numpy.array(r, dtype="float")
+    R = spimage.x_to_qx(R, pixel_size, detector_distance)
+    I_fit_m = lambda d: I_sphere_diffraction(S,R,sphere_model_convert_diameter_to_size(d, wavelength, pixel_size, detector_distance))
     def E_fit_m(d):
-        if not (img_r[msk_r].std() and I_fit_m(d).std()): return 1.
-        else: return 1-scipy.stats.pearsonr(I_fit_m(d), img_r[msk_r])[0]
+        if not (img_r.std() and I_fit_m(d).std()): return 1.
+        else: return 1-scipy.stats.pearsonr(I_fit_m(d), img_r)[0]
 
     # Start with brute force with a sensible range
     # We'll assume at least 20x oversampling
@@ -430,7 +429,7 @@ def fit_sphere_diameter_radial(r, img_r, msk_r, diameter, intensity, wavelength,
     diameter = abs(diameter)
 
     # Reduced Chi-squared and standard error
-    chisquared = ((I_fit_m(diameter) - img_r[msk_r])**2).sum()/(img_r.size - 1)
+    chisquared = ((I_fit_m(diameter) - img_r)**2).sum()/(img_r.size - 1)
     if cov is not None:
         pcov = cov[0,0]*chisquared
     else:
@@ -444,7 +443,7 @@ def fit_sphere_diameter_radial(r, img_r, msk_r, diameter, intensity, wavelength,
         return diameter
 
 
-def fit_sphere_intensity_radial(r, img_r, msk_r, diameter, intensity, wavelength, pixel_size, detector_distance, full_output=False, detector_adu_photon=1, detector_quantum_efficiency=1, material='water', maxfev=1000):
+def fit_sphere_intensity_radial(r, img_r, diameter, intensity, wavelength, pixel_size, detector_distance, full_output=False, detector_adu_photon=1, detector_quantum_efficiency=1, material='water', maxfev=1000):
     """
     ...
     usage:
@@ -455,14 +454,13 @@ def fit_sphere_intensity_radial(r, img_r, msk_r, diameter, intensity, wavelength
     ...
 
     """
-    Rm = numpy.array(r, dtype="float")
-    Rm = spimage.x_to_qx(Rm, pixel_size, detector_distance)
-    Rm = Rm[msk_r]
+    R = numpy.array(r, dtype="float")
+    R = spimage.x_to_qx(R, pixel_size, detector_distance)
     size = sphere_model_convert_diameter_to_size(diameter, wavelength, pixel_size, detector_distance)
-    I_fit_m = lambda i: I_sphere_diffraction(sphere_model_convert_intensity_to_scaling(i, diameter, wavelength, pixel_size, detector_distance, detector_quantum_efficiency, 1, material),Rm,size)
-    E_fit_m = lambda i: I_fit_m(i) - img_r[msk_r]
+    I_fit_m = lambda i: I_sphere_diffraction(sphere_model_convert_intensity_to_scaling(i, diameter, wavelength, pixel_size, detector_distance, detector_quantum_efficiency, 1, material),R,size)
+    E_fit_m = lambda i: I_fit_m(i) - img_r
 
-    if len(img_r[msk_r]):
+    if len(img_r):
         [intensity], cov, infodict, mesg, ier = leastsq(E_fit_m, intensity, maxfev=maxfev, xtol=1e-3, full_output=True)
         # Reduced Chi-squared and standard error
         chisquared = (E_fit_m(intensity)**2).sum()/(img_r.size - 1)
