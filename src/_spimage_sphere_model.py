@@ -142,7 +142,7 @@ def fit_sphere_intensity_pixelwise(img, msk, diameter, intensity, wavelength, pi
         if cov is not None:
             pcov = cov[0,0]*chisquared
         else:
-            pcov = np.nan
+            pcov = numpy.nan
     else:
         infodict={}
         pcov = None
@@ -174,7 +174,7 @@ def fit_sphere_intensity_nrphotons(img, msk, diameter, intensity, wavelength, pi
     if cov is not None:
         pcov = cov[0,0]*chisquared
     else:
-        pcov = np.nan
+        pcov = numpy.nan
     
     if full_output:
         infodict['error'] = chisquared
@@ -467,7 +467,7 @@ def fit_sphere_intensity_radial(r, img_r, diameter, intensity, wavelength, pixel
         if cov is not None:
             pcov = cov[0,0]*chisquared
         else:
-            pcov = np.nan
+            pcov = numpy.nan
     else:
         infodict={}
         pcov = None
