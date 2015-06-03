@@ -442,3 +442,42 @@ def fit_sphere_diameter_radial(r, img_r, msk_r, diameter, intensity, wavelength,
         return diameter, infodict
     else:
         return diameter
+
+
+def fit_sphere_intensity_radial(r, img_r, msk_r, diameter, intensity, wavelength, pixel_size, detector_distance, full_output=False, detector_adu_photon=1, detector_quantum_efficiency=1, material='water', maxfev=1000):
+    """
+    ...
+    usage:
+    ======
+    ...
+    Parameters:
+    ===========
+    ...
+
+    """
+    Rm = numpy.array(r, dtype="float")
+    Rm = spimage.x_to_qx(Rm, pixel_size, detector_distance)
+    Rm = Rm[msk_r]
+    size = sphere_model_convert_diameter_to_size(diameter, wavelength, pixel_size, detector_distance)
+    I_fit_m = lambda i: I_sphere_diffraction(sphere_model_convert_intensity_to_scaling(i, diameter, wavelength, pixel_size, detector_distance, detector_quantum_efficiency, 1, material),Rm,size)
+    E_fit_m = lambda i: I_fit_m(i) - img_r[msk_r]
+
+    if len(img_r[msk_r]):
+        [intensity], cov, infodict, mesg, ier = leastsq(E_fit_m, intensity, maxfev=maxfev, xtol=1e-3, full_output=True)
+        # Reduced Chi-squared and standard error
+        chisquared = (E_fit_m(intensity)**2).sum()/(img_r.size - 1)
+        if cov is not None:
+            pcov = cov[0,0]*chisquared
+        else:
+            pcov = np.nan
+    else:
+        infodict={}
+        pcov = None
+        chisquared = 0
+        
+    if full_output:
+        infodict['error'] = chisquared
+        infodict['pcov'] = pcov
+        return intensity, infodict
+    else:
+        return intensity
