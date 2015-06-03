@@ -420,7 +420,7 @@ def fit_sphere_diameter_radial(r, img_r, diameter, intensity, wavelength, pixel_
     # We'll assume at least 20x oversampling
     if do_brute_evals:
         dmin = sphere_model_convert_size_to_diameter(1./(img_r.size), wavelength, pixel_size, detector_distance)
-        dmax = dmin*img.size/20
+        dmax = dmin*img_r.size/20
         Ns = do_brute_evals
         diameter = scipy.optimize.brute(E_fit_m, [(dmin, dmax)], Ns=Ns)[0]
 
