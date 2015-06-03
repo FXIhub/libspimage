@@ -5,7 +5,7 @@ from scipy.optimize import leastsq
 import scipy.stats
 import spimage
 #from pylab import *
-__all__ = ['fit_sphere_diameter', 'fit_sphere_intensity', 'fit_full_sphere_model', 'I_sphere_diffraction', 'sphere_model_convert_diameter_to_size', 'sphere_model_convert_intensity_to_scaling', 'sphere_model_convert_scaling_to_intensity']
+#__all__ = ['fit_sphere_diameter', 'fit_sphere_diameter_radial', 'fit_sphere_intensity', 'fit_full_sphere_model', 'I_sphere_diffraction', 'sphere_model_convert_diameter_to_size', 'sphere_model_convert_intensity_to_scaling', 'sphere_model_convert_scaling_to_intensity']
 
 def fit_sphere_diameter(img, msk, diameter, intensity, wavelength, pixel_size, detector_distance, method=None, full_output=False, **kwargs):
     """
@@ -27,6 +27,7 @@ def fit_sphere_diameter(img, msk, diameter, intensity, wavelength, pixel_size, d
     if full_output: return diameter, info
     else: return diameter
 
+                                             
 def fit_sphere_diameter_pearson(img, msk, diameter, intensity, wavelength, pixel_size, detector_distance, full_output=False,  x0=0, y0=0, detector_adu_photon=1, detector_quantum_efficiency=1, material='water', rmax=None, downsampling=1, do_brute_evals=0, maxfev=1000, do_photon_counting=False):
     """
     Fit the diameter of a sphere using pearson correlation.
@@ -228,13 +229,14 @@ def _prepare_for_fitting(img, msk, x0, y0, rmax, downsampling, adup, do_photon_c
     img = img[::downsampling, ::downsampling]
     msk = msk[::downsampling, ::downsampling]
     Y,X = spimage.grid(s, (0,0)) # Non-centered grid vectors in [px]
-    Xc = X - x0   # Centered (masked) grid x vectors in [px]
-    Yc = Y - y0   # Centered (masked) grid y vectors in [px]
-    qmap = spimage.generate_absqmap(Xc,Yc,pixel_size,detector_distance)
+    # Center grid
+    Xc = X - x0   # Centered grid x vectors in [px]
+    Yc = Y - y0   # Centered grid y vectors in [px]
+    # Grid to q-space (but we keep units in px)
     Xc = spimage.x_to_qx(Xc,pixel_size,detector_distance)
     Yc = spimage.y_to_qy(Yc,pixel_size,detector_distance)
-    Xmc = Xc[msk] # Non-centered (masked) grid x vectors in [px]
-    Ymc = Yc[msk] # Non-centered (masked) grid y vectors in [px]
+    Xmc = Xc[msk] # Centered and masked grid x vectors in [px]
+    Ymc = Yc[msk] # Centered and masked grid y vectors in [px]
     img = img / adup
     if do_photon_counting: img = numpy.round(img) * (img > 0)
     return Xmc, Ymc, img, msk
@@ -400,3 +402,43 @@ def sphere_model_convert_scaling_to_intensity(scaling, diameter, wavelength, pix
     I0    = K/(dn.real*p/D*2*numpy.pi/wl**2*V)**2 # [Np/m^2]
     i     = I0 * ey_J             # [J/m^2]
     return i
+
+
+def fit_sphere_diameter_radial(r, img_r, msk_r, diameter, intensity, wavelength, pixel_size, detector_distance, full_output=False, detector_adu_photon=1, detector_quantum_efficiency=1, material='water', maxfev=1000, do_brute_evals=0):
+    if len(img_r.shape) > 1 or len(msk_r.shape) > 1:
+        print "Error: Inputs have to be one-dimensional."
+        return
+    S = sphere_model_convert_intensity_to_scaling(intensity, diameter, wavelength, pixel_size, detector_distance, detector_quantum_efficiency, 1, material)
+    Rm = numpy.array(r, dtype="float")
+    Rm = spimage.x_to_qx(Rm, pixel_size, detector_distance)
+    Rm = Rm[msk_r]
+    I_fit_m = lambda d: I_sphere_diffraction(S,Rm,sphere_model_convert_diameter_to_size(d, wavelength, pixel_size, detector_distance))
+    def E_fit_m(d):
+        if not (img_r[msk_r].std() and I_fit_m(d).std()): return 1.
+        else: return 1-scipy.stats.pearsonr(I_fit_m(d), img_r[msk_r])[0]
+
+    # Start with brute force with a sensible range
+    # We'll assume at least 20x oversampling
+    if do_brute_evals:
+        dmin = sphere_model_convert_size_to_diameter(1./(img_r.size), wavelength, pixel_size, detector_distance)
+        dmax = dmin*img.size/20
+        Ns = do_brute_evals
+        diameter = scipy.optimize.brute(E_fit_m, [(dmin, dmax)], Ns=Ns)[0]
+
+    # End with least square
+    [diameter], cov, infodict, mesg, ier = leastsq(E_fit_m, diameter, maxfev=maxfev, xtol=1e-5, full_output=True)
+    diameter = abs(diameter)
+
+    # Reduced Chi-squared and standard error
+    chisquared = ((I_fit_m(diameter) - img_r[msk_r])**2).sum()/(img_r.size - 1)
+    if cov is not None:
+        pcov = cov[0,0]*chisquared
+    else:
+        pcov = numpy.nan
+    
+    if full_output:
+        infodict['error'] = chisquared
+        infodict['pcov'] = pcov
+        return diameter, infodict
+    else:
+        return diameter

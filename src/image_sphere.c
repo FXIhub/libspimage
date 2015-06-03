@@ -24,28 +24,50 @@ void sp_rot_free(SpRotation * rot)
 
 SpRotation * sp_rot_euler(real a1, real a2, real a3)
 {
+  /*
   sp_matrix * R1 = sp_matrix_alloc(3,3);
   sp_matrix * R2 = sp_matrix_alloc(3,3);
   sp_matrix * R3 = sp_matrix_alloc(3,3);
+  
   sp_matrix_set(R1,0,0,cos(a1));
   sp_matrix_set(R1,1,1,cos(a1));
   sp_matrix_set(R1,0,1,sin(a1));
   sp_matrix_set(R1,1,0,-sin(a1));
   sp_matrix_set(R1,2,2,1.0);
+
   sp_matrix_set(R2,1,1,cos(a2));
   sp_matrix_set(R2,2,2,cos(a2));
   sp_matrix_set(R2,1,2,sin(a2));
   sp_matrix_set(R2,2,1,-sin(a2));
   sp_matrix_set(R2,0,0,1.0);
+
+  sp_matrix_set(R2,0,0,cos(a2));
+  sp_matrix_set(R2,0,2,-sin(a2));
+  sp_matrix_set(R2,2,0,sin(a2));
+  sp_matrix_set(R2,2,2,cos(a2));
+  sp_matrix_set(R2,1,1,1.0);
+  
   sp_matrix_set(R3,0,0,cos(a3));
   sp_matrix_set(R3,1,1,cos(a3));
   sp_matrix_set(R3,0,1,sin(a3));
   sp_matrix_set(R3,1,0,-sin(a3));
   sp_matrix_set(R3,2,2,1.0);
-  
-  SpRotation * rot = sp_rot_alloc();
-  sp_matrix_free(rot);
+  */
 
+  SpRotation * rot = sp_rot_alloc();
+  //sp_matrix_free(rot);
+
+  sp_matrix_set(rot, 0, 0, cos(a2)*cos(a3));
+  sp_matrix_set(rot, 0, 1, -cos(a1)*sin(a3)+sin(a1)*sin(a2)*cos(a3));
+  sp_matrix_set(rot, 0, 2, sin(a1)*sin(a3)+cos(a1)*sin(a2)*cos(a3));
+  sp_matrix_set(rot, 1, 0, cos(a2)*sin(a3));
+  sp_matrix_set(rot, 1, 1, cos(a1)*cos(a3)+sin(a1)*sin(a2)*sin(a3));
+  sp_matrix_set(rot, 1, 2, -sin(a1)*cos(a3)+cos(a1)*sin(a2)*sin(a3));
+  sp_matrix_set(rot, 2, 0, -sin(a2));
+  sp_matrix_set(rot, 2, 1, sin(a1)*cos(a2));
+  sp_matrix_set(rot, 2, 2, cos(a1)*cos(a2));
+  
+  /*
   sp_matrix * R4 = sp_matrix_mul(R2,R1);
   rot = sp_matrix_mul(R3,R4);
 
@@ -53,7 +75,8 @@ SpRotation * sp_rot_euler(real a1, real a2, real a3)
   sp_matrix_free(R2);
   sp_matrix_free(R3);
   sp_matrix_free(R4);
- 
+  */ 
+
   return rot;
 }
 
