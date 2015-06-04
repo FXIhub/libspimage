@@ -457,7 +457,7 @@ def fit_sphere_intensity_radial(r, img_r, diameter, intensity, wavelength, pixel
     R = numpy.array(r, dtype="float")
     R = spimage.x_to_qx(R, pixel_size, detector_distance)
     size = sphere_model_convert_diameter_to_size(diameter, wavelength, pixel_size, detector_distance)
-    I_fit_m = lambda i: I_sphere_diffraction(sphere_model_convert_intensity_to_scaling(i, diameter, wavelength, pixel_size, detector_distance, detector_quantum_efficiency, 1, material),R,size)
+    I_fit_m = lambda i: I_sphere_diffraction(sphere_model_convert_intensity_to_scaling(i, diameter, wavelength, pixel_size, detector_distance, detector_quantum_efficiency, detector_adu_photon, material),R,size)
     E_fit_m = lambda i: I_fit_m(i) - img_r
 
     if len(img_r):
