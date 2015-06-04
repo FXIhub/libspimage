@@ -179,10 +179,10 @@ def binImage(img, binning, msk=None, output_binned_mask=False):
             img_new *= msk_new
             # Bin mask
             msk_new = numpy.array(msk_new, dtype="int")
-            msk_new = msk_new.reshape(nx_new // binning, binning, ny_new // binning, binning)
+            msk_new = msk_new.reshape(ny_new // binning, binning, nx_new // binning, binning)
             msk_new = msk_new.sum(axis=3).sum(axis=1)
         # New dimensions for binned pixels
-        img_new = img_new.reshape(nx_new // binning, binning, ny_new // binning, binning)
+        img_new = img_new.reshape(ny_new // binning, binning, nx_new // binning, binning)
         img_new = img_new.sum(axis=3).sum(axis=1)
         if msk is not None:
             img_new *= float(binning**2) / (msk_new + numpy.finfo("float").eps)
@@ -194,6 +194,7 @@ def binImage(img, binning, msk=None, output_binned_mask=False):
 def _testBinImage(binning,masking=True):
     from scipy import misc
     l1 = misc.lena()
+    l1 = l1[:511,:480]
     l1 = l1[:l1.shape[0] - l1.shape[0] % binning,:l1.shape[1] - l1.shape[1] % binning]
     S1 = l1.sum()
     m1 = m2 = None
