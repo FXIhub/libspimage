@@ -419,8 +419,8 @@ def fit_sphere_diameter_radial(r, img_r, diameter, intensity, wavelength, pixel_
     # Start with brute force with a sensible range
     # We'll assume at least 20x oversampling
     if do_brute_evals:
-        dmin = sphere_model_convert_size_to_diameter(1./(img_r.size), wavelength, pixel_size, detector_distance)
-        dmax = dmin*img_r.size/20
+        dmin = sphere_model_convert_size_to_diameter(1./(img_r.size*2), wavelength, pixel_size, detector_distance)
+        dmax = dmin*img_r.size*2/5
         Ns = do_brute_evals
         diameter = scipy.optimize.brute(E_fit_m, [(dmin, dmax)], Ns=Ns)[0]
 
@@ -430,6 +430,50 @@ def fit_sphere_diameter_radial(r, img_r, diameter, intensity, wavelength, pixel_
 
     # Reduced Chi-squared and standard error
     chisquared = ((I_fit_m(diameter) - img_r)**2).sum()/(img_r.size - 1)
+    if cov is not None:
+        pcov = cov[0,0]*chisquared
+    else:
+        pcov = numpy.nan
+    
+    if full_output:
+        infodict['error'] = chisquared
+        infodict['pcov'] = pcov
+        return diameter, infodict
+    else:
+        return diameter
+
+def fit_sphere_diameter_radial2(r, img_r, diameter, intensity, wavelength, pixel_size, detector_distance, full_output=False, detector_adu_photon=1, detector_quantum_efficiency=1, material='water', maxfev=1000, do_brute_evals=0):
+    if len(img_r.shape) > 1 or len(r.shape) > 1:
+        print "Error: Inputs have to be one-dimensional."
+        return
+    S = sphere_model_convert_intensity_to_scaling(intensity, diameter, wavelength, pixel_size, detector_distance, detector_quantum_efficiency, 1, material)
+    R = numpy.array(r, dtype="float")
+    R = spimage.x_to_qx(R, pixel_size, detector_distance)
+    I_fit_m = lambda d,dr: I_sphere_diffraction(S,R+dr,sphere_model_convert_diameter_to_size(d, wavelength, pixel_size, detector_distance))
+    def E_fit_m(v):
+        d,dr = v
+        if not (img_r.std() and I_fit_m(d,dr).std()): return 1.
+        else: return 1-scipy.stats.pearsonr(I_fit_m(d,dr), img_r)[0]
+    def E_fit_m2(v): return E_fit_m(v)*numpy.ones(2)
+
+    dr = 0
+        
+    # Start with brute force with a sensible range
+    # We'll assume at least 20x oversampling
+    if do_brute_evals:
+        dmin = sphere_model_convert_size_to_diameter(1./(img_r.size*2), wavelength, pixel_size, detector_distance)
+        dmax = dmin*img_r.size*2/5
+        #Ns = do_brute_evals
+        rranges = (slice(dmin, dmax, (dmax-dmin)/do_brute_evals), slice(-50, 50, 5))
+        res = scipy.optimize.brute(E_fit_m, rranges)
+        (diameter,dr) = res
+
+    # End with least square
+    [diameter,dr], cov, infodict, mesg, ier = leastsq(E_fit_m2, (diameter,dr), maxfev=maxfev, xtol=1e-5, full_output=True)
+    diameter = abs(diameter)
+
+    # Reduced Chi-squared and standard error
+    chisquared = ((I_fit_m(diameter,dr) - img_r)**2).sum()/(img_r.size - 1)
     if cov is not None:
         pcov = cov[0,0]*chisquared
     else:
