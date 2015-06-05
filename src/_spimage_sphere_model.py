@@ -420,9 +420,16 @@ def fit_sphere_diameter_radial(r, img_r, diameter, intensity, wavelength, pixel_
     # We'll assume at least 20x oversampling
     if do_brute_evals:
         dmin = sphere_model_convert_size_to_diameter(1./(img_r.size*2), wavelength, pixel_size, detector_distance)
-        dmax = dmin*img_r.size*2/5
-        Ns = do_brute_evals
-        diameter = scipy.optimize.brute(E_fit_m, [(dmin, dmax)], Ns=Ns)[0]
+        dmax = dmin*img_r.size*2/20
+        diameter = scipy.optimize.brute(E_fit_m, [(dmin, dmax)], Ns=do_brute_evals)
+
+    # Start with brute force with a sensible range
+    # We'll assume at least 20x oversampling
+    #if do_brute_evals:
+    #    dmin = sphere_model_convert_size_to_diameter(1./(img_r.size*2), wavelength, pixel_size, detector_distance)
+    #    dmax = dmin*img_r.size*2/5
+    #    Ns = do_brute_evals
+    #    diameter = scipy.optimize.brute(E_fit_m, [(dmin, dmax)], Ns=Ns)[0]
 
     # End with least square
     [diameter], cov, infodict, mesg, ier = leastsq(E_fit_m, diameter, maxfev=maxfev, xtol=1e-5, full_output=True)
@@ -430,6 +437,8 @@ def fit_sphere_diameter_radial(r, img_r, diameter, intensity, wavelength, pixel_
 
     # Reduced Chi-squared and standard error
     chisquared = ((I_fit_m(diameter) - img_r)**2).sum()/(img_r.size - 1)
+    meanerr = (abs(I_fit_m(diameter) - img_r)).sum()/(img_r.size - 1)
+    meanerr3 = (abs(I_fit_m(diameter) - img_r)**3).sum()/(img_r.size - 1)
     if cov is not None:
         pcov = cov[0,0]*chisquared
     else:
@@ -437,11 +446,14 @@ def fit_sphere_diameter_radial(r, img_r, diameter, intensity, wavelength, pixel_
     
     if full_output:
         infodict['error'] = chisquared
+        infodict['mean_error_1'] = meanerr
+        infodict['mean_error_3'] = meanerr3
         infodict['pcov'] = pcov
         return diameter, infodict
     else:
         return diameter
 
+# EXPERIMENTAL
 def fit_sphere_diameter_radial2(r, img_r, diameter, intensity, wavelength, pixel_size, detector_distance, full_output=False, detector_adu_photon=1, detector_quantum_efficiency=1, material='water', maxfev=1000, do_brute_evals=0):
     if len(img_r.shape) > 1 or len(r.shape) > 1:
         print "Error: Inputs have to be one-dimensional."
@@ -508,6 +520,8 @@ def fit_sphere_intensity_radial(r, img_r, diameter, intensity, wavelength, pixel
         [intensity], cov, infodict, mesg, ier = leastsq(E_fit_m, intensity, maxfev=maxfev, xtol=1e-3, full_output=True)
         # Reduced Chi-squared and standard error
         chisquared = (E_fit_m(intensity)**2).sum()/(img_r.size - 1)
+        meanerr = (abs(I_fit_m(diameter) - img_r)).sum()/(img_r.size - 1)
+        meanerr3 = (abs(I_fit_m(diameter) - img_r)**3).sum()/(img_r.size - 1)
         if cov is not None:
             pcov = cov[0,0]*chisquared
         else:
@@ -516,9 +530,13 @@ def fit_sphere_intensity_radial(r, img_r, diameter, intensity, wavelength, pixel
         infodict={}
         pcov = None
         chisquared = 0
+        meanerr = 0
+        meanerr3 = 0
         
     if full_output:
         infodict['error'] = chisquared
+        infodict['mean_error_1'] = meanerr
+        infodict['mean_error_3'] = meanerr3
         infodict['pcov'] = pcov
         return intensity, infodict
     else:
