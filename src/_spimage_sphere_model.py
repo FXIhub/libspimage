@@ -429,7 +429,7 @@ def fit_sphere_diameter_radial(r, img_r, diameter, intensity, wavelength, pixel_
 
     # Reduced Chi-squared and standard error
     chisquared = ((I_fit_m(diameter) - img_r)**2).sum()/(img_r.size - 1)
-    nmerr =  abs( E_fit_m(diameter) ).sum() / (img_r.size - 1) / abs(img_r).sum()
+    nmerr =  abs( I_fit_m(diameter) - img_r ).sum() / (img_r.size - 1) / abs(img_r).sum()
     if cov is not None:
         pcov = cov[0,0]*chisquared
     else:
@@ -468,9 +468,9 @@ def fit_sphere_intensity_radial(r, img_r, diameter, intensity, wavelength, pixel
         nmerr =  abs( E_fit_m(intensity) ).sum() / (img_r.size - 1) / abs(img_r).sum()
 
         #### EXPERIMENTAL
-        flin = lambda m, c: m*r + c 
-        ferr = lambda v: E_fit_m(intensity) - flin(v[0], v[1])
-        sphericity = scipy.optimize.leastsq(ferr,(0,img_r[0]))[0][0]
+        #flin = lambda m, c: m*r + c 
+        #ferr = lambda v: E_fit_m(intensity) - flin(v[0], v[1])
+        #sphericity = scipy.optimize.leastsq(ferr,(0,img_r[0]))[0][0]
         #### ---
         
         if cov is not None:
@@ -487,7 +487,7 @@ def fit_sphere_intensity_radial(r, img_r, diameter, intensity, wavelength, pixel
         infodict['chisquared'] = chisquared
         infodict['error'] = nmerr
         infodict['pcov'] = pcov
-        infodict['sphericity'] = sphericity
+        #infodict['sphericity'] = sphericity
         return intensity, infodict
     else:
         return intensity
