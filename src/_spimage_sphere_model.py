@@ -404,7 +404,7 @@ def sphere_model_convert_scaling_to_intensity(scaling, diameter, wavelength, pix
     return i
 
 
-def fit_sphere_diameter_radial(r, img_r, diameter, intensity, wavelength, pixel_size, detector_distance, full_output=False, detector_adu_photon=1, detector_quantum_efficiency=1, material='water', maxfev=1000, do_brute_evals=0):
+def fit_sphere_diameter_radial(r, img_r, diameter, intensity, wavelength, pixel_size, detector_distance, full_output=False, detector_adu_photon=1, detector_quantum_efficiency=1, material='water', maxfev=1000, do_brute_evals=0,dlim=None):
     if len(img_r.shape) > 1 or len(r.shape) > 1:
         print "Error: Inputs have to be one-dimensional."
         return
@@ -419,8 +419,11 @@ def fit_sphere_diameter_radial(r, img_r, diameter, intensity, wavelength, pixel_
     # Start with brute force with a sensible range
     # We'll assume at least 20x oversampling
     if do_brute_evals:
-        dmin = sphere_model_convert_size_to_diameter(1./(img_r.size*2), wavelength, pixel_size, detector_distance)
-        dmax = dmin*img_r.size*2/20
+        if dlim is None:
+            dmin = sphere_model_convert_size_to_diameter(1./(img_r.size*2), wavelength, pixel_size, detector_distance)
+            dmax = dmin*img_r.size*2/20
+        else:
+            (dmin,dmax) = dlim
         diameter = scipy.optimize.brute(E_fit_m, [(dmin, dmax)], Ns=do_brute_evals)
 
     # End with least square
@@ -439,6 +442,8 @@ def fit_sphere_diameter_radial(r, img_r, diameter, intensity, wavelength, pixel_
         infodict['chisquared'] = chisquared
         infodict['error'] = nmerr
         infodict['pcov'] = pcov
+        infodict['img_r'] = img_r
+        infodict['I_fit_m'] = I_fit_m(diameter)
         return diameter, infodict
     else:
         return diameter

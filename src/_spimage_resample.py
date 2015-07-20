@@ -252,6 +252,10 @@ def _radialImage(img,mode="mean",cx=None,cy=None,msk=None,output_r=False):
             values[i] = f(img[tmp])
         else:
             values[i] = numpy.nan
+    if (numpy.isfinite(values) == False).sum() > 0:
+        tmp = numpy.isfinite(values)
+        values = values[tmp]
+        radii  = radii[tmp]
     if output_r:
         return radii,values
     else:
