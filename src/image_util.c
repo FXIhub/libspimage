@@ -24,7 +24,11 @@
 #include <png.h>
 #include <float.h>
 #include <ctype.h>
+#ifdef _WIN32
+#include <string.h>
+#else
 #include <strings.h>
+#endif
 #ifdef _USE_DMALLOC
 #include <dmalloc.h>
 #endif

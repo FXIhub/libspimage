@@ -58,6 +58,9 @@ typedef struct {
 
 #include "interpolation_kernels.h"
 
+#ifdef _WIN32
+#define inline __inline
+#endif
 
 typedef struct{
   unsigned int size;

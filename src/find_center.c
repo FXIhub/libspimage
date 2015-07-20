@@ -1,5 +1,4 @@
 #include <spimage.h>
-#include <getopt.h>
 
 /* Helper function for find_center. Mask should be in img->mask */
 Image * sp_find_center_refine_calculate_mask(Image *img, const int search_space)

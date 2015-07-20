@@ -19,7 +19,11 @@
 
 #include <float.h>
 #include <ctype.h>
+#ifdef _WIN32
+#include <string.h>
+#else
 #include <strings.h>
+#endif
 #include <time.h>
 #ifdef _USE_DMALLOC
 #include <dmalloc.h>
