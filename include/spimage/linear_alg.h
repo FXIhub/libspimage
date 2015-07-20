@@ -58,7 +58,7 @@ typedef struct {
 
 #include "interpolation_kernels.h"
 
-#ifdef _WIN32
+#if defined( _MSC_VER ) && !defined( __cplusplus )
 #define inline __inline
 #endif
 

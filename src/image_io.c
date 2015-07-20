@@ -19,7 +19,7 @@
 
 #include <float.h>
 #include <ctype.h>
-#ifdef _WIN32
+#ifdef _MSC_VER
 #include <string.h>
 #else
 #include <strings.h>
