@@ -1219,15 +1219,17 @@ Image * read_anton_datafile(hid_t file_id,hid_t dataset_id,const char * filename
      H5P_DEFAULT, &nframes);
     H5Dclose(file_id);
   }
+  
   int total_dims[3] = {0,0,1};
-  hsize_t dims[nframes][3];
+  hsize_t ** dims = malloc(sizeof(int*)*nframes);
   for(int i = 0;i<nframes;i++){
+	dims[i] = malloc(sizeof(int) * 3);
     dims[i][0] = 1;
     dims[i][1] = 1;
     dims[i][2] = 1;
   }
   
-  real * data[nframes];
+  real ** data = malloc(sizeof(real *)*nframes);
   for(int frame = 0;frame<nframes;frame++){
     char fieldname[100]; 
     if(has_nframes){
@@ -1278,8 +1280,11 @@ Image * read_anton_datafile(hid_t file_id,hid_t dataset_id,const char * filename
     }
   }
   for(int frame = 0;frame<nframes;frame++){
+	  free(dims[frame]);
     free(data[frame]);
   }
+  free(dims);
+  free(data);
   /* For some reason the image is upside down so we'll turn it around */
   sp_image_reflect(ret,1,SP_AXIS_X);
   //H5close();

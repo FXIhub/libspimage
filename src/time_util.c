@@ -13,6 +13,7 @@
 #  include <time.h>
 # include <windows.h>
 #include <direct.h>
+#ifdef __MINGW32__
 #ifndef _TIMEVAL_DEFINED /* also in winsock[2].h */
 #define _TIMEVAL_DEFINED
 struct timeval {
@@ -20,6 +21,7 @@ struct timeval {
     long tv_usec;
 };
 #endif /* _TIMEVAL_DEFINED */
+#endif
 #else
 #  include <sys/time.h>
 #endif
