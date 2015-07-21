@@ -1474,7 +1474,7 @@ int write_mask_to_png(const Image * img, char * filename, int color){
 
 #ifdef PNG_FOUND
 
-#ifdef _WIN32
+#if defined(_WIN32) && PNG_LIBPNG_VER < 10600
   /* png_init_io seems to crash in windows using GnuWin32 libpng-1.2.8*/
 
 #  define READFILE(file, data, length, check) \
@@ -1526,7 +1526,7 @@ Image * read_png(const char * filename){
  png_infop info_ptr = png_create_info_struct(png_ptr);
  png_byte ** row_pointers;
  Image * res;
-#ifdef _WIN32
+#if defined(_WIN32) && PNG_LIBPNG_VER < 10600 
  png_set_read_fn(png_ptr, (png_voidp)fp, pngtest_read_data);
 #else
  png_init_io(png_ptr, fp);
@@ -1638,7 +1638,7 @@ int write_png(const Image * img,const char * filename, int color){
     abort();
     return (-1);
   }
-  #ifdef _WIN32
+  #if defined(_WIN32) && PNG_LIBPNG_VER < 10600
     png_set_write_fn(png_ptr, (png_voidp)fp,  pngtest_write_data,NULL);
   #else
    png_init_io(png_ptr, fp);

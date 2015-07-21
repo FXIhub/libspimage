@@ -1,7 +1,7 @@
 #include "AllTests.h"
 
 #include <time.h>
-#include <getopt.h>
+#include "getopt.h"
 
 typedef struct {
 	int linear_alg;
