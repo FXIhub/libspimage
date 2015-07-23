@@ -3,6 +3,7 @@
 import os
 import subprocess
 import urllib
+import sys
 
 # To be run on a 64-bit Windows to produce 32-bit Windows executables
 
