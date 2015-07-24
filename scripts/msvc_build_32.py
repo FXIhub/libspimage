@@ -132,26 +132,28 @@ if not os.path.exists('c:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v6.0')
 # Run cmake
 
 p = subprocess.Popen(['cmake',
-                  '-G','Visual Studio 11 Win32',
-                  '-DTIFF_LIBRARY:FILEPATH=c:/msys64/mingw64/bin/libtiff-5.lib',
-                  '-DTIFF_INCLUDE_DIR:PATH=c:/msys64/mingw64/include',
-                  '-DPNG_LIBRARY:FILEPATH=c:/msys64/mingw64/bin/libpng16-16.lib',
-                  '-DPNG_PNG_INCLUDE_DIR:PATH=c:/msys64/mingw64/include',
-                  '-DZLIB_LIBRARY:FILEPATH=c:/msys64/mingw64/bin/zlib1.lib',
-                  '-DZLIB_INCLUDE_DIR:PATH=c:/msys64/mingw64/include',
+                  '-G','Visual Studio 11 2012',
+                  '-DTIFF_LIBRARY:FILEPATH=c:/msys64/mingw32/bin/libtiff-5.lib',
+                  '-DTIFF_INCLUDE_DIR:PATH=c:/msys64/mingw32/include',
+                  '-DPNG_LIBRARY:FILEPATH=c:/msys64/mingw32/bin/libpng16-16.lib',
+                  '-DPNG_PNG_INCLUDE_DIR:PATH=c:/msys64/mingw32/include',
+                  '-DZLIB_LIBRARY:FILEPATH=c:/msys64/mingw32/bin/zlib1.lib',
+                  '-DZLIB_INCLUDE_DIR:PATH=c:/msys64/mingw32/include',
                   '-DFFTW3_FFTWF_LIBRARY:FILEPATH=c:/fftw3-32/libfftw3f-3.lib',
                   '-DFFTW3_FFTW_LIBRARY:FILEPATH=c:/fftw3-32/libfftw3-3.lib',
                   '-DFFTW3_FFTWL_LIBRARY:FILEPATH=c:/fftw3-32/libfftw3l-3.lib',
+
                   '-DFFTW3_INCLUDE_DIR:PATH=c:/fftw3-32',
                   '-DHDF5_LIBRARY:FILEPATH=c:/Program Files (x86)/HDF_Group/HDF5/1.8.15/lib/hdf5.lib',
                   '-DHDF5_INCLUDE_DIR:PATH=c:/Program Files (x86)/HDF_Group/HDF5/1.8.15/include',
-                  '-DGSL_GSL_LIBRARY:FILEPATH=c:/msys64/mingw64/bin/libgsl-0.lib',
-                  '-DGSL_GSLCBLAS_LIBRARY:FILEPATH=c:/msys64/mingw64/bin/libgslcblas-0.lib',
-                  '-DGSL_INCLUDE_DIR:PATH=c:/msys64/mingw64/include',
+                  '-DGSL_GSL_LIBRARY:FILEPATH=c:/msys64/mingw32/bin/libgsl-0.lib',
+                  '-DGSL_GSLCBLAS_LIBRARY:FILEPATH=c:/msys64/mingw32/bin/libgslcblas-0.lib',
+                  '-DGSL_INCLUDE_DIR:PATH=c:/msys64/mingw32/include',
                   '-DCMAKE_VERBOSE_MAKEFILE:BOOL=FALSE',
                   '..'], env=env_map)
 
 # Run vcvarsall.bat to get msbuild in the path
-
+vcvarsall = 'c:/Program Files (x86)/Microsoft Visual Studio 11.0/VC/vcvarsall.bat'
 # Build things with msbuild spimage.sln
-
+# Using quotation marks because of the spaces in the path
+os.system('"%s" && msbuild spimage.sln' % (vcvarsall))
