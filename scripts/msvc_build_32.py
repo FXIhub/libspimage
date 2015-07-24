@@ -58,7 +58,7 @@ env_map = os.environ;
 # Install cmake
 cmake_url = "http://www.cmake.org/files/v3.2/cmake-3.2.3-win32-x86.exe"
 cmake_exe = "cmake-3.2.3-win32-x86.exe";
-if not os.path.exists('c:\Program Files (x86)\CMake\bin\cmake.exe'):
+if not os.path.exists('c:/Program Files (x86)/CMake/bin/cmake.exe'):
     if not os.path.exists(cmake_exe):
         geturl(cmake_url,cmake_exe);
     os.system(cmake_exe);
@@ -66,7 +66,7 @@ if not os.path.exists('c:\Program Files (x86)\CMake\bin\cmake.exe'):
 # Install msys2 (64-bit)
 msys2_url = "http://sourceforge.net/projects/msys2/files/Base/x86_64/msys2-x86_64-20150512.exe/download"
 msys2_exe = "msys2-x86_64-20150512.exe"
-if not os.path.exists('C:\msys64'):
+if not os.path.exists('C:/msys64'):
     if not os.path.exists(msys2_exe):
         geturl(msys2_url,msys2_exe);
     os.system(msys2_exe);
@@ -74,7 +74,7 @@ if not os.path.exists('C:\msys64'):
 # Install Visual Studio Express 2012
 vs_url = 'https://www.microsoft.com/en-us/download/confirmation.aspx?id=34673'
 vs_exe = "wdexpress_full.exe"
-if not os.path.exists('c:\Program Files (x86)\Microsoft Visual Studio 11.0'):
+if not os.path.exists('c:/Program Files (x86)/Microsoft Visual Studio 11.0'):
     if not os.path.exists(vs_exe):
         geturl(vs_url,vs_exe);
     os.system(vs_exe);
@@ -87,43 +87,43 @@ print 'and something like pacman -S mingw-w64-x86_64-libpng to install it'
 print 'Repeat for libtiff zlib and gsl'
 
 # Convert msys64 .dll to .lib
-# dll2lib('c:\msys2\mingw32\bin\libpng16-16.dll')
-# dll2lib('c:\msys2\mingw32\bin\libtiff-5.dll')
-# dll2lib('c:\msys2\mingw32\bin\zlib1.dll')
-# dll2lib('c:\msys2\mingw32\bin\libgsl-0.dll')
-# dll2lib('c:\msys2\mingw32\bin\libgslcblas-0.dll')
+# dll2lib('c:/msys2/mingw32/bin/libpng16-16.dll')
+# dll2lib('c:/msys2/mingw32/bin/libtiff-5.dll')
+# dll2lib('c:/msys2/mingw32/bin/zlib1.dll')
+# dll2lib('c:/msys2/mingw32/bin/libgsl-0.dll')
+# dll2lib('c:/msys2/mingw32/bin/libgslcblas-0.dll')
 
 # Install latest HDF5
 hdf5_url = "http://www.hdfgroup.org/ftp/HDF5/current/bin/windows/extra/hdf5-1.8.15-patch1-win32-vs2012-shared.zip"
 hdf5_zip = "hdf5-1.8.15-patch1-win32-vs2012-shared.zip"
 
-if not os.path.exists('c:\Program Files (x86)\HDF_Group/HDF5'):
+if not os.path.exists('c:/Program Files (x86)/HDF_Group/HDF5'):
     if not os.path.exists(hdf5_zip):
         geturl(hdf5_url,hdf5_zip);
     file = zipfile.ZipFile(hdf5_zip, "r");
-    file.extractall("c:\hdf5");
-    os.system("c:\hdf5\HDF5-1.8.15-win32.exe");
+    file.extractall("c:/hdf5");
+    os.system("c:/hdf5/HDF5-1.8.15-win32.exe");
 
 # Install fftw3 (not from msys64)
 
 fftw_zip = "fftw-3.3.4-dll32.zip";
 fftw_url = "ftp://ftp.fftw.org/pub/fftw/fftw-3.3.4-dll32.zip"
 
-if not os.path.exists('c:\fftw3-32'):
+if not os.path.exists('c:/fftw3-32'):
     if not os.path.exists(fftw_zip):
         geturl(fftw_url,fftw_zip);
     file = zipfile.ZipFile(fftw_zip, "r");
-    file.extractall("c:\fftw3-32");
+    file.extractall("c:/fftw3-32");
 
-#def2lib('c:\fftw3-32/libfftw3-3.def')
-#def2lib('c:\fftw3-32/libfftw3f-3.def')
-#def2lib('c:\fftw3-32/libfftw3l-3.def')
+#def2lib('c:/fftw3-32/libfftw3-3.def')
+#def2lib('c:/fftw3-32/libfftw3f-3.def')
+#def2lib('c:/fftw3-32/libfftw3l-3.def')
 
 
 # Install CUDA 6
 cuda_url = 'http://developer.download.nvidia.com/compute/cuda/6_0/rel/installers/cuda_6.0.37_winvista_win7_win8.1_general_64.exe'
 cuda_exe = 'cuda_6.0.37_winvista_win7_win8.1_general_64.exe'
-if not os.path.exists('c:\Files)/Program Files\NVIDIA GPU Computing Toolkit\CUDA\v6.0'):
+if not os.path.exists('c:/Files)/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v6.0'):
     if not os.path.exists(cuda_exe):
         geturl(cuda_url,cuda_exe);
     os.system(cuda_exe);
