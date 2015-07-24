@@ -57,7 +57,7 @@ env_map = os.environ;
 # Install cmake
 cmake_url = "http://www.cmake.org/files/v3.2/cmake-3.2.3-win32-x86.exe"
 cmake_exe = "cmake-3.2.3-win32-x86.exe";
-if(not os.path.exists('c:\Program Files (x86)\CMake\bin\cmake.exe' and not os.path.exists(cmake_exe)):
+if(not os.path.exists('c:\Program Files (x86)\CMake\bin\cmake.exe') and not os.path.exists(cmake_exe)):
     geturl(cmake_url,cmake_exe);
     os.system(cmake_exe);
 
