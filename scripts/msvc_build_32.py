@@ -117,7 +117,7 @@ def2lib('c:\fftw3-32/libfftw3l-3.def')
 # Install CUDA 6
 cuda_url = 'http://developer.download.nvidia.com/compute/cuda/6_0/rel/installers/cuda_6.0.37_winvista_win7_win8.1_general_64.exe'
 cuda_exe = 'cuda_6.0.37_winvista_win7_win8.1_general_64.exe'
-   if(not os.path.exists('c:\Files)/Program Files\NVIDIA GPU Computing Toolkit\CUDA\v6.0') and not os.path.exists(cuda_exe)):
+if(not os.path.exists('c:\Files)/Program Files\NVIDIA GPU Computing Toolkit\CUDA\v6.0') and not os.path.exists(cuda_exe)):
     geturl(cuda_url,cuda_exe);
     os.system(cuda_exe);
 
