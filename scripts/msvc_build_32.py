@@ -101,7 +101,7 @@ if not os.path.exists('c:/Program Files (x86)/HDF_Group/HDF5'):
     if not os.path.exists(hdf5_zip):
         geturl(hdf5_url,hdf5_zip);
     file = zipfile.ZipFile(hdf5_zip, "r");
-    file.extractall("c:/hdf5");
+    file.extractall("c:/");
     os.system("c:/hdf5/HDF5-1.8.15-win32.exe");
 
 # Install fftw3 (not from msys64)
