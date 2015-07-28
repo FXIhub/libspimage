@@ -54,7 +54,7 @@ def geturl(url, dst):
 
 env_map = os.environ;
 # Run vcvarsall.bat to get msbuild in the path
-vcvarsall = 'c:/Program Files (x86)/Microsoft Visual Studio 12.0/VC/vcvarsall.bat'
+vcvarsall = os.path.normpath('c:/Program Files (x86)/Microsoft Visual Studio 12.0/VC/vcvarsall.bat')
 
 # Install cmake
 cmake_url = "http://www.cmake.org/files/v3.2/cmake-3.2.3-win32-x86.exe"
@@ -88,11 +88,11 @@ print 'and something like pacman -S mingw-w64-x86_64-libpng to install it'
 print 'Repeat for libtiff zlib and gsl'
 
 # Convert msys64 .dll to .lib
-dll2lib('c:/msys64/mingw32/bin/libpng16-16.dll')
-dll2lib('c:/msys64/mingw32/bin/libtiff-5.dll')
-dll2lib('c:/msys64/mingw32/bin/zlib1.dll')
-dll2lib('c:/msys64/mingw32/bin/libgsl-0.dll')
-dll2lib('c:/msys64/mingw32/bin/libgslcblas-0.dll')
+dll2lib(os.path.normpath('c:/msys64/mingw32/bin/libpng16-16.dll'))
+dll2lib(os.path.normpath('c:/msys64/mingw32/bin/libtiff-5.dll'))
+dll2lib(os.path.normpath('c:/msys64/mingw32/bin/zlib1.dll'))
+dll2lib(os.path.normpath('c:/msys64/mingw32/bin/libgsl-0.dll'))
+dll2lib(os.path.normpath('c:/msys64/mingw32/bin/libgslcblas-0.dll'))
 
 # Install latest HDF5
 hdf5_url = 'http://www.hdfgroup.org/ftp/HDF5/current/bin/windows/hdf5-1.8.15-patch1-win32-vs2013-shared.zip'
@@ -116,9 +116,9 @@ if not os.path.exists('c:/fftw3-32'):
     file = zipfile.ZipFile(fftw_zip, "r");
     file.extractall("c:/fftw3-32");
 
-def2lib('c:/fftw3-32/libfftw3-3.def')
-def2lib('c:/fftw3-32/libfftw3f-3.def')
-def2lib('c:/fftw3-32/libfftw3l-3.def')
+def2lib(os.path.normpath('c:/fftw3-32/libfftw3-3.def'))
+def2lib(os.path.normpath('c:/fftw3-32/libfftw3f-3.def'))
+def2lib(os.path.normpath('c:/fftw3-32/libfftw3l-3.def'))
 
 
 # Install CUDA 6.5
