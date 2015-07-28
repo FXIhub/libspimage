@@ -132,7 +132,7 @@ if not os.path.exists('c:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v6.5')
 
 # Run cmake
 
-p = subprocess.Popen(['cmake',
+p = subprocess.Popen([os.path.normpath('C:/Program Files (x86)/CMake/bin/cmake.exe'),
                   '-G','Visual Studio 12 2013',
                   '-DTIFF_LIBRARY:FILEPATH=c:/msys64/mingw32/bin/libtiff-5.lib',
                   '-DTIFF_INCLUDE_DIR:PATH=c:/msys64/mingw32/include',
