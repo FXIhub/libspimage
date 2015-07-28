@@ -11,26 +11,25 @@ import zipfile
 def dll2lib(dll_name):
     def_name = dll_name[:-4]+".def"
     lib_name = dll_name[:-4]+".lib"
-    output = subprocess.check_output(['dumpbin','/exports',dll_name])
+    output = subprocess.check_output('"%s" && dumpbin /exports %s' % (vcvarsall, dll_name), shell=True)
     output = output.split('\r\n')
     fdef = open(def_name,'w')
-    fdef.write('EXPORTS\r\n')
+    fdef.write('EXPORTS\n')
     for line in output:
         fields = line.split()
         if len(fields) == 4:
             try:
                 int(fields[0])
                 int(fields[1],16)
-                fdef.write("%s\r\n" % (fields[3]))
+                fdef.write("%s\n" % (fields[3]))
             except ValueError:
                 pass
     fdef.close()
     def2lib(def_name)
-    # os.system("lib /def:%s /out:%s /machine:x64" % (def_name, lib_name))
 
 def def2lib(def_name):
     lib_name = def_name[:-4]+".lib"
-    os.system("lib /def:%s /out:%s /machine:x64" % (def_name, lib_name))
+    os.system('"%s" && lib /def:%s /out:%s /machine:x86' % (vcvarsall, def_name, lib_name))
 
 def _reporthook(numblocks, blocksize, filesize, url=None):
 #print "reporthook(%s, %s, %s)" % (numblocks, blocksize, filesize)
@@ -54,6 +53,8 @@ def geturl(url, dst):
         urllib.urlretrieve(url, dst)
 
 env_map = os.environ;
+# Run vcvarsall.bat to get msbuild in the path
+vcvarsall = 'c:/Program Files (x86)/Microsoft Visual Studio 12.0/VC/vcvarsall.bat'
 
 # Install cmake
 cmake_url = "http://www.cmake.org/files/v3.2/cmake-3.2.3-win32-x86.exe"
@@ -87,15 +88,15 @@ print 'and something like pacman -S mingw-w64-x86_64-libpng to install it'
 print 'Repeat for libtiff zlib and gsl'
 
 # Convert msys64 .dll to .lib
-# dll2lib('c:/msys2/mingw32/bin/libpng16-16.dll')
-# dll2lib('c:/msys2/mingw32/bin/libtiff-5.dll')
-# dll2lib('c:/msys2/mingw32/bin/zlib1.dll')
-# dll2lib('c:/msys2/mingw32/bin/libgsl-0.dll')
-# dll2lib('c:/msys2/mingw32/bin/libgslcblas-0.dll')
+dll2lib('c:/msys64/mingw32/bin/libpng16-16.dll')
+dll2lib('c:/msys64/mingw32/bin/libtiff-5.dll')
+dll2lib('c:/msys64/mingw32/bin/zlib1.dll')
+dll2lib('c:/msys64/mingw32/bin/libgsl-0.dll')
+dll2lib('c:/msys64/mingw32/bin/libgslcblas-0.dll')
 
 # Install latest HDF5
-hdf5_url = "http://www.hdfgroup.org/ftp/HDF5/current/bin/windows/extra/hdf5-1.8.15-patch1-win32-vs2012-shared.zip"
-hdf5_zip = "hdf5-1.8.15-patch1-win32-vs2012-shared.zip"
+hdf5_url = 'http://www.hdfgroup.org/ftp/HDF5/current/bin/windows/hdf5-1.8.15-patch1-win32-vs2013-shared.zip'
+hdf5_zip = "hdf5-1.8.15-patch1-win32-vs2013-shared.zip"
 
 if not os.path.exists('c:/Program Files (x86)/HDF_Group/HDF5'):
     if not os.path.exists(hdf5_zip):
@@ -115,15 +116,15 @@ if not os.path.exists('c:/fftw3-32'):
     file = zipfile.ZipFile(fftw_zip, "r");
     file.extractall("c:/fftw3-32");
 
-#def2lib('c:/fftw3-32/libfftw3-3.def')
-#def2lib('c:/fftw3-32/libfftw3f-3.def')
-#def2lib('c:/fftw3-32/libfftw3l-3.def')
+def2lib('c:/fftw3-32/libfftw3-3.def')
+def2lib('c:/fftw3-32/libfftw3f-3.def')
+def2lib('c:/fftw3-32/libfftw3l-3.def')
 
 
-# Install CUDA 6
-cuda_url = 'http://developer.download.nvidia.com/compute/cuda/6_0/rel/installers/cuda_6.0.37_winvista_win7_win8.1_general_64.exe'
-cuda_exe = 'cuda_6.0.37_winvista_win7_win8.1_general_64.exe'
-if not os.path.exists('c:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v6.0'):
+# Install CUDA 6.5
+cuda_url = 'http://developer.download.nvidia.com/compute/cuda/6_5/rel/installers/cuda_6.5.14_windows_general_64.exe'
+cuda_exe = 'cuda_6.5.14_windows_general_64.exe'
+if not os.path.exists('c:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v6.5'):
     if not os.path.exists(cuda_exe):
         geturl(cuda_url,cuda_exe);
     os.system(cuda_exe);
@@ -132,7 +133,7 @@ if not os.path.exists('c:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v6.0')
 # Run cmake
 
 p = subprocess.Popen(['cmake',
-                  '-G','Visual Studio 11 2012',
+                  '-G','Visual Studio 12 2013',
                   '-DTIFF_LIBRARY:FILEPATH=c:/msys64/mingw32/bin/libtiff-5.lib',
                   '-DTIFF_INCLUDE_DIR:PATH=c:/msys64/mingw32/include',
                   '-DPNG_LIBRARY:FILEPATH=c:/msys64/mingw32/bin/libpng16-16.lib',
@@ -142,7 +143,6 @@ p = subprocess.Popen(['cmake',
                   '-DFFTW3_FFTWF_LIBRARY:FILEPATH=c:/fftw3-32/libfftw3f-3.lib',
                   '-DFFTW3_FFTW_LIBRARY:FILEPATH=c:/fftw3-32/libfftw3-3.lib',
                   '-DFFTW3_FFTWL_LIBRARY:FILEPATH=c:/fftw3-32/libfftw3l-3.lib',
-
                   '-DFFTW3_INCLUDE_DIR:PATH=c:/fftw3-32',
                   '-DHDF5_LIBRARY:FILEPATH=c:/Program Files (x86)/HDF_Group/HDF5/1.8.15/lib/hdf5.lib',
                   '-DHDF5_INCLUDE_DIR:PATH=c:/Program Files (x86)/HDF_Group/HDF5/1.8.15/include',
@@ -150,10 +150,8 @@ p = subprocess.Popen(['cmake',
                   '-DGSL_GSLCBLAS_LIBRARY:FILEPATH=c:/msys64/mingw32/bin/libgslcblas-0.lib',
                   '-DGSL_INCLUDE_DIR:PATH=c:/msys64/mingw32/include',
                   '-DCMAKE_VERBOSE_MAKEFILE:BOOL=FALSE',
-                  '..'], env=env_map)
+                  '..'], env=env_map).wait()
 
-# Run vcvarsall.bat to get msbuild in the path
-vcvarsall = 'c:/Program Files (x86)/Microsoft Visual Studio 11.0/VC/vcvarsall.bat'
 # Build things with msbuild spimage.sln
 # Using quotation marks because of the spaces in the path
 os.system('"%s" && msbuild spimage.sln' % (vcvarsall))
