@@ -239,8 +239,8 @@ Image * sp_rectangular_window(int image_x, int image_y, int width, int height, i
   if(shifted){
     for(x = 0;x<image_x;x++){
       for(y = 0;y<image_y;y++){
-	if((fabs(x) < width/2 || fabs(image_x-x) < width/2 )&&
-	   (fabs(y) < height/2 || fabs(image_y-y) < height/2 )){
+	if((abs(x) < width/2 || abs(image_x-x) < width/2 )&&
+	   (abs(y) < height/2 || abs(image_y-y) < height/2 )){
 	  res->image->data[i] = sp_cinit(1,0);
 	}else{
 	  res->image->data[i] = sp_cinit(0,0);
@@ -253,8 +253,8 @@ Image * sp_rectangular_window(int image_x, int image_y, int width, int height, i
     center[1] = image_y/2;
     for(x = 0;x<image_x;x++){
       for(y = 0;y<image_y;y++){
-	if(fabs(x-center[0]) < width/2 &&
-	   fabs(y-center[1]) < height/2){
+	if(abs(x-center[0]) < width/2 &&
+	   abs(y-center[1]) < height/2){
 	  res->image->data[i] = sp_cinit(1,0);
 	}else{
 	  res->image->data[i] = sp_cinit(0,0);
@@ -277,9 +277,9 @@ Image * sp_cube_window(int image_x, int image_y, int image_z, int dx, int dy, in
     for(x = 0;x<image_x;x++){
       for(y = 0;y<image_y;y++){
 	for(z = 0;z<image_z;z++){
-	  if((fabs(x) < dx/2 || fabs(image_x-x) < dx/2 )&&
-	     (fabs(y) < dy/2 || fabs(image_y-y) < dy/2 )&&
-	     (fabs(z) < dz/2 || fabs(image_z-z) < dz/2 )){
+	  if((abs(x) < dx/2 || abs(image_x-x) < dx/2 )&&
+	     (abs(y) < dy/2 || abs(image_y-y) < dy/2 )&&
+	     (abs(z) < dz/2 || abs(image_z-z) < dz/2 )){
 	    res->image->data[i] = sp_cinit(1,0);
 	  }else{
 	    res->image->data[i] = sp_cinit(0,0);
@@ -295,9 +295,9 @@ Image * sp_cube_window(int image_x, int image_y, int image_z, int dx, int dy, in
     for(x = 0;x<image_x;x++){
       for(y = 0;y<image_y;y++){
 	for(z = 0;z<image_z;z++){
-	  if(fabs(x-center[0]) < dx/2 &&
-	     fabs(y-center[1]) < dy/2 &&
-	     fabs(z-center[2]) < dz/2){
+	  if(abs(x-center[0]) < dx/2 &&
+	     abs(y-center[1]) < dy/2 &&
+	     abs(z-center[2]) < dz/2){
 	    res->image->data[i] = sp_cinit(1,0);
 	  }else{
 	    res->image->data[i] = sp_cinit(0,0);

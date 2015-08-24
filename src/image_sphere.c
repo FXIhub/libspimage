@@ -5,7 +5,6 @@
 #include <png.h>
 #include <float.h>
 #include <ctype.h>
-#include <strings.h>
 #include "spimage.h"
 
 /*! This function calculates a rotation from three euler angles.

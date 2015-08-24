@@ -1,7 +1,6 @@
 #ifndef _ALLTESTS_H_
 #define _ALLTESTS_H_ 1
 
-
 #include <assert.h>
 #include <setjmp.h>
 #include <stdlib.h>
@@ -14,6 +13,9 @@
 #include <dmalloc.h>
 #endif
 
+#if defined(WIN32)
+#define __func__ __FUNCTION__
+#endif
 
 #define PRINT_DONE printf("%s completed successfully\n", __func__);
 

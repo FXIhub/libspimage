@@ -58,6 +58,9 @@ typedef struct {
 
 #include "interpolation_kernels.h"
 
+#if defined( _MSC_VER ) && !defined( __cplusplus )
+#define inline __inline
+#endif
 
 typedef struct{
   unsigned int size;

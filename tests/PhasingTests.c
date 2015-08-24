@@ -1156,7 +1156,6 @@ void test_sp_phasing_raar(CuTest * tc){
 }
 
 void test_sp_phasing_raar_speed(CuTest * tc){
-#ifndef NDEBUG
   /* Simple phasing example */
   int size = 512;
   int oversampling = 2;
@@ -1170,7 +1169,6 @@ void test_sp_phasing_raar_speed(CuTest * tc){
   iterations = 10;
   int delta_t = test_sp_phasing_speed_common(tc,alg,NULL,size,oversampling,SpNoConstraints,iterations,SpEngineCPU);
   printf("CPU RAAR %dx%d = %g iterations per second\n",size*oversampling,size*oversampling,(1.0e6*iterations)/delta_t);
-#endif
   PRINT_DONE;
 }
 
@@ -1321,6 +1319,9 @@ CuSuite* phasing_get_suite(void)
 #ifdef _USE_CUDA
     SUITE_ADD_TEST(suite, test_sp_support_cuda);
 #endif
+  }
+  else{
+	  printf("No CUDA Devices Found\n");
   }
   SUITE_ADD_TEST(suite, test_sp_phasing_hio);
   SUITE_ADD_TEST(suite,test_sp_support_speed);

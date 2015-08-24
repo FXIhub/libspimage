@@ -5,7 +5,6 @@
 #include <png.h>
 #include <float.h>
 #include <ctype.h>
-#include <strings.h>
 #ifdef _USE_DMALLOC
 #include <dmalloc.h>
 #endif

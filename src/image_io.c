@@ -19,7 +19,11 @@
 
 #include <float.h>
 #include <ctype.h>
+#ifdef _MSC_VER
+#include <string.h>
+#else
 #include <strings.h>
+#endif
 #include <time.h>
 #ifdef _USE_DMALLOC
 #include <dmalloc.h>
@@ -1215,15 +1219,17 @@ Image * read_anton_datafile(hid_t file_id,hid_t dataset_id,const char * filename
      H5P_DEFAULT, &nframes);
     H5Dclose(file_id);
   }
+  
   int total_dims[3] = {0,0,1};
-  hsize_t dims[nframes][3];
+  hsize_t ** dims = malloc(sizeof(int*)*nframes);
   for(int i = 0;i<nframes;i++){
+	dims[i] = malloc(sizeof(int) * 3);
     dims[i][0] = 1;
     dims[i][1] = 1;
     dims[i][2] = 1;
   }
   
-  real * data[nframes];
+  real ** data = malloc(sizeof(real *)*nframes);
   for(int frame = 0;frame<nframes;frame++){
     char fieldname[100]; 
     if(has_nframes){
@@ -1274,8 +1280,11 @@ Image * read_anton_datafile(hid_t file_id,hid_t dataset_id,const char * filename
     }
   }
   for(int frame = 0;frame<nframes;frame++){
+	  free(dims[frame]);
     free(data[frame]);
   }
+  free(dims);
+  free(data);
   /* For some reason the image is upside down so we'll turn it around */
   sp_image_reflect(ret,1,SP_AXIS_X);
   //H5close();
@@ -1465,7 +1474,7 @@ int write_mask_to_png(const Image * img, char * filename, int color){
 
 #ifdef PNG_FOUND
 
-#ifdef _WIN32
+#if defined(_WIN32) && PNG_LIBPNG_VER < 10600
   /* png_init_io seems to crash in windows using GnuWin32 libpng-1.2.8*/
 
 #  define READFILE(file, data, length, check) \
@@ -1517,7 +1526,7 @@ Image * read_png(const char * filename){
  png_infop info_ptr = png_create_info_struct(png_ptr);
  png_byte ** row_pointers;
  Image * res;
-#ifdef _WIN32
+#if defined(_WIN32) && PNG_LIBPNG_VER < 10600 
  png_set_read_fn(png_ptr, (png_voidp)fp, pngtest_read_data);
 #else
  png_init_io(png_ptr, fp);
@@ -1629,7 +1638,7 @@ int write_png(const Image * img,const char * filename, int color){
     abort();
     return (-1);
   }
-  #ifdef _WIN32
+  #if defined(_WIN32) && PNG_LIBPNG_VER < 10600
     png_set_write_fn(png_ptr, (png_voidp)fp,  pngtest_write_data,NULL);
   #else
    png_init_io(png_ptr, fp);
