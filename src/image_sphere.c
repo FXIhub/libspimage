@@ -22,62 +22,44 @@ void sp_rot_free(SpRotation * rot)
   free(rot);
 }
 
+/* This function creates a rotation matrix from a set of three euler angles. The formalism used is a 'zxz' with right hand rule (ccw rotation if looking down the axis from +inf to -inf)
+ */
 SpRotation * sp_rot_euler(real a1, real a2, real a3)
 {
-  /*
-  sp_matrix * R1 = sp_matrix_alloc(3,3);
-  sp_matrix * R2 = sp_matrix_alloc(3,3);
-  sp_matrix * R3 = sp_matrix_alloc(3,3);
-  
-  sp_matrix_set(R1,0,0,cos(a1));
-  sp_matrix_set(R1,1,1,cos(a1));
-  sp_matrix_set(R1,0,1,sin(a1));
-  sp_matrix_set(R1,1,0,-sin(a1));
-  sp_matrix_set(R1,2,2,1.0);
+  sp_matrix * R1_z = sp_matrix_alloc(3,3);
+  sp_matrix * R2_x = sp_matrix_alloc(3,3);
+  sp_matrix * R3_z = sp_matrix_alloc(3,3);
+    
+  // R1_z (a1)
+  sp_matrix_set(R1_z,0,0,cos(a1));
+  sp_matrix_set(R1_z,0,1,-sin(a1));
+  sp_matrix_set(R1_z,1,0,sin(a1));
+  sp_matrix_set(R1_z,1,1,cos(a1));
+  sp_matrix_set(R1_z,2,2,1.);
 
-  sp_matrix_set(R2,1,1,cos(a2));
-  sp_matrix_set(R2,2,2,cos(a2));
-  sp_matrix_set(R2,1,2,sin(a2));
-  sp_matrix_set(R2,2,1,-sin(a2));
-  sp_matrix_set(R2,0,0,1.0);
+  // R2_x (a2)
+  sp_matrix_set(R2_x,0,0,1.);
+  sp_matrix_set(R2_x,1,1,cos(a2));
+  sp_matrix_set(R2_x,1,2,-sin(a2));
+  sp_matrix_set(R2_x,2,1,sin(a2));
+  sp_matrix_set(R2_x,2,2,cos(a2));
 
-  sp_matrix_set(R2,0,0,cos(a2));
-  sp_matrix_set(R2,0,2,-sin(a2));
-  sp_matrix_set(R2,2,0,sin(a2));
-  sp_matrix_set(R2,2,2,cos(a2));
-  sp_matrix_set(R2,1,1,1.0);
-  
-  sp_matrix_set(R3,0,0,cos(a3));
-  sp_matrix_set(R3,1,1,cos(a3));
-  sp_matrix_set(R3,0,1,sin(a3));
-  sp_matrix_set(R3,1,0,-sin(a3));
-  sp_matrix_set(R3,2,2,1.0);
-  */
+  // Rz(a2)
+  sp_matrix_set(R3_z,0,0,cos(a3));
+  sp_matrix_set(R3_z,0,1,-sin(a3));
+  sp_matrix_set(R3_z,1,0,sin(a3));
+  sp_matrix_set(R3_z,1,1,cos(a3));
+  sp_matrix_set(R3_z,2,2,1.);
+    
+  sp_matrix * R_temp = sp_matrix_mul(R1_z,R2_x);
+  sp_matrix * R      = sp_matrix_mul(R_temp,R3_z);
 
-  SpRotation * rot = sp_rot_alloc();
-  //sp_matrix_free(rot);
+  sp_matrix_free(R1_z);
+  sp_matrix_free(R2_x);
+  sp_matrix_free(R3_z);
+  sp_matrix_free(R_temp);
 
-  sp_matrix_set(rot, 0, 0, cos(a2)*cos(a3));
-  sp_matrix_set(rot, 0, 1, -cos(a1)*sin(a3)+sin(a1)*sin(a2)*cos(a3));
-  sp_matrix_set(rot, 0, 2, sin(a1)*sin(a3)+cos(a1)*sin(a2)*cos(a3));
-  sp_matrix_set(rot, 1, 0, cos(a2)*sin(a3));
-  sp_matrix_set(rot, 1, 1, cos(a1)*cos(a3)+sin(a1)*sin(a2)*sin(a3));
-  sp_matrix_set(rot, 1, 2, -sin(a1)*cos(a3)+cos(a1)*sin(a2)*sin(a3));
-  sp_matrix_set(rot, 2, 0, -sin(a2));
-  sp_matrix_set(rot, 2, 1, sin(a1)*cos(a2));
-  sp_matrix_set(rot, 2, 2, cos(a1)*cos(a2));
-  
-  /*
-  sp_matrix * R4 = sp_matrix_mul(R2,R1);
-  rot = sp_matrix_mul(R3,R4);
-
-  sp_matrix_free(R1);
-  sp_matrix_free(R2);
-  sp_matrix_free(R3);
-  sp_matrix_free(R4);
-  */ 
-
-  return rot;
+  return R;
 }
 
 

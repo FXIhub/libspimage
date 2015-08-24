@@ -2,7 +2,7 @@ import numpy
 import spimage
 import time 
 
-def array_to_image(img,msk=None):
+def numpy_array_to_image(img,msk=None):
     s = img.shape
     d = len(list(s))
     if d == 3:
@@ -23,8 +23,8 @@ def prtf(images_rs,supports,translate=True,enantio=True,full_out=False):
     image0_rs = images_rs[0]
     image0_fs = numpy.fft.fftn(image0_rs)
 
-    sp_image0_rs = array_to_image(image0_rs,supports[0])
-    sp_image0_fs = array_to_image(image0_fs)
+    sp_image0_rs = numpy_array_to_image(image0_rs,supports[0])
+    sp_image0_fs = numpy_array_to_image(image0_fs)
 
     sp_amp_fs = spimage.sp_image_duplicate(sp_image0_fs,spimage.SP_COPY_ALL)
     spimage.sp_image_dephase(sp_amp_fs)
@@ -35,12 +35,12 @@ def prtf(images_rs,supports,translate=True,enantio=True,full_out=False):
     sum_fs = image0_fs.copy()
     sum_fs[abs(sum_fs) > 0.] /= abs(sum_fs[abs(sum_fs) > 0.])
 
-    sp_sum_fs = array_to_image(sum_fs)
+    sp_sum_fs = numpy_array_to_image(sum_fs)
 
     zeros = numpy.zeros(shape=s,dtype="int")
     zeros[abs(sum_fs) <= 0.] = 1
 
-    sp_avg_img = array_to_image(image0_rs)
+    sp_avg_img = numpy_array_to_image(image0_rs)
     avg_msk = numpy.zeros(shape=s,dtype="float")
     
     images_rs_super = numpy.zeros(shape=S,dtype="complex128")
@@ -50,7 +50,7 @@ def prtf(images_rs,supports,translate=True,enantio=True,full_out=False):
 
     for i,img,sup in zip(range(1,N),images_rs[1:],supports[1:]):
         # Initialize image
-        sp_img = array_to_image(img,sup)
+        sp_img = numpy_array_to_image(img,sup)
 
         # Translate and enantio matching
         if translate:
