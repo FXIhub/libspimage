@@ -1,4 +1,5 @@
 import numpy
+import logging
 
 def downsample(array,factor,mode="pick",**kwargs):
     d = len(list(array.shape))
