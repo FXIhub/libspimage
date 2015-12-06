@@ -177,7 +177,7 @@ def binImage(img, binning, msk=None, output_binned_mask=False):
             # Crop mask
             msk_new = msk[:ny_new,:nx_new]
             # Set masked out values in image to zero
-            img_new *= msk_new
+            img_new = img_new * msk_new
             # Bin mask
             msk_new = numpy.array(msk_new, dtype="int")
             msk_new = msk_new.reshape(ny_new // binning, binning, nx_new // binning, binning)
