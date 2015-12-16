@@ -19,6 +19,7 @@ from _spimage_reconstructor import Reconstructor
 from _spimage_prtf import prtf,detector_pixel_to_resolution_element
 from _spimage_io import CXILoader
 from _spimage_find_center import find_center
+from _spimage_find_geometry import find_geometry
 from _spimage_sphere_model import *
 from _spimage_spheroid_model import *
 from _spimage_pixelmask import *

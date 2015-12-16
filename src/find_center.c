@@ -36,7 +36,7 @@ Image * sp_find_center_refine_calculate_mask(Image *img, const int search_space)
 }
 
 /* Expects diffraction patterns. Uses centrosymmetry. Only handles 2D patterns at the moment. Can take a precalculated mask calculated by the sp_find_center_refine_calculate_mask function. If this parameter is set to NULL the mask will be calculated. */
-int sp_find_center_refine(Image *img, const int search_radius, int crop_radius, Image *precalculated_mask)
+float sp_find_center_refine(Image *img, const int search_radius, int crop_radius, Image *precalculated_mask)
 {
 
   int min_crop_radius = MIN(MIN((int)ceil(img->detector->image_center[0]) - search_radius,
@@ -140,7 +140,7 @@ int sp_find_center_refine(Image *img, const int search_radius, int crop_radius, 
   //sp_image_free(result_map);
   img->detector->image_center[0] += (real)min_x;
   img->detector->image_center[1] += (real)min_y;
-  return 1;
+  return minimum;
 }
 
 
@@ -244,7 +244,7 @@ int sp_find_center_refine2(Image *img, const int search_radius, int crop_radius)
 */
 
 /* Expects diffraction patterns. Uses centrosymmetry. Only handles 2D patterns at the moment. */
-int sp_find_center_refine_minimal_mask(Image *img, const int search_radius, int crop_radius)
+float sp_find_center_refine_minimal_mask(Image *img, const int search_radius, int crop_radius)
 {
   // This is the comparison.
   //  Image *result_map = sp_image_alloc(2*search_radius+1, 2*search_radius+1, 1);
@@ -288,6 +288,6 @@ int sp_find_center_refine_minimal_mask(Image *img, const int search_radius, int 
   //  sp_image_free(result_map);
   img->detector->image_center[0] = min_cx;
   img->detector->image_center[1] = min_cy;
-  //  printf("pos [%f, %f] error = %g\n", img->detector->image_center[0],img->detector->image_center[1],min_score);
-  return 0;
+  //printf("pos [%f, %f] error = %g\n", img->detector->image_center[0],img->detector->image_center[1],min_score);
+  return min_score;
 }

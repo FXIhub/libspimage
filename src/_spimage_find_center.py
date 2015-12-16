@@ -4,7 +4,7 @@ import spimage
 from _spimage_conventions import pos_to_center,center_to_pos
 from _spimage_utils import _symmetrize,_turn180,_gaussian_smooth_2d1d
 
-def find_center(img, msk, method=None, **kwargs):
+def find_center(img, msk, method=None, errout=False, **kwargs):
     """
     Find the center of a diffraction pattern.
 
@@ -23,26 +23,29 @@ def find_center(img, msk, method=None, **kwargs):
 
     # Find center using "quadrant" method
     if method == 'quadrant':
-        x,y = find_center_quadrant(img, msk, **kwargs)
+        x,y,e = find_center_quadrant(img, msk, **kwargs)
     # Find center using fast C implementation of "pixelwise" method
     elif method == 'pixelwise_fast':
-        x,y = find_center_pixelwise_fast(img, msk, **kwargs)
+        x,y,e = find_center_pixelwise_fast(img, msk, **kwargs)
     # Find center using slow implementation of "pixelwise" method
     elif method == 'pixelwise_slow':
-        x,y = find_center_pixelwise_slow(img, msk, **kwargs)
+        x,y,e = find_center_pixelwise_slow(img, msk, **kwargs)
     # Find center using blurred version of 'pixelwise' method
     elif method == 'blurred':
-        x,y = find_center_blurred(img, msk, **kwargs)
+        x,y,e = find_center_blurred(img, msk, **kwargs)
     # Return 0,0 if method is not defined
     else:
-        x,y = (0,0)
+        x,y,e = (0,0,0)
         print "There is no center finding method %s" %method
 
     # Check for reasonable numbers
     if abs(x) > img.shape[1]/2: x = 0
     if abs(y) > img.shape[0]/2: y = 0
-    
-    return (x,y)
+
+    if errout:
+        return (x,y,e)
+    else:
+        return (x,y)
 
 def find_center_quadrant(img, msk, dmax=5, x0=0, y0=0, threshold=None, solver='L-BFGS-B'):
     """
@@ -169,9 +172,10 @@ def find_center_quadrant(img, msk, dmax=5, x0=0, y0=0, threshold=None, solver='L
     m.start()
     x = m.res["x"][0]
     y = m.res["x"][1]
-    return (x,y)
+    e = m.error_smooth(m.res["x"])
+    return (x,y,e)
 
-def find_center_pixelwise_fast(img, msk, x0, y0, dmax=5, rmax=None):
+def find_center_pixelwise_fast(img, msk, x0=0, y0=0, dmax=5, rmax=None):
     """
     Find center of diffraction pattern using a pixelwise comparison of centry-symmetric pixels.
 
@@ -190,9 +194,9 @@ def find_center_pixelwise_fast(img, msk, x0, y0, dmax=5, rmax=None):
     x = pos_to_center(I.detector.image_center[0],img.shape[1])
     y = pos_to_center(I.detector.image_center[1],img.shape[0])
     spimage.sp_image_free(I)
-    return x,y
+    return (x,y,success)
 
-def find_center_pixelwise_slow(img, msk, x0, y0, dmax=5, rmax=None):
+def find_center_pixelwise_slow(img, msk, x0=0, y0=0, dmax=5, rmax=None):
     """
     Find center of diffraction pattern using pixelwise comparison of centro-symmetric pixels.
     
@@ -265,7 +269,7 @@ def find_center_pixelwise_slow(img, msk, x0, y0, dmax=5, rmax=None):
     cy_r = cy_sam1[cyi_min]
     x = cx_r-(s[1]-1)/2.
     y = cy_r-(s[0]-1)/2.
-    return (x,y)
+    return (x,y, errs.flatten()[i_min])
 
 def find_center_blurred(img, msk, x0=0, y0=0, threshold=None, blur_radius=4., dmax=5):
     """
@@ -290,11 +294,11 @@ def find_center_blurred(img, msk, x0=0, y0=0, threshold=None, blur_radius=4., dm
     spimage.sp_find_center_refine_minimal_mask(ds, int(1+dmax/4), 0)
     c.detector.image_center[:] = ds.detector.image_center[:] * 4.0
     spimage.sp_image_free(ds)
-    spimage.sp_find_center_refine_minimal_mask(c, 4, 0)
+    score = spimage.sp_find_center_refine_minimal_mask(c, 4, 0)
     x = pos_to_center(c.detector.image_center[0],img.shape[1])
     y = pos_to_center(c.detector.image_center[1],img.shape[0])
     spimage.sp_image_free(I)
     spimage.sp_image_free(kernel)
     spimage.sp_image_free(c)
-    return (x,y)
+    return (x,y,score)
     
