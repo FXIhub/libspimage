@@ -5,6 +5,7 @@ from scipy.ndimage.morphology import distance_transform_edt
 # NOTE: The scipy FFT for real input is much faster than the implementation from numpy
 from scipy.fftpack import fftn,fftshift
 from scipy.signal import convolve2d
+from scipy.optimize import leastsq
 
 def patterson(image, mask, floor_cut=None, mask_smooth=1., darkfield_x=None, darkfield_y=None, darkfield_sigma=None, normalize_median=False, radial_boost=False, log_boost=False, gauss_damp=False, gauss_damp_sigma=None, gauss_damp_threshold=None, subtract_fourier_kernel=False, log_min=1., full_output=False):
     info = {}
@@ -78,7 +79,7 @@ def patterson(image, mask, floor_cut=None, mask_smooth=1., darkfield_x=None, dar
             info["patterson0"] = P.copy()
             if normalize_median:
                 info["patterson0"] /= numpy.median(abs(P))
-        from scipy.optimize import leastsq
+                
         err = lambda c: abs(P - c*fK).flatten()
         c = leastsq(err,1.)[0]
         P = P - c * fK
