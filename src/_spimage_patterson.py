@@ -5,6 +5,7 @@ from scipy.ndimage.morphology import distance_transform_edt
 # NOTE: The scipy FFT for real input is much faster than the implementation from numpy
 from scipy.fftpack import fftn,fftshift
 from scipy.signal import convolve2d
+from scipy.optimize import leastsq
 
 def patterson(image, mask, floor_cut=None, mask_smooth=1., darkfield_x=None, darkfield_y=None, darkfield_sigma=None, normalize_median=False, radial_boost=False, log_boost=False, gauss_damp=False, gauss_damp_sigma=None, gauss_damp_threshold=None, subtract_fourier_kernel=False, log_min=1., full_output=False):
     info = {}
@@ -22,10 +23,10 @@ def patterson(image, mask, floor_cut=None, mask_smooth=1., darkfield_x=None, dar
         cx = (Nx-1)/2
         cy = (Ny-1)/2
         X,Y = numpy.meshgrid(numpy.arange(Nx),numpy.arange(Ny))
-        R = numpy.hypot(X - cx, Y - cx)
+        Rsq = (X - cx)**2 + (Y - cx)**2
     if radial_boost:
         # Radial boost: Multiply intensities by radius**4
-        I = I * R**4
+        I = I * Rsq**2
     if gauss_damp:
         if gauss_damp_sigma is None:
             s = None
@@ -59,7 +60,7 @@ def patterson(image, mask, floor_cut=None, mask_smooth=1., darkfield_x=None, dar
         else:
             s = gauss_damp_sigma
         if s is not None:
-            G = numpy.exp(-R**2/(2*s**2))    
+            G = numpy.exp(-Rsq/(2*s**2))    
             I = I * G
         else:
             print "WARNING: Gaussian kernel could not be applied. Sigma undefined."
@@ -78,7 +79,7 @@ def patterson(image, mask, floor_cut=None, mask_smooth=1., darkfield_x=None, dar
             info["patterson0"] = P.copy()
             if normalize_median:
                 info["patterson0"] /= numpy.median(abs(P))
-        from scipy.optimize import leastsq
+                
         err = lambda c: abs(P - c*fK).flatten()
         c = leastsq(err,1.)[0]
         P = P - c * fK
@@ -103,8 +104,8 @@ def kernel(mask,smooth=5.,x=None,y=None,sigma=None):
         cx = (Nx-1)/2
         cy = (Ny-1)/2
         X,Y = numpy.ogrid[0:Ny, 0:Nx]
-        R = numpy.hypot(X - (cx + x), Y - (cx + y))
-        G = numpy.exp(-R**2/(2*sigma**2))
+        Rsq = (X - (cx + x))**2 + (Y - (cx + y))**2
+        G = numpy.exp(-Rsq/(2*sigma**2))
         K = K*G
     return K
 
