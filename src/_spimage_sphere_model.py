@@ -46,10 +46,10 @@ def fit_sphere_diameter_pearson(img, msk, diameter, intensity, wavelength, pixel
         dmin = sphere_model_convert_size_to_diameter(1./(downsampling*img.shape[0]), wavelength, pixel_size, detector_distance)
         dmax = dmin*downsampling*img.shape[0]/20
         Ns = do_brute_evals
-        diameter = scipy.optimize.brute(E_fit_m, [(dmin, dmax)], Ns=Ns)[0]
+        brute_diameter, brute_fval, brute_grid, brute_jout = scipy.optimize.brute(E_fit_m, [(dmin, dmax)], Ns=Ns, full_output=True)
 
     # End with least square
-    [diameter], cov, infodict, mesg, ier = leastsq(E_fit_m, diameter, maxfev=maxfev, xtol=1e-5, full_output=True)
+    [diameter], cov, infodict, mesg, ier = leastsq(E_fit_m, brute_diameter, maxfev=maxfev, xtol=1e-5, full_output=True)
     diameter = abs(diameter)
 
     # Reduced Chi-squared and standard error
@@ -62,6 +62,10 @@ def fit_sphere_diameter_pearson(img, msk, diameter, intensity, wavelength, pixel
     if full_output:
         infodict['error'] = chisquared
         infodict['pcov'] = pcov
+        infodict['brute_diameter'] = brute_diameter
+        infodict['brute_fval'] = brute_fval
+        infodict['brute_grid'] = brute_grid
+        infodict['brute_jout'] = brute_jout
         return diameter, infodict
     else:
         return diameter
