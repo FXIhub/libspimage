@@ -53,14 +53,16 @@ def fit_sphere_diameter_pearson(img, msk, diameter, intensity, wavelength, pixel
     diameter = abs(diameter)
 
     # Reduced Chi-squared and standard error
-    chisquared = ((I_fit_m(diameter) - img[msk])**2).sum()/(img.shape[0]*img.shape[1] - 1)
+    chisquared = (E_fit_m(diameter)**2).sum()/ (img.size - 1)
+    nmerr =  abs( E_fit_m(diameter) ).sum() / (img.size - 1) / abs(img[msk]).sum()
     if cov is not None:
         pcov = cov[0,0]*chisquared
     else:
         pcov = numpy.nan
     
     if full_output:
-        infodict['error'] = chisquared
+        infodict['chisquared'] = chisquared
+        infodict['error'] = nmerr
         infodict['pcov'] = pcov
         infodict['brute_diameter'] = brute_diameter
         infodict['brute_fval'] = brute_fval
@@ -86,14 +88,16 @@ def fit_sphere_diameter_pixelwise(img, msk, diameter, intensity, wavelength, pix
     diameter = abs(diameter)
     
     # Reduced Chi-squared and standard error
-    chisquared = ((I_fit_m(diameter) - img[msk])**2).sum()/(img.shape[0]*img.shape[1] - 1)
+    chisquared = (E_fit_m(diameter)**2).sum()/(img.size - 1)
+    nmerr =  abs( E_fit_m(diameter) ).sum() / (img.size - 1) / abs(img[msk]).sum()
     if cov is not None:
         pcov = cov[0,0]*chisquared
     else:
         pcov = numpy.nan
 
     if full_output:
-        infodict['error'] = chisquared
+        infodict['chisquared'] = chisquared
+        infodict['error'] = nmerr
         infodict['pcov']  = pcov
         return diameter, infodict
     else:
@@ -142,7 +146,8 @@ def fit_sphere_intensity_pixelwise(img, msk, diameter, intensity, wavelength, pi
     if len(img[msk]):
         [intensity], cov, infodict, mesg, ier = leastsq(E_fit_m, intensity, maxfev=maxfev, xtol=1e-3, full_output=True)
         # Reduced Chi-squared and standard error
-        chisquared = (E_fit_m(intensity)**2).sum()/(img.shape[0]*img.shape[1] - 1)
+        chisquared = (E_fit_m(intensity)**2).sum()/(img.size - 1)
+        nmerr =  abs( E_fit_m(intensity) ).sum() / (img.size - 1) / abs(img[msk]).sum()
         if cov is not None:
             pcov = cov[0,0]*chisquared
         else:
@@ -153,7 +158,8 @@ def fit_sphere_intensity_pixelwise(img, msk, diameter, intensity, wavelength, pi
         chisquared = 0
         
     if full_output:
-        infodict['error'] = chisquared
+        infodict['chisquared'] = chisquared
+        infodict['error'] = nmerr
         infodict['pcov'] = pcov
         return intensity, infodict
     else:
@@ -174,14 +180,17 @@ def fit_sphere_intensity_nrphotons(img, msk, diameter, intensity, wavelength, pi
     [intensity], cov, infodict, mesg, ier = leastsq(E_fit_m, intensity, maxfev=maxfev, xtol=1e-3, full_output=True)
     
     # Reduced Chi-squared and standard error
-    chisquared = (E_fit_m(intensity)**2).sum()/(img.shape[0]*img.shape[1] - 1)
+    print intensity, I_fit_m(intensity).sum(), nr_photons, (E_fit_m(intensity)**2).sum(), (img.shape[0]*img.shape[1] - 1)
+    chisquared = (E_fit_m(intensity)**2).sum()/(img.size - 1)
+    nmerr =  abs( E_fit_m(intensity) ).sum() / (img.size - 1) / abs(img[msk]).sum()
     if cov is not None:
         pcov = cov[0,0]*chisquared
     else:
         pcov = numpy.nan
     
     if full_output:
-        infodict['error'] = chisquared
+        infodict['chisquared'] = chisquared
+        infodict['error'] = nmerr
         infodict['pcov'] = pcov
         return intensity, infodict
     else:
@@ -211,15 +220,16 @@ def fit_full_sphere_model(img, msk, diameter, intensity, wavelength, pixel_size,
         if (numpy.isfinite(p) == False).sum() > 0:
             break
 
-
     # Reduced Chi-squared and standard errors
     chisquared = (E_fit_m(p)**2).sum()/(_img.shape[0]*_img.shape[1] - len(p))
+    nmerr =  abs( E_fit_m(p) ).sum() / (img.size - len(p)) / abs(img[msk]).sum()
     if cov is not None:
         pcov = numpy.diag(cov)*chisquared
     else:
         pcov = numpy.array(4*[numpy.nan])
     if full_output:
-        infodict["error"] = chisquared
+        infodict["chisquared"] = chisquared
+        infodict["error"] = nmerr
         infodict["pcov"]  = pcov
         return x0, y0, diameter, intensity, infodict
     else:
