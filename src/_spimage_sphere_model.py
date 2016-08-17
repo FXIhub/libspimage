@@ -180,7 +180,6 @@ def fit_sphere_intensity_nrphotons(img, msk, diameter, intensity, wavelength, pi
     [intensity], cov, infodict, mesg, ier = leastsq(E_fit_m, intensity, maxfev=maxfev, xtol=1e-3, full_output=True)
     
     # Reduced Chi-squared and standard error
-    print intensity, I_fit_m(intensity).sum(), nr_photons, (E_fit_m(intensity)**2).sum(), (img.shape[0]*img.shape[1] - 1)
     chisquared = (E_fit_m(intensity)**2).sum()/(img.size - 1)
     nmerr =  abs( E_fit_m(intensity) ).sum() / (img.size - 1) / abs(img[msk]).sum()
     if cov is not None:
