@@ -205,9 +205,8 @@ def fit_full_sphere_model(img, msk, diameter, intensity, wavelength, pixel_size,
         I_fit_m = lambda dx,dy,d,i: I_sphere_diffraction(scaling(i,d), Rmc(dx,dy), size(d))
         E_fit_m = lambda p:       I_fit_m(p[0],p[1],p[2],p[3]) - _img[_msk]
         p0 = numpy.array([0.,0.,diameter,intensity])
-        #print E_fit_m(p0)
-        x0_bound = (None, None)
-        y0_bound = (None, None)
+        x0_bound = (-img.shape[1]/2., img.shape[1]/2.)
+        y0_bound = (-img.shape[0]/2., img.shape[1]/2.)
         d_bound  = (diameter-deltab*diameter, diameter+deltab*diameter)
         i_bound = (None, None)
         bounds   = numpy.array([x0_bound, y0_bound , d_bound, i_bound])
