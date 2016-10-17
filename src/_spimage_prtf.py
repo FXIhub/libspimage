@@ -54,7 +54,7 @@ def prtf(images_rs,supports,translate=True,enantio=True,full_out=False):
 
         # Translate and enantio matching
         if translate:
-            spimage.sp_image_superimpose(sp_avg_img,sp_img,spimage.SpEnantiomorph)
+            spimage.sp_image_superimpose(sp_avg_img,sp_img, spimage.SpEnantiomorph if enantio else 0)
             spimage.sp_image_phase_match(sp_avg_img,sp_img,2)
         spimage.sp_image_add(sp_avg_img,sp_img)
 

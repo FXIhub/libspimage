@@ -46,22 +46,28 @@ def fit_sphere_diameter_pearson(img, msk, diameter, intensity, wavelength, pixel
         dmin = sphere_model_convert_size_to_diameter(1./(downsampling*img.shape[0]), wavelength, pixel_size, detector_distance)
         dmax = dmin*downsampling*img.shape[0]/20
         Ns = do_brute_evals
-        diameter = scipy.optimize.brute(E_fit_m, [(dmin, dmax)], Ns=Ns)[0]
+        brute_diameter, brute_fval, brute_grid, brute_jout = scipy.optimize.brute(E_fit_m, [(dmin, dmax)], Ns=Ns, full_output=True)
 
     # End with least square
-    [diameter], cov, infodict, mesg, ier = leastsq(E_fit_m, diameter, maxfev=maxfev, xtol=1e-5, full_output=True)
+    [diameter], cov, infodict, mesg, ier = leastsq(E_fit_m, brute_diameter, maxfev=maxfev, xtol=1e-5, full_output=True)
     diameter = abs(diameter)
 
     # Reduced Chi-squared and standard error
-    chisquared = ((I_fit_m(diameter) - img[msk])**2).sum()/(img.shape[0]*img.shape[1] - 1)
+    chisquared = (E_fit_m(diameter)**2).sum()/ (img.size - 1)
+    nmerr =  abs( E_fit_m(diameter) ).sum() / (img.size - 1) / abs(img[msk]).sum()
     if cov is not None:
         pcov = cov[0,0]*chisquared
     else:
         pcov = numpy.nan
     
     if full_output:
-        infodict['error'] = chisquared
+        infodict['chisquared'] = chisquared
+        infodict['error'] = nmerr
         infodict['pcov'] = pcov
+        infodict['brute_diameter'] = brute_diameter
+        infodict['brute_fval'] = brute_fval
+        infodict['brute_grid'] = brute_grid
+        infodict['brute_jout'] = brute_jout
         return diameter, infodict
     else:
         return diameter
@@ -82,14 +88,16 @@ def fit_sphere_diameter_pixelwise(img, msk, diameter, intensity, wavelength, pix
     diameter = abs(diameter)
     
     # Reduced Chi-squared and standard error
-    chisquared = ((I_fit_m(diameter) - img[msk])**2).sum()/(img.shape[0]*img.shape[1] - 1)
+    chisquared = (E_fit_m(diameter)**2).sum()/(img.size - 1)
+    nmerr =  abs( E_fit_m(diameter) ).sum() / (img.size - 1) / abs(img[msk]).sum()
     if cov is not None:
         pcov = cov[0,0]*chisquared
     else:
         pcov = numpy.nan
 
     if full_output:
-        infodict['error'] = chisquared
+        infodict['chisquared'] = chisquared
+        infodict['error'] = nmerr
         infodict['pcov']  = pcov
         return diameter, infodict
     else:
@@ -138,7 +146,8 @@ def fit_sphere_intensity_pixelwise(img, msk, diameter, intensity, wavelength, pi
     if len(img[msk]):
         [intensity], cov, infodict, mesg, ier = leastsq(E_fit_m, intensity, maxfev=maxfev, xtol=1e-3, full_output=True)
         # Reduced Chi-squared and standard error
-        chisquared = (E_fit_m(intensity)**2).sum()/(img.shape[0]*img.shape[1] - 1)
+        chisquared = (E_fit_m(intensity)**2).sum()/(img.size - 1)
+        nmerr =  abs( E_fit_m(intensity) ).sum() / (img.size - 1) / abs(img[msk]).sum()
         if cov is not None:
             pcov = cov[0,0]*chisquared
         else:
@@ -149,7 +158,8 @@ def fit_sphere_intensity_pixelwise(img, msk, diameter, intensity, wavelength, pi
         chisquared = 0
         
     if full_output:
-        infodict['error'] = chisquared
+        infodict['chisquared'] = chisquared
+        infodict['error'] = nmerr
         infodict['pcov'] = pcov
         return intensity, infodict
     else:
@@ -170,14 +180,16 @@ def fit_sphere_intensity_nrphotons(img, msk, diameter, intensity, wavelength, pi
     [intensity], cov, infodict, mesg, ier = leastsq(E_fit_m, intensity, maxfev=maxfev, xtol=1e-3, full_output=True)
     
     # Reduced Chi-squared and standard error
-    chisquared = (E_fit_m(intensity)**2).sum()/(img.shape[0]*img.shape[1] - 1)
+    chisquared = (E_fit_m(intensity)**2).sum()/(img.size - 1)
+    nmerr =  abs( E_fit_m(intensity) ).sum() / (img.size - 1) / abs(img[msk]).sum()
     if cov is not None:
         pcov = cov[0,0]*chisquared
     else:
         pcov = numpy.nan
     
     if full_output:
-        infodict['error'] = chisquared
+        infodict['chisquared'] = chisquared
+        infodict['error'] = nmerr
         infodict['pcov'] = pcov
         return intensity, infodict
     else:
@@ -193,9 +205,8 @@ def fit_full_sphere_model(img, msk, diameter, intensity, wavelength, pixel_size,
         I_fit_m = lambda dx,dy,d,i: I_sphere_diffraction(scaling(i,d), Rmc(dx,dy), size(d))
         E_fit_m = lambda p:       I_fit_m(p[0],p[1],p[2],p[3]) - _img[_msk]
         p0 = numpy.array([0.,0.,diameter,intensity])
-        #print E_fit_m(p0)
-        x0_bound = (None, None)
-        y0_bound = (None, None)
+        x0_bound = (-img.shape[1]/2., img.shape[1]/2.)
+        y0_bound = (-img.shape[0]/2., img.shape[1]/2.)
         d_bound  = (diameter-deltab*diameter, diameter+deltab*diameter)
         i_bound = (None, None)
         bounds   = numpy.array([x0_bound, y0_bound , d_bound, i_bound])
@@ -207,15 +218,16 @@ def fit_full_sphere_model(img, msk, diameter, intensity, wavelength, pixel_size,
         if (numpy.isfinite(p) == False).sum() > 0:
             break
 
-
     # Reduced Chi-squared and standard errors
     chisquared = (E_fit_m(p)**2).sum()/(_img.shape[0]*_img.shape[1] - len(p))
+    nmerr =  abs( E_fit_m(p) ).sum() / (img.size - len(p)) / abs(img[msk]).sum()
     if cov is not None:
         pcov = numpy.diag(cov)*chisquared
     else:
         pcov = numpy.array(4*[numpy.nan])
     if full_output:
-        infodict["error"] = chisquared
+        infodict["chisquared"] = chisquared
+        infodict["error"] = nmerr
         infodict["pcov"]  = pcov
         return x0, y0, diameter, intensity, infodict
     else:
