@@ -7,7 +7,7 @@ from scipy.fftpack import fftn,fftshift
 from scipy.signal import convolve2d
 from scipy.optimize import leastsq
 
-def patterson(image, mask, floor_cut=None, mask_smooth=1., darkfield_x=None, darkfield_y=None, darkfield_sigma=None, normalize_median=False, radial_boost=False, log_boost=False, gauss_damp=False, gauss_damp_sigma=None, gauss_damp_threshold=None, subtract_fourier_kernel=False, log_min=1., full_output=False):
+def patterson(image, mask, floor_cut=None, mask_smooth=1., darkfield_x=None, darkfield_y=None, darkfield_sigma=None, darkfield_N=1, normalize_median=False, radial_boost=False, log_boost=False, gauss_damp=False, gauss_damp_sigma=None, gauss_damp_threshold=None, subtract_fourier_kernel=False, log_min=1., mask_expand=0., full_output=False):
     info = {}
     # Making sure that we leave memory of the input arrays untouched
     M = numpy.array(mask.copy(),dtype=numpy.float64)
@@ -70,7 +70,7 @@ def patterson(image, mask, floor_cut=None, mask_smooth=1., darkfield_x=None, dar
             I[tmp] = log_min
         I = numpy.log10(I)
     # Make kernel
-    K = kernel(M,smooth=mask_smooth,x=darkfield_x,y=darkfield_y,sigma=darkfield_sigma)
+    K = kernel(M,smooth=mask_smooth,x=darkfield_x,y=darkfield_y,sigma=darkfield_sigma,mask_expand=mask_expand,N_gaussians=darkfield_N)
     # Fourier transform
     P = fftshift(fftn(K*I))
     if subtract_fourier_kernel:
@@ -94,18 +94,26 @@ def patterson(image, mask, floor_cut=None, mask_smooth=1., darkfield_x=None, dar
     else:
         return P
 
-def kernel(mask,smooth=5.,x=None,y=None,sigma=None):
-    K = distance_transform_edt(mask, sampling=None, return_distances=True, return_indices=False, distances=None, indices=None)
-    K = K > (smooth/5.)
-    K = gaussian_filter(numpy.array(K,dtype=numpy.float64),smooth)
-    if x is not None and y is not None and sigma is not None: 
-        # multiply by gaussian darkfield kernel
-        Ny, Nx = M.shape
+def kernel(mask,smooth=5.,x=None,y=None,sigma=None,mask_expand=1.,N_gaussians=1):
+    if mask_expand > 0.:
+        K = distance_transform_edt(mask, sampling=None, return_distances=True, return_indices=False, distances=None, indices=None)
+        K = K > mask_expand
+        K = numpy.array(K, dtype=numpy.float64)
+    else:
+        K = numpy.array(mask, dtype=numpy.float64)
+    K = gaussian_filter(K,smooth)
+    if x is not None and y is not None and sigma is not None and N_gaussians > 0:
+        signs_x = [1,1,-1,-1]
+        signs_y = [1,-1,1,-1]
+        G = numpy.zeros_like(K)
+        Ny, Nx = mask.shape
         cx = (Nx-1)/2
         cy = (Ny-1)/2
         X,Y = numpy.ogrid[0:Ny, 0:Nx]
-        Rsq = (X - (cx + x))**2 + (Y - (cx + y))**2
-        G = numpy.exp(-Rsq/(2*sigma**2))
+        for i,sign_x,sign_y in zip(range(N_gaussians), signs_x, signs_y):
+            # multiply by gaussian darkfield kernel
+            Rsq = (X - (cx + sign_x*x))**2 + (Y - (cx + sign_y*y))**2
+            G += numpy.exp(-Rsq/(2*sigma**2))
         K = K*G
     return K
 
