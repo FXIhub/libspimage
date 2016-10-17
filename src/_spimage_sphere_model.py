@@ -345,10 +345,13 @@ def sphere_model_convert_intensity_to_scaling(intensity, diameter, wavelength, p
     #rho_e = spimage.Material(material_type=material).get_electron_density() # [px/m^3]
     ph_eV = h*c/wl/qe              # [eV]
     dn    = spimage.Material(material_type=material).get_dn(photon_energy_eV=ph_eV) # []
+    #import condor
+    #dn    = condor.utils.material.AtomDensityMaterial(material_type=material).get_dn(photon_wavelength=wl)
     QE    = detector_qe
     ADUP  = detector_adu_photon
     #K     = I0*(rho_e*p/D*re*V)**2 # [1/m^2 (px 1/m^3 m/px 1/m m m^3 )^2]
     K     = I0*(dn.real*p/D*2*numpy.pi/wl**2*V)**2 # [Np/m^2 (px 1/m^3 m/px 1/m m m^3 )^2]
+    #K     = I0*(abs(dn)*p/D*2*numpy.pi/wl**2*V)**2 # [Np/m^2 (px 1/m^3 m/px 1/m m m^3 )^2]
     A     = K*QE*ADUP              # [ADU]  
     return A
 
@@ -395,11 +398,14 @@ def sphere_model_convert_scaling_to_intensity(scaling, diameter, wavelength, pix
     #rho_e = spimage.Material(material_type=material).get_electron_density() # [px/m^3]
     ph_eV = h*c/wl/qe             # [eV]
     dn    = spimage.Material(material_type=material).get_dn(photon_energy_eV=ph_eV) # []
+    #import condor
+    #dn    = condor.utils.material.AtomDensityMaterial(material_type=material).get_dn(photon_wavelength=wl)
     QE    = detector_qe           # []
     ADUP  = detector_adu_photon   # [ADU / Np]
     K     = scaling/QE/ADUP       # [Np / m^2]
     #I0    = K/(rho_e*p/D*re*V)**2 # [Np / m^2]
     I0    = K/(dn.real*p/D*2*numpy.pi/wl**2*V)**2 # [Np/m^2]
+    #I0    = K/(abs(dn)*p/D*2*numpy.pi/wl**2*V)**2 # [Np/m^2]
     i     = I0 * ey_J             # [J/m^2]
     return i
 
