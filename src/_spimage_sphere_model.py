@@ -28,7 +28,7 @@ def fit_sphere_diameter(img, msk, diameter, intensity, wavelength, pixel_size, d
     else: return diameter
 
                                              
-def fit_sphere_diameter_pearson(img, msk, diameter, intensity, wavelength, pixel_size, detector_distance, full_output=False,  x0=0, y0=0, detector_adu_photon=1, detector_quantum_efficiency=1, material='water', rmax=None, downsampling=1, do_brute_evals=0, maxfev=1000, do_photon_counting=False):
+def fit_sphere_diameter_pearson(img, msk, diameter, intensity, wavelength, pixel_size, detector_distance, full_output=False,  x0=0, y0=0, detector_adu_photon=1, detector_quantum_efficiency=1, material='water', rmax=None, downsampling=1, do_brute_evals=0, brute_dmax=None, maxfev=1000, do_photon_counting=False):
     """
     Fit the diameter of a sphere using pearson correlation.
     """
@@ -44,7 +44,10 @@ def fit_sphere_diameter_pearson(img, msk, diameter, intensity, wavelength, pixel
     # We'll assume at least 20x oversampling
     if do_brute_evals:
         dmin = sphere_model_convert_size_to_diameter(1./(downsampling*img.shape[0]), wavelength, pixel_size, detector_distance)
-        dmax = dmin*downsampling*img.shape[0]/20
+        if brute_dmax is None:
+            dmax = dmin*downsampling*img.shape[0]/20
+        else:
+            dmax = brute_dmax
         Ns = do_brute_evals
         brute_diameter, brute_fval, brute_grid, brute_jout = scipy.optimize.brute(E_fit_m, [(dmin, dmax)], Ns=Ns, full_output=True)
 
@@ -357,10 +360,13 @@ def sphere_model_convert_intensity_to_scaling(intensity, diameter, wavelength, p
     #rho_e = spimage.Material(material_type=material).get_electron_density() # [px/m^3]
     ph_eV = h*c/wl/qe              # [eV]
     dn    = spimage.Material(material_type=material).get_dn(photon_energy_eV=ph_eV) # []
+    #import condor
+    #dn    = condor.utils.material.AtomDensityMaterial(material_type=material).get_dn(photon_wavelength=wl)
     QE    = detector_qe
     ADUP  = detector_adu_photon
     #K     = I0*(rho_e*p/D*re*V)**2 # [1/m^2 (px 1/m^3 m/px 1/m m m^3 )^2]
     K     = I0*(dn.real*p/D*2*numpy.pi/wl**2*V)**2 # [Np/m^2 (px 1/m^3 m/px 1/m m m^3 )^2]
+    #K     = I0*(abs(dn)*p/D*2*numpy.pi/wl**2*V)**2 # [Np/m^2 (px 1/m^3 m/px 1/m m m^3 )^2]
     A     = K*QE*ADUP              # [ADU]  
     return A
 
@@ -407,11 +413,14 @@ def sphere_model_convert_scaling_to_intensity(scaling, diameter, wavelength, pix
     #rho_e = spimage.Material(material_type=material).get_electron_density() # [px/m^3]
     ph_eV = h*c/wl/qe             # [eV]
     dn    = spimage.Material(material_type=material).get_dn(photon_energy_eV=ph_eV) # []
+    #import condor
+    #dn    = condor.utils.material.AtomDensityMaterial(material_type=material).get_dn(photon_wavelength=wl)
     QE    = detector_qe           # []
     ADUP  = detector_adu_photon   # [ADU / Np]
     K     = scaling/QE/ADUP       # [Np / m^2]
     #I0    = K/(rho_e*p/D*re*V)**2 # [Np / m^2]
     I0    = K/(dn.real*p/D*2*numpy.pi/wl**2*V)**2 # [Np/m^2]
+    #I0    = K/(abs(dn)*p/D*2*numpy.pi/wl**2*V)**2 # [Np/m^2]
     i     = I0 * ey_J             # [J/m^2]
     return i
 
