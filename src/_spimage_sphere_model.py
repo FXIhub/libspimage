@@ -28,7 +28,7 @@ def fit_sphere_diameter(img, msk, diameter, intensity, wavelength, pixel_size, d
     else: return diameter
 
                                              
-def fit_sphere_diameter_pearson(img, msk, diameter, intensity, wavelength, pixel_size, detector_distance, full_output=False,  x0=0, y0=0, detector_adu_photon=1, detector_quantum_efficiency=1, material='water', rmax=None, downsampling=1, do_brute_evals=0, maxfev=1000, do_photon_counting=False):
+def fit_sphere_diameter_pearson(img, msk, diameter, intensity, wavelength, pixel_size, detector_distance, full_output=False,  x0=0, y0=0, detector_adu_photon=1, detector_quantum_efficiency=1, material='water', rmax=None, downsampling=1, do_brute_evals=0, brute_dmax=None, maxfev=1000, do_photon_counting=False):
     """
     Fit the diameter of a sphere using pearson correlation.
     """
@@ -44,7 +44,10 @@ def fit_sphere_diameter_pearson(img, msk, diameter, intensity, wavelength, pixel
     # We'll assume at least 20x oversampling
     if do_brute_evals:
         dmin = sphere_model_convert_size_to_diameter(1./(downsampling*img.shape[0]), wavelength, pixel_size, detector_distance)
-        dmax = dmin*downsampling*img.shape[0]/20
+        if brute_dmax is None:
+            dmax = dmin*downsampling*img.shape[0]/20
+        else:
+            dmax = brute_dmax
         Ns = do_brute_evals
         brute_diameter, brute_fval, brute_grid, brute_jout = scipy.optimize.brute(E_fit_m, [(dmin, dmax)], Ns=Ns, full_output=True)
 
