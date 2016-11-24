@@ -117,22 +117,16 @@ def crop(pattern,cropLength,center='middle',bg=0):
         print "WARNING: Could not crop image to larger size."
         return pattern.copy()
 
+    temp = pattern.copy()
     if center == 'middle':
         x_center = (pattern.shape[1] - 1)/2.
         y_center = (pattern.shape[0] - 1)/2.
-        temp = pattern.copy()
     else:
-        if center == "center_of_mass":
-            [y_center,x_center] = center_of_mass(pattern,True)
-            x_center = numpy.ceil(pattern.shape[0]/2.) + x_center
-            y_center = numpy.ceil(pattern.shape[0]/2.) + y_center
-        else:
-            x_center = center[1]
-            y_center = center[0]
-        temp = recenter(pattern,x_center,y_center)
+        x_center = center[1]
+        y_center = center[0]
 
     x_start = (pattern.shape[1]-cropLength)/2
-    y_start = (pattern.shape[1]-cropLength)/2
+    y_start = (pattern.shape[0]-cropLength)/2
     x_stop = x_start+cropLength
     y_stop = y_start+cropLength
 
