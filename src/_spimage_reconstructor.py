@@ -684,6 +684,7 @@ class Reconstructor:
         scores_final = {}
         scores_final["real_error"] = np.zeros(Nrepeats)
         scores_final["fourier_error"] = np.zeros(Nrepeats)
+        scores_final["support_size"] = np.zeros(Nrepeats)
         for self._reconstruction in range(Nrepeats):
             self._log("Reconstruction %i started" % (self._reconstruction),"INFO")
             output = self.reconstruct()
@@ -692,6 +693,7 @@ class Reconstructor:
             support_final[self._reconstruction,:,:] = output["support"][-1,:,:]
             scores_final["real_error"][self._reconstruction] = output["real_error"][-1]
             scores_final["fourier_error"][self._reconstruction] = output["fourier_error"][-1]
+            scores_final["support_size"][self._reconstruction] = output["support_size"][-1]
             single_outputs.append(output)
             self._log("Reconstruction %i exited" % (self._reconstruction),"INFO")
         self._reconstruction = None
