@@ -63,7 +63,7 @@ class Reconstructor:
         self._support_algorithms_configs = []
         self._i_support_algorithms = None
         self._support_algorithms_dirty = True
-
+        
     def _clear_phasing_algorithms(self):
         self._phasing_algorithms = []
         self._phasing_algorithms_configs = []
@@ -347,23 +347,41 @@ class Reconstructor:
             self._log("Amplitudes already initialised.","DEBUG")
             return
         A = self._amplitudes
-        self._Nx = A.shape[1]
-        self._Ny = A.shape[0]
-        if self._mask is not None:
-            M = self._mask.copy()
-        else:
-            M = np.ones(shape=A.shape,dtype="bool")
-        for img in [self._sp_amplitudes]:
-            if img is not None:
-                spimage.sp_image_free(img)
-        self._sp_amplitudes = spimage.sp_image_alloc(A.shape[0],A.shape[1],1)
-        self._sp_amplitudes.image[:,:] = np.float32(A[:,:])
-        self._sp_amplitudes.mask[:,:] = np.int32(M[:,:])
-        self._sp_amplitudes.scaled = 1
-        self._sp_amplitudes.phased = 0
-        self._amplitudes_dirty = False
-        self._log("Amplitudes initialised.","DEBUG")
-
+        if len(A.shape) == 2:
+            self._Nx = A.shape[1]
+            self._Ny = A.shape[0]
+            if self._mask is not None:
+                M = self._mask.copy()
+            else:
+                M = np.ones(shape=A.shape,dtype="bool")
+            for img in [self._sp_amplitudes]:
+                if img is not None:
+                    spimage.sp_image_free(img)
+            self._sp_amplitudes = spimage.sp_image_alloc(A.shape[0],A.shape[1],1)
+            self._sp_amplitudes.image[:,:] = np.float32(A[:,:])
+            self._sp_amplitudes.mask[:,:] = np.int32(M[:,:])
+            self._sp_amplitudes.scaled = 1
+            self._sp_amplitudes.phased = 0
+            self._amplitudes_dirty = False
+            self._log("Amplitudes initialised.","DEBUG")
+        if len(A.shape) == 3:
+            self._Nx = A.shape[2]
+            self._Ny = A.shape[1]
+            self._Nz = A.shape[0]
+            if self._mask is not None:
+                M = self._mask.copy()
+            else:
+                M = np.ones(shape=A.shape,dtype="bool")
+            for img in [self._sp_amplitudes]:
+                if img is not None:
+                    spimage.sp_image_free(img)
+            self._sp_amplitudes = spimage.sp_image_alloc(A.shape[0],A.shape[1],A.shape[2])
+            self._sp_amplitudes.image[:,:,:] = np.float32(A[:,:,:])
+            self._sp_amplitudes.mask[:,:,:] = np.int32(M[:,:,:])
+            self._sp_amplitudes.scaled = 1
+            self._sp_amplitudes.phased = 0
+            self._amplitudes_dirty = False
+            self._log("Amplitudes initialised.","DEBUG")
     # The array for the initial support is created just before reconstruction as we might not know the dimensions of the image earlier
     def _init_initial_support(self):
         if not self._initial_support_dirty:
@@ -372,24 +390,46 @@ class Reconstructor:
         for img in [self._sp_initial_support,self._sp_initial_support_sh]:
             if img is not None:
                 spimage.sp_image_free(img)
-        self._sp_initial_support = spimage.sp_image_alloc(self._Ny,self._Nx,1)
-        if "radius" in self._initial_support_config or "area" in self._initial_support_config:
-            X,Y = np.meshgrid(np.arange(self._Nx),np.arange(self._Ny))
-            X = X-(self._Nx-1)/2.
-            Y = Y-(self._Ny-1)/2.
-            R = np.sqrt(X**2 + Y**2)
-            self._phaser_dirty = True
-            if "radius" in self._initial_support_config:
-                r = self._initial_support_config["radius"]
+        A = self._amplitudes
+        if len(A.shape) == 2:
+            self._sp_initial_support = spimage.sp_image_alloc(self._Ny,self._Nx,1)
+            if "radius" in self._initial_support_config or "area" in self._initial_support_config:
+                X,Y = np.meshgrid(np.arange(self._Nx),np.arange(self._Ny))
+                X = X-(self._Nx-1)/2.
+                Y = Y-(self._Ny-1)/2.
+                R = np.sqrt(X**2 + Y**2)
+                self._phaser_dirty = True
+                if "radius" in self._initial_support_config:
+                    r = self._initial_support_config["radius"]
+                else:
+                    r = np.sqrt( self._initial_support_config["area"] * self._Nx * self._Ny / np.pi )
+                self._sp_initial_support.image[:] = np.float32(np.fft.fftshift(R) < r)
             else:
-                r = np.sqrt( self._initial_support_config["area"] * self._Nx * self._Ny / np.pi )
-            self._sp_initial_support.image[:] = np.float32(np.fft.fftshift(R) < r)
-        else:
-            self._phaser_dirty = True
-            S = self._initial_support_config["support_mask"]
-            self.sep_initial_support.image[:] = np.float32(S)
-        self._initial_support_dirty = False
-        self._log("Initial support initialised.","DEBUG")
+                self._phaser_dirty = True
+                S = self._initial_support_config["support_mask"]
+                self.sep_initial_support.image[:] = np.float32(S)
+                self._initial_support_dirty = False
+                self._log("Initial support initialised.","DEBUG")
+        if len(A.shape) == 3:
+            self._sp_initial_support = spimage.sp_image_alloc(self._Nz, self._Ny,self._Nx)
+            if "radius" in self._initial_support_config or "area" in self._initial_support_config:
+                X,Y,Z = np.meshgrid(np.arange(self._Nx),np.arange(self._Ny),np.arange(self._Nz))
+                X = X-(self._Nx-1)/2.
+                Y = Y-(self._Ny-1)/2.
+                Z = Z-(self._Nz-1)/2.
+                R = np.sqrt(X**2 + Y**2 + Z**2)
+                self._phaser_dirty = True
+                if "radius" in self._initial_support_config:
+                    r = self._initial_support_config["radius"]
+                else:
+                    r = np.sqrt( self._initial_support_config["area"] * self._Nx * self._Ny *  self._Nz / np.pi )
+                self._sp_initial_support.image[:] = np.float32(np.fft.fftshift(R) < r)
+            else:
+                self._phaser_dirty = True
+                S = self._initial_support_config["support_mask"]
+                self.sep_initial_support.image[:] = np.float32(S)
+                self._initial_support_dirty = False
+                self._log("Initial support initialised.","DEBUG")
 
     def _init_iterations(self):
         if not self._iterations_dirty:
@@ -416,21 +456,21 @@ class Reconstructor:
                     self._log("Number of iterations can not be None if many support algorithms are specified. Please report this error.","ERROR")
                     return
             if alg["type"] == "area":
-                blur_radius = spimage.sp_smap_alloc(2)
-                spimage.sp_smap_insert(blur_radius, i, alg["blur_init"])
-                spimage.sp_smap_insert(blur_radius, i + alg["number_of_iterations"], alg["blur_final"])
-                support_area = spimage.sp_smap_alloc(2)
-                spimage.sp_smap_insert(support_area, i,alg["area_init"])
-                spimage.sp_smap_insert(support_area, i + alg["number_of_iterations"],alg["area_final"])
-                alg["spimage_support_array"] = spimage.sp_support_array_init(spimage.sp_support_area_alloc(blur_radius, support_area),alg["update_period"])
+                self._blur_radius = spimage.sp_smap_alloc(2)
+                spimage.sp_smap_insert(self._blur_radius, i, alg["blur_init"])
+                spimage.sp_smap_insert(self._blur_radius, i + alg["number_of_iterations"], alg["blur_final"])
+                self._support_area = spimage.sp_smap_alloc(2)
+                spimage.sp_smap_insert(self._support_area, i,alg["area_init"])
+                spimage.sp_smap_insert(self._support_area, i + alg["number_of_iterations"],alg["area_final"])
+                alg["spimage_support_array"] = spimage.sp_support_array_init(spimage.sp_support_area_alloc(self._blur_radius, self._support_area),alg["update_period"])
             elif alg["type"] == "threshold":
-                blur_radius = spimage.sp_smap_alloc(2)
-                spimage.sp_smap_insert(blur_radius, i, alg["blur_init"])
-                spimage.sp_smap_insert(blur_radius, i + alg["number_of_iterations"], alg["blur_final"])
-                threshold = spimage.sp_smap_alloc(2)
-                spimage.sp_smap_insert(threshold, i, alg["threshold_init"])
-                spimage.sp_smap_insert(threshold, i + alg["number_of_iterations"], alg["threshold_final"])
-                alg["spimage_support_array"] = spimage.sp_support_array_init(spimage.sp_support_threshold_alloc(blur_radius, threshold),alg["update_period"])
+                self._blur_radius = spimage.sp_smap_alloc(2)
+                spimage.sp_smap_insert(self._blur_radius, i, alg["blur_init"])
+                spimage.sp_smap_insert(self._blur_radius, i + alg["number_of_iterations"], alg["blur_final"])
+                self._threshold = spimage.sp_smap_alloc(2)
+                spimage.sp_smap_insert(self._threshold, i, alg["threshold_init"])
+                spimage.sp_smap_insert(self._threshold, i + alg["number_of_iterations"], alg["threshold_final"])
+                alg["spimage_support_array"] = spimage.sp_support_array_init(spimage.sp_support_threshold_alloc(self._blur_radius, self._threshold),alg["update_period"])
             elif alg["type"] == "static":
                 alg["update_period"] = alg["number_of_iterations"]
                 alg["spimage_support_array"] = spimage.sp_support_array_init(spimage.sp_support_static_alloc(),alg["update_period"])
@@ -497,13 +537,13 @@ class Reconstructor:
         #    self._log("Phaser already initialised.","DEBUG")
         #    return
         self._clear_phaser()
-        self._phaser = spimage.sp_phaser_alloc()
+        self._sp_phaser = spimage.sp_phaser_alloc()
         pe = spimage.SpEngineCUDA
         self._log("Initialising phaser with the phasing algorithm %s and the support algorithm %s." % (self._phasing_algorithms[0]["type"],self._support_algorithms[0]["type"]))
-        spimage.sp_phaser_init(self._phaser, self._phasing_algorithms[0]["spimage_phasing"], self._support_algorithms[0]["spimage_support_array"], pe)
-        spimage.sp_phaser_set_amplitudes(self._phaser, self._sp_amplitudes)
-        spimage.sp_phaser_init_model(self._phaser, None, spimage.SpModelRandomPhases)
-        spimage.sp_phaser_init_support(self._phaser, self._sp_initial_support, 0, 0)
+        spimage.sp_phaser_init(self._sp_phaser, self._phasing_algorithms[0]["spimage_phasing"], self._support_algorithms[0]["spimage_support_array"], pe)
+        spimage.sp_phaser_set_amplitudes(self._sp_phaser, self._sp_amplitudes)
+        spimage.sp_phaser_init_model(self._sp_phaser, None, spimage.SpModelRandomPhases)
+        spimage.sp_phaser_init_support(self._sp_phaser, self._sp_initial_support, 0, 0)
         self._phaser_dirty = False
         self._log("Phaser initialized.","DEBUG")
 
@@ -514,7 +554,7 @@ class Reconstructor:
         self._prepare_reconstruction()
         if not self._ready:
             return
-        Out = {}
+        out = {}
         #self._init_new_phaser()
         i_alg = 0
         i_sup = 0
@@ -526,57 +566,110 @@ class Reconstructor:
         fourier_error = np.zeros(self._number_of_outputs_scores)
         real_error = np.zeros(self._number_of_outputs_scores)
         support_size = np.zeros(self._number_of_outputs_scores)
-        real_space = np.zeros(shape=(self._number_of_outputs_images,self._Ny,self._Nx),dtype="complex128")
-        support = np.zeros(shape=(self._number_of_outputs_images,self._Ny,self._Nx),dtype="bool")
-        fourier_space = np.zeros(shape=(self._number_of_outputs_images,self._Ny,self._Nx),dtype="complex128")
-        mask = np.zeros(shape=(self._number_of_outputs_images,self._Ny,self._Nx),dtype="bool")
-        for self._iteration in range(self._number_of_iterations+1):
-            change_algorithm = (self._iteration-iteration0_alg == self._phasing_algorithms[i_alg]["number_of_iterations"]) and (self._iteration != self._number_of_iterations)
-            change_support = (self._iteration-iteration0_sup == self._support_algorithms[i_sup]["number_of_iterations"]) and (self._iteration != self._number_of_iterations)
-            if change_algorithm or change_support or self._iteration in self._out_iterations_images or self._iteration in self._out_iterations_scores:
-                if self._reconstruction is None:
-                    self._log("Iteration %i" % (self._iteration),"INFO")
-                else:
-                    self._log("Reconstruction %i - Iteration %i" % (self._reconstruction,self._iteration),"INFO")
-                # iterate to self._iteration
-                if self._iteration != 0:
-                    spimage.sp_phaser_iterate(self._phaser,self._iteration-iterations_propagated)
-                    iterations_propagated = self._iteration
-                if change_algorithm:
-                    i_alg += 1
-                    iteration0_alg = self._iteration
-                    self._phaser.algorithm = self._phasing_algorithms[i_alg]["spimage_phasing"]
-                    self._log("Change of phasing algorithm to %s." % self._phasing_algorithms[i_alg]["type"],"INFO")
-                if change_support:
-                    i_sup += 1
-                    iteration0_sup = self._iteration
-                    self._phaser.sup_algorithm = self._support_algorithms[i_sup]["spimage_support_array"]
-                    self._log("Change of support algorithm to %s." % self._support_algorithms[i_sup]["type"],"INFO")
-                if self._iteration in self._out_iterations_images:
-                    [real_space[i_out_images,:,:],support[i_out_images,:,:]] = self._get_curr_model(shifted=False)
-                    [fourier_space[i_out_images,:,:],mask[i_out_images,:,:]] = self._get_curr_fmodel(shifted=False)
-                    i_out_images += 1
-                    self._log("Outputting images.","DEBUG")
-                if self._iteration in self._out_iterations_scores:
-                    scores = self._get_scores()
-                    fourier_error[i_out_scores] = scores["fourier_error"]
-                    real_error[i_out_scores] = scores["real_error"]
-                    support_size[i_out_scores] = scores["support_size"]
-                    i_out_scores += 1
-                    self._log("Outputting scores.","DEBUG")
-        self._iteration = None
-        out = {"iteration_index_images":self._out_iterations_images,
-               "iteration_index_scores":self._out_iterations_scores,
-               "real_space":real_space,
-               "support":support,
-               "fourier_space":fourier_space,
-               "mask":mask,
-               "real_error":real_error,
-               "fourier_error":fourier_error,
-               "support_size":support_size}
+        A = self._amplitudes
+        if len(A.shape) == 2:
+            real_space = np.zeros(shape=(self._number_of_outputs_images,self._Ny,self._Nx),dtype="complex128")
+            support = np.zeros(shape=(self._number_of_outputs_images,self._Ny,self._Nx),dtype="bool")
+            fourier_space = np.zeros(shape=(self._number_of_outputs_images,self._Ny,self._Nx),dtype="complex128")
+            mask = np.zeros(shape=(self._number_of_outputs_images,self._Ny,self._Nx),dtype="bool")
+            for self._iteration in range(self._number_of_iterations+1):
+                change_algorithm = (self._iteration-iteration0_alg == self._phasing_algorithms[i_alg]["number_of_iterations"]) and (self._iteration != self._number_of_iterations)
+                change_support = (self._iteration-iteration0_sup == self._support_algorithms[i_sup]["number_of_iterations"]) and (self._iteration != self._number_of_iterations)
+                if change_algorithm or change_support or self._iteration in self._out_iterations_images or self._iteration in self._out_iterations_scores:
+                    if self._reconstruction is None:
+                        self._log("Iteration %i" % (self._iteration),"INFO")
+                    else:
+                        self._log("Reconstruction %i - Iteration %i" % (self._reconstruction,self._iteration),"INFO")
+                    # iterate to self._iteration
+                    if self._iteration != 0:
+                        spimage.sp_phaser_iterate(self._sp_phaser,self._iteration-iterations_propagated)
+                        iterations_propagated = self._iteration
+                    if change_algorithm:
+                        i_alg += 1
+                        iteration0_alg = self._iteration
+                        self._sp_phaser.algorithm = self._phasing_algorithms[i_alg]["spimage_phasing"]
+                        self._log("Change of phasing algorithm to %s." % self._phasing_algorithms[i_alg]["type"],"INFO")
+                    if change_support:
+                        i_sup += 1
+                        iteration0_sup = self._iteration
+                        self._sp_phaser.sup_algorithm = self._support_algorithms[i_sup]["spimage_support_array"]
+                        self._log("Change of support algorithm to %s." % self._support_algorithms[i_sup]["type"],"INFO")
+                    if self._iteration in self._out_iterations_images:
+                        [real_space[i_out_images,:,:],support[i_out_images,:,:]] = self._get_curr_model(shifted=False)
+                        [fourier_space[i_out_images,:,:],mask[i_out_images,:,:]] = self._get_curr_fmodel(shifted=False)
+                        i_out_images += 1
+                        self._log("Outputting images.","DEBUG")
+                    if self._iteration in self._out_iterations_scores:
+                        scores = self._get_scores()
+                        fourier_error[i_out_scores] = scores["fourier_error"]
+                        real_error[i_out_scores] = scores["real_error"]
+                        support_size[i_out_scores] = scores["support_size"]
+                        i_out_scores += 1
+                        self._log("Outputting scores.","DEBUG")
+            self._iteration = None
+            out = {"iteration_index_images":self._out_iterations_images,
+                   "iteration_index_scores":self._out_iterations_scores,
+                   "real_space":real_space,
+                   "support":support,
+                   "fourier_space":fourier_space,
+                   "mask":mask,
+                   "real_error":real_error,
+                   "fourier_error":fourier_error,
+                   "support_size":support_size}
 
-        return out
-    
+            return out
+        if len(A.shape) == 3:
+            real_space = np.zeros(shape=(self._number_of_outputs_images,self._Nz,self._Ny,self._Nx),dtype="complex128")
+            support = np.zeros(shape=(self._number_of_outputs_images,self._Nz,self._Ny,self._Nx),dtype="bool")
+            fourier_space = np.zeros(shape=(self._number_of_outputs_images,self._Nz,self._Ny,self._Nx),dtype="complex128")
+            mask = np.zeros(shape=(self._number_of_outputs_images,self._Nz,self._Ny,self._Nx),dtype="bool")
+            for self._iteration in range(self._number_of_iterations+1):
+                change_algorithm = (self._iteration-iteration0_alg == self._phasing_algorithms[i_alg]["number_of_iterations"]) and (self._iteration != self._number_of_iterations)
+                change_support = (self._iteration-iteration0_sup == self._support_algorithms[i_sup]["number_of_iterations"]) and (self._iteration != self._number_of_iterations)
+                if change_algorithm or change_support or self._iteration in self._out_iterations_images or self._iteration in self._out_iterations_scores:
+                    if self._reconstruction is None:
+                        self._log("Iteration %i" % (self._iteration),"INFO")
+                    else:
+                        self._log("Reconstruction %i - Iteration %i" % (self._reconstruction,self._iteration),"INFO")
+                    # iterate to self._iteration
+                    if self._iteration != 0:
+                        spimage.sp_phaser_iterate(self._sp_phaser,self._iteration-iterations_propagated)
+                        iterations_propagated = self._iteration
+                    if change_algorithm:
+                        i_alg += 1
+                        iteration0_alg = self._iteration
+                        self._sp_phaser.algorithm = self._phasing_algorithms[i_alg]["spimage_phasing"]
+                        self._log("Change of phasing algorithm to %s." % self._phasing_algorithms[i_alg]["type"],"INFO")
+                    if change_support:
+                        i_sup += 1
+                        iteration0_sup = self._iteration
+                        self._sp_phaser.sup_algorithm = self._support_algorithms[i_sup]["spimage_support_array"]
+                        self._log("Change of support algorithm to %s." % self._support_algorithms[i_sup]["type"],"INFO")
+                    if self._iteration in self._out_iterations_images:
+                        [real_space[i_out_images,:,:,:],support[i_out_images,:,:,:]] = self._get_curr_model(shifted=False)
+                        [fourier_space[i_out_images,:,:,:],mask[i_out_images,:,:,:]] = self._get_curr_fmodel(shifted=False)
+                        i_out_images += 1
+                        self._log("Outputting images.","DEBUG")
+                    if self._iteration in self._out_iterations_scores:
+                        scores = self._get_scores()
+                        fourier_error[i_out_scores] = scores["fourier_error"]
+                        real_error[i_out_scores] = scores["real_error"]
+                        support_size[i_out_scores] = scores["support_size"]
+                        i_out_scores += 1
+                        self._log("Outputting scores.","DEBUG")
+            self._iteration = None
+            out = {"iteration_index_images":self._out_iterations_images,
+                   "iteration_index_scores":self._out_iterations_scores,
+                   "real_space":real_space,
+                   "support":support,
+                   "fourier_space":fourier_space,
+                   "mask":mask,
+                   "real_error":real_error,
+                   "fourier_error":fourier_error,
+                   "support_size":support_size}
+
+            return out
+
     def reconstruct_loop(self,Nrepeats,full_output=False):
         """
         Repeats the reconstruction Nrepeats times with the specified parameters from random seeds of starting phases and outputs the results as a dictionary.
@@ -591,6 +684,7 @@ class Reconstructor:
         scores_final = {}
         scores_final["real_error"] = np.zeros(Nrepeats)
         scores_final["fourier_error"] = np.zeros(Nrepeats)
+        scores_final["support_size"] = np.zeros(Nrepeats)
         for self._reconstruction in range(Nrepeats):
             self._log("Reconstruction %i started" % (self._reconstruction),"INFO")
             output = self.reconstruct()
@@ -599,6 +693,7 @@ class Reconstructor:
             support_final[self._reconstruction,:,:] = output["support"][-1,:,:]
             scores_final["real_error"][self._reconstruction] = output["real_error"][-1]
             scores_final["fourier_error"][self._reconstruction] = output["fourier_error"][-1]
+            scores_final["support_size"][self._reconstruction] = output["support_size"][-1]
             single_outputs.append(output)
             self._log("Reconstruction %i exited" % (self._reconstruction),"INFO")
         self._reconstruction = None
@@ -614,12 +709,12 @@ class Reconstructor:
         shifted = kwargs.get("shifted",False)
         #normalize = kwargs.get("normalize",False)
         if self._iteration > 0:
-            #fimg = spimage.sp_phaser_fmodel(self._phaser).image.copy()
-            tmp = spimage.sp_phaser_fmodel_with_mask(self._phaser)
+            #fimg = spimage.sp_phaser_fmodel(self._sp_phaser).image.copy()
+            tmp = spimage.sp_phaser_fmodel_with_mask(self._sp_phaser)
             fimg = tmp.image.copy()
             fmsk = tmp.mask.copy()
         else:
-            fimg = np.fft.fftn(self._phaser.model.image)#*self._phaser.model.image.size
+            fimg = np.fft.fftn(self._sp_phaser.model.image)#*self._sp_phaser.model.image.size
             fmsk = self._sp_amplitudes.mask.copy()           
         #if normalize:
         #    fimg = fimg/abs(fimg).sum()
@@ -633,19 +728,19 @@ class Reconstructor:
         state = kwargs.get("state","before_projection")
         if self._iteration > 0:
             if state == "before_projection":
-                tmp1 = spimage.sp_phaser_model_before_projection(self._phaser)
-                tmp2 = spimage.sp_phaser_support(self._phaser)
+                tmp1 = spimage.sp_phaser_model_before_projection(self._sp_phaser)
+                tmp2 = spimage.sp_phaser_support(self._sp_phaser)
                 img = tmp1.image.copy()
                 msk = np.int32(tmp2.image.real)
                 #spimage.sp_image_free(tmp1)
                 #spimage.sp_image_free(tmp2)
             elif state == "after_projection":
-                tmp = spimage.sp_phaser_model_with_support(self._phaser)
+                tmp = spimage.sp_phaser_model_with_support(self._sp_phaser)
                 img = tmp.image.copy()
                 msk = tmp.mask.copy()
                 #spimage.sp_image_free(tmp)
         else:
-            img = self._phaser.model.image.copy()
+            img = self._sp_phaser.model.image.copy()
             msk = np.array(self._sp_initial_support.image.real,dtype="bool")
         if not shifted:
             return [np.fft.fftshift(img),np.fft.fftshift(msk)]

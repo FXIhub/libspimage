@@ -731,6 +731,7 @@ int sp_phaser_init_support(SpPhaser * ph, const Image * support, int flags, real
       }
     }
     sp_image_free(patterson);
+    sp_image_free(tmp);
   }else{
     return -1;
   }

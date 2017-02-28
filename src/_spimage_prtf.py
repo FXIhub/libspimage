@@ -15,6 +15,9 @@ def numpy_array_to_image(img,msk=None):
     return sp_img
 
 def prtf(images_rs,supports,translate=True,enantio=True,full_out=False):
+    """
+    NOTE: For using the enantio option, the images need to be centered in fourier space (no phase ramp in real space)
+    """
     S = images_rs.shape
     s = list(S)
     N = s.pop(0)
