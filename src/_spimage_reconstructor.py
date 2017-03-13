@@ -412,7 +412,7 @@ class Reconstructor:
                 self._initial_support_dirty = False
                 self._log("Initial support initialised.","DEBUG")
         if len(A.shape) == 3:
-            self._sp_initial_support = spimage.sp_image_alloc(self._Ny,self._Nx,self._Nz)
+            self._sp_initial_support = spimage.sp_image_alloc(self._Nz, self._Ny,self._Nx)
             if "radius" in self._initial_support_config or "area" in self._initial_support_config:
                 X,Y,Z = np.meshgrid(np.arange(self._Nx),np.arange(self._Ny),np.arange(self._Nz))
                 X = X-(self._Nx-1)/2.

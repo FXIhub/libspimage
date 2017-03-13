@@ -70,19 +70,20 @@ def patterson(image, mask, floor_cut=None, mask_smooth=1., darkfield_x=None, dar
             I[tmp] = log_min
         I = numpy.log10(I)
     # Make kernel
-    K = kernel(M,smooth=mask_smooth,x=darkfield_x,y=darkfield_y,sigma=darkfield_sigma,mask_expand=mask_expand,N_gaussians=darkfield_N)
-    # Fourier transform
-    P = fftshift(fftn(K*I))
-    if subtract_fourier_kernel:
-        fK = fftshift(fftn(K))
-        if full_output:
-            info["patterson0"] = P.copy()
-            if normalize_median:
-                info["patterson0"] /= numpy.median(abs(P))
-                
-        err = lambda c: abs(P - c*fK).flatten()
-        c = leastsq(err,1.)[0]
-        P = P - c * fK
+    P = 0.
+    for i_gaussian in range(min([darkfield_N, 4])):
+        K = kernel(M,smooth=mask_smooth,x=darkfield_x,y=darkfield_y,sigma=darkfield_sigma,mask_expand=mask_expand,i_gaussian=i_gaussian)
+        # Fourier transform
+        P = P + abs(fftshift(fftn(K*I)))
+        if subtract_fourier_kernel:
+            fK = fftshift(fftn(K))
+            if full_output:
+                info["patterson0"] = P.copy()
+                if normalize_median:
+                    info["patterson0"] /= numpy.median(abs(P))
+            err = lambda c: abs(P - c*fK).flatten()
+            c = leastsq(err,1.)[0]
+            P = P - c * fK
     if normalize_median:
         # Normalization
         P /= numpy.median(abs(P))
@@ -94,7 +95,7 @@ def patterson(image, mask, floor_cut=None, mask_smooth=1., darkfield_x=None, dar
     else:
         return P
 
-def kernel(mask,smooth=5.,x=None,y=None,sigma=None,mask_expand=1.,N_gaussians=1):
+def kernel(mask,smooth=5.,x=None,y=None,sigma=None,mask_expand=1.,i_gaussian=0):
     if mask_expand > 0.:
         K = distance_transform_edt(mask, sampling=None, return_distances=True, return_indices=False, distances=None, indices=None)
         K = K > mask_expand
@@ -102,7 +103,7 @@ def kernel(mask,smooth=5.,x=None,y=None,sigma=None,mask_expand=1.,N_gaussians=1)
     else:
         K = numpy.array(mask, dtype=numpy.float64)
     K = gaussian_filter(K,smooth)
-    if x is not None and y is not None and sigma is not None and N_gaussians > 0:
+    if x is not None and y is not None and sigma is not None:
         signs_x = [1,1,-1,-1]
         signs_y = [1,-1,1,-1]
         G = numpy.zeros_like(K)
@@ -110,10 +111,11 @@ def kernel(mask,smooth=5.,x=None,y=None,sigma=None,mask_expand=1.,N_gaussians=1)
         cx = (Nx-1)/2
         cy = (Ny-1)/2
         X,Y = numpy.ogrid[0:Ny, 0:Nx]
-        for i,sign_x,sign_y in zip(range(N_gaussians), signs_x, signs_y):
-            # multiply by gaussian darkfield kernel
-            Rsq = (X - (cx + sign_x*x))**2 + (Y - (cx + sign_y*y))**2
-            G += numpy.exp(-Rsq/(2*sigma**2))
+        sign_x = signs_x[i_gaussian]
+        sign_y = signs_y[i_gaussian]
+        # multiply by gaussian darkfield kernel
+        Rsq = (X - (cx + sign_x*x))**2 + (Y - (cx + sign_y*y))**2
+        G += numpy.exp(-Rsq/(2*sigma**2))
         K = K*G
     return K
 
