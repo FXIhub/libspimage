@@ -50,6 +50,8 @@ def fit_sphere_diameter_pearson(img, msk, diameter, intensity, wavelength, pixel
             dmax = brute_dmax
         Ns = do_brute_evals
         brute_diameter, brute_fval, brute_grid, brute_jout = scipy.optimize.brute(E_fit_m, [(dmin, dmax)], Ns=Ns, full_output=True)
+    else:
+        brute_diameter = diameter
 
     # End with least square
     [diameter], cov, infodict, mesg, ier = leastsq(E_fit_m, brute_diameter, maxfev=maxfev, xtol=1e-5, full_output=True)
