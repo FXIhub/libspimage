@@ -48,7 +48,7 @@ void sp_gaussian_blur_cuda(cufftComplex * in, cufftComplex * out, int x, int y, 
   sp_create_gaussian_kernel_cuda(kernel,x,y,z,radius);
   cufftSafeCall(cufftExecC2C(plan, in, out, CUFFT_FORWARD));
   cufftSafeCall(cufftExecC2C(plan, kernel, kernel, CUFFT_FORWARD));
-  int blockSize = 256;
+  int blockSize = 512;
   int gridSize = (x*y*z+blockSize-1)/blockSize;
   CUDA_Complex_multiply<<<gridSize,blockSize>>>(out,kernel,x*y*z);
   sp_cuda_check_errors();
