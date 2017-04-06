@@ -48,8 +48,9 @@ void sp_gaussian_blur_cuda(cufftComplex * in, cufftComplex * out, int x, int y, 
   sp_create_gaussian_kernel_cuda(kernel,x,y,z,radius);
   cufftSafeCall(cufftExecC2C(plan, in, out, CUFFT_FORWARD));
   cufftSafeCall(cufftExecC2C(plan, kernel, kernel, CUFFT_FORWARD));
-  int blockSize = 512;
-  int gridSize = (x*y*z+blockSize-1)/blockSize;
+  int blockSize = 0;
+  int gridSize = 0;
+  sp_cuda_launch_parameters(x*y*z, &gridSize, &blockSize);
   CUDA_Complex_multiply<<<gridSize,blockSize>>>(out,kernel,x*y*z);
   sp_cuda_check_errors();
   cufftSafeCall(cufftExecC2C(plan, out, out, CUFFT_INVERSE));
@@ -131,8 +132,10 @@ void sp_create_gaussian_kernel_cuda(cufftComplex * a,int x, int y, int z, float 
   cufftComplex sum = {0,0};
   sum = thrust::reduce(beginc,endc,sum,addCufftComplex());
   sp_cuda_check_errors();
-  int blockSize = 512;
-  int gridSize = (x*y*z+blockSize-1)/blockSize;
+  
+  int blockSize = 0;
+  int gridSize = 0;
+  sp_cuda_launch_parameters(x*y*z, &gridSize, &blockSize);
   CUDA_complex_scale<<<gridSize,blockSize>>>(a,x*y*z,1.0f/(sum.x+sum.y));
   sp_cuda_check_errors();
 }

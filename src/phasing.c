@@ -271,21 +271,7 @@ static void phaser_check_dimensions(SpPhaser * ph, const Image * a){
     ph->image_size = ph->nx*ph->ny*ph->nz;
     if(ph->engine == SpEngineCUDA){
 #ifdef _USE_CUDA
-
-    /* We will have to be very careful in the future about block size and number of blocks. 
-       We should check what's available in the hardware and make our choice accordingly.
-       At the moment i'm assuming we have something like an NVIDIA 280 GTX with 512 threads per 
-       block maximum and 65535 x 65535 x 1 of maximum block size.
-       
-     */
-      ph->threads_per_block = 64;
-      while(sp_image_size(a) > 65535*ph->threads_per_block){
-	ph->threads_per_block *= 2;
-      }
-      if(ph->threads_per_block > 512){
-	sp_error_fatal("Image to large to handle with current CUDA code!");
-      }
-      ph->number_of_blocks = (ph->image_size+ph->threads_per_block-1)/ph->threads_per_block;
+      sp_cuda_launch_parameters(sp_image_size(a), &ph->number_of_blocks, &ph->threads_per_block);
 #endif
     }
   }

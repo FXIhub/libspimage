@@ -30,44 +30,6 @@ void test_sp_proj_module(CuTest* tc)
 }
 
 
-void test_sp_proj_module_cuda(CuTest* tc)
-{
-#ifdef _USE_CUDA
-  if(sp_cuda_get_device_type() == SpCUDAHardwareDevice){
-    int size = 256;
-    Image * a = sp_image_alloc(size,size,1);
-    sp_srand(0);
-    for(int i = 0;i<sp_image_size(a);i++){
-      a->image->data[i] = sp_cinit(p_drand48(),p_drand48());
-    }
-    Image * exp = sp_image_alloc(size,size,1);
-    for(int i = 0;i<sp_image_size(a);i++){
-      exp->image->data[i] = sp_cinit(p_drand48(),0);
-    }
-
-    for(int i = 0;i<sp_image_size(a);i++){
-      exp->mask->data[i] = 1;
-    }
-
-
-    Image * proj = sp_proj_module(a,exp,SpOutOfPlace);
-    Image * proj_cuda = sp_image_duplicate(a,SP_COPY_ALL);
-    sp_proj_module_cuda(proj_cuda,exp);
-
-    for(int i = 0;i<sp_image_size(a);i++){
-      /* Check that the magnitude is the same as the experimental */
-      CuAssertDblEquals(tc,sp_cabs(proj->image->data[i]),sp_cabs(exp->image->data[i]),fabs(2*REAL_EPSILON*sp_cabs(exp->image->data[i])));
-      CuAssertDblEquals(tc,sp_cabs(proj->image->data[i]),sp_cabs(proj_cuda->image->data[i]),fabs(10*REAL_EPSILON*sp_cabs(exp->image->data[i])));
-      /* Check that the phase is the same as the input */
-      CuAssertDblEquals(tc,sp_carg(proj->image->data[i]),sp_carg(a->image->data[i]),fabs(2*REAL_EPSILON*sp_carg(a->image->data[i])));
-      CuAssertDblEquals(tc,sp_carg(proj->image->data[i]),sp_carg(proj_cuda->image->data[i]),fabs(2*REAL_EPSILON*sp_carg(a->image->data[i])));
-    }
-  }
-#endif
-  PRINT_DONE;
-}
-
-
 void test_sp_proj_module_histogram(CuTest* tc)
 {
   int size = 1000;
@@ -123,7 +85,6 @@ CuSuite* proj_get_suite(void)
 {
   CuSuite* suite = CuSuiteNew();
   SUITE_ADD_TEST(suite, test_sp_proj_module);
-  SUITE_ADD_TEST(suite, test_sp_proj_module_cuda);
   SUITE_ADD_TEST(suite, test_sp_proj_module_histogram);
   return suite;
 }
