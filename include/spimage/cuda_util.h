@@ -79,6 +79,11 @@ static inline void __sp_cuda_check_errors(const char * file, const int line){
    The output image will be 1 dimensional.
  */
 spimage_EXPORT Image * sp_get_image_from_cuda(cufftComplex * a, int size);
+
+
+/*! Calculates the gridSize and blockSize to handle an image of a given size
+ */
+spimage_EXPORT void sp_cuda_launch_parameters(int size, int * gridSize, int * blockSize);
 #endif /* _USE_CUDA */
 
 #ifdef __cplusplus
@@ -93,7 +98,6 @@ extern "C"
   /*! Returns the CUDA device currently being used if any.
    */
 spimage_EXPORT  SpCUDADeviceType sp_cuda_get_device_type();
-  //  spimage_EXPORT void __sp_cuda_check_errors(const char * file,const int line);
 
 /*@}*/
 #ifdef __cplusplus
