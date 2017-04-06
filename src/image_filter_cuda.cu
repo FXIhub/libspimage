@@ -126,13 +126,13 @@ void sp_create_gaussian_kernel_cuda(cufftComplex * a,int x, int y, int z, float 
 	       1);
   CUDA_create_gaussian_kernel<<<dimGrid,dimBlock>>>(a,x,y,z,radius);
   sp_cuda_check_errors();
-  int blockSize = 256;
-  int gridSize = ((x+dimBlock.x-1)/dimBlock.x) * ((y+dimBlock.y-1)/dimBlock.y);
   thrust::device_ptr<cufftComplex> beginc =  thrust::device_pointer_cast(a);
   thrust::device_ptr<cufftComplex> endc =  thrust::device_pointer_cast((cufftComplex *)(a+x*y*z));
   cufftComplex sum = {0,0};
   sum = thrust::reduce(beginc,endc,sum,addCufftComplex());
   sp_cuda_check_errors();
+  int blockSize = 512;
+  int gridSize = (x*y*z+blockSize-1)/blockSize;
   CUDA_complex_scale<<<gridSize,blockSize>>>(a,x*y*z,1.0f/(sum.x+sum.y));
   sp_cuda_check_errors();
 }
