@@ -41,6 +41,19 @@ struct addCufftComplex{
   } 
 };
 
+struct rescale_value{  
+  rescale_value(cufftComplex _scale){
+    scale = _scale;
+  }
+  __host__ __device__ cufftComplex operator()(const cufftComplex &x) const
+  {
+    cufftComplex ret = x;
+    ret.x *= scale.x;
+    ret.y *= scale.y;
+    return ret;
+  }
+  cufftComplex scale;
+};
 
 void sp_gaussian_blur_cuda(cufftComplex * in, cufftComplex * out, int x, int y, int z, float radius, cufftHandle plan){
   cufftComplex * kernel; 
@@ -126,14 +139,12 @@ void sp_create_gaussian_kernel_cuda(cufftComplex * a,int x, int y, int z, float 
 	       1);
   CUDA_create_gaussian_kernel<<<dimGrid,dimBlock>>>(a,x,y,z,radius);
   sp_cuda_check_errors();
-  int blockSize = 256;
-  int gridSize = ((x+dimBlock.x-1)/dimBlock.x) * ((y+dimBlock.y-1)/dimBlock.y);
   thrust::device_ptr<cufftComplex> beginc =  thrust::device_pointer_cast(a);
   thrust::device_ptr<cufftComplex> endc =  thrust::device_pointer_cast((cufftComplex *)(a+x*y*z));
   cufftComplex sum = {0,0};
   sum = thrust::reduce(beginc,endc,sum,addCufftComplex());
   sp_cuda_check_errors();
-  CUDA_complex_scale<<<gridSize,blockSize>>>(a,x*y*z,1.0f/(sum.x+sum.y));
+  thrust::transform(beginc,endc,beginc,rescale_value(sum));
   sp_cuda_check_errors();
 }
 
