@@ -7,7 +7,7 @@ logger = logging.getLogger('RECONSTRUCTOR')
 logger.setLevel("WARNING")
 
 class Reconstructor:
-    def __init__(self):
+    def __init__(self, use_gpu=True):
         # mask
         self._mask = None
         # wrapped C-object instances
@@ -18,6 +18,7 @@ class Reconstructor:
         self._sp_initial_support_dirty = True
         self._sp_phaser = None
         self._sp_phaser_dirty = True
+        self._use_gpu = use_gpu
         # other stuff
         self.clear()
 
@@ -538,7 +539,10 @@ class Reconstructor:
         #    return
         self._clear_phaser()
         self._sp_phaser = spimage.sp_phaser_alloc()
-        pe = spimage.SpEngineCUDA
+        if self._use_gpu:
+            pe = spimage.SpEngineCUDA
+        else:
+            pe = spimage.SpEngineCPU
         self._log("Initialising phaser with the phasing algorithm %s and the support algorithm %s." % (self._phasing_algorithms[0]["type"],self._support_algorithms[0]["type"]))
         spimage.sp_phaser_init(self._sp_phaser, self._phasing_algorithms[0]["spimage_phasing"], self._support_algorithms[0]["spimage_support_array"], pe)
         spimage.sp_phaser_set_amplitudes(self._sp_phaser, self._sp_amplitudes)

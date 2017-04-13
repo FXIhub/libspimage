@@ -11,37 +11,6 @@ __global__ void CUDA_phased_amplitudes_projection(cufftComplex* g, const cufftCo
 __global__ void CUDA_diff_map_f1(cufftComplex* f1, const cufftComplex* g0,const int * pixel_flags,const float gamma1,const  int size);
 __global__ void CUDA_diff_map(cufftComplex* Pi2f1,cufftComplex* Pi2rho, const cufftComplex* g0,cufftComplex* g1,const int * pixel_flags,const float gamma2,const float beta,const  int size);
 
-int sp_proj_module_cuda(Image * a, Image * amp){
-  cufftComplex * d_a;
-  int * d_pixel_flags;
-  float * d_amp;
-  float * fnp = NULL; 
-  cudaMalloc((void **)&d_a,sizeof(cufftComplex)*sp_image_size(a));
-  cudaMalloc((void **)&d_pixel_flags,sizeof(int)*sp_image_size(a));
-  cudaMalloc((void **)&d_amp,sizeof(float)*sp_image_size(a));
-  cudaMemcpy(d_a,a->image->data,sizeof(cufftComplex)*sp_image_size(a),cudaMemcpyHostToDevice);
-  sp_i3matrix * pixel_flags = sp_i3matrix_alloc(sp_image_x(a),sp_image_y(a),sp_image_z(a));
-  sp_3matrix * h_amp = sp_3matrix_alloc(sp_image_x(a),sp_image_y(a),sp_image_z(a));
-  for(int i =0 ;i<sp_image_size(a);i++){
-    h_amp->data[i] = sp_real(amp->image->data[i]);
-    pixel_flags->data[i] = 0;
-    if(amp->mask->data[i]){
-      pixel_flags->data[i] |= SpPixelMeasuredAmplitude;
-    }
-  }
-  cudaMemcpy(d_amp,h_amp->data,sizeof(float)*sp_image_size(a),cudaMemcpyHostToDevice);
-  cudaMemcpy(d_pixel_flags,pixel_flags->data,sizeof(int)*sp_image_size(a),cudaMemcpyHostToDevice);
-  int threads_per_block = 64;
-  int number_of_blocks = (sp_image_size(a)+threads_per_block-1)/threads_per_block;
-  CUDA_module_projection<<<number_of_blocks, threads_per_block>>>(d_a,d_amp,fnp,fnp,d_pixel_flags,sp_image_size(a),SpNoConstraints);
-  cudaMemcpy(a->image->data,d_a,sizeof(cufftComplex)*sp_image_size(a),cudaMemcpyDeviceToHost);
-  cudaFree(d_amp);
-  cudaFree(d_pixel_flags);
-  cudaFree(d_a);
-  sp_cuda_check_errors();
-  return 0;
-}
-
 int phaser_iterate_er_cuda(SpPhaser * ph,int iterations){
   SpPhasingERParameters * params = (SpPhasingERParameters *)ph->algorithm->params;
   for(int i = 0;i<iterations;i++){
