@@ -323,7 +323,6 @@ def _radialImage_3D(img,mode="mean",cx=None,cy=None,cz=None,msk=None,output_r=Fa
     X,Y,Z = numpy.meshgrid(numpy.arange(img.shape[2]),numpy.arange(img.shape[1]),numpy.arange(img.shape[0]))
     R = numpy.sqrt((X - float(cx))**2 + (Y - float(cy))**2 + (Z - float(cz))**2)
     R = R.round()
-    print 'radius: %lf' %(R)
     if msk is not None:
         if (msk == 0).sum() > 0:
             R[msk == 0] = -1
