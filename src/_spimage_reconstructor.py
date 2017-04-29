@@ -622,6 +622,7 @@ class Reconstructor:
                    "support_size":support_size}
 
             return out
+
         if len(A.shape) == 3:
             real_space = np.zeros(shape=(self._number_of_outputs_images,self._Nz,self._Ny,self._Nx),dtype="complex128")
             support = np.zeros(shape=(self._number_of_outputs_images,self._Nz,self._Ny,self._Nx),dtype="bool")
@@ -681,30 +682,60 @@ class Reconstructor:
         self._prepare_reconstruction()
         if not self._ready:
             return
-        single_outputs = []
-        fourier_space_final = np.zeros(shape=(Nrepeats,self._Nx,self._Ny),dtype="complex128")
-        real_space_final = np.zeros(shape=(Nrepeats,self._Nx,self._Ny),dtype="complex128")
-        support_final = np.zeros(shape=(Nrepeats,self._Nx,self._Ny),dtype="bool")
-        scores_final = {}
-        scores_final["real_error"] = np.zeros(Nrepeats)
-        scores_final["fourier_error"] = np.zeros(Nrepeats)
-        scores_final["support_size"] = np.zeros(Nrepeats)
-        for self._reconstruction in range(Nrepeats):
-            self._log("Reconstruction %i started" % (self._reconstruction),"INFO")
-            output = self.reconstruct()
-            real_space_final[self._reconstruction,:,:] = output["real_space"][-1,:,:]
-            fourier_space_final[self._reconstruction,:,:] = output["fourier_space"][-1,:,:]
-            support_final[self._reconstruction,:,:] = output["support"][-1,:,:]
-            scores_final["real_error"][self._reconstruction] = output["real_error"][-1]
-            scores_final["fourier_error"][self._reconstruction] = output["fourier_error"][-1]
-            scores_final["support_size"][self._reconstruction] = output["support_size"][-1]
-            single_outputs.append(output)
-            self._log("Reconstruction %i exited" % (self._reconstruction),"INFO")
-        self._reconstruction = None
-        out =  {"real_space_final":real_space_final,
-                "fourier_space_final":fourier_space_final,
-                "support_final":support_final,
-                "scores_final":scores_final}
+
+        A = self._amplitudes
+        if len(A.shape) == 2:
+            single_outputs = []
+            fourier_space_final = np.zeros(shape=(Nrepeats,self._Nx,self._Ny),dtype="complex128")
+            real_space_final = np.zeros(shape=(Nrepeats,self._Nx,self._Ny),dtype="complex128")
+            support_final = np.zeros(shape=(Nrepeats,self._Nx,self._Ny),dtype="bool")
+            scores_final = {}
+            scores_final["real_error"] = np.zeros(Nrepeats)
+            scores_final["fourier_error"] = np.zeros(Nrepeats)
+            scores_final["support_size"] = np.zeros(Nrepeats)
+            for self._reconstruction in range(Nrepeats):
+                self._log("Reconstruction %i started" % (self._reconstruction),"INFO")
+                output = self.reconstruct()
+                real_space_final[self._reconstruction,:,:] = output["real_space"][-1,:,:]
+                fourier_space_final[self._reconstruction,:,:] = output["fourier_space"][-1,:,:]
+                support_final[self._reconstruction,:,:] = output["support"][-1,:,:]
+                scores_final["real_error"][self._reconstruction] = output["real_error"][-1]
+                scores_final["fourier_error"][self._reconstruction] = output["fourier_error"][-1]
+                scores_final["support_size"][self._reconstruction] = output["support_size"][-1]
+                single_outputs.append(output)
+                self._log("Reconstruction %i exited" % (self._reconstruction),"INFO")
+            self._reconstruction = None
+            out =  {"real_space_final":real_space_final,
+                    "fourier_space_final":fourier_space_final,
+                    "support_final":support_final,
+                    "scores_final":scores_final}
+
+        if len(A.shape) == 3:
+            single_outputs = []
+            fourier_space_final = np.zeros(shape=(Nrepeats,self._Nx,self._Ny,self._Nz),dtype="complex128")
+            real_space_final = np.zeros(shape=(Nrepeats,self._Nx,self._Ny,self._Nz),dtype="complex128")
+            support_final = np.zeros(shape=(Nrepeats,self._Nx,self._Ny,self._Nz),dtype="bool")
+            scores_final = {}
+            scores_final["real_error"] = np.zeros(Nrepeats)
+            scores_final["fourier_error"] = np.zeros(Nrepeats)
+            scores_final["support_size"] = np.zeros(Nrepeats)
+            for self._reconstruction in range(Nrepeats):
+                self._log("Reconstruction %i started" % (self._reconstruction),"INFO")
+                output = self.reconstruct()
+                real_space_final[self._reconstruction,:,:,:] = output["real_space"][-1,:,:,:]
+                fourier_space_final[self._reconstruction,:,:,:] = output["fourier_space"][-1,:,:,:]
+                support_final[self._reconstruction,:,:,:] = output["support"][-1,:,:,:]
+                scores_final["real_error"][self._reconstruction] = output["real_error"][-1]
+                scores_final["fourier_error"][self._reconstruction] = output["fourier_error"][-1]
+                scores_final["support_size"][self._reconstruction] = output["support_size"][-1]
+                single_outputs.append(output)
+                self._log("Reconstruction %i exited" % (self._reconstruction),"INFO")
+            self._reconstruction = None
+            out =  {"real_space_final":real_space_final,
+                    "fourier_space_final":fourier_space_final,
+                    "support_final":support_final,
+                    "scores_final":scores_final}
+
         if full_output:
             out["single_outputs"] = single_outputs
         return out
