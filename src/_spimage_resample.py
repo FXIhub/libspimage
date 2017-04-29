@@ -178,8 +178,10 @@ def crop(pattern,cropLength,center='middle',bg=0):
         x_center = center[1]
         y_center = center[0]
 
-    x_start = (pattern.shape[1]-cropLength)/2
-    y_start = (pattern.shape[0]-cropLength)/2
+    #x_start = (pattern.shape[1]-cropLength)/2
+    #y_start = (pattern.shape[0]-cropLength)/2
+    x_start = x_center - cropLength/2
+    y_start = y_center - cropLength/2
     x_stop = x_start+cropLength
     y_stop = y_start+cropLength
 
