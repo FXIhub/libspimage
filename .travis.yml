@@ -26,6 +26,7 @@ addons:
       - swig
       - python-numpy
       - python-scipy
+      - python-h5py
 
 before_install:
   - echo $HOME
