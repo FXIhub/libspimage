@@ -25,6 +25,7 @@ addons:
       - libgsl0-dev
       - swig
       - python-numpy
+      - python-scipy
 
 before_install:
   - echo $HOME
