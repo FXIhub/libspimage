@@ -1,6 +1,9 @@
 language: c
 sudo: false
 
+virtualenv:
+  system_site_packages: true 
+
 cache:
   directories:
     - $HOME/hdf5-1.10.0-patch1-linux-centos7-x86_64-gcc485-shared
@@ -21,6 +24,7 @@ addons:
       - gsl-bin
       - libgsl0-dev
       - swig
+      -python-numpy
 
 before_install:
   - echo $HOME
