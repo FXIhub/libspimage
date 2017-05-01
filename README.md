@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/FXIhub/libspimage.svg?branch=master)](https://travis-ci.org/FXIhub/libspimage)
+
 LibSPImage - Image Processing Library
 =====================================
 
