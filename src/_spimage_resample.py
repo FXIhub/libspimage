@@ -366,8 +366,8 @@ def radialMeanImage(img,**kwargs):
     if len(img.shape) == 3:
         return _radialImage_3D(img,mode="mean",**kwargs)
 
-    #if len(img.shape) == 2:
-        #return _radialImage(img,mode="mean",**kwargs)
+    if len(img.shape) == 2:
+        return _radialImage(img,mode="mean",**kwargs)
 
 def radialMedianImage(img,**kwargs):
     if len(img.shape) == 2:
