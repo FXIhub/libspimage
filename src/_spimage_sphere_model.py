@@ -224,16 +224,17 @@ def fit_full_sphere_model(img, msk, diameter, intensity, wavelength, pixel_size,
         Rmc     = lambda dx,dy:     np.sqrt((Xm - dx)**2 + (Ym - dy)**2)
         size    = lambda d:       sphere_model_convert_diameter_to_size(d, wavelength, pixel_size, detector_distance)
         scaling = lambda i,d:     sphere_model_convert_intensity_to_scaling(i, d, wavelength, pixel_size, detector_distance, detector_quantum_efficiency, 1, material)
-        I_fit_m = lambda dx,dy,d,i: I_sphere_diffraction(scaling(i,d), Rmc(dx,dy), size(d))
-        E_fit_m = lambda p:       I_fit_m(p[0],p[1],p[2],p[3]) - _img[_msk]
+        I_fit_m = lambda dx,dy,d,i,b: I_sphere_diffraction(scaling(i,d), Rmc(dx,dy), size(d)) + b
+        E_fit_m = lambda p:       I_fit_m(p[0],p[1],p[2],p[3],p[4]) - _img[_msk]
         p0 = np.array([0.,0.,diameter,intensity])
         x0_bound = (-img.shape[1]/2., img.shape[1]/2.)
         y0_bound = (-img.shape[0]/2., img.shape[1]/2.)
         d_bound  = (diameter-deltab*diameter, diameter+deltab*diameter)
-        i_bound = (None, None)
-        bounds   = np.array([x0_bound, y0_bound , d_bound, i_bound])
-        p, cov, infodict, mesg, ier = spimage.leastsqbound(E_fit_m, np.array([x0,y0,diameter,intensity]), maxfev=maxfev, xtol=1e-5, full_output=True, bounds=bounds)
-        [dx0, dy0, diameter, intensity] = p
+        i_bound  = (None, None)
+        b_bound  = (None, None)
+        bounds   = np.array([x0_bound, y0_bound , d_bound, i_bound,b_bound])
+        p, cov, infodict, mesg, ier = spimage.leastsqbound(E_fit_m, np.array([0,0,diameter,intensity,0]), maxfev=maxfev, xtol=1e-5, full_output=True, bounds=bounds)
+        [dx0, dy0, diameter, intensity, bg] = p
         diameter = abs(diameter)
         x0 += dx0
         y0 += dy0
@@ -251,6 +252,7 @@ def fit_full_sphere_model(img, msk, diameter, intensity, wavelength, pixel_size,
         infodict["chisquared"] = chisquared
         infodict["error"] = nmerr
         infodict["pcov"]  = pcov
+        infodict["background"] = bg
         return x0, y0, diameter, intensity, infodict
     else:
         return x0, y0, diameter, intensity
