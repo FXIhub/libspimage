@@ -41,7 +41,7 @@ before_install:
   - cd $HOME/build/FXIhub/libspimage
   - mkdir build
   - cd build
-  - cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DUSE_CUDA=OFF -DPYTHON_WRAPPERS=ON -DHDF5_INCLUDE_DIR=$HOME/hdf5-1.10.0-patch1-linux-centos7-x86_64-gcc485-shared/include -DHDF5_LIBRARY=$HOME/hdf5-1.10.0-patch1-linux-centos7-x86_64-gcc485-shared/lib/libhdf5.so -DCMAKE_INSTALL_PREFIX=${HOME}/local -DPYTHON_INSTDIR=${HOME}/localpy -DPYTHON_INCLUDE_DIR=/usr/include/python2.7 -DPYTHON_INCLUDE_DIR2=/usr/include/python2.7 -DPYTHON_LIBRARY=/usr/lib/libpython2.7.so ..
+  - cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DUSE_CUDA=OFF -DPYTHON_WRAPPERS=ON -DHDF5_INCLUDE_DIR=${HDF5_DIR}/include -DHDF5_LIBRARY=${HDF5_DIR}/lib/libhdf5.so -DCMAKE_INSTALL_PREFIX=${HOME}/local -DPYTHON_INSTDIR=${HOME}/localpy -DPYTHON_INCLUDE_DIR=/usr/include/python2.7 -DPYTHON_INCLUDE_DIR2=/usr/include/python2.7 -DPYTHON_LIBRARY=/usr/lib/libpython2.7.so ..
 
 install:
     - make -j 2 VERBOSE=1
