@@ -178,8 +178,10 @@ def crop(pattern,cropLength,center='middle',bg=0):
         x_center = center[1]
         y_center = center[0]
 
-    x_start = (pattern.shape[1]-cropLength)/2
-    y_start = (pattern.shape[0]-cropLength)/2
+    #x_start = (pattern.shape[1]-cropLength)/2
+    #y_start = (pattern.shape[0]-cropLength)/2
+    x_start = x_center - cropLength/2
+    y_start = y_center - cropLength/2
     x_stop = x_start+cropLength
     y_stop = y_start+cropLength
 
@@ -257,7 +259,7 @@ def _testBinImage(binning,masking=True):
     print "Sum difference: %.3f %%" % (100.*abs(S1-S2).sum()/2./(S1+S2).sum())
     return l1,l2,m1,m2
     
-    
+
 def _radialImage(img,mode="mean",cx=None,cy=None,msk=None,output_r=False):
     """ This function calculates a radial representation of a 2D image.
     If a mask is provided the mask is applied to the image before projection. The output of radii that include only masked out pixels is set to nan.
@@ -309,14 +311,70 @@ def _radialImage(img,mode="mean",cx=None,cy=None,msk=None,output_r=False):
     else:
         return values
 
+def _radialImage_3D(img,mode="mean",cx=None,cy=None,cz=None,msk=None,output_r=False):
+    if mode == "mean": f = numpy.mean
+    elif mode == "sum": f = numpy.sum
+    elif mode == "std": f = numpy.std
+    elif mode == "median": f = numpy.median
+    else:
+        logging.error("ERROR: No valid mode given for radial projection.")
+        return None
+    if cx is None: cx = (img.shape[2]-1)/2.0
+    if cy is None: cy = (img.shape[1]-1)/2.0
+    if cz is None: cz = (img.shape[0]-1)/2.0
+    X,Y,Z = numpy.meshgrid(numpy.arange(img.shape[2]),numpy.arange(img.shape[1]),numpy.arange(img.shape[0]))
+    R = numpy.sqrt((X - float(cx))**2 + (Y - float(cy))**2 + (Z - float(cz))**2)
+    R = R.round()
+    if msk is not None:
+        if (msk == 0).sum() > 0:
+            R[msk == 0] = -1
+    radii = numpy.arange(R.min(),R.max()+1,1)
+    if radii[0] == -1:
+        radii = radii[1:]
+    values = numpy.zeros_like(radii)
+    for i in range(0,len(radii)):
+        tmp = R==radii[i]
+        if tmp.sum() > 0:
+            values[i] = f(img[tmp])
+        else:
+            values[i] = numpy.nan
+    if (numpy.isfinite(values) == False).sum() > 0:
+        tmp = numpy.isfinite(values)
+        values = values[tmp]
+        radii  = radii[tmp]
+    if output_r:
+        return radii,values
+    else:
+        return values
+
+
 def radialSumImage(img,**kwargs):
-    return _radialImage(img,mode="sum",**kwargs)
+    if len(img.shape) == 2:
+        return _radialImage(img,mode="sum",**kwargs)
+
+    if len(img.shape) == 3:
+        return _radialImage_3D(img,mode="sum",**kwargs)
+
 def radialStd(img,**kwargs):
-    return _radialImage(img,mode="std",**kwargs)
+    if len(img.shape) == 2:
+        return _radialImage(img,mode="std",**kwargs)
+
+    if len(img.shape) == 3:
+        return _radialImage_3D(img,mode="std",**kwargs)
+
 def radialMeanImage(img,**kwargs):
-    return _radialImage(img,mode="mean",**kwargs)
+    if len(img.shape) == 3:
+        return _radialImage_3D(img,mode="mean",**kwargs)
+
+    if len(img.shape) == 2:
+        return _radialImage(img,mode="mean",**kwargs)
+
 def radialMedianImage(img,**kwargs):
-    return _radialImage(img,mode="median",**kwargs)
+    if len(img.shape) == 2:
+        return _radialImage(img,mode="median",**kwargs)
+
+    if len(img.shape) == 3:
+        return _radialImage_3D(img,mode="median",**kwargs)
 
 def _testRadialImage(Nx=100,Ny=103,cx=45.3,cy=43.2):
     X,Y = numpy.meshgrid(numpy.arange(Nx),numpy.arange(Ny))

@@ -103,7 +103,7 @@ IF(USE_CUDA)
       	SET(CUDA_NVCC_FLAGS "--Wno-deprecated-gpu-targets -gencode=arch=compute_11,code=compute_11 -gencode=arch=compute_20,code=compute_20")
       else()
         # CUDA 7.0 does not support compute_11 any longer
-        SET(CUDA_NVCC_FLAGS "-gencode=arch=compute_20,code=compute_20")
+        SET(CUDA_NVCC_FLAGS "-gencode=arch=compute_20,code=compute_20 -gencode=arch=compute_30,code=compute_30")
       endif()			   
     endif()
     message(STATUS "CUDA found. Using CUDA.")

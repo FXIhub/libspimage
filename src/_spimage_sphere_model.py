@@ -1,4 +1,4 @@
-import numpy
+import numpy as np
 import logging
 import scipy.signal
 from scipy.optimize import leastsq
@@ -33,7 +33,7 @@ def fit_sphere_diameter_pearson(img, msk, diameter, intensity, wavelength, pixel
     Fit the diameter of a sphere using pearson correlation.
     """
     Xmc, Ymc, img, msk = _prepare_for_fitting(img, msk, x0, y0, rmax, downsampling, detector_adu_photon, do_photon_counting, pixel_size, detector_distance)
-    Rmc = numpy.sqrt(Xmc**2 + Ymc**2)
+    Rmc = np.sqrt(Xmc**2 + Ymc**2)
     S   = sphere_model_convert_intensity_to_scaling(intensity, diameter, wavelength, pixel_size, detector_distance, detector_quantum_efficiency, 1, material)
     I_fit_m = lambda d: I_sphere_diffraction(S,Rmc,sphere_model_convert_diameter_to_size(d, wavelength, pixel_size, detector_distance))
     def E_fit_m(d):
@@ -50,6 +50,8 @@ def fit_sphere_diameter_pearson(img, msk, diameter, intensity, wavelength, pixel
             dmax = brute_dmax
         Ns = do_brute_evals
         brute_diameter, brute_fval, brute_grid, brute_jout = scipy.optimize.brute(E_fit_m, [(dmin, dmax)], Ns=Ns, full_output=True)
+    else:
+        brute_diameter = diameter
 
     # End with least square
     [diameter], cov, infodict, mesg, ier = leastsq(E_fit_m, brute_diameter, maxfev=maxfev, xtol=1e-5, full_output=True)
@@ -61,7 +63,7 @@ def fit_sphere_diameter_pearson(img, msk, diameter, intensity, wavelength, pixel
     if cov is not None:
         pcov = cov[0,0]*chisquared
     else:
-        pcov = numpy.nan
+        pcov = np.nan
     
     if full_output:
         infodict['chisquared'] = chisquared
@@ -80,13 +82,13 @@ def fit_sphere_diameter_pixelwise(img, msk, diameter, intensity, wavelength, pix
     Fit the diameter of a sphere minimizing sum of pixelwise difference.
     """
     Xmc, Ymc, img, msk, = _prepare_for_fitting(img, msk, x0, y0, rmax, downsampling, detector_adu_photon, do_photon_counting, pixel_size, detector_distance)
-    Rmc = numpy.sqrt(Xmc**2 + Ymc**2)
+    Rmc = np.sqrt(Xmc**2 + Ymc**2)
     S   = sphere_model_convert_intensity_to_scaling(intensity, diameter, wavelength, pixel_size, detector_distance, detector_quantum_efficiency, 1, material)
     I_fit_m = lambda d: I_sphere_diffraction(S,Rmc,sphere_model_convert_diameter_to_size(d, wavelength, pixel_size, detector_distance))
     E_fit_m = lambda d: I_fit_m(d) - img[msk]
     
-    bounds  = numpy.array([(diameter-deltab*diameter, diameter+deltab*diameter)])
-    p, cov, infodict, mesg, ier = leastsq(E_fit_m, numpy.array([diameter]), maxfev=maxfev, xtol=1e-5, full_output=True)
+    bounds  = np.array([(diameter-deltab*diameter, diameter+deltab*diameter)])
+    p, cov, infodict, mesg, ier = leastsq(E_fit_m, np.array([diameter]), maxfev=maxfev, xtol=1e-5, full_output=True)
     [diameter] = p
     diameter = abs(diameter)
     
@@ -96,7 +98,7 @@ def fit_sphere_diameter_pixelwise(img, msk, diameter, intensity, wavelength, pix
     if cov is not None:
         pcov = cov[0,0]*chisquared
     else:
-        pcov = numpy.nan
+        pcov = np.nan
 
     if full_output:
         infodict['chisquared'] = chisquared
@@ -141,7 +143,7 @@ def fit_sphere_intensity_pixelwise(img, msk, diameter, intensity, wavelength, pi
 
     """
     Xmc, Ymc, img, msk = _prepare_for_fitting(img, msk, x0, y0, rmax, downsampling, detector_adu_photon, do_photon_counting, pixel_size, detector_distance)
-    Rmc = numpy.sqrt(Xmc**2 + Ymc**2)
+    Rmc = np.sqrt(Xmc**2 + Ymc**2)
     size = sphere_model_convert_diameter_to_size(diameter, wavelength, pixel_size, detector_distance)
     I_fit_m = lambda i: I_sphere_diffraction(sphere_model_convert_intensity_to_scaling(i, diameter, wavelength, pixel_size, detector_distance, detector_quantum_efficiency, 1, material),Rmc,size)
     E_fit_m = lambda i: I_fit_m(i) - img[msk]
@@ -154,7 +156,7 @@ def fit_sphere_intensity_pixelwise(img, msk, diameter, intensity, wavelength, pi
         if cov is not None:
             pcov = cov[0,0]*chisquared
         else:
-            pcov = numpy.nan
+            pcov = np.nan
     else:
         infodict={}
         pcov = None
@@ -174,7 +176,7 @@ def fit_sphere_intensity_nrphotons(img, msk, diameter, intensity, wavelength, pi
     The cost function is defined as the difference between the nr. of estimated photons scattered in both model and data.
     """
     Xmc, Ymc, img, msk = _prepare_for_fitting(img, msk, x0, y0, rmax, downsampling, detector_adu_photon, do_photon_counting, pixel_size, detector_distance)
-    Rmc = numpy.sqrt(Xmc**2 + Ymc**2)
+    Rmc = np.sqrt(Xmc**2 + Ymc**2)
     nr_photons = img[msk].sum()
     size = sphere_model_convert_diameter_to_size(diameter, wavelength, pixel_size, detector_distance)
     I_fit_m = lambda i: I_sphere_diffraction(sphere_model_convert_intensity_to_scaling(i, diameter, wavelength, pixel_size, detector_distance, detector_quantum_efficiency, 1, material),Rmc,size)
@@ -188,7 +190,7 @@ def fit_sphere_intensity_nrphotons(img, msk, diameter, intensity, wavelength, pi
     if cov is not None:
         pcov = cov[0,0]*chisquared
     else:
-        pcov = numpy.nan
+        pcov = np.nan
     
     if full_output:
         infodict['chisquared'] = chisquared
@@ -197,41 +199,60 @@ def fit_sphere_intensity_nrphotons(img, msk, diameter, intensity, wavelength, pi
         return intensity, infodict
     else:
         return intensity
+
+def sphere_model_pattern(Nx, Ny, diameter, intensity, wavelength, pixel_size, detector_distance, x0=0, y0=0, detector_adu_photon=1., detector_quantum_efficiency=1., material='water', downsampling=1):
+    s = (Ny, Nx)
+    img = np.zeros(shape=s)
+    msk = np.ones(shape=s, dtype='bool')
+    Y,X = spimage.grid(s, (0,0)) # Non-centered grid vectors in [px]
+    # Center grid
+    Xc = X - x0   # Centered grid x vectors in [px]
+    Yc = Y - y0   # Centered grid y vectors in [px]
+    # Grid to q-space (but we keep units in px)
+    Xc = spimage.x_to_qx(Xc,pixel_size,detector_distance)
+    Yc = spimage.y_to_qy(Yc,pixel_size,detector_distance)
+    Rc = np.sqrt(Xc**2+Yc**2)
+    size = sphere_model_convert_diameter_to_size(diameter, wavelength, pixel_size, detector_distance)
+    scaling = sphere_model_convert_intensity_to_scaling(intensity, diameter, wavelength, pixel_size, detector_distance, detector_quantum_efficiency, 1, material)
+    I_fit = I_sphere_diffraction(scaling, Rc, size)
+    return I_fit
     
 def fit_full_sphere_model(img, msk, diameter, intensity, wavelength, pixel_size, detector_distance, full_output=False, x0=0, y0=0, detector_adu_photon=1., detector_quantum_efficiency=1., material='water', rmax=None, downsampling=1, maxfev=1000, deltab=0.2, do_photon_counting=False, n=1):
     diameter = max(diameter, 1.E-9)
     for i in range(n):
         Xm, Ym, _img, _msk = _prepare_for_fitting(img, msk, x0, y0, rmax, downsampling, detector_adu_photon, do_photon_counting, pixel_size, detector_distance)
-        Rmc     = lambda dx,dy:     numpy.sqrt((Xm - dx)**2 + (Ym - dy)**2)
+        Rmc     = lambda dx,dy:     np.sqrt((Xm - dx)**2 + (Ym - dy)**2)
         size    = lambda d:       sphere_model_convert_diameter_to_size(d, wavelength, pixel_size, detector_distance)
         scaling = lambda i,d:     sphere_model_convert_intensity_to_scaling(i, d, wavelength, pixel_size, detector_distance, detector_quantum_efficiency, 1, material)
-        I_fit_m = lambda dx,dy,d,i: I_sphere_diffraction(scaling(i,d), Rmc(dx,dy), size(d))
-        E_fit_m = lambda p:       I_fit_m(p[0],p[1],p[2],p[3]) - _img[_msk]
-        p0 = numpy.array([0.,0.,diameter,intensity])
+        I_fit_m = lambda dx,dy,d,i,b: I_sphere_diffraction(scaling(i,d), Rmc(dx,dy), size(d)) + b
+        E_fit_m = lambda p:       I_fit_m(p[0],p[1],p[2],p[3],p[4]) - _img[_msk]
+        p0 = np.array([0.,0.,diameter,intensity])
         x0_bound = (-img.shape[1]/2., img.shape[1]/2.)
         y0_bound = (-img.shape[0]/2., img.shape[1]/2.)
         d_bound  = (diameter-deltab*diameter, diameter+deltab*diameter)
-        i_bound = (None, None)
-        bounds   = numpy.array([x0_bound, y0_bound , d_bound, i_bound])
-        p, cov, infodict, mesg, ier = spimage.leastsqbound(E_fit_m, numpy.array([x0,y0,diameter,intensity]), maxfev=maxfev, xtol=1e-5, full_output=True, bounds=bounds)
-        [dx0, dy0, diameter, intensity] = p
+        i_bound  = (None, None)
+        b_bound  = (None, None)
+        bounds   = np.array([x0_bound, y0_bound , d_bound, i_bound,b_bound])
+        p, cov, infodict, mesg, ier = spimage.leastsqbound(E_fit_m, np.array([0,0,diameter,intensity,0]), maxfev=maxfev, xtol=1e-5, full_output=True, bounds=bounds)
+        [dx0, dy0, diameter, intensity, bg] = p
         diameter = abs(diameter)
         x0 += dx0
         y0 += dy0
-        if (numpy.isfinite(p) == False).sum() > 0:
+        if (np.isfinite(p) == False).sum() > 0:
             break
 
     # Reduced Chi-squared and standard errors
     chisquared = (E_fit_m(p)**2).sum()/(_img.shape[0]*_img.shape[1] - len(p))
     nmerr =  abs( E_fit_m(p) ).sum() / (img.size - len(p)) / abs(img[msk]).sum()
     if cov is not None:
-        pcov = numpy.diag(cov)*chisquared
+        pcov = np.diag(cov)*chisquared
     else:
-        pcov = numpy.array(4*[numpy.nan])
+        pcov = np.array(4*[np.nan])
     if full_output:
         infodict["chisquared"] = chisquared
         infodict["error"] = nmerr
         infodict["pcov"]  = pcov
+        infodict["background"] = bg
         return x0, y0, diameter, intensity, infodict
     else:
         return x0, y0, diameter, intensity
@@ -253,7 +274,7 @@ def _prepare_for_fitting(img, msk, x0, y0, rmax, downsampling, adup, do_photon_c
     Xmc = Xc[msk] # Centered and masked grid x vectors in [px]
     Ymc = Yc[msk] # Centered and masked grid y vectors in [px]
     img = img / adup
-    if do_photon_counting: img = numpy.round(img) * (img > 0)
+    if do_photon_counting: img = np.round(img) * (img > 0)
     return Xmc, Ymc, img, msk
 
 def I_sphere_diffraction(A,q,s):
@@ -272,8 +293,8 @@ def I_sphere_diffraction(A,q,s):
     s: size of the sphere in [1/px]
     A: Scaling factor in [ADU]
     """
-    _I_sphere_diffraction = lambda A,q,s: abs(A) * ( 3*(numpy.sin(2*numpy.pi*q*s)-2*numpy.pi*q*s*numpy.cos(2*numpy.pi*q*s))/((2*numpy.pi*q*s)**3+numpy.finfo("float64").eps) )**2
-    return ((q*s)**6 < numpy.finfo("float64").resolution) * abs(A) + ((q*s)**6 >= numpy.finfo("float64").resolution) * _I_sphere_diffraction(A,q,s)
+    _I_sphere_diffraction = lambda A,q,s: abs(A) * ( 3*(np.sin(2*np.pi*q*s)-2*np.pi*q*s*np.cos(2*np.pi*q*s))/((2*np.pi*q*s)**3+np.finfo("float64").eps) )**2
+    return ((q*s)**6 < np.finfo("float64").resolution) * abs(A) + ((q*s)**6 >= np.finfo("float64").resolution) * _I_sphere_diffraction(A,q,s)
 
 def sphere_model_convert_diameter_to_size(diameter, wavelength, pixel_size, detector_distance):
     """
@@ -355,7 +376,7 @@ def sphere_model_convert_intensity_to_scaling(intensity, diameter, wavelength, p
     re = spimage.DICT_physical_constants["re"] # [m]
     # Convert i to A
     ey_J  = h*c/wl                 # [J] 
-    V     = 4/3.*numpy.pi*r**3     # [m^3]
+    V     = 4/3.*np.pi*r**3     # [m^3]
     I0    = i/ey_J            # [J/m^2] 
     #rho_e = spimage.Material(material_type=material).get_electron_density() # [px/m^3]
     ph_eV = h*c/wl/qe              # [eV]
@@ -365,8 +386,8 @@ def sphere_model_convert_intensity_to_scaling(intensity, diameter, wavelength, p
     QE    = detector_qe
     ADUP  = detector_adu_photon
     #K     = I0*(rho_e*p/D*re*V)**2 # [1/m^2 (px 1/m^3 m/px 1/m m m^3 )^2]
-    K     = I0*(dn.real*p/D*2*numpy.pi/wl**2*V)**2 # [Np/m^2 (px 1/m^3 m/px 1/m m m^3 )^2]
-    #K     = I0*(abs(dn)*p/D*2*numpy.pi/wl**2*V)**2 # [Np/m^2 (px 1/m^3 m/px 1/m m m^3 )^2]
+    K     = I0*(dn.real*p/D*2*np.pi/wl**2*V)**2 # [Np/m^2 (px 1/m^3 m/px 1/m m m^3 )^2]
+    #K     = I0*(abs(dn)*p/D*2*np.pi/wl**2*V)**2 # [Np/m^2 (px 1/m^3 m/px 1/m m m^3 )^2]
     A     = K*QE*ADUP              # [ADU]  
     return A
 
@@ -409,7 +430,7 @@ def sphere_model_convert_scaling_to_intensity(scaling, diameter, wavelength, pix
     re = spimage.DICT_physical_constants["re"] # [m]
     # Convert A to i
     ey_J  = h*c/wl                # [J]
-    V     = 4/3.*numpy.pi*r**3    # [m^3]
+    V     = 4/3.*np.pi*r**3    # [m^3]
     #rho_e = spimage.Material(material_type=material).get_electron_density() # [px/m^3]
     ph_eV = h*c/wl/qe             # [eV]
     dn    = spimage.Material(material_type=material).get_dn(photon_energy_eV=ph_eV) # []
@@ -419,8 +440,8 @@ def sphere_model_convert_scaling_to_intensity(scaling, diameter, wavelength, pix
     ADUP  = detector_adu_photon   # [ADU / Np]
     K     = scaling/QE/ADUP       # [Np / m^2]
     #I0    = K/(rho_e*p/D*re*V)**2 # [Np / m^2]
-    I0    = K/(dn.real*p/D*2*numpy.pi/wl**2*V)**2 # [Np/m^2]
-    #I0    = K/(abs(dn)*p/D*2*numpy.pi/wl**2*V)**2 # [Np/m^2]
+    I0    = K/(dn.real*p/D*2*np.pi/wl**2*V)**2 # [Np/m^2]
+    #I0    = K/(abs(dn)*p/D*2*np.pi/wl**2*V)**2 # [Np/m^2]
     i     = I0 * ey_J             # [J/m^2]
     return i
 
@@ -430,7 +451,7 @@ def fit_sphere_diameter_radial(r, img_r, diameter, intensity, wavelength, pixel_
         print "Error: Inputs have to be one-dimensional."
         return
     S = sphere_model_convert_intensity_to_scaling(intensity, diameter, wavelength, pixel_size, detector_distance, detector_quantum_efficiency, 1, material)
-    R = numpy.array(r, dtype="float")
+    R = np.array(r, dtype="float")
     R = spimage.x_to_qx(R, pixel_size, detector_distance)
     I_fit_m = lambda d: I_sphere_diffraction(S,R,sphere_model_convert_diameter_to_size(d, wavelength, pixel_size, detector_distance))
     def E_fit_m(d):
@@ -457,7 +478,7 @@ def fit_sphere_diameter_radial(r, img_r, diameter, intensity, wavelength, pixel_
     if cov is not None:
         pcov = cov[0,0]*chisquared
     else:
-        pcov = numpy.nan
+        pcov = np.nan
     
     if full_output:
         infodict['chisquared'] = chisquared
@@ -481,7 +502,7 @@ def fit_sphere_intensity_radial(r, img_r, diameter, intensity, wavelength, pixel
     ...
 
     """
-    R = numpy.array(r, dtype="float")
+    R = np.array(r, dtype="float")
     R = spimage.x_to_qx(R, pixel_size, detector_distance)
     size = sphere_model_convert_diameter_to_size(diameter, wavelength, pixel_size, detector_distance)
     I_fit_m = lambda i: I_sphere_diffraction(sphere_model_convert_intensity_to_scaling(i, diameter, wavelength, pixel_size, detector_distance, detector_quantum_efficiency, detector_adu_photon, material),R,size)
@@ -502,7 +523,7 @@ def fit_sphere_intensity_radial(r, img_r, diameter, intensity, wavelength, pixel
         if cov is not None:
             pcov = cov[0,0]*chisquared
         else:
-            pcov = numpy.nan
+            pcov = np.nan
     else:
         infodict={}
         pcov = None
