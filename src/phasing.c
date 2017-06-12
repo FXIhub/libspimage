@@ -602,6 +602,14 @@ int sp_phaser_set_phasing_algorithm(SpPhaser * ph, SpPhasingAlgorithm * alg) {
   return 0;
 }
 
+int sp_phaser_set_support_algorithm(SpPhaser * ph, SpSupportArray * alg) {
+  if (!alg) {
+    fprintf(stderr, "Phasing algorithm is NULL!\n");
+    return -2;
+  }
+  ph->sup_algorithm = alg;
+}
+
 int sp_phaser_init_model(SpPhaser * ph, const Image * user_model, int flags){
   if(!ph){
     return -1;    
