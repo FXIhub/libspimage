@@ -6,7 +6,7 @@ virtualenv:
 
 cache:
   directories:
-    - $HOME/hdf5-1.8.18-linux-centos7-x86_64-gcc485-shared
+    - $HOME/hdf5-1.8.19-linux-centos7-x86_64-gcc485-shared
     - $HOME/local
     - $HOME/localpy
     
