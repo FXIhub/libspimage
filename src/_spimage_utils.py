@@ -36,7 +36,7 @@ def _gaussian_smooth_2d1d(I,sm,precision=1.):
         Ism = scipy.signal.convolve2d(I,kernel,mode='same',boundary='wrap')
         return Ism
     elif len(I.shape) == 1:
-        print "Error input"
+        print("Error input")
         return []
 
 def get_R_and_Theta_map(Nx,Ny,cx=None,cy=None):
@@ -63,7 +63,7 @@ def _radial(image,mode="mean",**kwargs):
     elif mode == "std": f = numpy.std
     elif mode == "median": f = numpy.median
     else:
-        print "ERROR: No valid mode given for radial projection."
+        print("ERROR: No valid mode given for radial projection.")
         return
     if 'cx' in kwargs: cx = kwargs['cx']
     else: cx = (image.shape[1]-1)/2.0

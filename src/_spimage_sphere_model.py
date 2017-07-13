@@ -448,7 +448,7 @@ def sphere_model_convert_scaling_to_intensity(scaling, diameter, wavelength, pix
 
 def fit_sphere_diameter_radial(r, img_r, diameter, intensity, wavelength, pixel_size, detector_distance, full_output=False, detector_adu_photon=1, detector_quantum_efficiency=1, material='water', maxfev=1000, do_brute_evals=0,dlim=None):
     if len(img_r.shape) > 1 or len(r.shape) > 1:
-        print "Error: Inputs have to be one-dimensional."
+        print("Error: Inputs have to be one-dimensional.")
         return
     S = sphere_model_convert_intensity_to_scaling(intensity, diameter, wavelength, pixel_size, detector_distance, detector_quantum_efficiency, 1, material)
     R = np.array(r, dtype="float")

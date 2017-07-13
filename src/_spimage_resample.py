@@ -8,12 +8,12 @@ def downsample(array,factor,mode="pick",**kwargs):
     elif d == 3:
         return _downsample3d(array,factor,mode,**kwargs)
     else:
-        print "ERROR: Downsampling in %i dimensions is not supported."
+        print("ERROR: Downsampling in %i dimensions is not supported.")
         
 def _downsample2d(array,factor,mode="pick",**kwargs):
     available_modes = ["pick","integrate"]#,"interpolate"]
     if not mode in available_modes:
-        print "ERROR: %s is not a valid mode." % mode
+        print("ERROR: %s is not a valid mode." % mode)
         return
     mask         = kwargs.get("mask",None)
     bad_bits     = kwargs.get("bad_bits",None)
@@ -88,7 +88,7 @@ def _downsample2d(array,factor,mode="pick",**kwargs):
 def _downsample3d(array,factor,mode="pick",**kwargs):
     available_modes = ["pick","integrate"]#,"interpolate"]                                                                                                                      
     if not mode in available_modes:
-        print "ERROR: %s is not a valid mode." % mode
+        print("ERROR: %s is not a valid mode." % mode)
         return
     mask         = kwargs.get("mask",None)
     bad_bits     = kwargs.get("bad_bits",None)
@@ -167,7 +167,7 @@ def _downsample3d(array,factor,mode="pick",**kwargs):
 
 def crop(pattern,cropLength,center='middle',bg=0):
     if cropLength > min(list(pattern.shape)):
-        print "WARNING: Could not crop image to larger size."
+        print("WARNING: Could not crop image to larger size.")
         return pattern.copy()
 
     temp = pattern.copy()
@@ -254,9 +254,9 @@ def _testBinImage(binning,masking=True):
         l1 *= m1
     l2,m2 = binImage(l1,binning,m1,output_binned_mask=True)
     S2 = l2.sum()
-    print "Sum original (cropped) image: %f" % S1
-    print "Sum binned image: %f" % S2
-    print "Sum difference: %.3f %%" % (100.*abs(S1-S2).sum()/2./(S1+S2).sum())
+    print("Sum original (cropped) image: %f" % S1)
+    print("Sum binned image: %f" % S2)
+    print("Sum difference: %.3f %%" % (100.*abs(S1-S2).sum()/2./(S1+S2).sum()))
     return l1,l2,m1,m2
     
 
@@ -380,5 +380,5 @@ def _testRadialImage(Nx=100,Ny=103,cx=45.3,cy=43.2):
     X,Y = numpy.meshgrid(numpy.arange(Nx),numpy.arange(Ny))
     R = numpy.sqrt((X-cx)**2+(Y-cy)**2)
     img = R.round()
-    print "Std-zero-test: Succeeded = %s" % (radialStdImage(img,cx=cx,cy=cy).sum()==0.)
+    print("Std-zero-test: Succeeded = %s" % (radialStdImage(img,cx=cx,cy=cy).sum()==0.))
     return img,radialMeanImage(img,cx=cx,cy=cy,output_r=True)
