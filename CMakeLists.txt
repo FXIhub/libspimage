@@ -35,7 +35,7 @@ ENDIF(CMAKE_COMPILER_IS_GNUCC)
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
   # Necessary due to CUDA compatibility problems
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libstdc++")  
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libstdc++")
   # The CUDA module thinks cc is gcc and passes dumpspecs.
   # This is a workaround
   if(CUDA_HOST_COMPILER STREQUAL "/usr/bin/cc")
@@ -70,7 +70,7 @@ if(PYTHON_WRAPPERS)
     # using distutils.
     execute_process(
 	 COMMAND
-  	 ${PYTHON_EXECUTABLE} -c "from distutils import sysconfig; print sysconfig.get_python_lib()"
+  	 ${PYTHON_EXECUTABLE} -c "from distutils import sysconfig; print(sysconfig.get_python_lib())"
   	 OUTPUT_VARIABLE _PYTHON_INSTDIR
   	 OUTPUT_STRIP_TRAILING_WHITESPACE
     )
