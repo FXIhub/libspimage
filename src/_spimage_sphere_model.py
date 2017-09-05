@@ -58,8 +58,8 @@ def fit_sphere_diameter_pearson(img, msk, diameter, intensity, wavelength, pixel
     diameter = abs(diameter)
 
     # Reduced Chi-squared and standard error
-    chisquared = (E_fit_m(diameter)**2).sum()/ (img.size - 1)
-    nmerr =  abs( E_fit_m(diameter) ).sum() / (img.size - 1) / abs(img[msk]).sum()
+    chisquared = (E_fit_m(diameter)**2) / (img.size - 1)
+    nmerr =  abs( E_fit_m(diameter) ) / (img.size - 1) / abs(img[msk]).sum()
     if cov is not None:
         pcov = cov[0,0]*chisquared
     else:
