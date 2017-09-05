@@ -522,7 +522,7 @@ class Reconstructor:
             elif alg["type"] == "hio":
                 alg["spimage_phasing"] = spimage.sp_phasing_hio_alloc(alg["beta"], constraints)
             elif alg["type"] == "diffmap":
-                alg["spimage_phasing"] = spimage.sp_phasing_diffmap_alloc(alg["beta"], alg["gamma1"], alg["gamma2"], constraints)
+                alg["spimage_phasing"] = spimage.sp_phasing_diff_map_alloc(alg["beta"], alg["gamma1"], alg["gamma2"], constraints)
             elif alg["type"] == "er":
                 alg["spimage_phasing"] = spimage.sp_phasing_er_alloc(constraints)
             else:
