@@ -63,7 +63,7 @@ def patterson(image, mask, floor_cut=None, mask_smooth=1., darkfield_x=None, dar
             G = numpy.exp(-Rsq/(2*s**2))    
             I = I * G
         else:
-            print "WARNING: Gaussian kernel could not be applied. Sigma undefined."
+            print("WARNING: Gaussian kernel could not be applied. Sigma undefined.")
     if log_boost:
         tmp = I <= log_min
         if tmp.sum() > 0:

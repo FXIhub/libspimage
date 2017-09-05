@@ -36,7 +36,7 @@ def find_center(img, msk, method=None, errout=False, **kwargs):
     # Return 0,0 if method is not defined
     else:
         x,y,e = (0,0,0)
-        print "There is no center finding method %s" %method
+        print("There is no center finding method %s" %method)
 
     # Check for reasonable numbers
     if abs(x) > img.shape[1]/2: x = 0

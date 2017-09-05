@@ -117,7 +117,7 @@ def fit_spheroid_intensity_pixelwise(img, msk, diameter_a, diameter_c, phi, inte
     scaling = lambda i: sphere_model_convert_intensity_to_scaling(i, diameter, wavelength, pixel_size, detector_distance, detector_quantum_efficiency, 1, material)
     I_fit_m = lambda i: I_spheroid_diffraction(scaling(i),Xmc,Ymc,size_a,size_c,0.,phi)
     E_fit_m = lambda i: I_fit_m(i) - img[msk]
-    #print E_fit_m(intensity)
+    #print(E_fit_m(intensity))
 
     if len(img[msk]):
         [intensity], cov, infodict, mesg, ier = leastsq(E_fit_m, intensity, maxfev=maxfev, xtol=1e-3, full_output=True)
@@ -172,7 +172,7 @@ def fit_full_spheroid_model(img, msk, diameter_a, diameter_c, phi, intensity, wa
 
     # Reduced Chi-squared and standard errors
     chisquared = (E_fit_m(p)**2).sum()/(img.shape[0]*img.shape[1] - len(p))
-    #print cov
+    #print(cov)
     if cov is not None:
         pcov = numpy.diag(cov)*chisquared
     else:

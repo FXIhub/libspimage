@@ -2,6 +2,7 @@ import os
 import numpy
 import pickle
 import spimage
+import sys
 
 class Material:
     def __init__(self,**kwargs):
@@ -9,7 +10,7 @@ class Material:
             self.materialtype = "custom"
             for key in kwargs:
                 if key[0] == 'c' or key == 'massdensity':
-                    exec "self." + key + " = kwargs[key]"
+                    exec("self." + key + " = kwargs[key]")
                 else:
                     logger.error("%s is no valid argument for custom initialization of Material." % key)
                     return
@@ -144,7 +145,7 @@ class Material:
         
         for key in self.__dict__.keys():
             if key[0] == 'c':
-                exec "c_tmp = self." + key
+                exec("c_tmp = self." + key)
                 atomic_composition[key[1:]] = c_tmp 
  
         tmp_sum = float(sum(atomic_composition.values()))
@@ -305,8 +306,11 @@ def unpickle_scattering_factors():
     global DICT_scattering_factors
     DICT_scattering_factors = {}
     this_dir = os.path.dirname(os.path.realpath(__file__))
-    ELEMENTS_FILE = open('%s/elements.dat' % this_dir,'r')
-    DICT_atomic_mass,DICT_scattering_factors = pickle.load(ELEMENTS_FILE)
+    with open('%s/elements.dat' % this_dir,'rb') as ELEMENTS_FILE:
+        if sys.version_info >= (3, 0):
+            DICT_atomic_mass,DICT_scattering_factors = pickle.load(ELEMENTS_FILE, encoding="latin1")
+        else:
+            DICT_atomic_mass,DICT_scattering_factors = pickle.load(ELEMENTS_FILE)
     F_MIN_ENERGY_EV = 0
     F_MAX_ENERGY_EV = 0
     for var in DICT_scattering_factors.values():

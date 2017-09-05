@@ -138,7 +138,7 @@ class CXIReader:
     def _resolve_location(self,location0):
         location = os.path.expandvars(location0)
         if os.path.isdir(location):
-            fs = filter(lambda x: x[-4:] == ".cxi",os.listdir(location))
+            fs = [x for x in os.listdir(location) if x[-4:] == ".cxi"]
             fs.sort()
             directories = []
             filenames = []
@@ -179,7 +179,7 @@ class CXIReader:
                 else:
                     temp[to_pick_from[0]] = True
         else:
-            print "ERROR: No valid picking mode chosen: %s" % mode
+            print("ERROR: No valid picking mode chosen: %s" % mode)
             return
         to_process_new = []
         i = 0
