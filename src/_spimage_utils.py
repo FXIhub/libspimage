@@ -84,13 +84,13 @@ def _radial(image,mode="mean",**kwargs):
             values[i] = numpy.nan
     if 'rout' in kwargs: return numpy.array([radii,values])
     else: return values
-def radial_sum(image,**kwargs):
+def radial_sum(image, **kwargs):
     return _radial(image,"sum",**kwargs)
-def radial_std(image,**kwargs):
-    return _radial(image,"std",**kwargs)
-def radial_mean(image,**kwargs):
+def radial_std(image, **kwargs):
+    return _radial(image, "std",**kwargs)
+def radial_mean(image, **kwargs):
     return _radial(image,"mean",**kwargs)
-def radial_median(image,**kwargs):
+def radial_median(image, **kwargs):
     return _radial(image,"median",**kwargs)
 
 
