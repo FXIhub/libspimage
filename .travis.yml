@@ -15,6 +15,10 @@ matrix:
     - python: "2.7"
       addons:
         apt:
+	  sources:
+	  - ubuntu-toolchain-r-test
+	  - kubuntu-backports
+	  - couchbase-precise
 	  packages:
 	  - libpng-dev
 	  - libtiff4-dev
@@ -31,10 +35,10 @@ matrix:
     - python: "3.6"
       addons:
 	apt:
-	  #sources:
-	  #  - ubuntu-toolchain-r-test
-	  #  - kubuntu-backports
-	  #  - couchbase-precise
+	  sources:
+	  - ubuntu-toolchain-r-test
+	  - kubuntu-backports
+	  - couchbase-precise
 	  packages:
 	  - libpng-dev
 	  - libtiff4-dev
@@ -47,11 +51,6 @@ matrix:
 	  - python3-numpy
 	  - python3-scipy
 	  - python3-h5py
-
-#sources:
-#  - ubuntu-toolchain-r-test
-#  - kubuntu-backports
-#  - couchbase-precise
 
 before_install:
   - echo $HOME
