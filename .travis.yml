@@ -27,8 +27,7 @@ addons:
 
 before_install:
   - echo $HOME
-  #- export PYTHONPATH=${HOME}/localpy:${PYTHONPATH}
-  #- export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${HOME}/local/lib:${HOME}/local/lib64
+  - export PY_SITE=$(python -c "import site; print(site.getsitepackages()[0])")
 # Python packages
   - pip install numpy
   - pip install scipy
@@ -37,7 +36,7 @@ before_install:
   - cd $HOME/build/FXIhub/libspimage
   - mkdir build
   - cd build
-  - cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DUSE_CUDA=OFF -DPYTHON_WRAPPERS=ON -DCMAKE_INSTALL_PREFIX=${HOME}/virtualenv/python$TRAVIS_PYTHON_VERSION/ -DPYTHON_INSTDIR=${HOME}/virtualenv/python$TRAVIS_PYTHON_VERSION/lib/site-packages ..
+  - cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DUSE_CUDA=OFF -DPYTHON_WRAPPERS=ON -DCMAKE_INSTALL_PREFIX=${HOME}/virtualenv/python$TRAVIS_PYTHON_VERSION/ -DPYTHON_INSTDIR=${PY_SITE} ..
 
 install:
     - make VERBOSE=1
