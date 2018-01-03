@@ -13,7 +13,17 @@ cache:
 matrix:
   include:
     - python: "2.7"
+      env: PYTHON=2.7
+      addons:
+        apt:
+	  packages:
+	  - python-numpy
     - python: "3.6"
+      env: PYTHON=3.6
+      addons:
+        apt:
+	  packages:
+	  - python3-numpy
 
 addons:
   apt:
@@ -26,7 +36,6 @@ addons:
     - gsl-bin
     - libgsl0-dev
     - swig
-    - python-numpy
     - python-scipy
     - python-h5py
 
