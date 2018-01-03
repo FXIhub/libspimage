@@ -9,6 +9,10 @@ cache:
 #    - $HOME/hdf5-1.8.19-linux-centos7-x86_64-gcc485-shared
     - $HOME/local
     - $HOME/localpy
+
+python:
+  - 2.7
+  - 3.6
     
 addons:
   apt:
