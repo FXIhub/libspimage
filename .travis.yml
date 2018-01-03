@@ -1,4 +1,4 @@
-language: c
+language: python
 sudo: false
 
 virtualenv:
@@ -6,46 +6,59 @@ virtualenv:
 
 cache:
   directories:
-    - $HOME/hdf5-1.8.20-linux-centos7-x86_64-gcc485-shared
     - $HOME/local
     - $HOME/localpy
-    
-addons:
-  apt:
-    sources:
-      - ubuntu-toolchain-r-test
-      - kubuntu-backports
-      - couchbase-precise
-    packages:
-      - libpng-dev
-      - libtiff4-dev
-      - libfftw3-dev
-      - cmake
-      - gsl-bin
-      - libgsl0-dev
-      - swig
-      - python-numpy
-      - python-scipy
-      - python-h5py
+
+matrix:
+  include:
+    - python: "2.7"
+      addons:
+        apt:
+          packages:
+          - libpng-dev
+          - libtiff4-dev
+          - libfftw3-dev
+          - libhdf5-serial-dev
+          - cmake
+          - gsl-bin
+          - libgsl0-dev
+          - swig
+          - python-scipy
+          - python-h5py
+          - python-numpy
+    - python: "3.6"
+      virtualenv:
+        system_site_packages: false
+      addons:
+        apt:
+          packages:
+          - libpng-dev
+          - libtiff4-dev
+          - libfftw3-dev
+          - libhdf5-serial-dev
+          - cmake
+          - gsl-bin
+          - libgsl0-dev
+          - swig
+          - python3-scipy
+          - python3-h5py
+          - python3-numpy
 
 before_install:
   - echo $HOME
   - export PYTHONPATH=${HOME}/localpy:${PYTHONPATH}
-  - export PY27_PREFIX=/opt/python/2.7/
-  - export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${HOME}/local/lib:${HOME}/local/lib64:${PY27_PREFIX}/lib
-# Install hdf5
-  - cd $HOME
-  - export HDF5_DIR=${HOME}/hdf5-1.8.20-linux-centos7-x86_64-gcc485-shared/
-  - if [ ! -d "${HDF5_DIR}/include" ]; then wget https://support.hdfgroup.org/ftp/HDF5/current18/bin/hdf5-1.8.20-linux-centos7-x86_64-gcc485-shared.tar.gz && tar xvzf hdf5-1.8.20-linux-centos7-x86_64-gcc485-shared.tar.gz; else echo 'Using hdf5 from cached directory'; fi
-  - export LD_LIBRARY_PATH=${HDF5_DIR}/lib:${LD_LIBRARY_PATH}
+  - export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${HOME}/local/lib:${HOME}/local/lib64
 # Install libspimage
   - cd $HOME/build/FXIhub/libspimage
   - mkdir build
   - cd build
-  - cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DUSE_CUDA=OFF -DPYTHON_WRAPPERS=ON -DHDF5_INCLUDE_DIR=${HDF5_DIR}/include -DHDF5_LIBRARY=${HDF5_DIR}/lib/libhdf5.so -DCMAKE_INSTALL_PREFIX=${HOME}/local -DPYTHON_INSTDIR=${HOME}/localpy -DPYTHON_INCLUDE_DIR=/usr/include/python2.7 -DPYTHON_INCLUDE_DIR2=/usr/include/python2.7 -DPYTHON_LIBRARY=${PY27_PREFIX}/lib/libpython2.7.so ..
+  - cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DUSE_CUDA=OFF -DPYTHON_WRAPPERS=ON -DCMAKE_INSTALL_PREFIX=${HOME}/local -DPYTHON_INSTDIR=${HOME}/localpy ..
+# Python packages
+  - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then pip install scipy; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then pip install h5py; fi
 
 install:
-    - make -j 2 VERBOSE=1
+    - make VERBOSE=1
     - make install
 
 # command to run tests
@@ -53,4 +66,7 @@ script:
   - echo $LD_LIBRARY_PATH
   - echo $PYTHONPATH
 # TESTING IMPORTS
-  - python -c "import spimage; print spimage.__file__"
+  - python -c "import numpy; print(numpy.__file__)"
+  - python -c "import scipy; print(scipy.__file__)"
+  - python -c "import h5py; print(h5py.__file__)"
+  - python -c "import spimage; print(spimage.__file__)"
