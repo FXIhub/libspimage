@@ -27,7 +27,7 @@ addons:
 
 before_install:
   - echo $HOME
-  - export PY_SITE=$(python -c "import site; print(site.getsitepackages()[0])")
+  - export PY_SITE=$(python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")
 # Python packages
   - pip install numpy
   - pip install scipy
