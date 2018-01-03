@@ -28,6 +28,8 @@ matrix:
           - python-h5py
           - python-numpy
     - python: "3.6"
+      virtualenv:
+        system_site_packages: false
       addons:
         apt:
           packages:
