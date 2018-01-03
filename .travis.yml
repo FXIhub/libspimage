@@ -2,7 +2,7 @@ language: python
 sudo: false
 
 virtualenv:
-  system_site_packages: true 
+  system_site_packages: false
 
 cache:
   directories:
@@ -12,60 +12,42 @@ cache:
 matrix:
   include:
     - python: "2.7"
-      addons:
-        apt:
-          packages:
-          - libpng-dev
-          - libtiff4-dev
-          - libfftw3-dev
-          - libhdf5-serial-dev
-          - cmake
-          - gsl-bin
-          - libgsl0-dev
-          - swig
-          - python-scipy
-          - python-h5py
-          - python-numpy
     - python: "3.6"
-      virtualenv:
-        system_site_packages: false
-      addons:
-        apt:
-          packages:
-          - libpng-dev
-          - libtiff4-dev
-          - libfftw3-dev
-          - libhdf5-serial-dev
-          - cmake
-          - gsl-bin
-          - libgsl0-dev
-          - swig
-          - python3-scipy
-          - python3-h5py
-          - python3-numpy
+
+addons:
+  apt:
+    packages:
+      - libpng-dev
+      - libtiff4-dev
+      - libfftw3-dev
+      - libhdf5-serial-dev
+      - cmake
+      - gsl-bin
+      - libgsl0-dev
+      - swig
 
 before_install:
   - echo $HOME
   - export PYTHONPATH=${HOME}/localpy:${PYTHONPATH}
   - export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${HOME}/local/lib:${HOME}/local/lib64
+# Python packages
+  - pip install numpy
+  - pip install scipy
+  - pip install h5py
 # Install libspimage
   - cd $HOME/build/FXIhub/libspimage
   - mkdir build
   - cd build
   - cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DUSE_CUDA=OFF -DPYTHON_WRAPPERS=ON -DCMAKE_INSTALL_PREFIX=${HOME}/local -DPYTHON_INSTDIR=${HOME}/localpy ..
-# Python packages
-  - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then pip install scipy; fi
-  - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then pip install h5py; fi
 
 install:
     - make VERBOSE=1
     - make install
 
-# command to run tests
 script:
   - echo $LD_LIBRARY_PATH
   - echo $PYTHONPATH
-# TESTING IMPORTS
+# Testing imports
   - python -c "import numpy; print(numpy.__file__)"
   - python -c "import scipy; print(scipy.__file__)"
   - python -c "import h5py; print(h5py.__file__)"
