@@ -13,31 +13,35 @@ cache:
 matrix:
   include:
     - python: "2.7"
-      env: PYTHON=2.7
       addons:
         apt:
-	  packages:
-	  - python-numpy
+          packages:
+          - libpng-dev
+          - libtiff4-dev
+          - libfftw3-dev
+          - libhdf5-serial-dev
+          - cmake
+          - gsl-bin
+          - libgsl0-dev
+          - swig
+          - python-scipy
+          - python-h5py
+          - python-numpy
     - python: "3.6"
-      env: PYTHON=3.6
       addons:
         apt:
-	  packages:
-	  - python3-numpy
-
-addons:
-  apt:
-    packages:
-    - libpng-dev
-    - libtiff4-dev
-    - libfftw3-dev
-    - libhdf5-serial-dev
-    - cmake
-    - gsl-bin
-    - libgsl0-dev
-    - swig
-    - python-scipy
-    - python-h5py
+          packages:
+          - libpng-dev
+          - libtiff4-dev
+          - libfftw3-dev
+          - libhdf5-serial-dev
+          - cmake
+          - gsl-bin
+          - libgsl0-dev
+          - swig
+          - python3-scipy
+          - python3-h5py
+          - python3-numpy
 
 before_install:
   - echo $HOME
