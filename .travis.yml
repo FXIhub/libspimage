@@ -1,4 +1,4 @@
-language: c
+language: python
 sudo: false
 
 virtualenv:
@@ -45,6 +45,7 @@ matrix:
 
 before_install:
   - echo $HOME
+  - which python
   - export PYTHONPATH=${HOME}/localpy:${PYTHONPATH}
 #  - export PY27_PREFIX=/opt/python/2.7/
   - export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${HOME}/local/lib:${HOME}/local/lib64:${PY27_PREFIX}/lib
