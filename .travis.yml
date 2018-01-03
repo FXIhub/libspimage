@@ -13,26 +13,44 @@ cache:
 matrix:
   include:
     - python: "2.7"
+      addons:
+	apt:
+	  sources:
+	    - ubuntu-toolchain-r-test
+	    - kubuntu-backports
+	    - couchbase-precise
+	  packages:
+	    - libpng-dev
+	    - libtiff4-dev
+	    - libfftw3-dev
+	    - libhdf5-serial-dev
+	    - cmake
+	    - gsl-bin
+	    - libgsl0-dev
+	    - swig
+	    - python-numpy
+	    - python-scipy
+	    - python-h5py
+
     - python: "3.6"
-    
-addons:
-  apt:
-    sources:
-      - ubuntu-toolchain-r-test
-      - kubuntu-backports
-      - couchbase-precise
-    packages:
-      - libpng-dev
-      - libtiff4-dev
-      - libfftw3-dev
-      - libhdf5-serial-dev
-      - cmake
-      - gsl-bin
-      - libgsl0-dev
-      - swig
-      - python-numpy
-      - python-scipy
-      - python-h5py
+      addons:
+	apt:
+	  sources:
+	    - ubuntu-toolchain-r-test
+	    - kubuntu-backports
+	    - couchbase-precise
+	  packages:
+	    - libpng-dev
+	    - libtiff4-dev
+	    - libfftw3-dev
+	    - libhdf5-serial-dev
+	    - cmake
+	    - gsl-bin
+	    - libgsl0-dev
+	    - swig
+	    - python3-numpy
+	    - python3-scipy
+	    - python3-h5py
 
 before_install:
   - echo $HOME
