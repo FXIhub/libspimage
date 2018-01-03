@@ -17,10 +17,6 @@ matrix:
 
 addons:
   apt:
-    sources:
-    - ubuntu-toolchain-r-test
-     - kubuntu-backports
-     - couchbase-precise
     packages:
     - libpng-dev
     - libtiff4-dev
