@@ -6,8 +6,7 @@ virtualenv:
 
 cache:
   directories:
-    - $HOME/local
-    - $HOME/localpy
+    - $HOME/virtualenv
 
 matrix:
   include:
@@ -28,8 +27,8 @@ addons:
 
 before_install:
   - echo $HOME
-  - export PYTHONPATH=${HOME}/localpy:${PYTHONPATH}
-  - export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${HOME}/local/lib:${HOME}/local/lib64
+  #- export PYTHONPATH=${HOME}/localpy:${PYTHONPATH}
+  #- export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${HOME}/local/lib:${HOME}/local/lib64
 # Python packages
   - pip install numpy
   - pip install scipy
@@ -38,7 +37,7 @@ before_install:
   - cd $HOME/build/FXIhub/libspimage
   - mkdir build
   - cd build
-  - cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DUSE_CUDA=OFF -DPYTHON_WRAPPERS=ON -DCMAKE_INSTALL_PREFIX=${HOME}/local -DPYTHON_INSTDIR=${HOME}/localpy ..
+  - cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DUSE_CUDA=OFF -DPYTHON_WRAPPERS=ON ..
 
 install:
     - make VERBOSE=1
