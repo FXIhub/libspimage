@@ -37,7 +37,7 @@ before_install:
   - cd $HOME/build/FXIhub/libspimage
   - mkdir build
   - cd build
-  - cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DUSE_CUDA=OFF -DPYTHON_WRAPPERS=ON ..
+  - cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DUSE_CUDA=OFF -DPYTHON_WRAPPERS=ON -DCMAKE_INSTALL_PREFIX=${HOME}/virtualenv/python$TRAVIS_PYTHON_VERSION/ -DPYTHON_INSTDIR=${HOME}/virtualenv/python$TRAVIS_PYTHON_VERSION/lib/site-packages ..
 
 install:
     - make VERBOSE=1
