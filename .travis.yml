@@ -11,6 +11,8 @@ cache:
 matrix:
   include:
     - python: "2.7"
+    - python: "3.4"
+    - python: "3.5"
     - python: "3.6"
 
 addons:
@@ -35,7 +37,7 @@ before_install:
   - cd $HOME/build/FXIhub/libspimage
   - mkdir build
   - cd build
-  - cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DUSE_CUDA=OFF -DPYTHON_WRAPPERS=ON -DCMAKE_INSTALL_PREFIX=${HOME}/virtualenv/python$TRAVIS_PYTHON_VERSION/ -DPYTHON_INSTDIR=${PY_SITE} ..
+  - cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DUSE_CUDA=OFF -DPYTHON_WRAPPERS=ON -DCMAKE_INSTALL_PREFIX=${HOME}/virtualenv/python${TRAVIS_PYTHON_VERSION}/ -DPYTHON_INSTDIR=${PY_SITE} ..
 
 install:
     - make VERBOSE=1
