@@ -36,7 +36,7 @@ The packages above are necessary for the compilation to complete. Additionally, 
 
 * pcre
 * SWIG
-* python (v2.7)
+* python (v2.7 | v3.4 | v3.5 | v3.6)
 * numpy
 * h5py
 
