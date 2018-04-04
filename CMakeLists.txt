@@ -101,9 +101,12 @@ IF(USE_CUDA)
       if(${CUDA_VERSION} VERSION_LESS "7.0")
       	# This ensure that the code also runs on cards with computing cap. as low as 1.1
       	SET(CUDA_NVCC_FLAGS "--Wno-deprecated-gpu-targets -gencode=arch=compute_11,code=compute_11 -gencode=arch=compute_20,code=compute_20")
-      else()
+      elseif (${CUDA_VERSION} VERSION_LESS "9.0")
         # CUDA 7.0 does not support compute_11 any longer
         SET(CUDA_NVCC_FLAGS "-gencode=arch=compute_20,code=compute_20 -gencode=arch=compute_30,code=compute_30")
+      else ()
+        # CUDA 9.0 does not support compute_20 any longer
+        SET(CUDA_NVCC_FLAGS "-gencode=arch=compute_30,code=compute_30")
       endif()			   
     endif()
     message(STATUS "CUDA found. Using CUDA.")

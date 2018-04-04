@@ -1,56 +1,53 @@
-language: c
+language: python
 sudo: false
 
 virtualenv:
-  system_site_packages: true 
+  system_site_packages: false
 
 cache:
   directories:
-    - $HOME/hdf5-1.8.19-linux-centos7-x86_64-gcc485-shared
-    - $HOME/local
-    - $HOME/localpy
-    
+    - $HOME/virtualenv
+
+matrix:
+  include:
+    - python: "2.7"
+    - python: "3.4"
+    - python: "3.5"
+    - python: "3.6"
+
 addons:
   apt:
-    sources:
-      - ubuntu-toolchain-r-test
-      - kubuntu-backports
-      - couchbase-precise
     packages:
       - libpng-dev
       - libtiff4-dev
       - libfftw3-dev
+      - libhdf5-serial-dev
       - cmake
       - gsl-bin
       - libgsl0-dev
       - swig
-      - python-numpy
-      - python-scipy
-      - python-h5py
 
 before_install:
-  - echo $HOME
-  - export PYTHONPATH=${HOME}/localpy:${PYTHONPATH}
-  - export PY27_PREFIX=/opt/python/2.7/
-  - export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${HOME}/local/lib:${HOME}/local/lib64:${PY27_PREFIX}/lib
-# Install hdf5
-  - cd $HOME
-  - export HDF5_DIR=${HOME}/hdf5-1.8.19-linux-centos7-x86_64-gcc485-shared/
-  - if [ ! -d "${HDF5_DIR}/include" ]; then wget https://support.hdfgroup.org/ftp/HDF5/current18/bin/linux-centos7-x86_64-gcc485/hdf5-1.8.19-linux-centos7-x86_64-gcc485-shared.tar.gz && tar xvzf hdf5-1.8.19-linux-centos7-x86_64-gcc485-shared.tar.gz; else echo 'Using hdf5 from cached directory'; fi
-  - export LD_LIBRARY_PATH=${HDF5_DIR}/lib:${LD_LIBRARY_PATH}
+  - export PY_SITE=$(python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")
+# Python packages
+  - pip install numpy
+  - pip install scipy
+  - pip install h5py
 # Install libspimage
   - cd $HOME/build/FXIhub/libspimage
   - mkdir build
   - cd build
-  - cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DUSE_CUDA=OFF -DPYTHON_WRAPPERS=ON -DHDF5_INCLUDE_DIR=${HDF5_DIR}/include -DHDF5_LIBRARY=${HDF5_DIR}/lib/libhdf5.so -DCMAKE_INSTALL_PREFIX=${HOME}/local -DPYTHON_INSTDIR=${HOME}/localpy -DPYTHON_INCLUDE_DIR=/usr/include/python2.7 -DPYTHON_INCLUDE_DIR2=/usr/include/python2.7 -DPYTHON_LIBRARY=${PY27_PREFIX}/lib/libpython2.7.so ..
+  - cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DUSE_CUDA=OFF -DPYTHON_WRAPPERS=ON -DCMAKE_INSTALL_PREFIX=${HOME}/virtualenv/python${TRAVIS_PYTHON_VERSION}/ -DPYTHON_INSTDIR=${PY_SITE} ..
 
 install:
-    - make -j 2 VERBOSE=1
+    - make VERBOSE=1
     - make install
 
-# command to run tests
 script:
   - echo $LD_LIBRARY_PATH
   - echo $PYTHONPATH
-# TESTING IMPORTS
-  - python -c "import spimage; print spimage.__file__"
+# Testing imports
+  - python -c "import numpy; print(numpy.__file__)"
+  - python -c "import scipy; print(scipy.__file__)"
+  - python -c "import h5py; print(h5py.__file__)"
+  - python -c "import spimage; print(spimage.__file__)"

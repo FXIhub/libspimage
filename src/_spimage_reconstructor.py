@@ -296,8 +296,10 @@ class Reconstructor:
             if k not in kwargs:
                 self._log("append_phasing_algorithm with the phasing algorithm " + type + " requires the following argument: " + k, "ERROR")
                 return
-            else:
-                alg_conf[k] = kwargs[k]
+
+        for k in kwargs.keys():
+            alg_conf[k] = kwargs[k]
+
         if alg_conf["number_of_iterations"] is not None:
             if len(self._phasing_algorithms_configs) == 0:
                 self._i_phasing_algorithms = 0
