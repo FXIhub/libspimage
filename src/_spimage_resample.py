@@ -169,7 +169,9 @@ def crop(pattern,cropLength,center='middle',bg=0):
     if cropLength > min(list(pattern.shape)):
         print("WARNING: Could not crop image to larger size.")
         return pattern.copy()
-
+    if (numpy.asarray(list(pattern.shape)) == cropLength).all():
+        return numpy.copy(pattern)
+    
     temp = pattern.copy()
     if center == 'middle':
         x_center = (pattern.shape[1] - 1)/2.
@@ -180,10 +182,10 @@ def crop(pattern,cropLength,center='middle',bg=0):
 
     #x_start = (pattern.shape[1]-cropLength)/2
     #y_start = (pattern.shape[0]-cropLength)/2
-    x_start = x_center - cropLength/2
-    y_start = y_center - cropLength/2
-    x_stop = x_start+cropLength
-    y_stop = y_start+cropLength
+    x_start = max([int(round(x_center - cropLength/2)), 0])
+    y_start = max([int(round(y_center - cropLength/2)), 0])
+    x_stop =  x_start+cropLength
+    y_stop =  y_start+cropLength
 
     patternCropped = numpy.ones(shape=(cropLength,cropLength),dtype=pattern.dtype)*bg
     patternCropped = temp[y_start:y_stop,x_start:x_stop]
