@@ -73,7 +73,13 @@ IF(CUDA_FOUND)
 ELSE(CUDA_FOUND)
  ADD_LIBRARY(_spimage_pybackend SHARED ${OBJECTS} ${CMAKE_CURRENT_BINARY_DIR}/spimage_wrap.c)
 ENDIF(CUDA_FOUND)
- TARGET_LINK_LIBRARIES(_spimage_pybackend ${SPIMAGE_LIBRARIES} ${PYTHON_LIBRARIES})
+
+  if(APPLE)
+    TARGET_LINK_LIBRARIES(_spimage_pybackend ${SPIMAGE_LIBRARIES} "-undefined dynamic_lookup")
+  else(APPLE)
+    TARGET_LINK_LIBRARIES(_spimage_pybackend ${SPIMAGE_LIBRARIES} ${PYTHON_LIBRARIES})
+  endif()
+
   set_target_properties(
     _spimage_pybackend
     PROPERTIES SOVERSION 1
