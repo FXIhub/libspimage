@@ -67,12 +67,12 @@ if(PYTHONLIBS_FOUND AND SWIG_FOUND AND PYTHONINTERP_FOUND AND PYTHON_NUMPY_FOUND
   add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/spimage_wrap.c COMMAND ${SWIG_EXECUTABLE} -python -outcurrentdir  -o ${CMAKE_CURRENT_BINARY_DIR}/spimage_wrap.c ${CMAKE_CURRENT_SOURCE_DIR}/spimage_pybackend.i DEPENDS ${spimage_headers} ${CMAKE_CURRENT_SOURCE_DIR}/spimage_pybackend.i)
   INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH} ${PYTHON_NUMPY_INCLUDE_DIR})
 
-IF(CUDA_FOUND)
- CUDA_ADD_LIBRARY(_spimage_pybackend SHARED ${OBJECTS} ${CMAKE_CURRENT_BINARY_DIR}/spimage_wrap.c)
- CUDA_ADD_CUFFT_TO_TARGET(_spimage_pybackend)
-ELSE(CUDA_FOUND)
- ADD_LIBRARY(_spimage_pybackend SHARED ${OBJECTS} ${CMAKE_CURRENT_BINARY_DIR}/spimage_wrap.c)
-ENDIF(CUDA_FOUND)
+  IF(CUDA_FOUND)
+    CUDA_ADD_LIBRARY(_spimage_pybackend SHARED ${OBJECTS} ${CMAKE_CURRENT_BINARY_DIR}/spimage_wrap.c)
+    CUDA_ADD_CUFFT_TO_TARGET(_spimage_pybackend)
+  ELSE(CUDA_FOUND)
+    ADD_LIBRARY(_spimage_pybackend SHARED ${OBJECTS} ${CMAKE_CURRENT_BINARY_DIR}/spimage_wrap.c)
+  ENDIF(CUDA_FOUND)
 
   if(APPLE)
     TARGET_LINK_LIBRARIES(_spimage_pybackend ${SPIMAGE_LIBRARIES} "-undefined dynamic_lookup")
