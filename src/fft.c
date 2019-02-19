@@ -76,7 +76,7 @@ Image * sp_image_ifftw3(const Image * img){
   out = (fftwr_complex *)res->image->data;
 
   /* It is very important to have z,y,x as the plan order as FFTW is row-major! */
-  plan = fftwr_plan_dft_3d(sp_c3matrix_z(img->image),sp_c3matrix_y(img->image),sp_c3matrix_x(img->image),in,out, FFTW_BACKWARD,FFTW_ESTIMATE);
+  plan = fftwr_plan_dft_3d(sp_c3matrix_z(img->image),sp_c3matrix_y(img->image),sp_c3matrix_x(img->image),in,out, FFTW_BACKWARD,FFTW_MEASURE);
 
   fftwr_execute(plan);
   fftwr_destroy_plan(plan);
@@ -92,7 +92,7 @@ void sp_image_ifftw3_fast(const Image * img_in, Image * img_out){
   in = (fftwr_complex *)img_in->image->data;
   out = (fftwr_complex *)img_out->image->data;
   /* It is very important to have z,y,x as the plan order as FFTW is row-major! */
-  plan = fftwr_plan_dft_3d(sp_c3matrix_z(img_in->image),sp_c3matrix_y(img_in->image),sp_c3matrix_x(img_in->image),in,out,FFTW_BACKWARD,FFTW_ESTIMATE);
+  plan = fftwr_plan_dft_3d(sp_c3matrix_z(img_in->image),sp_c3matrix_y(img_in->image),sp_c3matrix_x(img_in->image),in,out,FFTW_BACKWARD,FFTW_MEASURE);
 
   fftwr_execute(plan);
   fftwr_destroy_plan(plan);  
@@ -106,7 +106,7 @@ sp_c3matrix * sp_c3matrix_ifftw3(const sp_c3matrix * m){
   res = sp_c3matrix_alloc(sp_c3matrix_x(m),sp_c3matrix_y(m),sp_c3matrix_z(m));
   in = (fftwr_complex *)m->data;
   out = (fftwr_complex *)res->data;
-  plan = fftwr_plan_dft_3d(sp_c3matrix_z(m),sp_c3matrix_y(m),sp_c3matrix_x(m),in,out, FFTW_BACKWARD,FFTW_ESTIMATE);
+  plan = fftwr_plan_dft_3d(sp_c3matrix_z(m),sp_c3matrix_y(m),sp_c3matrix_x(m),in,out, FFTW_BACKWARD,FFTW_MEASURE);
 
   fftwr_execute(plan);
   fftwr_destroy_plan(plan);
@@ -136,7 +136,7 @@ Image * sp_image_ifftw2(const Image * img){
   in = img->image->data;
   out = res->image->data;
   /* It is very important to have z,y,x as the plan order as FFTW is row-major! */
-  plan = fftw3d_create_plan(sp_c3matrix_z(img->image),sp_c3matrix_y(img->image),sp_c3matrix_x(img->image), FFTW_BACKWARD,FFTW_ESTIMATE);
+  plan = fftw3d_create_plan(sp_c3matrix_z(img->image),sp_c3matrix_y(img->image),sp_c3matrix_x(img->image), FFTW_BACKWARD,FFTW_MEASURE);
 
   j = 0;
   fftwnd_one(plan,in,out);
@@ -160,7 +160,7 @@ Image * sp_image_fftw3(const Image * img){
   in = (fftwr_complex *)img->image->data;
   out = (fftwr_complex *)res->image->data;
   /* It is very important to have z,y,x as the plan order as FFTW is row-major! */
-  plan = fftwr_plan_dft_3d(sp_c3matrix_z(img->image),sp_c3matrix_y(img->image),sp_c3matrix_x(img->image),in,out,FFTW_FORWARD,FFTW_ESTIMATE);
+  plan = fftwr_plan_dft_3d(sp_c3matrix_z(img->image),sp_c3matrix_y(img->image),sp_c3matrix_x(img->image),in,out,FFTW_FORWARD,FFTW_MEASURE);
 
   fftwr_execute(plan);
   fftwr_destroy_plan(plan);
@@ -182,7 +182,7 @@ void sp_image_fftw3_fast(const Image * img_in, Image * img_out){
   in = (fftwr_complex *)img_in->image->data;
   out = (fftwr_complex *)img_out->image->data;
   /* It is very important to have z,y,x as the plan order as FFTW is row-major! */
-  plan = fftwr_plan_dft_3d(sp_c3matrix_z(img_in->image),sp_c3matrix_y(img_in->image),sp_c3matrix_x(img_in->image),in,out,FFTW_FORWARD,FFTW_ESTIMATE);
+  plan = fftwr_plan_dft_3d(sp_c3matrix_z(img_in->image),sp_c3matrix_y(img_in->image),sp_c3matrix_x(img_in->image),in,out,FFTW_FORWARD,FFTW_MEASURE);
 
   fftwr_execute(plan);
   fftwr_destroy_plan(plan);  
@@ -229,11 +229,11 @@ Image * sp_image_1d_fftw3(const Image * img, int axis) {
   /*
   plan = fftwr_plan_many_dft(1, n, sp_image_y(img)*sp_image_z(img),
 			     in, inembed, istride, idist, out, onembed, ostride, odist,
-			     FFTW_FORWARD, FFTW_ESTIMATE);
+			     FFTW_FORWARD, FFTW_MEASURE);
   */
   plan = fftwr_plan_many_dft(1, n, howmany,
 			     in, inembed, istride, idist, out, onembed, ostride, odist,
-			     FFTW_FORWARD, FFTW_ESTIMATE);
+			     FFTW_FORWARD, FFTW_MEASURE);
   fftwr_execute(plan);
   fftwr_destroy_plan(plan);
   free(n);
@@ -281,11 +281,11 @@ Image * sp_image_1d_ifftw3(const Image * img, int axis) {
   /*
   plan = fftwr_plan_many_dft(1, n, sp_image_y(img)*sp_image_z(img),
 			     in, inembed, istride, idist, out, onembed, ostride, odist,
-			     FFTW_BACKWARD, FFTW_ESTIMATE);
+			     FFTW_BACKWARD, FFTW_MEASURE);
   */
   plan = fftwr_plan_many_dft(1, n, howmany,
 			     in, inembed, istride, idist, out, onembed, ostride, odist,
-			     FFTW_BACKWARD, FFTW_ESTIMATE);
+			     FFTW_BACKWARD, FFTW_MEASURE);
   fftwr_execute(plan);
   fftwr_destroy_plan(plan);
   free(n);
@@ -304,7 +304,7 @@ sp_c3matrix * sp_c3matrix_fftw3(const sp_c3matrix * m){
   in = (fftwr_complex *)m->data;
   out = (fftwr_complex *)res->data;
   /* It is very important to have z,y,x as the plan order as FFTW is row-major! */
-  plan = fftwr_plan_dft_3d(sp_c3matrix_z(m),sp_c3matrix_y(m),sp_c3matrix_x(m),in,out,FFTW_FORWARD,FFTW_ESTIMATE);
+  plan = fftwr_plan_dft_3d(sp_c3matrix_z(m),sp_c3matrix_y(m),sp_c3matrix_x(m),in,out,FFTW_FORWARD,FFTW_MEASURE);
 
   fftwr_execute(plan);
   fftwr_destroy_plan(plan);
@@ -329,7 +329,7 @@ sp_c3matrix * sp_c3matrix_fftw2(const sp_c3matrix * m){
   out = res->data;
   /* It is very important to have z,y,x as the plan order as FFTW is row-major! */
   plan = fftw3d_create_plan(sp_c3matrix_z(m),sp_c3matrix_y(m),sp_c3matrix_x(m),
-			    FFTW_FORWARD,FFTW_ESTIMATE);
+			    FFTW_FORWARD,FFTW_MEASURE);
   fftwnd_one(plan,in,out);
   fftwnd_destroy_plan(plan);
   return res;
