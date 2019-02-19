@@ -1784,6 +1784,32 @@ void test_sp_image_cuda_fft(CuTest * tc){
 #endif
 }
 
+void test_sp_image_fft(CuTest * tc){
+  Image * a = sp_image_alloc(1024,1024,1);
+  Image * b = sp_image_alloc(1024,1024,1);
+  for(int i = 0;i<sp_image_size(a);i++){
+    a->image->data[0] = sp_cinit((float)rand()/RAND_MAX,(float)rand()/RAND_MAX);
+  }
+  a->phased = 1;
+  int timer = sp_timer_start();
+  int iterations = 10;
+  for(int i = 0;i< iterations;i++){
+    sp_image_fft_fast(a,b);
+  }
+  int delta_t = sp_timer_stop(timer);
+  printf("CPU 1024x1024 FFT = %g iterations per second\n",(1.0e6*iterations)/delta_t);
+#ifdef _USE_CUDA
+  timer = sp_timer_start();
+  iterations = 100;
+  for(int i = 0;i< iterations;i++){
+    Image * tmp = sp_image_cuda_fft(a);
+    sp_image_free(tmp);
+  }
+  delta_t = sp_timer_stop(timer);
+  printf("CUDA 1024x1024 FFT = %g iterations per second\n",(1.0e6*iterations)/delta_t);
+#endif
+}
+
 CuSuite* linear_alg_get_suite(void)
 {
   CuSuite* suite = CuSuiteNew();
@@ -1890,6 +1916,7 @@ CuSuite* linear_alg_get_suite(void)
     SUITE_ADD_TEST(suite,test_sp_image_cuda_ifft);
     SUITE_ADD_TEST(suite,test_sp_image_cuda_fft);
   }
+  SUITE_ADD_TEST(suite,test_sp_image_fft);
 
   return suite;
 }
