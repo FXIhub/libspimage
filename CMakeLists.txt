@@ -33,16 +33,6 @@ IF(CMAKE_COMPILER_IS_GNUCC)
 	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -std=c99")
 ENDIF(CMAKE_COMPILER_IS_GNUCC)
 
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
-  # Necessary due to CUDA compatibility problems
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libstdc++")
-  # The CUDA module thinks cc is gcc and passes dumpspecs.
-  # This is a workaround
-  if(CUDA_HOST_COMPILER STREQUAL "/usr/bin/cc")
-    SET(CUDA_HOST_COMPILER "/usr/bin/clang")
-  endif()
-endif()
-
 	
 
 SET(BUILD_STATIC_LIB CACHE BOOL "If ON output static library. Otherwise output shared libraries.")
@@ -91,6 +81,19 @@ IF(USE_CUDA)
   ENDIF(CMAKE_VERSION)
 
   IF(CUDA_FOUND)
+
+    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
+      if(${CUDA_VERSION} VERSION_LESS "9.0")
+	# Necessary due to CUDA compatibility problems
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libstdc++")
+	# The CUDA module thinks cc is gcc and passes dumpspecs.
+	# This is a workaround
+	if(CUDA_HOST_COMPILER STREQUAL "/usr/bin/cc")
+	  SET(CUDA_HOST_COMPILER "/usr/bin/clang")
+	endif()
+      endif()			       
+    endif()
+
     mark_as_advanced(CUDA_SDK_ROOT_DIR)
     mark_as_advanced(CUDA_BUILD_EMULATION)
     mark_as_advanced(CUDA_BUILD_CUBIN)
