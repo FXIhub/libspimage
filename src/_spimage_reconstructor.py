@@ -791,6 +791,17 @@ class Reconstructor:
             out["single_outputs"] = single_outputs
         return out
 
+    def get_config(self):
+        '''Return dictionary of current configuration'''
+        ret = {'amplitudes': self._amplitudes,
+               'mask': self._mask,
+               'initial_support': self._initial_support_config,
+               'support_algorithms': self._support_algorithms_configs,
+               'phasing_algorithms': self._phasing_algorithms_configs,
+               'N_outputs': {'images': self._number_of_outputs_images, 'scores': self._number_of_outputs_scores},
+               'N_iterations': self._number_of_iterations}
+        return ret
+
     def _get_curr_fmodel(self, **kwargs):
         shifted = kwargs.get("shifted", False)
         #normalize = kwargs.get("normalize", False)
