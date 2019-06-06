@@ -287,7 +287,7 @@ def find_center_blurred(img, msk, x0=0, y0=0, threshold=None, blur_radius=4., dm
                                            center_to_pos(y0,img.shape[0]), 0 ])
     kernel = spimage.sp_gaussian_kernel(float(blur_radius),int(blur_radius*8+1),int(blur_radius*8+1),1)
     c = spimage.sp_image_convolute_with_mask(I,kernel,np.array([1,1,1]).astype(np.int32))
-    ds = spimage.sp_image_alloc(img.shape[1]/4,img.shape[0]/4,1)
+    ds = spimage.sp_image_alloc(int(img.shape[1]/4),int(img.shape[0]/4),1)
     ds.image[:] = c.image[:-3:4,:-3:4]
     ds.mask[:] = c.mask[:-3:4,:-3:4]
     ds.detector.image_center[:] = c.detector.image_center[:] / 4.0

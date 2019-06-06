@@ -145,8 +145,7 @@ class Material:
         
         for key in self.__dict__.keys():
             if key[0] == 'c':
-                exec("c_tmp = self." + key)
-                atomic_composition[key[1:]] = c_tmp 
+                atomic_composition[key[1:]] = getattr(self, key)
  
         tmp_sum = float(sum(atomic_composition.values()))
         for element in atomic_composition.keys():
