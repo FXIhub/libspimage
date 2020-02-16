@@ -139,7 +139,7 @@ static void write_h5_img(const Image * img,const char * filename, int output_pre
   hid_t out_type_id = 0;
   hid_t mem_type_id = 0;
   hid_t plist;
-  hsize_t chunk_size[3] = {sp_c3matrix_x(img->image),sp_c3matrix_y(img->image),sp_c3matrix_z(img->image)};
+  hsize_t chunk_size[3] = {sp_c3matrix_z(img->image),sp_c3matrix_y(img->image),sp_c3matrix_x(img->image)};
   char tmpfile[1024];
   H5E_auto_t func;
   void * client_data;
@@ -167,9 +167,9 @@ static void write_h5_img(const Image * img,const char * filename, int output_pre
     abort();
   }
 
-  dims[0] = sp_c3matrix_x(img->image);
+  dims[2] = sp_c3matrix_x(img->image);
   dims[1] = sp_c3matrix_y(img->image);
-  dims[2] = sp_c3matrix_z(img->image);
+  dims[0] = sp_c3matrix_z(img->image);
   //  file_id = H5Fcreate(filename,  H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
   H5Eget_auto(H5E_DEFAULT,&func,&client_data);
   /* turn off warning to check file and version because they might not exist */
@@ -529,8 +529,8 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
       space = H5Dget_space(dataset_id);
       H5Sget_simple_extent_dims(space,dims,NULL);
       if(H5Sget_simple_extent_ndims(space) == 3){
-       res->image = _sp_c3matrix_alloc(dims[0],dims[1],dims[2],file,line);
-       res->mask = _sp_i3matrix_alloc(dims[0],dims[1],dims[2],file,line);
+       res->image = _sp_c3matrix_alloc(dims[2],dims[1],dims[0],file,line);
+       res->mask = _sp_i3matrix_alloc(dims[2],dims[1],dims[0],file,line);
       }else{
        res->image = _sp_c3matrix_alloc(dims[0],dims[1],1,file,line);
        res->mask = _sp_i3matrix_alloc(dims[0],dims[1],1,file,line);
@@ -838,8 +838,8 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
       return NULL;
     }
     if(H5Sget_simple_extent_ndims(space) == 3){
-      res->image = _sp_c3matrix_alloc(dims[0],dims[1],dims[2],file,line);
-      res->mask = _sp_i3matrix_alloc(dims[0],dims[1],dims[2],file,line);
+      res->image = _sp_c3matrix_alloc(dims[2],dims[1],dims[0],file,line);
+      res->mask = _sp_i3matrix_alloc(dims[2],dims[1],dims[0],file,line);
     }else if(H5Sget_simple_extent_ndims(space) == 2){
       res->image = _sp_c3matrix_alloc(dims[0],dims[1],1,file,line);
       res->mask = _sp_i3matrix_alloc(dims[0],dims[1],1,file,line);
