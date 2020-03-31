@@ -13,9 +13,9 @@ INCLUDE(FindPythonInterp)
 
 IF(PYTHON_EXECUTABLE)
   EXEC_PROGRAM ("${PYTHON_EXECUTABLE}"
-    ARGS "-c 'import sys; import numpy; sys.stdout.write(numpy.get_include())'")
+    ARGS "-c \"import sys; import numpy; sys.stdout.write(numpy.get_include())\"")
     EXEC_PROGRAM ("${PYTHON_EXECUTABLE}"
-      ARGS "-c 'import sys; import numpy; sys.stdout.write(numpy.get_include())'"
+      ARGS "-c \"import sys; import numpy; sys.stdout.write(numpy.get_include())\""
       OUTPUT_VARIABLE PYTHON_NUMPY_INCLUDE_DIR
       RETURN_VALUE PYTHON_NUMPY_NOT_FOUND)
 
