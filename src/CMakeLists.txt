@@ -87,6 +87,21 @@ if(PYTHONLIBS_FOUND AND SWIG_FOUND AND PYTHONINTERP_FOUND AND PYTHON_NUMPY_FOUND
     PREFIX ""
     INSTALL_NAME_DIR ${PYTHON_INSTDIR}
     )
+
+  if(WIN32)
+    set_target_properties(
+      _spimage_pybackend
+      PROPERTIES
+      SUFFIX ".pyd"
+      )
+  else(WIN32)
+    set_target_properties(
+      _spimage_pybackend
+      PROPERTIES
+      SUFFIX ".so"
+      )
+  endif()
+    
   INSTALL(TARGETS _spimage_pybackend
     RUNTIME DESTINATION ${PYTHON_INSTDIR}
     LIBRARY DESTINATION ${PYTHON_INSTDIR}
