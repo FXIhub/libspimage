@@ -12,8 +12,6 @@ endif (PYTHON_NUMPY_INCLUDE_DIR)
 INCLUDE(FindPythonInterp)
 
 IF(PYTHON_EXECUTABLE)
-  EXEC_PROGRAM ("${PYTHON_EXECUTABLE}"
-    ARGS "-c \"import sys; import numpy; sys.stdout.write(numpy.get_include())\"")
     EXEC_PROGRAM ("${PYTHON_EXECUTABLE}"
       ARGS "-c \"import sys; import numpy; sys.stdout.write(numpy.get_include())\""
       OUTPUT_VARIABLE PYTHON_NUMPY_INCLUDE_DIR
