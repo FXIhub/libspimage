@@ -283,7 +283,7 @@ class Reconstructor:
         if alg_conf["number_of_iterations"] is None and len(self._phasing_algorithms_configs) > 0:
             self._log("You can not have more than one phasing algorithm of unspecified number of iterations if the total number of iterations is set to None. Set the total number of iterations by calling set_number_of_iterations and try again.","ERROR")
             return
-        alg_conf["constraints"] = kwargs.get("constratints","")
+        alg_conf["constraints"] = kwargs.get("constraints","")
         # phasing algorithm
         necessary_kwargs = {"raar":["beta_init","beta_final"],
                             "hio":["beta_init","beta_final"],
