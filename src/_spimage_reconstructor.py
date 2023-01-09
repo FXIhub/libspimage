@@ -430,7 +430,7 @@ class Reconstructor:
             else:
                 self._phaser_dirty = True
                 S = self._initial_support_config["support_mask"]
-                self.sep_initial_support.image[:] = np.float32(S)
+                self.sp_initial_support.image[:] = np.float32(S)
                 self._initial_support_dirty = False
                 self._log("Initial support initialised.","DEBUG")
 
