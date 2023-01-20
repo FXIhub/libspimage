@@ -20,9 +20,9 @@ class Reconstructor:
         self._sp_phaser_dirty = True
         self._use_gpu = use_gpu
         # other stuff
-        self.__del__()
+        self.clear()
 
-    def __del__(self):
+    def clear(self):
         """
         Clears the instance reconstructor and deletes all configuration and data associated to it.
         """
