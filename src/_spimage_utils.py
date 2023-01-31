@@ -39,50 +39,36 @@ def _gaussian_smooth_2d1d(I,sm,precision=1.):
         print("Error input")
         return []
 
-def _radial(image,mode="mean",shell_thickness=1.0,**kwargs):
+def _radial(image,f=numpy.mean,shell_thickness=1.0,**kwargs):
     """
     Radial integration in N-dimensions. Assumes the input array has the same size in all dimensions. 
+    Default integration method is the mean. 
     """
-    if mode == "mean": f = numpy.mean
-    elif mode == "sum": f = numpy.sum 
-    elif mode == "std": f = numpy.std 
-    elif mode == "median": f = numpy.median 
-    else:
-        print("ERROR: No valid mode given for radial projection.")
-        return 
-        
-    n_dim = len(image.shape)
+    n_dim = len(image.shape) 
     im_dim = image.shape[0] 
     im_center = image.shape[0]//2
     num_shells = int((im_dim-im_center)/shell_thickness) 
-    
-    if n_dim == 2:
-        x, y = numpy.meshgrid(numpy.arange(image.shape[0]), numpy.arange(image.shape[1]), indexing='ij')
-        c = numpy.array([im_center, im_center])
-        
-        r_out = numpy.arange(shell_thickness, (num_shells+1) * shell_thickness, shell_thickness) 
-        r_in = r_out - 1 
-        radial_mask = ((x - c[0]) ** 2 + (y - c[1]) ** 2  >= r_in[:, None, None] ** 2) & ((x - c[0]) ** 2 + (y - c[1]) ** 2 < r_out[:, None, None] ** 2)   
-    elif n_dim == 3:
-        x, y, z = numpy.meshgrid(numpy.arange(image.shape[0]), numpy.arange(image.shape[1]), numpy.arange(image.shape[2]), indexing='ij')
-        c = numpy.array([im_center, im_center, im_center])
-        
-        r_out = numpy.arange(shell_thickness, (num_shells+1) * shell_thickness, shell_thickness) 
-        r_in = r_out - 1 
-        radial_mask = ((x - c[0]) ** 2 + (y - c[1]) ** 2 + (z - c[2]) ** 2 >= r_in[:, None, None, None] ** 2) & ((x - c[0]) ** 2 + (y - c[1]) ** 2 + (z - c[2]) ** 2 < r_out[:, None, None, None] ** 2)
-    else:
-        print('Only 2D/3D arrays supported.')
 
-    prtf_r = numpy.array([f(image[shell]) for shell in radial_mask]) 
+    c = numpy.array([im_center, im_center, im_center]) 
+    
+    r_out = numpy.arange(shell_thickness, (num_shells+1) * shell_thickness, shell_thickness) 
+    r_in = r_out - 1 
+    
+    if n_dim == 2: 
+        image = image[:,:,None] 
+        c = numpy.array([im_center, im_center, 0]) 
+    elif n_dim == 1:
+        image = image[:,None,None] 
+        c = numpy.array([im_center, 0, 0]) 
+
+    x, y, z = numpy.meshgrid(numpy.arange(image.shape[0]), numpy.arange(image.shape[1]), numpy.arange(image.shape[2]), indexing='ij')
+    radial_mask = (((x - c[0]) ** 2 + (y - c[1]) ** 2 + (z - c[2]) ** 2 >= r_in[:, None, None, None] ** 2) 
+                   & ((x - c[0]) ** 2 + (y - c[1]) ** 2 + (z - c[2]) ** 2 < r_out[:, None, None, None] ** 2))
+
+    prtf_r = numpy.array([f(numpy.squeeze(image[shell])) for shell in radial_mask]) 
     return prtf_r[numpy.isfinite(prtf_r)] 
-def radial_mean(image, **kwargs): 
-    return _radial(image,"mean",**kwargs)
-def radial_std(image, **kwargs):
-    return _radial(image, "std",**kwargs) 
-def radial_sum(image, **kwargs):
-    return _radial(image,"sum",**kwargs)
-def radial_median(image, **kwargs):
-    return _radial(image,"median",**kwargs) 
+def radial(image, **kwargs): 
+    return _radial(image,**kwargs)
 
 def cone_pixel_average(image,N_theta,cx=None,cy=None):
     [R,Theta] = get_R_and_Theta_map(image.shape[1],image.shape[0],cx,cy)
