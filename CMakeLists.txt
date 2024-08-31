@@ -111,8 +111,16 @@ IF(USE_CUDA)
         # CUDA 7.0 does not support compute_11 any longer
         SET(CUDA_NVCC_FLAGS "-gencode=arch=compute_20,code=compute_20 -gencode=arch=compute_30,code=compute_30")
       else ()
-        # CUDA 9.0 does not support compute_20 any longer
-        SET(CUDA_NVCC_FLAGS "-gencode=arch=compute_30,code=compute_30")
+	# Let nvcc pick whatever architecture it wants
+#       elseif (${CUDA_VERSION} VERSION_LESS "11.0")	
+        # CUDA 11.0 does not support compute_30 any longer
+#        SET(CUDA_NVCC_FLAGS "-gencode=arch=compute_30,code=compute_30")
+#       elseif (${CUDA_VERSION} VERSION_LESS "12.0")	
+        # CUDA 12.0 does not support compute_35 any longer
+#        SET(CUDA_NVCC_FLAGS "-gencode=arch=compute_35,code=compute_35")	
+#       else ()
+	# CUDA 12.0 does not support compute_35 any longer
+#        SET(CUDA_NVCC_FLAGS "-gencode=arch=compute_50,code=compute_50")
       endif()			   
     endif()
     message(STATUS "CUDA found. Using CUDA.")
