@@ -122,6 +122,27 @@
   $1 = (int *) PyArray_DATA (arr);
 }
 
+%typemap(in) Image ** {
+  $1 = NULL;
+  if (PyList_Check($input)) {
+    const size_t size = PyList_Size($input);
+    $1 = (Image**)malloc((size+1) * sizeof(Image*));
+    for (int i = 0; i < size; ++i) {
+      void *argp = 0 ;
+      const int res = SWIG_ConvertPtr(PyList_GetItem($input, i), &argp, $*1_descriptor, 0);
+      if (!SWIG_IsOK(res)) {
+        SWIG_exception_fail(SWIG_ArgError(res), "in method '" "$symname" "', argument " "$argnum"" of type '" "$1_type""'");
+      }
+      $1[i] = (Image*)(argp);
+    }
+    $1[size] = NULL;
+  }
+  else {
+    // Raise exception
+    SWIG_exception_fail(SWIG_TypeError, "Expected list in $symname");
+  }
+}
+
 
 %include "../include/spimage/image.h"
 %include "../include/spimage/colormap.h"
