@@ -8,9 +8,7 @@ logger.setLevel("WARNING")
 
 class Reconstructor:
     def __init__(self, use_gpu=True):
-        # mask
         self._mask = None
-        # wrapped C-object instances
         self._sp_amplitudes = None
         self._sp_amplitudes_dirty = True
         self._sp_initial_support = None
@@ -19,7 +17,6 @@ class Reconstructor:
         self._sp_phaser = None
         self._sp_phaser_dirty = True
         self._use_gpu = use_gpu
-        # other stuff
         self.clear()
 
     def clear(self):
@@ -106,6 +103,9 @@ class Reconstructor:
             elif mode == "ERROR":
                 f = logger.error
             f(" %s %s" % (ps,s))
+
+    def __del__(self):
+        self.clear() 
 
     def set_intensities(self,intensities,shifted=False):
         """
@@ -430,7 +430,7 @@ class Reconstructor:
             else:
                 self._phaser_dirty = True
                 S = self._initial_support_config["support_mask"]
-                self.sep_initial_support.image[:] = np.float32(S)
+                self.sp_initial_support.image[:] = np.float32(S)
                 self._initial_support_dirty = False
                 self._log("Initial support initialised.","DEBUG")
 

@@ -102,8 +102,8 @@ def prtf(images_rs,supports,translate=True,enantio=True,full_out=False):
     out["prtf"] = prtf
     out["super_image"] = avg_img
     if full_out:
-        out["prtf_r"] = spimage.radial_mean(prtf,cx=s[1]/2,cy=s[0]/2)
-        out["super_mask"] = avg_sup
+        out["prtf_r"] = spimage.radial(prtf,f=numpy.mean,shell_thickness=1.0) 
+        out["super_mask"] = avg_sup 
         out["images"] = images_rs_super
         out["masks"] = masks_rs_super
     return out
