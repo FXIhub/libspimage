@@ -594,6 +594,7 @@ int sp_phaser_set_support_algorithm(SpPhaser * ph, SpSupportArray * alg) {
     return -2;
   }
   ph->sup_algorithm = alg;
+  return 0;
 }
 
 int sp_phaser_init_model(SpPhaser * ph, const Image * user_model, int flags){
@@ -616,7 +617,17 @@ int sp_phaser_init_model(SpPhaser * ph, const Image * user_model, int flags){
     /* randomize phases */
     sp_image_rephase(tmp,SP_RANDOM_PHASE);
     tmp->shifted = 1;
-    ph->model = sp_image_ifft(tmp);
+
+    if(ph->engine == SpEngineCUDA){
+#ifdef _USE_CUDA
+      ph->model = sp_image_cuda_ifft(tmp);
+#else
+      /* Cannot be reached! */
+      return -3;
+#endif
+    }else{
+        ph->model = sp_image_ifft(tmp);
+    }
     sp_image_free(tmp);
     sp_image_scale(ph->model,1.0/sp_image_size(ph->model));
   }else if(flags & SpModelZeroPhases){
@@ -626,7 +637,16 @@ int sp_phaser_init_model(SpPhaser * ph, const Image * user_model, int flags){
     }
     sp_image_rephase(tmp,SP_ZERO_PHASE);
     tmp->shifted = 1;
-    ph->model = sp_image_ifft(tmp);
+    if(ph->engine == SpEngineCUDA){
+#ifdef _USE_CUDA
+      ph->model = sp_image_cuda_ifft(tmp);
+#else
+      /* Cannot be reached! */
+      return -3;
+#endif
+    }else{
+      ph->model = sp_image_ifft(tmp);
+    }
     sp_image_free(tmp);
     sp_image_scale(ph->model,1.0/sp_image_size(ph->model));
   }else if(flags & SpModelRandomValues){
