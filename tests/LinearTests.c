@@ -1806,7 +1806,7 @@ void test_sp_image_fft(CuTest * tc){
     sp_image_free(tmp);
   }
   delta_t = sp_timer_stop(timer);
-  printf("CUDA 1024x1024 FFT = %g iterations per second\n",(1.0e6*iterations)/delta_t);
+  printf("CUDA 1024x1024 FFT with device transfer = %g iterations per second\n",(1.0e6*iterations)/delta_t);
 #endif
 }
 

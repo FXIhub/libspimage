@@ -5,6 +5,7 @@
 
 
 static Image * create_test_image(int size, real oversampling,SpPhasingConstraints c);
+static Image * create_test_image_3d(int size_x, int size_y, int size_z, real oversampling,SpPhasingConstraints c);
 
 int test_sp_phasing_common(CuTest * tc,SpPhasingAlgorithm * alg,int size, real oversampling, SpPhasingConstraints solution_constraints,
 			   real beamstop,real tol){
@@ -233,9 +234,9 @@ void test_sp_support_cuda_common(CuTest * tc,SpSupportArray * sup_alg){
 } 
 
 
-int test_sp_phasing_speed_common(CuTest * tc,SpPhasingAlgorithm * alg,SpSupportArray * sup_alg, int size, int oversampling, SpPhasingConstraints solution_constraints,
+int test_sp_phasing_speed_common_3d(CuTest * tc,SpPhasingAlgorithm * alg,SpSupportArray * sup_alg, int size_x, int size_y, int size_z, int oversampling, SpPhasingConstraints solution_constraints,
 				 int iterations,SpPhasingEngine engine){
-  Image * solution = create_test_image(size,oversampling,solution_constraints);
+  Image * solution = create_test_image_3d(size_x,size_y,size_z,oversampling,solution_constraints);
   Image * f = sp_image_fft(solution);
   sp_image_rephase(f,SP_ZERO_PHASE);
   for(int i = 0;i<sp_image_size(f);i++){
@@ -263,6 +264,11 @@ int test_sp_phasing_speed_common(CuTest * tc,SpPhasingAlgorithm * alg,SpSupportA
   sp_image_free(support);    
 
   return delta_t;
+}
+
+int test_sp_phasing_speed_common(CuTest * tc,SpPhasingAlgorithm * alg,SpSupportArray * sup_alg, int size, int oversampling, SpPhasingConstraints solution_constraints,
+				 int iterations,SpPhasingEngine engine){
+  return test_sp_phasing_speed_common_3d(tc, alg, sup_alg, size, size, 1, oversampling, solution_constraints,iterations, engine);
 } 
 
 
@@ -396,12 +402,11 @@ int test_sp_phasing_noisy_success_common(CuTest * tc,SpPhasingAlgorithm * alg,Im
   return match;
 } 
 
-
-static Image * create_test_image(int size, real oversampling,SpPhasingConstraints c){
-  Image * a = sp_image_alloc(size*oversampling,size*oversampling,1);
+static Image * create_test_image_3d(int size_x, int size_y, int size_z, real oversampling,SpPhasingConstraints c){
+  Image * a = sp_image_alloc(size_x*oversampling,size_y*oversampling,size_z);
   sp_image_fill(a,sp_cinit(0,0));
-  for(int x = 0;x<size;x++){
-    for(int y = 0;y<size;y++){
+  for(int x = 0;x<size_x;x++){
+    for(int y = 0;y<size_y;y++){
       if(c & SpRealObject){
 	sp_image_set(a,x,y,0,sp_cinit(p_drand48()-0.5,0));
       }else if(c & SpPositiveRealObject){
@@ -414,17 +419,24 @@ static Image * create_test_image(int size, real oversampling,SpPhasingConstraint
     }
   }
   if(c & SpCentrosymmetricObject){
-    size = size*oversampling;
-    for(int x = 0;x<size;x++){
-      for(int y = 0;y<size;y++){
-	
-	sp_image_set(a,(size-x)%size,(size-y)%size,0,sp_cconj(sp_image_get(a,x,y,0)));
+    size_x = size_x*oversampling;
+    size_y = size_y*oversampling;
+    if(size_z > 1){
+      size_z = size_z*oversampling;
+    }
+    for(int x = 0;x<size_x;x++){
+      for(int y = 0;y<size_y;y++){
+	      sp_image_set(a,(size_x-x)%size_x,(size_y-y)%size_y,0,sp_cconj(sp_image_get(a,x,y,0)));
       }
     }    
     sp_imag(a->image->data[0]) = 0;
   }
   a->phased = 1;
   return a;  
+}
+
+static Image * create_test_image(int size, real oversampling,SpPhasingConstraints c){
+  return create_test_image_3d(size, size, 1, oversampling, c);
 }
 
 void test_sp_phasing_hio_success_rate(CuTest * tc){
@@ -1076,6 +1088,14 @@ void test_sp_support_speed(CuTest * tc){
     sup_alg = sp_support_array_init(sp_support_area_alloc(blur_radius,area),1);
     delta_t = test_sp_phasing_speed_common(tc,alg,sup_alg,size,oversampling,SpNoConstraints,iterations,SpEngineCUDA);
     printf("CUDA %dx%d area support = %g iterations per second\n",size*oversampling,size*oversampling,(1.0e6*iterations)/delta_t);
+    /* Use less iterations for the 3D case */
+    iterations = 100; size=192;
+    delta_t = test_sp_phasing_speed_common_3d(tc,alg,sup_alg,size,size,size,oversampling,SpNoConstraints,iterations,SpEngineCUDA);
+    printf("CUDA %dx%dx%d area support = %g iterations per second\n",size*oversampling,size*oversampling,size*oversampling,(1.0e6*iterations)/delta_t);
+    iterations = 5; size=192;
+    sup_alg = sp_support_array_init(sp_support_centre_image_alloc(),1);
+    delta_t = test_sp_phasing_speed_common_3d(tc,alg,sup_alg,size,size,size,oversampling,SpNoConstraints,iterations,SpEngineCUDA);
+    printf("CUDA %dx%dx%d center_image = %g iterations per second\n",size*oversampling,size*oversampling,size*oversampling,(1.0e6*iterations)/delta_t);    
   }
   iterations = 4;
   sup_alg = sp_support_array_init(sp_support_threshold_alloc(blur_radius,threshold),1);
@@ -1114,10 +1134,10 @@ void test_sp_phasing_hio_speed(CuTest * tc){
     sup_alg = sp_support_array_init(sp_support_area_alloc(blur_radius,area),20);
     delta_t = test_sp_phasing_speed_common(tc,alg,sup_alg,size,oversampling,SpNoConstraints,iterations,SpEngineCUDA);
     printf("CUDA HIO %dx%d with area support every 20 = %g iterations per second\n",size*oversampling,size*oversampling,(1.0e6*iterations)/delta_t);
-
-
-
-
+    /* Use less iterations and size for the 3D case */
+    iterations = 200; size=192;
+    delta_t = test_sp_phasing_speed_common_3d(tc,alg,sup_alg,size,size,size,oversampling,SpNoConstraints,iterations,SpEngineCUDA);
+    printf("CUDA HIO %dx%dx%d with area support every 20 = %g iterations per second\n",size*oversampling,size*oversampling,size*oversampling,(1.0e6*iterations)/delta_t);
   }
   iterations = 10;
   int delta_t = test_sp_phasing_speed_common(tc,alg,NULL,size,oversampling,SpNoConstraints,iterations,SpEngineCPU);
@@ -1165,6 +1185,10 @@ void test_sp_phasing_raar_speed(CuTest * tc){
   if(sp_cuda_get_device_type() == SpCUDAHardwareDevice){
     int delta_t = test_sp_phasing_speed_common(tc,alg,NULL,size,oversampling,SpNoConstraints,iterations,SpEngineCUDA);
     printf("CUDA RAAR %dx%d = %g iterations per second\n",size*oversampling,size*oversampling,(1.0e6*iterations)/delta_t);
+    /* Use less iterations and size for the 3D case */
+    iterations = 200; size=192;
+    delta_t = test_sp_phasing_speed_common_3d(tc,alg,NULL,size,size,size,oversampling,SpNoConstraints,iterations,SpEngineCUDA);
+    printf("CUDA RAAR %dx%dx%d = %g iterations per second\n",size*oversampling,size*oversampling,size*oversampling,(1.0e6*iterations)/delta_t);
   }
   iterations = 10;
   int delta_t = test_sp_phasing_speed_common(tc,alg,NULL,size,oversampling,SpNoConstraints,iterations,SpEngineCPU);
