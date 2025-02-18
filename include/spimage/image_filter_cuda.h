@@ -11,7 +11,7 @@ extern "C"
 {
 #endif
 spimage_EXPORT  void sp_create_gaussian_kernel_cuda(cufftComplex * a,int x, int y, int z, float radius);
-  spimage_EXPORT  void sp_gaussian_blur_cuda(cufftComplex * in, cufftComplex * out,int x, int y, int z, float radius, cufftHandle plan);
+spimage_EXPORT  void sp_gaussian_blur_cuda(cufftComplex * in, cufftComplex * out,int x, int y, int z, float radius, cufftHandle plan);
 
 #ifdef __cplusplus
 }  /* extern "C" */
