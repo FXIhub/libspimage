@@ -82,6 +82,7 @@ SpPhaser * sp_phaser_alloc(){
   ret->model_before_projection = NULL;
   ret->fmodel = NULL;
   ret->model_iteration = -1;
+  ret->fmodel_iteration = -1;
   ret->model_before_projection_iteration = -1;
   ret->model_change_iteration = -1;
   ret->support_iteration = -1;
@@ -159,6 +160,10 @@ void sp_phaser_free(SpPhaser * ph){
     ph->d_g1 = 0;
     cudaFree(ph->d_gp);
     ph->d_gp = 0;
+    cudaFree(ph->d_fmodel);
+    ph->d_fmodel = 0;
+    curandDestroyGenerator(ph->gen);
+
     if(ph->d_phased_amplitudes){
       cudaFree(ph->d_phased_amplitudes);
       ph->d_phased_amplitudes = 0;
@@ -479,10 +484,9 @@ static Image * sp_phaser_fmodel_non_const(SpPhaser * ph){
       sp_image_fft_fast(ph->fmodel,ph->fmodel);
     }else if(ph->engine == SpEngineCUDA){
 #ifdef _USE_CUDA
+      cufftSafeCall(cufftExecC2C(ph->cufft_plan, ph->d_g1, ph->d_fmodel, CUFFT_FORWARD));
       /* transfer the model from the graphics card to the main memory */
-      cutilSafeCall(cudaMemcpy(ph->fmodel->image->data,ph->d_g1,sizeof(cufftComplex)*ph->image_size,cudaMemcpyDeviceToHost));
-      /* not really efficient here */
-      sp_image_fft_fast(ph->fmodel,ph->fmodel);
+      cutilSafeCall(cudaMemcpy(ph->fmodel->image->data,ph->d_fmodel,sizeof(cufftComplex)*ph->image_size,cudaMemcpyDeviceToHost));
 #else
       return NULL;
 #endif    
@@ -564,12 +568,15 @@ int sp_phaser_init(SpPhaser * ph, SpPhasingAlgorithm * alg,SpSupportArray * sup_
   ph->algorithm = alg;
   ph->sup_algorithm = sup_alg;
   ph->iteration = 0;
+
   /* default engine is CPU */
   ph->engine = SpEngineCPU;
 #ifdef _USE_CUDA
   if(engine == SpEngineAutomatic || engine == SpEngineCUDA){
     if(sp_cuda_get_device_type() == SpCUDAHardwareDevice){
       ph->engine = SpEngineCUDA;
+      curandSafeCall(curandCreateGenerator(&ph->gen, CURAND_RNG_PSEUDO_DEFAULT));
+      curandSafeCall(curandSetPseudoRandomGeneratorSeed(ph->gen, 1234ULL)); // Use a fixed seed for reproducibility
     }
   }
 #endif
@@ -598,6 +605,9 @@ int sp_phaser_set_support_algorithm(SpPhaser * ph, SpSupportArray * alg) {
 }
 
 int sp_phaser_init_model(SpPhaser * ph, const Image * user_model, int flags){
+  if(ph->engine == SpEngineCUDA && !(flags & SpModelMaskedOutZeroed)){
+    return sp_phaser_init_model_cuda(ph, user_model, flags);
+  }
   if(!ph){
     return -1;    
   }
@@ -694,6 +704,7 @@ int sp_phaser_init_model(SpPhaser * ph, const Image * user_model, int flags){
     cudaMalloc((void**)&ph->d_g0, sizeof(cufftComplex)*ph->image_size);
     cudaMalloc((void**)&ph->d_g1, sizeof(cufftComplex)*ph->image_size);
     cudaMalloc((void**)&ph->d_gp, sizeof(cufftComplex)*ph->image_size);
+    cudaMalloc((void**)&ph->d_fmodel, sizeof(cufftComplex)*ph->image_size);
     
     cutilSafeCall(cudaMemcpy(ph->d_g1, ph->model->image->data, sizeof(cufftComplex)*ph->image_size, cudaMemcpyHostToDevice));
     cutilSafeCall(cudaMemset(ph->d_g0, 0, sizeof(cufftComplex)*ph->image_size));

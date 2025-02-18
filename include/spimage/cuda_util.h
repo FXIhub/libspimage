@@ -11,6 +11,7 @@
 
 #include <cuda_runtime_api.h>
 #include <cufft.h>
+#include <curand.h>
 #include <spimage/sperror.h>
 
 
@@ -40,6 +41,13 @@ static inline void __cudaSafeCall( cudaError_t err, const char *file, const int 
     }
 }
 
+#define curandSafeCall(err) do {                                                \
+    curandStatus_t e = (err);                                                 \
+    if (e != CURAND_STATUS_SUCCESS) {                                         \
+        printf("cuRAND error at %s:%d: %d\n", __FILE__, __LINE__, e);           \
+        exit(EXIT_FAILURE);                                                   \
+    }                                                                         \
+} while (0)
 
 
 #define cutilCheckMsg(msg)           __cutilCheckMsg     (msg, __FILE__, __LINE__)

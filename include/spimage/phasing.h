@@ -101,6 +101,9 @@ typedef struct{
   cufftComplex * d_gp;
   int threads_per_block;
   int number_of_blocks;
+
+  cufftComplex * d_fmodel;
+  curandGenerator_t gen;
 #endif
 }SpPhaser;
 
@@ -148,6 +151,7 @@ typedef struct{
   int sp_support_close_update_support_cuda(SpSupportAlgorithm *alg, SpPhaser * ph);
   int sp_support_centre_image_cuda(SpSupportAlgorithm *alg, SpPhaser * ph);
   int sp_proj_module_cuda(Image * a, Image * amp);
+  int sp_phaser_init_model_cuda(SpPhaser * ph, const Image * user_model, int flags);
 #endif
 
   int sp_support_area_update_support(SpSupportAlgorithm *alg, SpPhaser * ph);

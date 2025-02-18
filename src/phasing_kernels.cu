@@ -203,3 +203,35 @@ __global__ void CUDA_complex_scale(cufftComplex * a, int size ,float scale){
     a[i].y *= scale;
   }
 } 
+
+// Complex pointwise addition
+__global__ void CUDA_complex_add(cufftComplex * a, int size ,cufftComplex add){
+  const int i = blockIdx.x * blockDim.x + threadIdx.x;
+  if(i<size){
+    a[i].x += add.x;
+    a[i].y += add.y;
+  }
+}
+
+// Add random phases while preserving amplitude
+// The input uniform_random must have uniformly distributed number from 0 to 1
+__global__ void CUDA_random_rephase(cufftComplex * a, float * uniform_random, int size){
+  const int i = blockIdx.x * blockDim.x + threadIdx.x;
+
+  if(i<size){
+    const float amp_a = sqrt(a[i].x*a[i].x + a[i].y*a[i].y);
+    float phase = uniform_random[i]*2*M_PI;
+    a[i].x = cos(phase)*amp_a;
+    a[i].y = sin(phase)*amp_a;
+  }
+}
+
+
+__global__ void CUDA_real_to_complex(cufftComplex * out, float * in, int size){
+  const int i = blockIdx.x * blockDim.x + threadIdx.x;
+
+  if(i<size){
+    out[i].x = in[i];
+    out[i].y = 0;
+  }
+}

@@ -743,27 +743,16 @@ class Reconstructor:
             out["single_outputs"] = single_outputs
         return out
 
-    def _get_curr_fmodel(self,**kwargs):
-        shifted = kwargs.get("shifted",False)
-        #normalize = kwargs.get("normalize",False)
-        if self._iteration > 0:
-            #fimg = spimage.sp_phaser_fmodel(self._sp_phaser).image.copy()
-            tmp = spimage.sp_phaser_fmodel_with_mask(self._sp_phaser)
-            fimg = tmp.image.copy()
-            fmsk = tmp.mask.copy()
-        else:
-            fimg = np.fft.fftn(self._sp_phaser.model.image)#*self._sp_phaser.model.image.size
-            fmsk = self._sp_amplitudes.mask.copy()           
-        #if normalize:
-        #    fimg = fimg/abs(fimg).sum()
+    def _get_curr_fmodel(self, shifted=False):
+        tmp = spimage.sp_phaser_fmodel_with_mask(self._sp_phaser)
+        fimg = tmp.image.copy()
+        fmsk = tmp.mask.copy()
         if not shifted:
             return [np.fft.fftshift(fimg),np.fft.fftshift(fmsk)]
         else:
             return [fimg,fmsk]
             
-    def _get_curr_model(self,**kwargs):
-        shifted = kwargs.get("shifted",False)
-        state = kwargs.get("state","before_projection")
+    def _get_curr_model(self,shifted=False, state='before_projection'):
         if self._iteration > 0:
             if state == "before_projection":
                 tmp1 = spimage.sp_phaser_model_before_projection(self._sp_phaser)

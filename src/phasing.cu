@@ -4,12 +4,17 @@ __global__ void CUDA_module_projection(cufftComplex* g, const float* amp, const 
 __global__ void CUDA_support_projection_hio(cufftComplex* g1, const cufftComplex* g0, const cufftComplex* gp, const int * pixel_flags,const  int size, const float beta);
 __global__ void CUDA_support_projection_er(cufftComplex* g1, cufftComplex *gp, const int * pixel_flags, const  int size);
 __global__ void CUDA_complex_scale(cufftComplex * a, int size ,float scale);
+__global__ void CUDA_complex_add(cufftComplex * a, int size ,cufftComplex add);
 __global__ void CUDA_support_projection_raar(cufftComplex* g1, const cufftComplex* g0, const cufftComplex* gp, const int * pixel_flags,const  int size, const float beta);
 __global__ void CUDA_apply_constraints(cufftComplex* g, const int * pixel_flags,const  int size,const SpPhasingConstraints constraints);
 __global__ void CUDA_apply_fourier_constraints(cufftComplex* g, const  int size,const SpPhasingConstraints constraints);
 __global__ void CUDA_phased_amplitudes_projection(cufftComplex* g, const cufftComplex* phased_amp,const int * pixel_flags, const  int size);
 __global__ void CUDA_diff_map_f1(cufftComplex* f1, const cufftComplex* g0,const int * pixel_flags,const float gamma1,const  int size);
 __global__ void CUDA_diff_map(cufftComplex* Pi2f1,cufftComplex* Pi2rho, const cufftComplex* g0,cufftComplex* g1,const int * pixel_flags,const float gamma2,const float beta,const  int size);
+__global__ void CUDA_random_rephase(cufftComplex * a, float * uniform_random, int size);
+__global__ void CUDA_real_to_complex(cufftComplex * out, float * in, int size);
+
+static void random_rephase_cuda(SpPhaser * ph, cufftComplex *  img);
 
 int phaser_iterate_er_cuda(SpPhaser * ph,int iterations){
   SpPhasingERParameters * params = (SpPhasingERParameters *)ph->algorithm->params;
@@ -155,3 +160,67 @@ int phaser_iterate_raar_cuda(SpPhaser * ph,int iterations){
 
 }
 
+int sp_phaser_init_model_cuda(SpPhaser * ph, const Image * user_model, int flags){
+  if(!ph){
+    return -1;
+  }
+  if(ph->model){
+    sp_image_free(ph->model);
+  }
+  if(ph->model_change){
+    sp_image_free(ph->model_change);
+  }
+  /* allocate GPU memory */
+  cutilSafeCall(cudaMalloc((void**)&ph->d_g0, sizeof(cufftComplex)*ph->image_size));
+  cutilSafeCall(cudaMalloc((void**)&ph->d_g1, sizeof(cufftComplex)*ph->image_size));
+  cutilSafeCall(cudaMalloc((void**)&ph->d_gp, sizeof(cufftComplex)*ph->image_size));
+  cutilSafeCall(cudaMalloc((void**)&ph->d_fmodel, sizeof(cufftComplex)*ph->image_size));
+
+  cutilSafeCall(cudaMemset(ph->d_g0, 0, sizeof(cufftComplex)*ph->image_size));
+  cutilSafeCall(cudaMemset(ph->d_gp, 0, sizeof(cufftComplex)*ph->image_size));
+  if(ph->nz == 1){
+    cufftPlan2d(&ph->cufft_plan, ph->ny, ph->nx, CUFFT_C2C);
+  }else{
+    cufftPlan3d(&ph->cufft_plan, ph->nz, ph->ny, ph->nx, CUFFT_C2C);
+  }
+
+  ph->model = sp_image_alloc(ph->nx,ph->ny,ph->nz);
+  ph->model->phased = 1;
+  if(user_model){
+    cutilSafeCall(cudaMemcpy(ph->d_g1, user_model->image->data, sizeof(cufftComplex)*ph->image_size, cudaMemcpyHostToDevice));
+  }else if(flags & SpModelRandomPhases){
+    CUDA_real_to_complex<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->d_amplitudes, ph->image_size);
+    /* randomize phases */
+    random_rephase_cuda(ph, ph->d_g1);
+    cufftSafeCall(cufftExecC2C(ph->cufft_plan, ph->d_g1, ph->d_g1, CUFFT_INVERSE));
+    CUDA_complex_scale<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->image_size, 1.0/sp_image_size(ph->model));
+  }else if(flags & SpModelZeroPhases){
+    cutilSafeCall(cudaMemcpy(ph->d_g1,  ph->amplitudes->data, sizeof(cufftComplex)*ph->image_size, cudaMemcpyHostToDevice));
+    /* randomize phases */
+    cufftSafeCall(cufftExecC2C(ph->cufft_plan, ph->d_g1, ph->d_g1, CUFFT_INVERSE));
+    CUDA_complex_scale<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->image_size, 1.0/sp_image_size(ph->model));
+  }else if(flags & SpModelRandomValues){
+    curandSafeCall(curandGenerateUniform(ph->gen, (float *)ph->d_g1, ph->image_size*2));
+    cufftComplex add;
+    add.x = -0.5;
+    add.y = -0.5;
+    CUDA_complex_add<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g1,ph->image_size, add);
+    /* Note the result does not follow Parseval's theorem as in the CPU code */
+  }else{
+    return -3;
+  }
+  if(flags & SpModelMaskedOutZeroed){
+    sp_error_fatal("Not implemented in CUDA");
+  }
+  ph->model->phased = 1;
+  ph->model_change = sp_image_alloc(sp_image_x(ph->model),sp_image_y(ph->model),sp_image_z(ph->model));
+  return 0;
+}
+
+static void random_rephase_cuda(SpPhaser * ph, cufftComplex *  img){
+  float * d_uni;
+  /* Allocate n floats on device */
+  cutilSafeCall(cudaMalloc((void **)&d_uni, ph->image_size*sizeof(float)));
+  curandSafeCall(curandGenerateUniform(ph->gen, d_uni, ph->image_size));
+  CUDA_random_rephase<<<ph->number_of_blocks, ph->threads_per_block>>>(img,d_uni,ph->image_size);
+}
