@@ -459,10 +459,9 @@ const Image * sp_phaser_fmodel(SpPhaser * ph){
       sp_image_fft_fast(ph->fmodel,ph->fmodel);
     }else if(ph->engine == SpEngineCUDA){
 #ifdef _USE_CUDA
+      cufftSafeCall(cufftExecC2C(ph->cufft_plan, ph->d_g1, ph->d_fmodel, CUFFT_FORWARD));
       /* transfer the model from the graphics card to the main memory */
-      cutilSafeCall(cudaMemcpy(ph->fmodel->image->data,ph->d_g1,sizeof(cufftComplex)*ph->image_size,cudaMemcpyDeviceToHost));
-      /* not really efficient here */
-      sp_image_fft_fast(ph->fmodel,ph->fmodel);
+      cutilSafeCall(cudaMemcpy(ph->fmodel->image->data,ph->d_fmodel,sizeof(cufftComplex)*ph->image_size,cudaMemcpyDeviceToHost));
 #else
       return NULL;
 #endif    
