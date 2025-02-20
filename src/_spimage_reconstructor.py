@@ -430,7 +430,7 @@ class Reconstructor:
             else:
                 self._phaser_dirty = True
                 S = self._initial_support_config["support_mask"]
-                self.sp_initial_support.image[:] = np.float32(S)
+                self._sp_initial_support.image[:] = np.float32(S)
                 self._initial_support_dirty = False
                 self._log("Initial support initialised.","DEBUG")
 
@@ -744,8 +744,9 @@ class Reconstructor:
         return out
 
     def _get_curr_fmodel(self, shifted=False):
-        tmp = spimage.sp_phaser_fmodel_with_mask(self._sp_phaser)
+        tmp = spimage.sp_phaser_fmodel(self._sp_phaser)
         fimg = tmp.image.copy()
+        tmp = spimage.sp_phaser_amplitudes(self._sp_phaser)
         fmsk = tmp.mask.copy()
         if not shifted:
             return [np.fft.fftshift(fimg),np.fft.fftshift(fmsk)]
