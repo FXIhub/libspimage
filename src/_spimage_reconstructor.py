@@ -190,7 +190,7 @@ class Reconstructor:
             self._initial_support_config["support_mask"] = kwargs["support_mask"]
         self._log("Initial support configuration set.","DEBUG")
 
-    def set_support_algorithm(self, type,**kwargs):
+    def set_support_algorithm(self, type, number_of_iterations=None, center_image=False, **kwargs):
         """
         Set one of the following support-update algorithms with the respective keyord arguments:
         - area: update_period, blur_init*, blur_final*, area_init**, area_final**
@@ -201,12 +201,9 @@ class Reconstructor:
         NOTE: If you like to use a series of support-update algorithms please use instead the function append_support_algorithm.
         """
         self._clear_support_algorithms()
-        kwargs1 = dict(kwargs)
-        if "number_of_iterations" not in kwargs:
-            kwargs1["number_of_iterations"] = None
-        self.append_support_algorithm(type, **kwargs1)
+        self.append_support_algorithm(type, number_of_iterations=number_of_iterations, center_image=center_image, **kwargs)
 
-    def append_support_algorithm(self, type, **kwargs):
+    def append_support_algorithm(self, type, number_of_iterations, center_image=False, **kwargs):
         """
         Append one of the following support-update algorithms with the respective keyord arguments:
         - area: number_of_iterations, update_period, blur_init*, blur_final*, area_init**, area_final**
@@ -217,12 +214,8 @@ class Reconstructor:
         NOTE: If you like to use only a single support-update algorithm you might want to use instead the function set_support_algorithm.
         """
         alg_conf = {"type":type}
-        alg_conf["center_image"] = kwargs.get("center_image",False)
-        # check input
-        if "number_of_iterations" not in kwargs:
-            self._log("append_support_algorithm requires the keyword argument \'number_of_iterations\'.","ERROR")
-            return
-        alg_conf["number_of_iterations"] = kwargs["number_of_iterations"]
+        alg_conf["center_image"] = center_image
+        alg_conf["number_of_iterations"] = number_of_iterations
         if alg_conf["number_of_iterations"] is None and len(self._support_algorithms_configs) > 0:
             self._log("You can not have more than one support algorithm of unspecified number of iterations if the total number of iterations is set to None. Set the total number of iterations by calling set_number_of_iterations and try again.","ERROR")
             return
@@ -230,7 +223,7 @@ class Reconstructor:
                             "threshold":["update_period","blur_init","blur_final","threshold_init","threshold_final"],
                             "static":[]}
         if type not in necessary_kwargs:
-            self._log("append_support_algorithm accepts algorithms of the following types: " + str(),"ERROR")
+            self._log("append_support_algorithm accepts algorithms of the following types: " + str(necessary_kwargs.keys()),"ERROR")
             return
         for k in necessary_kwargs[type]:
             if k not in kwargs:
@@ -458,22 +451,16 @@ class Reconstructor:
                 else:
                     self._log("Number of iterations can not be None if many support algorithms are specified. Please report this error.","ERROR")
                     return
+            if alg["type"] == "area" or alg["type"] == "threshold":            
+                blur_radius = spimage.sp_smap_alloc(2)
+                spimage.sp_smap_insert(blur_radius, i, alg["blur_init"])
+                spimage.sp_smap_insert(blur_radius, i + alg["number_of_iterations"], alg["blur_final"])
+                support_area = spimage.sp_smap_alloc(2)
+                spimage.sp_smap_insert(support_area, i,alg["area_init"])
+                spimage.sp_smap_insert(support_area, i + alg["number_of_iterations"],alg["area_final"])            
             if alg["type"] == "area":
-                self._blur_radius = spimage.sp_smap_alloc(2)
-                # FM: This looks buggy! I think sp_map_insert should be in a member of alg
-                spimage.sp_smap_insert(self._blur_radius, i, alg["blur_init"])
-                spimage.sp_smap_insert(self._blur_radius, i + alg["number_of_iterations"], alg["blur_final"])
-                self._support_area = spimage.sp_smap_alloc(2)
-                spimage.sp_smap_insert(self._support_area, i,alg["area_init"])
-                spimage.sp_smap_insert(self._support_area, i + alg["number_of_iterations"],alg["area_final"])
-                alg["spimage_support_array"] = spimage.sp_support_array_init(spimage.sp_support_area_alloc(self._blur_radius, self._support_area),alg["update_period"])
+                alg["spimage_support_array"] = spimage.sp_support_array_init(spimage.sp_support_area_alloc(blur_radius, support_area),alg["update_period"])
             elif alg["type"] == "threshold":
-                self._blur_radius = spimage.sp_smap_alloc(2)
-                spimage.sp_smap_insert(self._blur_radius, i, alg["blur_init"])
-                spimage.sp_smap_insert(self._blur_radius, i + alg["number_of_iterations"], alg["blur_final"])
-                self._threshold = spimage.sp_smap_alloc(2)
-                spimage.sp_smap_insert(self._threshold, i, alg["threshold_init"])
-                spimage.sp_smap_insert(self._threshold, i + alg["number_of_iterations"], alg["threshold_final"])
                 alg["spimage_support_array"] = spimage.sp_support_array_init(spimage.sp_support_threshold_alloc(self._blur_radius, self._threshold),alg["update_period"])
             elif alg["type"] == "static":
                 alg["update_period"] = alg["number_of_iterations"]
