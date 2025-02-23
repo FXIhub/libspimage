@@ -1861,9 +1861,8 @@ void sp_find_center(Image * img, real * center_x, real * center_y, real * center
   float by = -1;
   float bz = -1;
   Image * a = sp_image_convolute(img,img,NULL);
-  real max = 0;
   long long index;
-  max = sp_c3matrix_max(a->image,&index);
+  sp_c3matrix_max(a->image,&index);
   sp_c3matrix_get_xyz(a->image,index,&x,&y,&z);
   bx = x;
   by = y;
@@ -2149,14 +2148,11 @@ Image * sp_image_radial_sector(Image * img, real * point, real direction, int sa
   real fpixel[2];
   real d_to_border;
   real * center;
-  int dim[2];
   if(point){
     center = point;
   }else{
     center = img->detector->image_center;
   }
-  dim[0] = sp_c3matrix_x(img->image);
-  dim[1] = sp_c3matrix_y(img->image);
 
   d_to_border = sp_image_distance_to_edge(img,center,direction, intersection);
   for(i = 0;i<samples;i++){
@@ -2978,7 +2974,6 @@ void sp_image_fourier_coords(Image * in, sp_3matrix * k_x, sp_3matrix * k_y, sp_
 void sp_image_superimpose(const Image * _a,Image * _b, SpSuperimposeFlags flags){
   int x,y,z;
   long long index;
-  int center_invert = 0;
   real max;
   /* check maximum overlap of a and b */
   Image * a = sp_image_duplicate(_a,SP_COPY_DATA);
@@ -2996,7 +2991,6 @@ void sp_image_superimpose(const Image * _a,Image * _b, SpSuperimposeFlags flags)
     real max2 = sp_image_max(enantio_overlap,&index2,&x2,&y2,&z2);
     sp_image_free(enantio_overlap);
     if(max2 > max){
-      center_invert = 1;
       max = max2;
       x = x2+1;
       y = y2+1;
@@ -3030,7 +3024,6 @@ void sp_image_superimpose(const Image * _a,Image * _b, SpSuperimposeFlags flags)
 void sp_image_superimpose_fractional(Image * _a,Image * _b, SpSuperimposeFlags flags, int precision){
   int x,y,z;
   long long index;
-  int center_invert = 0;
   real max;
   /* check maximum overlap of a and b */
   Image * a = sp_image_duplicate(_a,SP_COPY_DATA);
@@ -3052,7 +3045,6 @@ void sp_image_superimpose_fractional(Image * _a,Image * _b, SpSuperimposeFlags f
 
     real max2 = sp_image_max(enantio_overlap,&index2,&x2,&y2,&z2);
     if(max2 > max){
-      center_invert = 1;
       max = max2;
       x = x2+precision;
       y = y2+precision;
@@ -3076,7 +3068,6 @@ void sp_image_superimpose_fractional(Image * _a,Image * _b, SpSuperimposeFlags f
 void sp_image_superimpose_fractional2(Image * _a,Image * _b, SpSuperimposeFlags flags, int precision){
   int x,y,z;
   long long index;
-  int center_invert = 0;
   real max;
   /* check maximum overlap of a and b */
   Image * a = sp_image_duplicate(_a,SP_COPY_DATA);
@@ -3098,7 +3089,6 @@ void sp_image_superimpose_fractional2(Image * _a,Image * _b, SpSuperimposeFlags 
 
     real max2 = sp_image_max(enantio_overlap,&index2,&x2,&y2,&z2);
     if(max2 > max){
-      center_invert = 1;
       max = max2;
       x = x2+precision;
       y = y2+precision;
@@ -3344,10 +3334,9 @@ sp_vector * sp_image_mask_center_of_mass(Image * a){
 }
 
 int sp_image_get_coords_from_index(const Image * in,int index,real * x, real * y, real * z, SpOrigin origin){
-  int nx,ny,nz;
+  int nx,ny;
   nx = sp_image_x(in);
   ny = sp_image_y(in);
-  nz = sp_image_z(in);
   if(origin == SpTopLeftCorner){    
     *z = index/(ny*nx);
     *y = (index%(ny*nx))/nx;
