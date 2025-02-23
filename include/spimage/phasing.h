@@ -124,7 +124,7 @@ typedef struct{
   spimage_EXPORT const Image * sp_phaser_fmodel(SpPhaser * ph);
   spimage_EXPORT const Image * sp_phaser_fmodel_with_mask(SpPhaser * ph);
   spimage_EXPORT real sp_phaser_ereal(SpPhaser * ph);
-  spimage_EXPORT real sp_phaser_efourier(SpPhaser * ph);
+  spimage_EXPORT real sp_phaser_efourier(SpPhaser * ph, real * FcFo);
   spimage_EXPORT void sp_phaser_set_model(SpPhaser * ph,const Image * model);
   spimage_EXPORT void sp_phaser_set_support(SpPhaser * ph,const Image * support);
   spimage_EXPORT void sp_phaser_set_phased_amplitudes(SpPhaser * ph,const Image * phased_amplitudes);
@@ -139,6 +139,7 @@ typedef struct{
   spimage_EXPORT int sp_phaser_init_support(SpPhaser * ph,const Image * support, int flags, real value);
   spimage_EXPORT int sp_phaser_iterate(SpPhaser * ph, int iterations);
   spimage_EXPORT void sp_phaser_set_objective(SpPhaser * ph, SpPhasingObjective obj);
+  spimage_EXPORT real sp_phaser_support_fraction(SpPhaser *ph);
 #ifdef _USE_CUDA
   int phaser_iterate_hio_cuda(SpPhaser * ph,int iterations);  
   int phaser_iterate_raar_cuda(SpPhaser * ph,int iterations);  
@@ -152,6 +153,9 @@ typedef struct{
   int sp_support_centre_image_cuda(SpSupportAlgorithm *alg, SpPhaser * ph);
   int sp_proj_module_cuda(Image * a, Image * amp);
   int sp_phaser_init_model_cuda(SpPhaser * ph, const Image * user_model, int flags);
+  real sp_phaser_ereal_cuda(SpPhaser * ph);
+  real sp_phaser_efourier_cuda(SpPhaser * ph, real * FcFo);
+  real sp_phaser_support_fraction_cuda(SpPhaser * ph);
 #endif
 
   int sp_support_area_update_support(SpSupportAlgorithm *alg, SpPhaser * ph);

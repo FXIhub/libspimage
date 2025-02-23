@@ -796,6 +796,9 @@ const Image * sp_phaser_support(SpPhaser * ph){
 }
 
 real sp_phaser_ereal(SpPhaser *ph) {
+  if(ph->engine == SpEngineCUDA){
+    return sp_phaser_ereal_cuda(ph);
+  }
   const Image *real_space = sp_phaser_model_before_projection(ph);
   const Image *support = sp_phaser_support(ph);
   real ereal_den = 0.;
@@ -819,12 +822,32 @@ real sp_phaser_ereal(SpPhaser *ph) {
   return sqrt(ereal_nom / ereal_den);
 }
 
-real sp_phaser_efourier(SpPhaser *ph) {
+real sp_phaser_support_fraction(SpPhaser *ph){
+  if(ph->engine == SpEngineCUDA){
+    return sp_phaser_support_fraction_cuda(ph);
+  }
+  int sup_size = 0;
+  const Image *support = sp_phaser_support(ph);
+  const int image_size = sp_image_size(support);  
+  for (int i = 0; i < image_size; i++){
+    if (sp_real(support->image->data[i])){
+      sup_size++;
+    }
+  }
+  return (real)sup_size/(real)image_size;
+}
+
+real sp_phaser_efourier(SpPhaser *ph, real * FcFo) {
+  if(ph->engine == SpEngineCUDA){
+    return sp_phaser_efourier_cuda(ph, FcFo);
+  }  
   const Image *fourier_space = sp_phaser_fmodel(ph);
   const Image *amplitudes = sp_phaser_amplitudes(ph);
   const int image_size = sp_image_size(fourier_space);
   real efourier_den = 0.;
   real efourier_nom = 0.;
+  real FcFo_den = 0;
+  real FcFo_num = 0;
   /*
   for (int i = 0; i < image_size; i++) {
     if (amplitudes->mask->data[i]) {// && sp_real(amplitudes->image->data[i])) {
@@ -835,11 +858,16 @@ real sp_phaser_efourier(SpPhaser *ph) {
   */
   for (int i = 0; i < image_size; i++) {
     if (amplitudes->mask->data[i]) {
+      FcFo_num += sp_cabs(amplitudes->image->data[i]);
+      FcFo_den += sp_cabs(fourier_space->image->data[i]);
       efourier_nom += pow(sp_cabs(fourier_space->image->data[i]) - sp_cabs(amplitudes->image->data[i]), 2);
       efourier_den += pow(sp_cabs(amplitudes->image->data[i]), 2);
     } else {
       efourier_den += pow(sp_cabs(fourier_space->image->data[i]), 2);
     }
+  }
+  if(FcFo){
+    *FcFo = FcFo_num/FcFo_den;
   }
   return sqrt(efourier_nom / efourier_den);
 }

@@ -195,6 +195,85 @@ __global__ void CUDA_apply_constraints(cufftComplex* g, const int * pixel_flags,
   }
 }
 
+// Complex pointwise absolute value squared
+__global__ void CUDA_complex_abs2(cufftComplex * a, int size){
+  const int i = blockIdx.x * blockDim.x + threadIdx.x;
+  if(i<size){
+    a[i].x = a[i].x*a[i].x+a[i].y*a[i].y;
+    a[i].y = 0;
+  }
+}
+
+// Complex pointwise real space error
+__global__ void CUDA_ereal(cufftComplex * out, const cufftComplex * in, const int * pixel_flags, int size){
+  const int i = blockIdx.x * blockDim.x + threadIdx.x;
+  if(i<size){
+    /* We'll store the denominator in the imaginary part */
+    float abs2 = in[i].x*in[i].x+in[i].y*in[i].y;
+    out[i].y = abs2;
+    /* And the numerator in the real part */
+    if(pixel_flags[i] & SpPixelInsideSupport){
+      /* inside the support */
+      out[i].x = 0;
+    }else{
+      out[i].x = abs2;
+    }
+  }
+}
+
+// Stores the support in the real part and the intensities mask in the imaginary part
+__global__ void CUDA_pixel_flags_to_complex(cufftComplex * out, const int * pixel_flags, int size){
+  const int i = blockIdx.x * blockDim.x + threadIdx.x;
+  if(i<size){
+    if(pixel_flags[i] & SpPixelInsideSupport){
+      out[i].x = 1;
+    }else{
+      out[i].x = 0;
+    }
+    if(pixel_flags[i] & SpPixelMeasuredAmplitude){
+      out[i].y = 1;
+    }else{
+      out[i].y = 0;
+    }    
+  }
+}
+
+// Complex pointwise fourier space error
+__global__ void CUDA_efourier(cufftComplex * out, const cufftComplex * fmodel, const float* amp, const int * pixel_flags, int size){
+  const int i = blockIdx.x * blockDim.x + threadIdx.x;
+  if(i<size){
+    /* We'll store the denominator in the imaginary part */
+    /* And the numerator in the real part */    
+    float fmodel_abs2 = fmodel[i].x*fmodel[i].x+fmodel[i].y*fmodel[i].y;
+    if(pixel_flags[i] & SpPixelMeasuredAmplitude){
+      out[i].y = amp[i]*amp[i];
+      out[i].x = amp[i]-sqrt(fmodel_abs2);
+      /* squared */
+      out[i].x *= out[i].x;
+    }else{
+      out[i].y = fmodel_abs2;
+      out[i].x = 0;
+    }
+  }
+}
+
+// Complex pointwise amplitude ratio
+__global__ void CUDA_FcFo(cufftComplex * out, const cufftComplex * fmodel, const float* amp, const int * pixel_flags, int size){
+  const int i = blockIdx.x * blockDim.x + threadIdx.x;
+  if(i<size){
+    /* We'll store the denominator in the imaginary part */
+    /* And the numerator in the real part */    
+    float fmodel_abs2 = fmodel[i].x*fmodel[i].x+fmodel[i].y*fmodel[i].y;
+    if(pixel_flags[i] & SpPixelMeasuredAmplitude){
+      out[i].y = amp[i];
+      out[i].x = sqrt(fmodel_abs2);
+    }else{
+      out[i].y = 0;
+      out[i].x = 0;
+    }
+  }
+}
+
 // Complex pointwise multiplication
 __global__ void CUDA_complex_scale(cufftComplex * a, int size ,float scale){
   const int i = blockIdx.x * blockDim.x + threadIdx.x;

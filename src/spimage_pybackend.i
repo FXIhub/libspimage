@@ -122,6 +122,22 @@
   $1 = (int *) PyArray_DATA (arr);
 }
 
+%typemap(in) float * {
+  PyArrayObject *arr;
+  if($input == Py_None){
+    $1 = (float *)NULL;
+  }else{ 
+    if(PyArray_Check($input) == 0 || PyArray_ISFLOAT((PyArrayObject *)$input) == 0 
+     || PyArray_TYPE((PyArrayObject *)$input) != NPY_FLOAT32){
+    PyErr_SetString( PyExc_TypeError, "float * argument not an float32 numpy array" );
+      return NULL;
+    } 
+    arr = (PyArrayObject *)($input);
+    //  $1 = (int *)arr->data;
+    $1 = (float *) PyArray_DATA (arr);
+  }
+}
+
 %typemap(in) Image ** {
   $1 = NULL;
   if (PyList_Check($input)) {

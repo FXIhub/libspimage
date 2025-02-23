@@ -76,13 +76,22 @@ class Reconstructor:
 
     def _get_scores(self):
         out = {}
+        FcFo = np.zeros((1), dtype=np.float32)
+        out["fourier_error"] = spimage.sp_phaser_efourier(self._sp_phaser,FcFo)
+        out["FcFo"] = FcFo[0]
+        out["real_error"] = spimage.sp_phaser_ereal(self._sp_phaser)
+        out["support_size"] = spimage.sp_phaser_support_fraction(self._sp_phaser)
+        return out
+    
+    def _get_scores_slow(self):
+        out = {}
         [I,M] = self._get_curr_model(shifted=False)
         [fI,fM] = self._get_curr_fmodel(shifted=False)
         out["real_error"] = np.sqrt((abs(I[M==0])**2).sum()/( (abs(I[M==1])**2).sum() + np.finfo("float32").eps ))
         out["fourier_error"] = np.sqrt((abs(abs(fI[fM==1])-abs(np.fft.fftshift(self._sp_amplitudes.image)[fM==1]))**2).sum()/( (abs(np.fft.fftshift(self._sp_amplitudes.image)[fM==1])**2).sum() + np.finfo("float32").eps ))
-        out["FcFo"] = np.sqrt(abs(fI[fM==1]).sum()/(abs(self._sp_amplitudes.image[fM==0]).sum()+np.finfo("float32").eps))
-        out["support_size"] = M.sum()/float(M.shape[0]*M.shape[1])
-        return out
+        out["FcFo"] = abs(fI[fM==1]).sum()/(abs(self._sp_amplitudes.image[fM==1]).sum()+np.finfo("float32").eps)
+        out["support_size"] = M.sum()/float(M.size)
+        return out    
 
     def _log(self,s,mode="INFO"):
         if logger is not None:

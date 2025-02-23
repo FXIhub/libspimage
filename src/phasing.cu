@@ -1,4 +1,6 @@
 #include <spimage.h>
+#include <thrust/reduce.h>
+#include <thrust/device_vector.h>
 
 __global__ void CUDA_module_projection(cufftComplex* g, const float* amp, const float* amp_min, const float* amp_max, const int * pixel_flags,const  int size, const SpPhasingConstraints constraints);
 __global__ void CUDA_support_projection_hio(cufftComplex* g1, const cufftComplex* g0, const cufftComplex* gp, const int * pixel_flags,const  int size, const float beta);
@@ -13,6 +15,25 @@ __global__ void CUDA_diff_map_f1(cufftComplex* f1, const cufftComplex* g0,const 
 __global__ void CUDA_diff_map(cufftComplex* Pi2f1,cufftComplex* Pi2rho, const cufftComplex* g0,cufftComplex* g1,const int * pixel_flags,const float gamma2,const float beta,const  int size);
 __global__ void CUDA_random_rephase(cufftComplex * a, float * uniform_random, int size);
 __global__ void CUDA_real_to_complex(cufftComplex * out, float * in, int size);
+__global__ void CUDA_complex_abs2(cufftComplex * a, int size);
+__global__ void CUDA_ereal(cufftComplex * out, const cufftComplex * in, const int * pixel_flags, int size);
+__global__ void CUDA_efourier(cufftComplex * out, const cufftComplex * fmodel, const float* amp, const int * pixel_flags, int size);
+__global__ void CUDA_FcFo(cufftComplex * out, const cufftComplex * fmodel, const float* amp, const int * pixel_flags, int size);
+__global__ void CUDA_pixel_flags_to_complex(cufftComplex * out, const int * pixel_flags, int size);
+
+struct addCufftComplex{   
+  __device__ cufftComplex operator()(const cufftComplex lhs, const cufftComplex rhs) { 
+    cufftComplex temp = lhs;
+#ifdef _STRICT_IEEE_754
+    temp.x = __fadd_rn(temp.x,rhs.x);
+    temp.y = __fadd_rn(temp.y,rhs.y);
+#else
+    temp.x += rhs.x;
+    temp.y += rhs.y;
+#endif
+    return temp;
+  } 
+};
 
 static void random_rephase_cuda(SpPhaser * ph, cufftComplex *  img);
 
@@ -215,6 +236,49 @@ int sp_phaser_init_model_cuda(SpPhaser * ph, const Image * user_model, int flags
   ph->model->phased = 1;
   ph->model_change = sp_image_alloc(sp_image_x(ph->model),sp_image_y(ph->model),sp_image_z(ph->model));
   return 0;
+}
+
+real sp_phaser_ereal_cuda(SpPhaser * ph){
+  /* CUDA_ereal takes the model before projection,  d_gp, and calculate the error pixelwise and stores in d_g0 */
+  CUDA_ereal<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g0, ph->d_gp, ph->d_pixel_flags,ph->image_size);
+  thrust::device_ptr<cufftComplex> beginc =  thrust::device_pointer_cast(ph->d_g0);
+  thrust::device_ptr<cufftComplex> endc =  thrust::device_pointer_cast((cufftComplex *)(ph->d_g0+ph->image_size));
+  cufftComplex sum = {0,0};
+  sum = thrust::reduce(beginc,endc,sum,addCufftComplex());
+  real ereal = sqrt(sum.x / sum.y);
+  return ereal;
+}
+
+real sp_phaser_support_fraction_cuda(SpPhaser * ph){
+  /* CUDA_ereal takes the model before projection,  d_gp, and calculate the error pixelwise and stores in d_g0 */
+  CUDA_pixel_flags_to_complex<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g0, ph->d_pixel_flags,ph->image_size);
+  thrust::device_ptr<cufftComplex> beginc =  thrust::device_pointer_cast(ph->d_g0);
+  thrust::device_ptr<cufftComplex> endc =  thrust::device_pointer_cast((cufftComplex *)(ph->d_g0+ph->image_size));
+  cufftComplex sum = {0,0};
+  sum = thrust::reduce(beginc,endc,sum,addCufftComplex());
+  real sup_frac = sum.x / real(ph->image_size);
+  return sup_frac;  
+}
+
+real sp_phaser_efourier_cuda(SpPhaser * ph, real * FcFo){
+  /* Calculate fmodel */
+  cufftSafeCall(cufftExecC2C(ph->cufft_plan, ph->d_g1, ph->d_fmodel, CUFFT_FORWARD));
+  /* CUDA_ereal takes the model before projection,  d_gp, and calculate the error pixelwise and stores in d_g0 */
+  CUDA_efourier<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g0, ph->d_fmodel, ph->d_amplitudes, ph->d_pixel_flags,ph->image_size);
+  thrust::device_ptr<cufftComplex> beginc =  thrust::device_pointer_cast(ph->d_g0);
+  thrust::device_ptr<cufftComplex> endc =  thrust::device_pointer_cast((cufftComplex *)(ph->d_g0+ph->image_size));
+  cufftComplex sum = {0,0};
+  sum = thrust::reduce(beginc,endc,sum,addCufftComplex());
+  real efourier = sqrt(sum.x / sum.y);
+  if(FcFo != NULL){
+    /* store the FcFo ratio in this pointer */
+    CUDA_FcFo<<<ph->number_of_blocks, ph->threads_per_block>>>(ph->d_g0, ph->d_fmodel, ph->d_amplitudes, ph->d_pixel_flags,ph->image_size);
+    sum.x = 0;
+    sum.y = 0;
+    sum = thrust::reduce(beginc,endc,sum,addCufftComplex());
+    *FcFo = sum.x/sum.y;
+  }
+  return efourier;  
 }
 
 static void random_rephase_cuda(SpPhaser * ph, cufftComplex *  img){
