@@ -1191,7 +1191,6 @@ Image * _read_imagefile(const char * filename,const char * file, int line){
 
 Image * read_anton_datafile(hid_t file_id,hid_t dataset_id,const char * filename){
   hid_t mem_type_id;
-  int status = 0;
   H5E_auto_t func;
   void * client_data;
   if(sizeof(real) == sizeof(float)){
@@ -1215,7 +1214,7 @@ Image * read_anton_datafile(hid_t file_id,hid_t dataset_id,const char * filename
   }else{
     has_nframes = 1;
   /* read number of frames and put them together in just 1 image */
-    status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL,
+    H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL,
      H5P_DEFAULT, &nframes);
     H5Dclose(file_id);
   }
@@ -1260,7 +1259,7 @@ Image * read_anton_datafile(hid_t file_id,hid_t dataset_id,const char * filename
 #if H5_VERS_MAJOR < 2 && H5_VERS_MINOR < 8
 #error libspimage does not support HDF5 < 1.8
 #else
-    status = H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
+    H5Dread(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
 		     H5P_DEFAULT, data[frame]);
 #endif
     H5Dclose(dataset_id);
@@ -2430,7 +2429,7 @@ void append_cxi(const Image *img, const char *filename, long long flag) {
           }
           hid_t string_type = H5Tcopy(H5T_C_S1);  
           H5Tset_size(string_type, strlen(str));
-          
+          dataspace_id = H5Screate(H5S_SCALAR);
           dataset_id = H5Dcreate (image_n, "data_type", string_type, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
           H5Dwrite(dataset_id, string_type, H5S_ALL, H5S_ALL, H5P_DEFAULT, str);
           H5Dclose(dataset_id);
@@ -2462,13 +2461,13 @@ void append_cxi(const Image *img, const char *filename, long long flag) {
           H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
                    H5P_DEFAULT, &(img->detector->pixel_size[1]));
           H5Dclose(dataset_id);
-          H5Sclose(dataspace_id);
           
           dataset_id = H5Dcreate(image_n, "is_fft_shifted", H5T_NATIVE_INT,dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
           H5Dwrite(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL,
                    H5P_DEFAULT, &img->shifted);
           H5Dclose(dataset_id);
-          
+          H5Sclose(dataspace_id);
+
           dims[0] = 3;
           dataspace_id = H5Screate_simple(1, dims, NULL);
           float cxi_center[3] = {img->detector->image_center[0]+1.0/2,
@@ -2641,7 +2640,8 @@ void append_cxi(const Image *img, const char *filename, long long flag) {
       }
       hid_t string_type = H5Tcopy(H5T_C_S1);  
       H5Tset_size(string_type, strlen(str));
-      
+      dataspace_id = H5Screate(H5S_SCALAR);
+
       dataset_id = H5Dcreate (image_1, "data_type", string_type, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
       H5Dwrite(dataset_id, string_type, H5S_ALL, H5S_ALL, H5P_DEFAULT, str);
       H5Dclose(dataset_id);
@@ -2673,12 +2673,12 @@ void append_cxi(const Image *img, const char *filename, long long flag) {
       H5Dwrite(dataset_id, mem_type_id, H5S_ALL, H5S_ALL,
                H5P_DEFAULT, &(img->detector->pixel_size[1]));
       H5Dclose(dataset_id);
-      H5Sclose(dataspace_id);
       
       dataset_id = H5Dcreate(image_1, "is_fft_shifted", H5T_NATIVE_INT,dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
       H5Dwrite(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL,
                H5P_DEFAULT, &img->shifted);
       H5Dclose(dataset_id);
+      H5Sclose(dataspace_id);      
       
       dims[0] = 3;
       dataspace_id = H5Screate_simple(1,dims,NULL);
