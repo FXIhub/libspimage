@@ -575,7 +575,7 @@ int sp_phaser_init(SpPhaser * ph, SpPhasingAlgorithm * alg,SpSupportArray * sup_
     if(sp_cuda_get_device_type() == SpCUDAHardwareDevice){
       ph->engine = SpEngineCUDA;
       curandSafeCall(curandCreateGenerator(&ph->gen, CURAND_RNG_PSEUDO_DEFAULT));
-      curandSafeCall(curandSetPseudoRandomGeneratorSeed(ph->gen, 1234ULL)); // Use a fixed seed for reproducibility
+      curandSafeCall(curandSetPseudoRandomGeneratorSeed(ph->gen, rand()));
     }
   }
 #endif
