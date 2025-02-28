@@ -235,6 +235,7 @@ int sp_phaser_init_model_cuda(SpPhaser * ph, const Image * user_model, int flags
   }
   ph->model->phased = 1;
   ph->model_change = sp_image_alloc(sp_image_x(ph->model),sp_image_y(ph->model),sp_image_z(ph->model));
+  cutilSafeCall(cudaMemcpy(ph->model->image->data, ph->d_g1, sizeof(cufftComplex)*ph->image_size, cudaMemcpyDeviceToHost));  
   return 0;
 }
 
