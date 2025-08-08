@@ -1,0 +1,42 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x' # Or specify a particular version like '3.9'
+
+    - name: Install dependencies and pytest
+      run: |
+        # This is a placeholder for dependency installation.
+        # You might need to install specific libraries or tools here
+        # depending on your project's requirements.
+        # For example, if you need build-essential and cmake:
+        sudo apt-get update
+        sudo apt-get install -y cmake build-essential libhdf5-dev libgsl-dev libfftw3-dev swig libnfft3-dev libtiff-dev libpng-dev 
+        pip install pytest
+
+    - name: Configure CMake
+      run: |
+        ls
+        mkdir build
+        cd build
+        cmake ..
+        make
+
+    - name: Build
+      run: make
+
+    - name: Run pytest
+      run: cd .. && pytest
