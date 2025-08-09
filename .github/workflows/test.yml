@@ -27,7 +27,7 @@ jobs:
         sudo apt-get install -y cmake build-essential libhdf5-dev libgsl-dev libfftw3-dev swig libnfft3-dev libtiff-dev libpng-dev 
         pip install pytest setuptools
 
-    - name: Configure CMake
+    - name: Build
       run: |
         ls
         mkdir build
@@ -35,8 +35,5 @@ jobs:
         cmake ..
         make
 
-    - name: Build
-      run: make
-
     - name: Run pytest
-      run: cd .. && pytest
+      run: cd build && pytest
