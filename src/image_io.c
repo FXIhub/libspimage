@@ -2203,7 +2203,7 @@ void append_cxi(const Image *img, const char *filename, long long flag) {
   int status;
   char *data_type_string[] = {"intensity", "amplitude", "unphased amplitude"};
   char *str;
-  char path_string[50];
+  char path_string[60];
   H5E_auto_t func;
   void *client_data;
   
