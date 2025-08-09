@@ -1,7 +1,11 @@
 #include "AllTests.h"
 
 #include <time.h>
+#if defined(_WIN32) || defined(WIN32)
 #include "getopt.h"
+#else
+#include <unistd.h>
+#endif
 
 typedef struct {
 	int linear_alg;
