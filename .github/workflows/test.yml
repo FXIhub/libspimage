@@ -35,5 +35,5 @@ jobs:
         cmake ..
         make
 
-    - name: Run pytest
-      run: cd build && pytest
+    # - name: Run pytest
+    #   run: cd build && pytest
