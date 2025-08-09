@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.10)
 
 if(POLICY CMP0042)
   cmake_policy(SET CMP0042 NEW) # CMake 3.0
@@ -52,77 +52,36 @@ find_package(PNG)
 find_package(HDF5 REQUIRED)
 find_package(GSL)
 
+
+
 if(PYTHON_WRAPPERS)
-  find_package(PythonInterp)
-  find_package(PythonLibs)
-  find_package(Numpy)
+  find_package (Python3 COMPONENTS Interpreter Development)
+  if(Python3_Interpreter_FOUND)
+    set(PYTHON_EXECUTABLE ${Python3_EXECUTABLE})
+    set(PYTHON_INCLUDE_PATH ${Python3_INCLUDE_DIRS})
+    set(PYTHON_LIBRARIES ${Python3_LIBRARIES})
+    set(PYTHON_NUMPY_INCLUDE_DIR ${Python3_NumPy_INCLUDE_DIRS})
+    set(PYTHON_NUMPY_FOUND ${Python3_NumPy_FOUND})
+  else()
+    message(FATAL_ERROR "Python interpreter not found")
+  endif()
   find_package(SWIG)
-  if(PYTHONLIBS_FOUND AND SWIG_FOUND AND PYTHONINTERP_FOUND AND PYTHON_NUMPY_FOUND)
-    # Taken from plplot. Many thanks!
-    # N.B. This is a nice way to obtain all sorts of python information
-    # using distutils.
-    execute_process(
-	 COMMAND
-  	 ${PYTHON_EXECUTABLE} -c "from distutils import sysconfig; print(sysconfig.get_python_lib())"
-  	 OUTPUT_VARIABLE _PYTHON_INSTDIR
-  	 OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-    SET(PYTHON_INSTDIR ${_PYTHON_INSTDIR} CACHE PATH "Installation directory for python module.")
+  if(PYTHON_LIBRARIES AND SWIG_FOUND AND PYTHON_EXECUTABLE AND PYTHON_NUMPY_FOUND)
+    SET(PYTHON_INSTDIR ${Python3_SITELIB} CACHE PATH "Installation directory for python module.")
   endif()
 endif(PYTHON_WRAPPERS)
 IF(USE_CUDA)
-  IF(CMAKE_VERSION)
-    # CMAKE VERSION was first defined in 2.6.3. Sorry for the hack
-    IF(CMAKE_VERSION VERSION_LESS 2.8)
-      SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/cuda")
-    ELSE(CMAKE_VERSION VERSION_LESS 2.8)
-      MESSAGE(STATUS "Using builtin CUDA package")
-    ENDIF(CMAKE_VERSION VERSION_LESS 2.8)
-    find_package(CUDA QUIET)
-  ELSE(CMAKE_VERSION)
-    message(STATUS "cmake 2.6.3 or higher required to use CUDA")
-  ENDIF(CMAKE_VERSION)
 
+  include(CheckLanguage)
+  check_language(CUDA)
+
+  IF(CMAKE_CUDA_COMPILER)
+    SET(CUDA_FOUND TRUE)
+  ENDIF(CMAKE_CUDA_COMPILER)
   IF(CUDA_FOUND)
-
-    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
-      if(${CUDA_VERSION} VERSION_LESS "9.0")
-	# Necessary due to CUDA compatibility problems
-	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libstdc++")
-	# The CUDA module thinks cc is gcc and passes dumpspecs.
-	# This is a workaround
-	if(CUDA_HOST_COMPILER STREQUAL "/usr/bin/cc")
-	  SET(CUDA_HOST_COMPILER "/usr/bin/clang")
-	endif()
-      endif()			       
-    endif()
-
-    mark_as_advanced(CUDA_SDK_ROOT_DIR)
-    mark_as_advanced(CUDA_BUILD_EMULATION)
-    mark_as_advanced(CUDA_BUILD_CUBIN)
-    mark_as_advanced(CUDA_VERBOSE_BUILD)
+    enable_language(CUDA)
     ADD_DEFINITIONS(-D_USE_CUDA)
     # Set a reasonable minimum arch
-    if(NOT CUDA_NVCC_FLAGS)
-      if(${CUDA_VERSION} VERSION_LESS "7.0")
-      	# This ensure that the code also runs on cards with computing cap. as low as 1.1
-      	SET(CUDA_NVCC_FLAGS "--Wno-deprecated-gpu-targets -gencode=arch=compute_11,code=compute_11 -gencode=arch=compute_20,code=compute_20")
-      elseif (${CUDA_VERSION} VERSION_LESS "9.0")
-        # CUDA 7.0 does not support compute_11 any longer
-        SET(CUDA_NVCC_FLAGS "-gencode=arch=compute_20,code=compute_20 -gencode=arch=compute_30,code=compute_30")
-      else ()
-	# Let nvcc pick whatever architecture it wants
-#       elseif (${CUDA_VERSION} VERSION_LESS "11.0")	
-        # CUDA 11.0 does not support compute_30 any longer
-#        SET(CUDA_NVCC_FLAGS "-gencode=arch=compute_30,code=compute_30")
-#       elseif (${CUDA_VERSION} VERSION_LESS "12.0")	
-        # CUDA 12.0 does not support compute_35 any longer
-#        SET(CUDA_NVCC_FLAGS "-gencode=arch=compute_35,code=compute_35")	
-#       else ()
-	# CUDA 12.0 does not support compute_35 any longer
-#        SET(CUDA_NVCC_FLAGS "-gencode=arch=compute_50,code=compute_50")
-      endif()			   
-    endif()
     message(STATUS "CUDA found. Using CUDA.")
   ELSE(CUDA_FOUND)
     message(STATUS "CUDA not found. Not using CUDA.")

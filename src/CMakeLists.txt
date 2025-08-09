@@ -1,5 +1,7 @@
 LIST(APPEND OBJECTS ${SPIMAGE_SRC})
 
+
+
 IF(CUDA_FOUND)
   LIST(APPEND OBJECTS "fft.cu" "phasing.cu" "phasing_kernels.cu" "support_update_cuda.cu" "image_filter_cuda.cu")
 ENDIF(CUDA_FOUND)
@@ -66,11 +68,11 @@ INSTALL(TARGETS spimage
 # handle the QUIETLY and REQUIRED arguments and set PYTHONINTERP_FOUND to TRUE if
 # all listed variables are TRUE
 INCLUDE(FindPackageHandleStandardArgs)
-FIND_PACKAGE_HANDLE_STANDARD_ARGS(PythonInterp DEFAULT_MSG PYTHON_EXECUTABLE)
+
 
 MARK_AS_ADVANCED(PYTHON_EXECUTABLE)
-if(PYTHONLIBS_FOUND AND SWIG_FOUND AND PYTHONINTERP_FOUND AND PYTHON_NUMPY_FOUND)
-#MESSAGE("numpy found compiling python wrappers")
+if(SWIG_FOUND AND Python3_Interpreter_FOUND AND PYTHON_NUMPY_FOUND)
+  MESSAGE("numpy found compiling python wrappers")
   FILE(GLOB spimage_headers "${CMAKE_CURRENT_SOURCE_DIR}/../include/spimage/*.h")
 
   add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/spimage_wrap.c COMMAND ${SWIG_EXECUTABLE} -python -outcurrentdir  -o ${CMAKE_CURRENT_BINARY_DIR}/spimage_wrap.c ${CMAKE_CURRENT_SOURCE_DIR}/spimage_pybackend.i DEPENDS ${spimage_headers} ${CMAKE_CURRENT_SOURCE_DIR}/spimage_pybackend.i)
@@ -118,4 +120,6 @@ if(PYTHONLIBS_FOUND AND SWIG_FOUND AND PYTHONINTERP_FOUND AND PYTHON_NUMPY_FOUND
     ARCHIVE DESTINATION ${PYTHON_INSTDIR}
     )
   INSTALL(FILES spimage.py ${CMAKE_CURRENT_BINARY_DIR}/spimage_pybackend.py _spimage_conventions.py _spimage_cxi.py _spimage_resample.py _spimage_reconstructor.py _spimage_prtf.py _spimage_io.py _spimage_find_center.py _spimage_sphere_model.py _spimage_spheroid_model.py _spimage_pixelmask.py _spimage_qmap.py _spimage_utils.py _spimage_misc.py _spimage_patterson.py _spimage_material.py elements.dat leastsqbound-scipy/leastsqbound.py DESTINATION  ${PYTHON_INSTDIR})
+else(SWIG_FOUND AND Python3_Interpreter_FOUND AND PYTHON_NUMPY_FOUND)
+  MESSAGE("Skipping python wrappers")
 endif()
