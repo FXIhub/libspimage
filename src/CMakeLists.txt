@@ -63,7 +63,6 @@ INCLUDE(FindPackageHandleStandardArgs)
 
 MARK_AS_ADVANCED(PYTHON_EXECUTABLE)
 if(SWIG_FOUND AND Python3_Interpreter_FOUND AND PYTHON_NUMPY_FOUND)
-  MESSAGE("numpy found compiling python wrappers")
   FILE(GLOB spimage_headers "${CMAKE_CURRENT_SOURCE_DIR}/../include/spimage/*.h")
 
   add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/spimage_wrap.c COMMAND ${SWIG_EXECUTABLE} -python -outcurrentdir  -o ${CMAKE_CURRENT_BINARY_DIR}/spimage_wrap.c ${CMAKE_CURRENT_SOURCE_DIR}/spimage_pybackend.i DEPENDS ${spimage_headers} ${CMAKE_CURRENT_SOURCE_DIR}/spimage_pybackend.i)
