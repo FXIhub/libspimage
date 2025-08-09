@@ -1,12 +1,13 @@
-#include "AllTests.h"
-
-#include <time.h>
 #if defined(_WIN32) || defined(WIN32)
 #include "getopt.h"
 #else
-#define _POSIX_C_SOURCE 2
+// For getopt
+#define _XOPEN_SOURCE 600
 #include <unistd.h>
 #endif
+
+#include <time.h>
+#include "AllTests.h"
 
 typedef struct {
 	int linear_alg;
