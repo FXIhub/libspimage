@@ -844,7 +844,7 @@ void test_sp_image_convolute_fractional(CuTest * tc){
   fcorr = sp_image_convolute_fractional(a,b,NULL,precision,1);
   int x,y,z;
   long long index;
-  real max = sp_image_max(fcorr,&index,&x,&y,&z);
+  sp_image_max(fcorr,&index,&x,&y,&z);
   CuAssertTrue(tc, ((int)((real)x/precision+t_x+0.5)) % sp_image_x(a) == 0);  
   CuAssertTrue(tc, ((int)((real)y/precision+t_y+0.5)) % sp_image_y(a) == 0);  
   CuAssertTrue(tc, ((int)((real)z/precision+t_z+0.5)) % sp_image_z(a) == 0);  
