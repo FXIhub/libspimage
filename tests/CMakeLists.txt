@@ -12,8 +12,8 @@ ENDIF(WIN32)
 
 ADD_EXECUTABLE(tests ${OBJECTS} CuTest.c AllTests.c ImageTests.c LinearTests.c ProjTests.c ContainerTests.c PrtfTests.c PhasingTests.c ${GETOPT})
 IF(CUDA_FOUND)
-LIST(APPEND TESTS_LIBRARIES CUDA::curand CUDA::cufft)
-set_target_properties(tests PROPERTIES CUDA_ARCHITECTURES "35")
+  LIST(APPEND TESTS_LIBRARIES CUDA::curand CUDA::cufft)
+  #set_target_properties(tests PROPERTIES CUDA_ARCHITECTURES "35")
 ENDIF(CUDA_FOUND)
 
 TARGET_LINK_LIBRARIES(tests PRIVATE ${TESTS_LIBRARIES})
