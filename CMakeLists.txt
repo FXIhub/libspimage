@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.18)
 
 if(POLICY CMP0042)
   cmake_policy(SET CMP0042 NEW) # CMake 3.0
@@ -55,9 +55,9 @@ find_package(GSL)
 
 
 if(PYTHON_WRAPPERS)
-  find_package (Python3 COMPONENTS Interpreter Development)
+  find_package (Python3 COMPONENTS Interpreter Development NumPy)
   if(Python3_Interpreter_FOUND)
-    set(PYTHON_EXECUTABLE ${Python3_EXECUTABLE})
+    set(PYTHON_EXECUTABLE ${Python3_EXECUTABLE} CACHE PATH "Python interpreter executable")
     set(PYTHON_INCLUDE_PATH ${Python3_INCLUDE_DIRS})
     set(PYTHON_LIBRARIES ${Python3_LIBRARIES})
     set(PYTHON_NUMPY_INCLUDE_DIR ${Python3_NumPy_INCLUDE_DIRS})
@@ -71,13 +71,10 @@ if(PYTHON_WRAPPERS)
   endif()
 endif(PYTHON_WRAPPERS)
 IF(USE_CUDA)
-
-  include(CheckLanguage)
-  check_language(CUDA)
-
-  IF(CMAKE_CUDA_COMPILER)
+  find_package(CUDAToolkit REQUIRED)
+  IF(CUDAToolkit_BIN_DIR)
     SET(CUDA_FOUND TRUE)
-  ENDIF(CMAKE_CUDA_COMPILER)
+  ENDIF(CUDAToolkit_BIN_DIR)
   IF(CUDA_FOUND)
     enable_language(CUDA)
     ADD_DEFINITIONS(-D_USE_CUDA)

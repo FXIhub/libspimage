@@ -10,15 +10,13 @@ SET (GETOPT getopt.c)
 ADD_DEFINITIONS(-DGSL_DLL)
 ENDIF(WIN32)
 
-IF(CUDA_FOUND)
-CUDA_ADD_EXECUTABLE(tests ${OBJECTS} CuTest.c AllTests.c ImageTests.c LinearTests.c ProjTests.c ContainerTests.c PrtfTests.c PhasingTests.c ${GETOPT})
-CUDA_ADD_CUFFT_TO_TARGET(tests)
-target_link_libraries(tests ${CUDA_curand_LIBRARY})
-ELSE(CUDA_FOUND)
 ADD_EXECUTABLE(tests ${OBJECTS} CuTest.c AllTests.c ImageTests.c LinearTests.c ProjTests.c ContainerTests.c PrtfTests.c PhasingTests.c ${GETOPT})
+IF(CUDA_FOUND)
+LIST(APPEND TESTS_LIBRARIES CUDA::curand CUDA::cufft)
+set_target_properties(tests PROPERTIES CUDA_ARCHITECTURES "35")
 ENDIF(CUDA_FOUND)
 
-TARGET_LINK_LIBRARIES(tests ${TESTS_LIBRARIES})
+TARGET_LINK_LIBRARIES(tests PRIVATE ${TESTS_LIBRARIES})
 
 ENABLE_TESTING()
 
