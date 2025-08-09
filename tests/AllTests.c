@@ -4,6 +4,7 @@
 #if defined(_WIN32) || defined(WIN32)
 #include "getopt.h"
 #else
+#define _POSIX_C_SOURCE 2
 #include <unistd.h>
 #endif
 
