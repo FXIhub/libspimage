@@ -605,7 +605,12 @@ int sp_phaser_set_support_algorithm(SpPhaser * ph, SpSupportArray * alg) {
 
 int sp_phaser_init_model(SpPhaser * ph, const Image * user_model, int flags){
   if(ph->engine == SpEngineCUDA && !(flags & SpModelMaskedOutZeroed)){
+#ifdef _USE_CUDA
     return sp_phaser_init_model_cuda(ph, user_model, flags);
+#else
+    /* Cannot be reached! */
+    return -3;
+#endif
   }
   if(!ph){
     return -1;    
@@ -797,7 +802,12 @@ const Image * sp_phaser_support(SpPhaser * ph){
 
 real sp_phaser_ereal(SpPhaser *ph) {
   if(ph->engine == SpEngineCUDA){
+#ifdef _USE_CUDA
     return sp_phaser_ereal_cuda(ph);
+#else
+    /* Cannot be reached! */
+    return -3;
+#endif
   }
   const Image *real_space = sp_phaser_model_before_projection(ph);
   const Image *support = sp_phaser_support(ph);
@@ -824,7 +834,12 @@ real sp_phaser_ereal(SpPhaser *ph) {
 
 real sp_phaser_support_fraction(SpPhaser *ph){
   if(ph->engine == SpEngineCUDA){
+#ifdef _USE_CUDA
     return sp_phaser_support_fraction_cuda(ph);
+#else
+    /* Cannot be reached! */
+    return -3;
+#endif
   }
   int sup_size = 0;
   const Image *support = sp_phaser_support(ph);
@@ -839,7 +854,12 @@ real sp_phaser_support_fraction(SpPhaser *ph){
 
 real sp_phaser_efourier(SpPhaser *ph, real * FcFo) {
   if(ph->engine == SpEngineCUDA){
+#ifdef _USE_CUDA
     return sp_phaser_efourier_cuda(ph, FcFo);
+#else
+    /* Cannot be reached! */
+    return -3;
+#endif
   }  
   const Image *fourier_space = sp_phaser_fmodel(ph);
   const Image *amplitudes = sp_phaser_amplitudes(ph);
