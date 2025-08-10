@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/FXIhub/libspimage.svg?branch=master)](https://travis-ci.org/FXIhub/libspimage)
+[![Build Status](https://github.com/FXIhub/libspimage/actions/workflows/test.yml/badge.svg)](https://github.com/FXIhub/libspimage/actions/workflows/test.yml)
 
 LibSPImage - Image Processing Library
 =====================================
@@ -12,6 +12,7 @@ Tomas Ekeberg   ||  <ekeberg@xray.bmc.uu.se><br>
 Max Hantke      ||  <max.hantke@icm.uu.se><br>
 Benedikt Daurer ||  <benedikt@xray.bmc.uu.se><br>
 Jonas Sellberg  ||  <sellberg@xray.bmc.uu.se><br>
+Tong You        ||  <tong.you@icm.uu.se><br>
 <br>
 LibSPImage is currently v1.00 and is undergoing testing.
 
