@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         # Define the matrix for whether to install CUDA or not
-        install_cuda: [true, false]
+        cuda: [with_cuda, without_cuda]
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python
@@ -31,8 +31,8 @@ jobs:
         sudo apt-get install -y cmake build-essential libhdf5-dev libgsl-dev libfftw3-dev swig libnfft3-dev libtiff-dev libpng-dev 
         pip install pytest setuptools
     
-    - name: Install NVIDIA CUDA Toolkit (if matrix.install_cuda is true)
-      if: matrix.install_cuda == true
+    - name: Install NVIDIA CUDA Toolkit (if required)
+      if: matrix.cuda == 'with_cuda'
       run: |
         sudo apt-get install -y nvidia-cuda-toolkit
 
