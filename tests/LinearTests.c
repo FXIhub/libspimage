@@ -1590,9 +1590,10 @@ void test_sp_create_spline2_kernel_table(CuTest * tc){
   int t = sp_timer_start();
   step = 1e-5;
   int i = 0;
+  volatile real sample;
   /* I need double precision or the small step is gonna be washed in the numerical error */
   for(double r2 = 0;r2<4;r2+=step){
-    real sample = 1;
+    sample = 1;
     sample = i;
     i++;
   }
@@ -1603,7 +1604,7 @@ void test_sp_create_spline2_kernel_table(CuTest * tc){
   i = 0;
   /* I need double precision or the small step is gonna be washed in the numerical error */
   for(double r2 = 0;r2<4;r2+=step){
-    real sample = sp_kernel_table_sample(k,r2);
+    sample = sp_kernel_table_sample(k,r2);
     sample = i;
     i++;
   }
