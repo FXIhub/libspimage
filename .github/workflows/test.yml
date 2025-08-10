@@ -36,13 +36,15 @@ jobs:
       run: |
         sudo apt-get install -y nvidia-cuda-toolkit
 
-    - name: Build
+    - name: Build and Install
       run: |
         ls
         mkdir build
         cd build
         cmake ..
         make
+        make install
+
 
     # - name: Run pytest
     #   run: cd build && pytest
