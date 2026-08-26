@@ -548,8 +548,10 @@ class Reconstructor:
         self._sp_phaser = spimage.sp_phaser_alloc()
         if self._use_gpu:
             pe = spimage.SpEngineCUDA
+            self._log(f"Set phasing engine to GPU.")
         else:
             pe = spimage.SpEngineCPU
+            self._log(f"Set phasing engine to CPU.")
         self._log("Initialising phaser with the phasing algorithm %s and the support algorithm %s." % (self._phasing_algorithms[0]["type"],self._support_algorithms[0]["type"]))
         spimage.sp_phaser_init(self._sp_phaser, self._phasing_algorithms[0]["spimage_phasing"], self._support_algorithms[0]["spimage_support_array"], pe)
         spimage.sp_phaser_set_amplitudes(self._sp_phaser, self._sp_amplitudes)
