@@ -338,8 +338,16 @@ class Reconstructor:
             if self._i_phasing_algorithms != self._number_of_iterations:
                 self._log("Connot prepare reconstruction. Phasing algorithms initialised are not in line with the set number of iterations.","ERROR")
                 self._ready = False
+
+        if self._number_of_outputs_images <0:
+            self._number_of_outputs_images = self._number_of_iterations
+        if self._number_of_outputs_scores <0:
+            self._number_of_outputs_scores = self._number_of_iterations
+
         if not self._ready:
             return
+
+        
         self._init_amplitudes()
         self._init_initial_support()
         self._init_iterations()
