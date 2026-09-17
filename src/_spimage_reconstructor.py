@@ -560,9 +560,15 @@ class Reconstructor:
         self._phaser_dirty = False
         self._log("Phaser initialized.","DEBUG")
 
-    def reconstruct(self):
+    def reconstruct(self, on_output=None):
         """
         Performs a single reconstruction with the specified configuration and outputs a dictionary with the results.
+
+        If \"on_output\" is given, it must be a callable accepting the keyword arguments
+        (iteration, images, scores). It is called every time images and/or scores are
+        written to the output, with \"images\" and/or \"scores\" set to None if not written
+        at that iteration. This can be used e.g. to save output incrementally (per step)
+        to disk instead of only after the full reconstruction has finished.
         """
         self._prepare_reconstruction()
         if not self._ready:
@@ -607,9 +613,15 @@ class Reconstructor:
                         iteration0_sup = self._iteration
                         self._sp_phaser.sup_algorithm = self._support_algorithms[i_sup]["spimage_support_array"]
                         self._log("Change of support algorithm to %s." % self._support_algorithms[i_sup]["type"],"INFO")
+                    out_images = None
+                    out_scores = None
                     if self._iteration in self._out_iterations_images:
                         [real_space[i_out_images,:,:],support[i_out_images,:,:]] = self._get_curr_model(shifted=False)
                         [fourier_space[i_out_images,:,:],mask[i_out_images,:,:]] = self._get_curr_fmodel(shifted=False)
+                        out_images = {"real_space":real_space[i_out_images],
+                                      "support":support[i_out_images],
+                                      "fourier_space":fourier_space[i_out_images],
+                                      "mask":mask[i_out_images]}
                         i_out_images += 1
                         self._log("Outputting images.","DEBUG")
                     if self._iteration in self._out_iterations_scores:
@@ -617,8 +629,13 @@ class Reconstructor:
                         fourier_error[i_out_scores] = scores["fourier_error"]
                         real_error[i_out_scores] = scores["real_error"]
                         support_size[i_out_scores] = scores["support_size"]
+                        out_scores = {"real_error":real_error[i_out_scores],
+                                      "fourier_error":fourier_error[i_out_scores],
+                                      "support_size":support_size[i_out_scores]}
                         i_out_scores += 1
                         self._log("Outputting scores.","DEBUG")
+                    if on_output is not None and (out_images is not None or out_scores is not None):
+                        on_output(iteration=self._iteration, images=out_images, scores=out_scores)
             self._iteration = None
             out = {"iteration_index_images":self._out_iterations_images,
                    "iteration_index_scores":self._out_iterations_scores,
@@ -659,9 +676,15 @@ class Reconstructor:
                         iteration0_sup = self._iteration
                         self._sp_phaser.sup_algorithm = self._support_algorithms[i_sup]["spimage_support_array"]
                         self._log("Change of support algorithm to %s." % self._support_algorithms[i_sup]["type"],"INFO")
+                    out_images = None
+                    out_scores = None
                     if self._iteration in self._out_iterations_images:
                         [real_space[i_out_images,:,:,:],support[i_out_images,:,:,:]] = self._get_curr_model(shifted=False)
                         [fourier_space[i_out_images,:,:,:],mask[i_out_images,:,:,:]] = self._get_curr_fmodel(shifted=False)
+                        out_images = {"real_space":real_space[i_out_images],
+                                      "support":support[i_out_images],
+                                      "fourier_space":fourier_space[i_out_images],
+                                      "mask":mask[i_out_images]}
                         i_out_images += 1
                         self._log("Outputting images.","DEBUG")
                     if self._iteration in self._out_iterations_scores:
@@ -669,8 +692,13 @@ class Reconstructor:
                         fourier_error[i_out_scores] = scores["fourier_error"]
                         real_error[i_out_scores] = scores["real_error"]
                         support_size[i_out_scores] = scores["support_size"]
+                        out_scores = {"real_error":real_error[i_out_scores],
+                                      "fourier_error":fourier_error[i_out_scores],
+                                      "support_size":support_size[i_out_scores]}
                         i_out_scores += 1
                         self._log("Outputting scores.","DEBUG")
+                    if on_output is not None and (out_images is not None or out_scores is not None):
+                        on_output(iteration=self._iteration, images=out_images, scores=out_scores)
             self._iteration = None
             out = {"iteration_index_images":self._out_iterations_images,
                    "iteration_index_scores":self._out_iterations_scores,
